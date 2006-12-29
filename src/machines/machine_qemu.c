@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.7 2006-12-28 12:09:35 debug Exp $
+ *  $Id: machine_qemu.c,v 1.8 2006-12-29 21:05:06 debug Exp $
  *
  *  This file contains semi-bogus machine descriptions for experimental
  *  machines, mimicing those emulated by Fabrice Bellard's QEMU.
@@ -133,7 +133,7 @@ MACHINE_SETUP(qemu_mips)
 
 	/*  An ISA bus, I/O ports at 0x14000000, memory at 0x10000000...  */
 	bus_isa_init(machine, machine->path, BUS_ISA_IDE0 | BUS_ISA_IDE1,
-	    0x14000000ULL, 0x10000000ULL, 8, 24);
+	    0x14000000ULL, 0x10000000ULL);
 
 	/*  ... and an ISA interrupt controller, connected to MIPS irq 2:  */
 

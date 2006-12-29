@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.7 2006-12-28 12:09:35 debug Exp $
+ *  $Id: machine_sgi.c,v 1.8 2006-12-29 21:05:06 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -497,6 +497,9 @@ abort();
 
 		/*  TODO: Once this works, it should be enabled
 		    always, not just when using X!  */
+fatal("TODO: legacy SGI rewrite\n");
+abort();
+#if 0
 		if (machine->use_x11) {
 			i = dev_pckbc_init(machine, mem, 0x1f320000,
 			    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
@@ -504,6 +507,7 @@ abort();
 				/*  keyb+mouse (mace irq numbers)  */
 			machine->main_console_handle = i;
 		}
+#endif
 
 		dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) +
 		    MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */

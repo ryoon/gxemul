@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.7 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.8 2006-12-29 21:05:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -63,8 +63,7 @@ abort();
 
 	machine->isa_pic_data.native_irq = 11;
 
-	bus_isa_init(machine, machine->path, 0,
-	    0x7c000000, 0x80000000, 32, 48);
+	bus_isa_init(machine, machine->path, 0, 0x7c000000, 0x80000000);
 
 	if (machine->use_x11) {
 		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,

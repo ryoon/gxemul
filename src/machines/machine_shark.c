@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_shark.c,v 1.4 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_shark.c,v 1.5 2006-12-29 21:05:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -46,7 +46,7 @@ MACHINE_SETUP(shark)
 	machine->machine_name = "Digital DNARD (\"Shark\")";
 
 	bus_isa_init(machine, machine->path,
-	    BUS_ISA_IDE0, 0x08100000, 0xc0000000, 32, 48);
+	    BUS_ISA_IDE0, 0x08100000, 0xc0000000);
 
 	if (!machine->prom_emulation)
 		return;

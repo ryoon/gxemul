@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_x86.c,v 1.4 2006-12-28 12:09:35 debug Exp $
+ *  $Id: machine_x86.c,v 1.5 2006-12-29 21:05:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -68,7 +68,7 @@ abort();
 	    BUS_ISA_PCKBC_FORCE_USE |
 	    (machine->machine_subtype == MACHINE_X86_XT?
 	    BUS_ISA_NO_SECOND_PIC : 0) | BUS_ISA_FDC,
-	    X86_IO_BASE, 0x00000000, 0, 16);
+	    X86_IO_BASE, 0x00000000);
 
 	if (machine->prom_emulation)
 		pc_bios_init(cpu);

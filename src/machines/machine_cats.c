@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.7 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_cats.c,v 1.8 2006-12-29 21:05:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -86,7 +86,7 @@ abort();
 	dev_ram_init(machine, 0xf0000000, 0x1000000, DEV_RAM_MIRROR, 0x0);
 
 	bus_isa_init(machine, machine->path, BUS_ISA_PCKBC_FORCE_USE |
-	    BUS_ISA_PCKBC_NONPCSTYLE, 0x7c000000, 0x80000000, 32, 48);
+	    BUS_ISA_PCKBC_NONPCSTYLE, 0x7c000000, 0x80000000);
 
 	bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
 	    machine->memory, 0xc0, 8, 0, "s3_virge");

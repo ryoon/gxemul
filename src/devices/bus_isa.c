@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.10 2006-11-24 17:29:07 debug Exp $
+ *  $Id: bus_isa.c,v 1.11 2006-12-29 21:05:06 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -57,8 +57,6 @@ void bus_isa_debug_dump(void *extra)
 	debug_indentation(DEBUG_INDENTATION);
 	debug("portbase:     0x%llx\n", (long long)d->isa_portbase);
 	debug("membase:      0x%llx\n", (long long)d->isa_membase);
-	debug("irqbase:      %i\n", (int)d->isa_irqbase);
-	debug("reassert_irq: %i\n", (int)d->reassert_irq);
 	debug_indentation(-DEBUG_INDENTATION);
 }
 
@@ -111,23 +109,27 @@ void isa_interrupt_deassert(struct interrupt *interrupt)
  *
  *  (*3) Similar to *2 above; machines that always boot up with VGA console
  *       should have this flag set, so that the keyboard is always used.
+ *
+ *  The interrupt_base_path is the name of the bus, CPU, or controller onto
+ *  which this ISA bus will be attached, e.g. "emul[0].machine[0].lca" or
+ *  "emul[0].machine[0].cpu[0].pic1".
  */
 struct bus_isa_data *bus_isa_init(struct machine *machine,
-	char *interrupt_base_path,
-	uint32_t bus_isa_flags, uint64_t isa_portbase, uint64_t isa_membase,
-	int isa_irqbase, int reassert_irq)
+	char *interrupt_base_path, uint32_t bus_isa_flags,
+	uint64_t isa_portbase, uint64_t isa_membase)
 {
 	struct bus_isa_data *d = malloc(sizeof(struct bus_isa_data));
-	char tmpstr[300];
+	char tmpstr[300], tmpstr2[300];
 	int wdc0_irq = 14, wdc1_irq = 15;
 	int i, tmp_handle, kbd_in_use;
 	int lptbase = 0x378;
 
 	memset(d, 0, sizeof(struct bus_isa_data));
+
 	d->isa_portbase = isa_portbase;
 	d->isa_membase  = isa_membase;
-	d->isa_irqbase  = isa_irqbase;
-	d->reassert_irq = reassert_irq;
+	INTERRUPT_CONNECT(interrupt_base_path, d->irq);
+
 	machine_bus_register(machine, "isa", bus_isa_debug_dump, d);
 
 	for (i=0; i<16; i++) {
@@ -153,33 +155,36 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 		wdc0_irq = wdc1_irq = 13;
 	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=isa.-1 addr=0x%llx",
-	    (long long)(isa_portbase + 0x20));
+	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.-1 addr=0x%llx",
+	    interrupt_base_path, (long long)(isa_portbase + 0x20));
 	machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 
 	if (bus_isa_flags & BUS_ISA_NO_SECOND_PIC)
 		bus_isa_flags &= ~BUS_ISA_NO_SECOND_PIC;
 	else {
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=isa.-1 addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.-1 addr="
+		    "0x%llx", interrupt_base_path,
 		    (long long)(isa_portbase + 0xa0));
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "8253 irq=isa.%i addr=0x%llx in_use=0",
-	    0, (long long)(isa_portbase + 0x40));
+	snprintf(tmpstr, sizeof(tmpstr), "8253 irq=%s.isa.%i addr=0x%llx "
+	    "in_use=0", interrupt_base_path, 0,
+	    (long long)(isa_portbase + 0x40));
 	device_add(machine, tmpstr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "pccmos addr=0x%llx",
 	    (long long)(isa_portbase + 0x70));
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=isa.%i addr=0x%llx name2="
-	    "tty0 in_use=%i", 4, (long long)(isa_portbase + 0x3f8),
-	    1 - kbd_in_use);
+	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.isa.%i addr=0x%llx "
+	    "name2=tty0 in_use=%i", interrupt_base_path, 4,
+	    (long long)(isa_portbase + 0x3f8), 1 - kbd_in_use);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=isa.%i addr=0x%llx "
-	    "name2=tty1 in_use=0", 3, (long long)(isa_portbase + 0x2f8));
+	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.isa.%i addr=0x%llx "
+	    "name2=tty1 in_use=0", interrupt_base_path, 3,
+	    (long long)(isa_portbase + 0x2f8));
 	device_add(machine, tmpstr);
 
 	if (bus_isa_flags & BUS_ISA_LPTBASE_3BC) {
@@ -187,14 +192,16 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 		lptbase = 0x3bc;
 	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "lpt irq=isa.%i addr=0x%llx name2=lpt"
-	    " in_use=0", 7, (long long)(isa_portbase + lptbase));
+	snprintf(tmpstr, sizeof(tmpstr), "lpt irq=%s.isa.%i addr=0x%llx "
+	    "name2=lpt in_use=0", interrupt_base_path, 7,
+	    (long long)(isa_portbase + lptbase));
 	device_add(machine, tmpstr);
 
 	if (bus_isa_flags & BUS_ISA_IDE0) {
 		bus_isa_flags &= ~BUS_ISA_IDE0;
-		snprintf(tmpstr, sizeof(tmpstr), "wdc irq=isa.%i addr=0x%llx",
-		    wdc0_irq, (long long)(isa_portbase + 0x1f0));
+		snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%s.isa.%i "
+		    "addr=0x%llx", interrupt_base_path, wdc0_irq,
+		    (long long)(isa_portbase + 0x1f0));
 		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 1, DISKIMAGE_IDE))
 			device_add(machine, tmpstr);
@@ -202,8 +209,9 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 
 	if (bus_isa_flags & BUS_ISA_IDE1) {
 		bus_isa_flags &= ~BUS_ISA_IDE1;
-		snprintf(tmpstr, sizeof(tmpstr), "wdc irq=isa.%i addr=0x%llx",
-		    wdc1_irq, (long long)(isa_portbase + 0x170));
+		snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%s.isa.%i "
+		    "addr=0x%llx", interrupt_base_path, wdc1_irq,
+		    (long long)(isa_portbase + 0x170));
 		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
 			device_add(machine, tmpstr);
@@ -211,8 +219,9 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 
 	if (bus_isa_flags & BUS_ISA_FDC) {
 		bus_isa_flags &= ~BUS_ISA_FDC;
-		snprintf(tmpstr, sizeof(tmpstr), "fdc irq=isa.%i addr=0x%llx",
-		    6, (long long)(isa_portbase + 0x3f0));
+		snprintf(tmpstr, sizeof(tmpstr), "fdc irq=%s.isa.%i "
+		    "addr=0x%llx", interrupt_base_path, 6,
+		    (long long)(isa_portbase + 0x3f0));
 		device_add(machine, tmpstr);
 	}
 
@@ -224,8 +233,10 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 		bus_isa_flags &= ~(BUS_ISA_VGA | BUS_ISA_VGA_FORCE);
 	}
 
+	snprintf(tmpstr, sizeof(tmpstr), "%s.isa.1", interrupt_base_path);
+	snprintf(tmpstr2, sizeof(tmpstr2), "%s.isa.12", interrupt_base_path);
 	tmp_handle = dev_pckbc_init(machine, machine->memory,
-	    isa_portbase + 0x60, PCKBC_8042, 1, 12,
+	    isa_portbase + 0x60, PCKBC_8042, tmpstr, tmpstr2,
 	    kbd_in_use, bus_isa_flags & BUS_ISA_PCKBC_NONPCSTYLE? 0 : 1);
 
 	if (kbd_in_use)

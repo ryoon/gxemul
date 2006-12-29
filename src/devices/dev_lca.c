@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lca.c,v 1.5 2006-11-24 17:29:07 debug Exp $
+ *  $Id: dev_lca.c,v 1.6 2006-12-29 21:05:06 debug Exp $
  *
  *  LCA PCI bus (for Alpha machines).
  */
@@ -63,6 +63,30 @@ struct lca_data {
 	uint64_t		window_mask_1;
 	uint64_t		window_t_base_1;
 };
+
+
+/*
+ *  lca_interrupt_assert():
+ *
+ *  Line 0 = ISA interrupt.
+ */
+void lca_interrupt_assert(struct interrupt *interrupt)
+{
+	fatal("lca_interrupt_assert: TODO\n");
+	exit(1);
+}
+
+
+/*
+ *  lca_interrupt_deassert():
+ *
+ *  Line 0 = ISA interrupt.
+ */
+void lca_interrupt_deassert(struct interrupt *interrupt)
+{
+	fatal("lca_interrupt_deassert: TODO\n");
+	exit(1);
+}
 
 
 DEVICE_ACCESS(lca_pci_conf)
@@ -304,6 +328,7 @@ DEVICE_ACCESS(lca_ioc)
 DEVINIT(lca)
 {
 	char *interrupt_path;
+	struct interrupt interrupt_template;
 	struct lca_data *d = malloc(sizeof(struct lca_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -343,8 +368,17 @@ DEVINIT(lca)
 	interrupt_path = malloc(strlen(devinit->machine->path) + 10);
 	snprintf(interrupt_path, strlen(devinit->machine->path) + 10,
 	    "%s.lca", devinit->machine->path);
+
+	memset(&interrupt_template, 0, sizeof(interrupt_template));
+	interrupt_template.line = 0;
+	interrupt_template.name = interrupt_path;
+	interrupt_template.extra = d;
+	interrupt_template.interrupt_assert = lca_interrupt_assert;
+	interrupt_template.interrupt_deassert = lca_interrupt_deassert;
+	interrupt_handler_register(&interrupt_template);
+
 	bus_isa_init(devinit->machine, interrupt_path,
-	    BUS_ISA_IDE0 | BUS_ISA_IDE1, LCA_ISA_BASE, LCA_ISA_MEMBASE, 32, 48);
+	    BUS_ISA_IDE0 | BUS_ISA_IDE1, LCA_ISA_BASE, LCA_ISA_MEMBASE);
 
 	return 1;
 }

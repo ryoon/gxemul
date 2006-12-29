@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.10 2006-12-28 12:09:35 debug Exp $
+ *  $Id: machine_prep.c,v 1.11 2006-12-29 21:05:06 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -73,7 +73,7 @@ abort();
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 		bus_isa_init(machine, machine->path, BUS_ISA_IDE0 |
-		    BUS_ISA_IDE1, 0x80000000, 0xc0000000, 32, 48);
+		    BUS_ISA_IDE1, 0x80000000, 0xc0000000);
 
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 13, 0, "dec21143");
@@ -101,7 +101,7 @@ abort();
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 		bus_isa_init(machine, machine->path, BUS_ISA_IDE0 |
-		    BUS_ISA_IDE1, 0x80000000, 0xc0000000, 32, 48);
+		    BUS_ISA_IDE1, 0x80000000, 0xc0000000);
 
 		break;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.70 2006-08-22 15:13:03 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.71 2006-12-29 21:05:06 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -75,8 +75,9 @@ struct pckbc_data {
 	int		in_use;
 
 	int		reg[DEV_PCKBC_LENGTH];
-	int		keyboard_irqnr;
-	int		mouse_irqnr;
+
+	struct interrupt irq_keyboard;
+	struct interrupt irq_mouse;
 	int		currently_asserted[2];
 	int		type;
 	int		pc_style_flag;
@@ -460,15 +461,21 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 	for (port_nr=0; port_nr<2; port_nr++) {
 		/*  Cause receive interrupt, if there's something in the
 		    receive buffer: (Otherwise deassert the interrupt.)  */
-		int irq = port_nr==0? d->keyboard_irqnr : d->mouse_irqnr;
 
 		if (d->head[port_nr] != d->tail[port_nr] && ints_enabled) {
 			debug("[ pckbc: interrupt port %i ]\n", port_nr);
-			cpu_interrupt(cpu, irq);
+			if (port_nr == 0)
+				INTERRUPT_ASSERT(d->irq_keyboard);
+			else
+				INTERRUPT_ASSERT(d->irq_mouse);
 			d->currently_asserted[port_nr] = 1;
 		} else {
-			if (d->currently_asserted[port_nr])
-				cpu_interrupt_ack(cpu, irq);
+			if (d->currently_asserted[port_nr]) {
+				if (port_nr == 0)
+					INTERRUPT_DEASSERT(d->irq_keyboard);
+				else
+					INTERRUPT_DEASSERT(d->irq_mouse);
+			}
 			d->currently_asserted[port_nr] = 0;
 		}
 	}
@@ -899,8 +906,8 @@ if (x&1)
  *  Type should be PCKBC_8042 or PCKBC_8242.
  */
 int dev_pckbc_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr,
-	int in_use, int pc_style_flag)
+	uint64_t baseaddr, int type, char *keyboard_irqpath,
+	char *mouse_irqpath, int in_use, int pc_style_flag)
 {
 	struct pckbc_data *d;
 	int len = DEV_PCKBC_LENGTH;
@@ -920,9 +927,10 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 		len = DEV_PCKBC_LENGTH + 0x60;
 	}
 
+	INTERRUPT_CONNECT(keyboard_irqpath, d->irq_keyboard);
+	INTERRUPT_CONNECT(mouse_irqpath, d->irq_mouse);
+
 	d->type              = type;
-	d->keyboard_irqnr    = keyboard_irqnr;
-	d->mouse_irqnr       = mouse_irqnr;
 	d->in_use            = in_use;
 	d->pc_style_flag     = pc_style_flag;
 	d->translation_table = 2;

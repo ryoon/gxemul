@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.13 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.14 2006-12-29 21:05:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -74,7 +74,7 @@ abort();
 		machine->isa_pic_data.native_irq = 2;
 
 		bus_isa_init(machine, machine->path, 0,
-		    0x18000000, 0x10000000, 8, 24);
+		    0x18000000, 0x10000000);
 
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x"
 		    " name2=tty2 in_use=0", MALTA_CBUSUART);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.7 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_arc.c,v 1.8 2006-12-29 21:05:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -243,9 +243,11 @@ fatal("TODO: Legacy rewrite\n");
 abort();
 //		machine->md_interrupt = jazz_interrupt;
 
-		i = dev_pckbc_init(machine, mem, 0x80005000ULL,
-		    PCKBC_JAZZ, 8 + 6, 8 + 7,
-		    machine->use_x11, 0);
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		i = dev_pckbc_init(machine, mem, 0x80005000ULL,
+//		    PCKBC_JAZZ, 8 + 6, 8 + 7,
+//		    machine->use_x11, 0);
 
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "ns16550 irq=16 addr=0x80006000 in_use=%i"
@@ -362,7 +364,7 @@ abort();
 
 		/*  TODO: IRQs!  */
 		bus_isa_init(machine, machine->path, 0, 0x900000000ULL,
-		    0x100000000ULL, 8, 24);
+		    0x100000000ULL);
 #if 0
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
 		    "0x9000003f8 in_use=%i name2=tty0", machine->use_x11? 0:1);

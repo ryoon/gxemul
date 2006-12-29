@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.3 2006-12-28 12:09:33 debug Exp $
+ *  $Id: interrupt.c,v 1.4 2006-12-29 21:05:06 debug Exp $
  *
  *  The interrupt subsystem.
  */
@@ -52,8 +52,8 @@ static struct interrupt_handler *interrupt_handlers = NULL;
 /*
  *  Dummy interrupt assert/deassert for "no interrupt" interrupts:
  */
-void no_interrupt_assert(struct interrupt *i) { }
-void no_interrupt_deassert(struct interrupt *i) { }
+static void no_interrupt_assert(struct interrupt *i) { }
+static void no_interrupt_deassert(struct interrupt *i) { }
 
 
 /*
@@ -70,7 +70,9 @@ void interrupt_handler_register(struct interrupt *template)
 {
 	int i;
 
-	printf("\ninterrupt_handler_register(\"%s\")\n", template->name);
+#ifdef UNSTABLE_DEVEL
+	printf("interrupt_handler_register(\"%s\")\n", template->name);
+#endif
 
 	/*  See if the name is already registered:  */
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
@@ -110,7 +112,9 @@ void interrupt_handler_remove(char *name)
 {
 	int i;
 
+#ifdef UNSTABLE_DEVEL
 	printf("interrupt_handler_remove(\"%s\")\n", name);
+#endif
 
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
 		if (strcmp(name, interrupt_handlers[i].template.name) != 0)
@@ -155,7 +159,9 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 {
 	int i;
 
+#ifdef UNSTABLE_DEVEL
 	printf("interrupt_handler_lookup(\"%s\")\n", name);
+#endif
 
 	if (name[0] == '\0') {
 		/*  No interrupt:  */
@@ -172,6 +178,9 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 		return 1;
 	}
 
+	printf("interrupt_handler_lookup(\"%s\") failed. Aborting.\n", name);
+	abort();
+
 	return 0;
 }
 
@@ -185,7 +194,9 @@ void interrupt_connect(struct interrupt *in, int exclusive)
 {
 	int i;
 
-printf("interrupt_connect(\"%s\")\n", in->name);
+#ifdef UNSTABLE_DEVEL
+	printf("interrupt_connect(\"%s\")\n", in->name);
+#endif
 
 	if (in->name == NULL || in->name[0] == '\0')
 		return;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.5 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_bebox.c,v 1.6 2006-12-29 21:05:06 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/Ports/bebox/ for more info.)
@@ -63,7 +63,7 @@ abort();
 	    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 	bus_isa_init(machine, machine->path, BUS_ISA_IDE0 | BUS_ISA_VGA,
-	    0x80000000, 0xc0000000, 32, 48);
+	    0x80000000, 0xc0000000);
 
 	if (!machine->prom_emulation)
 		return;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.11 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.12 2006-12-29 21:05:06 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -73,7 +73,7 @@ abort();
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
         
 		bus_isa_init(machine, machine->path, BUS_ISA_LPTBASE_3BC,
-		    0x80000000, 0xc0000000, 32, 48);
+		    0x80000000, 0xc0000000);
 
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 14, 0, "dec21143");

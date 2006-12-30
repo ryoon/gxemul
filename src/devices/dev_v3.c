@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_v3.c,v 1.4 2006-02-18 17:55:25 debug Exp $
+ *  $Id: dev_v3.c,v 1.5 2006-12-30 02:16:22 debug Exp $
  *  
  *  V3 Semiconductor PCI controller.
  *
@@ -152,15 +152,15 @@ struct v3_data *dev_v3_init(struct machine *machine, struct memory *mem)
 	/*  Register a PCI bus:  */
 	d->pci_data = bus_pci_init(
 	    machine,
-	    0			/*  pciirq: TODO  */,
+	    "TODO: irq"		/*  pciirq: TODO  */,
 	    0x1d000000,		/*  pci device io offset  */
 	    0x11000000,		/*  pci device mem offset: TODO  */
 	    0x00000000,		/*  PCI portbase: TODO  */
 	    0x00000000,		/*  PCI membase: TODO  */
-	    0x00000000,		/*  PCI irqbase: TODO  */
+	    "TODO: pci irq base",	/*  PCI irqbase: TODO  */
 	    0x1d000000,		/*  ISA portbase  */
 	    0x10000000,		/*  ISA membase  */
-	    8);			/*  ISA irqbase  */
+	    "TODO: isa irq base");	/*  ISA irqbase  */
 
 	switch (machine->machine_type) {
 	case MACHINE_ALGOR:

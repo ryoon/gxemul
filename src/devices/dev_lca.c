@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lca.c,v 1.6 2006-12-29 21:05:06 debug Exp $
+ *  $Id: dev_lca.c,v 1.7 2006-12-30 02:16:22 debug Exp $
  *
  *  LCA PCI bus (for Alpha machines).
  */
@@ -339,15 +339,15 @@ DEVINIT(lca)
 	/*  Register a PCI bus:  */
 	d->pci_data = bus_pci_init(
 	    devinit->machine,
-	    0			/*  pciirq: TODO  */,
+	    "TODO: irq"		/*  pciirq: TODO  */,
 	    LCA_PCI_SIO,	/*  pci device io offset  */
 	    0x00000000,		/*  pci device mem offset: TODO  */
 	    0x00000000,		/*  PCI portbase: TODO  */
 	    0x00000000,		/*  PCI membase: TODO  */
-	    0x00000000,		/*  PCI irqbase: TODO  */
+	    "TODO: pci irq base",	/*  PCI irqbase: TODO  */
 	    LCA_ISA_BASE,	/*  ISA portbase  */
 	    LCA_ISA_MEMBASE,	/*  ISA membase  */
-	    8);                 /*  ISA irqbase: TODO  */
+	    "TODO: irqbase isa");                /*  ISA irqbase: TODO  */
 
 	/*  Add the "sio0" controller (as seen by NetBSD):  */
 	bus_pci_add(devinit->machine, d->pci_data, devinit->machine->memory,

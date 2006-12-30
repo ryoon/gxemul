@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.73 2006-12-29 23:05:24 debug Exp $
+ *  $Id: bus_pci.c,v 1.74 2006-12-30 02:16:22 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -222,7 +222,7 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 
 	if (pci_data == NULL) {
 		fatal("bus_pci_add(): pci_data == NULL!\n");
-		exit(1);
+		abort();
 	}
 
 	/*  Find the PCI device:  */
@@ -390,8 +390,8 @@ void bus_pci_debug_dump(void *extra)
  */
 struct pci_data *bus_pci_init(struct machine *machine, char *irq_path,
 	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
-	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
-	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase)
+	uint64_t pci_portbase, uint64_t pci_membase, char *pci_irqbase,
+	uint64_t isa_portbase, uint64_t isa_membase, char *isa_irqbase)
 {
 	struct pci_data *d;
 
@@ -401,15 +401,17 @@ struct pci_data *bus_pci_init(struct machine *machine, char *irq_path,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pci_data));
+
 	d->irq_path              = strdup(irq_path);
+	d->irq_path_isa          = strdup(isa_irqbase);
+	d->irq_path_pci          = strdup(pci_irqbase);
+
 	d->pci_actual_io_offset  = pci_actual_io_offset;
 	d->pci_actual_mem_offset = pci_actual_mem_offset;
 	d->pci_portbase          = pci_portbase;
 	d->pci_membase           = pci_membase;
-	d->pci_irqbase           = pci_irqbase;
 	d->isa_portbase          = isa_portbase;
 	d->isa_membase           = isa_membase;
-	d->isa_irqbase           = isa_irqbase;
 
 	/*  Register the bus:  */
 	machine_bus_register(machine, "pci", bus_pci_debug_dump, d);
@@ -498,8 +500,6 @@ PCIINIT(s3_virge)
 
 PCIINIT(ali_m1543)
 {
-	char tmpstr[300];
-
 	PCI_SET_DATA(PCI_ID_REG,
 	    PCI_ID_CODE(PCI_VENDOR_ALI, PCI_PRODUCT_ALI_M1543));
 
@@ -515,9 +515,7 @@ PCIINIT(ali_m1543)
 
 	switch (machine->machine_type) {
 	case MACHINE_CATS:
-		/*  CATS interrupts at footbridge irq 10:  */
-		snprintf(tmpstr, sizeof(tmpstr), "%s.10", pd->pcibus->irq_path);
-		bus_isa_init(machine, tmpstr,
+		bus_isa_init(machine, pd->pcibus->irq_path_isa,
 		    BUS_ISA_PCKBC_FORCE_USE | BUS_ISA_PCKBC_NONPCSTYLE,
 		    0x7c000000, 0x80000000);
 		break;
@@ -528,7 +526,7 @@ PCIINIT(ali_m1543)
 
 PCIINIT(ali_m5229)
 {
-	char tmpstr[300];
+	char tmpstr[300], irqstr[300];
 
 	PCI_SET_DATA(PCI_ID_REG,
 	    PCI_ID_CODE(PCI_VENDOR_ALI, PCI_PRODUCT_ALI_M5229));
@@ -536,11 +534,21 @@ PCIINIT(ali_m5229)
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1);
 
+	switch (machine->machine_type) {
+	case MACHINE_CATS:
+		/*  CATS ISA interrupts are at footbridge irq 10:  */
+		snprintf(irqstr, sizeof(irqstr), "%s.10.isa",
+		    pd->pcibus->irq_path);
+		break;
+	default:fatal("ali_m5229 init: unimplemented machine type\n");
+		exit(1);
+	}
+
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s.%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
-		    pd->pcibus->isa_irqbase + 14);
+		    irqstr, 14);
 		device_add(machine, tmpstr);
 	}
 
@@ -745,9 +753,9 @@ PCIINIT(i31244)
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		char tmpstr[150];
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s.0",
 		    (long long)(pd->pcibus->pci_actual_io_offset + 0),
-		    pd->pcibus->pci_irqbase + 0);
+		    pd->pcibus->irq_path_pci);
 		device_add(machine, tmpstr);
 	}
 }
@@ -843,18 +851,18 @@ PCIINIT(piix3_ide)
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
-		    pd->pcibus->isa_irqbase + 14);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx "
+		    "irq=%s.isa.%i", (long long)(pd->pcibus->isa_portbase +
+		    0x1f0), pd->pcibus->irq_path_isa, 14);
 		((struct piix_ide_extra *)pd->extra)->wdc0 =
 		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x170),
-		    pd->pcibus->isa_irqbase + 15);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx "
+		    "irq=%s.isa.%i", (long long)(pd->pcibus->isa_portbase +
+		    0x170), pd->pcibus->irq_path_isa, 15);
 		((struct piix_ide_extra *)pd->extra)->wdc1 =
 		    device_add(machine, tmpstr);
 	}
@@ -887,18 +895,18 @@ PCIINIT(piix4_ide)
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
-		    pd->pcibus->isa_irqbase + 14);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s."
+		    "isa.%i", (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->irq_path_isa, 14);
 		((struct piix_ide_extra *)pd->extra)->wdc0 =
 		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x170),
-		    pd->pcibus->isa_irqbase + 15);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s."
+		    "isa.%i", (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->irq_path_isa, 15);
 		((struct piix_ide_extra *)pd->extra)->wdc1 =
 		    device_add(machine, tmpstr);
 	}
@@ -1027,18 +1035,18 @@ PCIINIT(vt82c586_ide)
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
-		    pd->pcibus->isa_irqbase + 14);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s."
+		    "isa.%i", (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->irq_path_isa, 14);
 		((struct vt82c586_ide_extra *)pd->extra)->wdc0 =
 		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x170),
-		    pd->pcibus->isa_irqbase + 15);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s."
+		    "isa.%i", (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->irq_path_isa, 15);
 		((struct vt82c586_ide_extra *)pd->extra)->wdc1 =
 		    device_add(machine, tmpstr);
 	}
@@ -1059,8 +1067,6 @@ PCIINIT(vt82c586_ide)
 
 PCIINIT(symphony_83c553)
 {
-	char tmpstr[300];
-
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_SYMPHONY,
 	    PCI_PRODUCT_SYMPHONY_83C553));
 
@@ -1072,9 +1078,8 @@ PCIINIT(symphony_83c553)
 
 	switch (machine->machine_type) {
 	case MACHINE_NETWINDER:
-		/*  NetWinder interrupts at footbridge irq 11:  */
-		snprintf(tmpstr, sizeof(tmpstr), "%s.11", pd->pcibus->irq_path);
-		bus_isa_init(machine, tmpstr, 0, 0x7c000000, 0x80000000);
+		bus_isa_init(machine, pd->pcibus->irq_path_isa,
+		    0, 0x7c000000, 0x80000000);
 		break;
 	default:fatal("symphony_83c553 init: unimplemented machine type\n");
 		exit(1);
@@ -1147,18 +1152,18 @@ PCIINIT(symphony_82c105)
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
-		    pd->pcibus->isa_irqbase + 14);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s."
+		    "isa.%i", (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->irq_path_isa, 14);
 		((struct symphony_82c105_extra *)pd->extra)->wdc0 =
 		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x170),
-		    pd->pcibus->isa_irqbase + 15);
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s."
+		    "isa.%i", (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->irq_path_isa, 15);
 		((struct symphony_82c105_extra *)pd->extra)->wdc1 =
 		    device_add(machine, tmpstr);
 	}

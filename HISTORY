@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1433 2006-12-29 23:05:24 debug Exp $
+$Id: HISTORY,v 1.1434 2006-12-30 02:16:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3194,3 +3194,4 @@ Changelog for GXemul:
 20061230	More progress on removing old interrupt code, mostly related
 		to the ISA bus + devices, the LCA bus (on AlphaBook1), and
 		the Footbridge bus (for CATS).
+		CATS and NetWinder now work with the new interrupt system :)

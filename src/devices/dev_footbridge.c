@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.49 2006-12-29 23:05:24 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.50 2006-12-30 02:16:22 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -34,7 +34,7 @@
  *	o)  FIQs.
  *	o)  Pretty much everything else as well :)  (This entire thing
  *	    is a quick hack to work primarily with NetBSD and OpenBSD
- *	    as a guest OS.)
+ *	    as guest OSes.)
  */
 
 #include <stdio.h>
@@ -118,7 +118,7 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 		if (d->timer_control[i] & TIMER_ENABLE) {
 			if (d->pending_timer_interrupts[i] > 0) {
 				d->timer_value[i] = random() % d->timer_load[i];
-				cpu_interrupt(cpu, IRQ_TIMER_1 + i);
+				INTERRUPT_ASSERT(d->timer_irq[i]);
 			}
 		}
 	}
@@ -130,8 +130,14 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
  */
 void footbridge_interrupt_assert(struct interrupt *interrupt)
 {
-	fatal("footbridge_interrupt_assert: TODO\n");
-	exit(1);
+	struct footbridge_data *d = (struct footbridge_data *) interrupt->extra;
+	int line = interrupt->line;
+	int mask = 1 << line;
+
+	d->irq_status |= mask;
+
+	if (d->irq_status & d->irq_enable)
+		INTERRUPT_ASSERT(d->irq);
 }
 
 
@@ -140,8 +146,14 @@ void footbridge_interrupt_assert(struct interrupt *interrupt)
  */
 void footbridge_interrupt_deassert(struct interrupt *interrupt)
 {
-	fatal("footbridge_interrupt_deassert: TODO\n");
-	exit(1);
+	struct footbridge_data *d = (struct footbridge_data *) interrupt->extra;
+	int line = interrupt->line;
+	int mask = 1 << line;
+
+	d->irq_status &= ~mask;
+
+	if (d->irq_status & d->irq_enable)
+		INTERRUPT_DEASSERT(d->irq);
 }
 
 
@@ -329,7 +341,10 @@ DEVICE_ACCESS(footbridge)
 	case IRQ_ENABLE_SET:
 		if (writeflag == MEM_WRITE) {
 			d->irq_enable |= idata;
-			cpu_interrupt(cpu, 64);
+			if (d->irq_status & d->irq_enable)
+				INTERRUPT_ASSERT(d->irq);
+			else
+				INTERRUPT_DEASSERT(d->irq);
 		} else {
 			odata = d->irq_enable;
 			fatal("[ WARNING: footbridge read from "
@@ -341,7 +356,10 @@ DEVICE_ACCESS(footbridge)
 	case IRQ_ENABLE_CLEAR:
 		if (writeflag == MEM_WRITE) {
 			d->irq_enable &= ~idata;
-			cpu_interrupt(cpu, 64);
+			if (d->irq_status & d->irq_enable)
+				INTERRUPT_ASSERT(d->irq);
+			else
+				INTERRUPT_DEASSERT(d->irq);
 		} else {
 			odata = d->irq_enable;
 			fatal("[ WARNING: footbridge read from "
@@ -387,7 +405,7 @@ DEVICE_ACCESS(footbridge)
 			/*  debug("[ footbridge: timer %i (1-based), "
 			    "value %i ]\n", timer_nr + 1,
 			    (int)d->timer_value[timer_nr]);  */
-			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
+			INTERRUPT_DEASSERT(d->timer_irq[timer_nr]);
 		}
 		break;
 
@@ -414,7 +432,7 @@ DEVICE_ACCESS(footbridge)
 			} else {
 				d->pending_timer_interrupts[timer_nr] = 0;
 			}
-			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
+			INTERRUPT_DEASSERT(d->timer_irq[timer_nr]);
 		}
 		break;
 
@@ -427,7 +445,7 @@ DEVICE_ACCESS(footbridge)
 			d->pending_timer_interrupts[timer_nr] --;
 		}
 
-		cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
+		INTERRUPT_DEASSERT(d->timer_irq[timer_nr]);
 		break;
 
 	default:if (writeflag == MEM_READ) {
@@ -449,7 +467,7 @@ DEVICE_ACCESS(footbridge)
 DEVINIT(footbridge)
 {
 	struct footbridge_data *d;
-	char irq_path[300];
+	char irq_path[300], irq_path_isa[300], irq_path_pci[300];
 	uint64_t pci_addr = 0x7b000000;
 	int i;
 
@@ -493,6 +511,23 @@ DEVINIT(footbridge)
 		interrupt_template.interrupt_deassert =
 		    footbridge_interrupt_deassert;
 		interrupt_handler_register(&interrupt_template);
+
+		/*  Connect locally to some interrupts:  */
+		if (i>=IRQ_TIMER_1 && i<=IRQ_TIMER_4)
+			INTERRUPT_CONNECT(tmpstr, d->timer_irq[i-IRQ_TIMER_1]);
+	}
+
+	snprintf(irq_path_pci, sizeof(irq_path_pci), "%s.pci", irq_path);
+
+	switch (devinit->machine->machine_type) {
+	case MACHINE_CATS:
+		snprintf(irq_path_isa, sizeof(irq_path_isa), "%s.10", irq_path);
+		break;
+	case MACHINE_NETWINDER:
+		snprintf(irq_path_isa, sizeof(irq_path_isa), "%s.11", irq_path);
+		break;
+	default:fatal("footbridge unimpl machine type\n");
+		exit(1);
 	}
 
 	/*  A PCI bus:  */
@@ -503,10 +538,10 @@ DEVINIT(footbridge)
 	    0x80000000,		/*  PCI device mem offset  */
 	    0x00000000,		/*  PCI port base  */
 	    0x00000000,		/*  PCI mem base  */
-	    0,			/*  PCI irq base: TODO  */
+	    irq_path_pci,	/*  PCI irq base  */
 	    0x7c000000,		/*  ISA port base  */
 	    0x80000000,		/*  ISA mem base  */
-	    32);		/*  ISA port base  */
+	    irq_path_isa);	/*  ISA port base  */
 
 	/*  ... with some default devices for known machine types:  */
 	switch (devinit->machine->machine_type) {

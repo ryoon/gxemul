@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.31 2006-12-29 23:05:25 debug Exp $
+ *  $Id: bus_pci.h,v 1.32 2006-12-30 02:16:22 debug Exp $
  */
 
 #include "misc.h"
@@ -47,7 +47,16 @@ struct pci_data;
 #else
 
 struct pci_data {
+	/*
+	 *  IRQ paths:
+	 *
+	 *  irq_path		Path of the controller itself.
+	 *  irq_path_isa	Path base of ISA interrupts.
+	 *  irq_path_pci	Path base of PCI interrupts.
+	 */
 	char		*irq_path;
+	char		*irq_path_isa;
+	char		*irq_path_pci;
 
 	/*
 	 *  Default I/O port, memory, and irq bases for PCI and legacy ISA
@@ -62,11 +71,9 @@ struct pci_data {
 
 	uint64_t	pci_portbase;
 	uint64_t	pci_membase;
-	int		pci_irqbase;
 
 	uint64_t	isa_portbase;
 	uint64_t	isa_membase;
-	int		isa_irqbase;
 
 	/*  Current base when allocating space for PCI devices:  */
 	uint64_t	cur_pci_portbase;
@@ -145,8 +152,8 @@ void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
 /*  Initialization:  */
 struct pci_data *bus_pci_init(struct machine *machine, char *irq_path,
 	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
-	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
-	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase);
+	uint64_t pci_portbase, uint64_t pci_membase, char *pci_irqbase,
+	uint64_t isa_portbase, uint64_t isa_membase, char *isa_irqbase);
 
 /*  Add a PCI device to a PCI bus:  */
 void bus_pci_add(struct machine *machine, struct pci_data *pci_data,

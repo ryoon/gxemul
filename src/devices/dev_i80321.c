@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.15 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_i80321.c,v 1.16 2006-12-30 02:16:22 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -235,15 +235,15 @@ DEVINIT(i80321)
 	d->mcu_reg[MCU_SBR1 / sizeof(uint32_t)] = (base + memsize) >> 25;
 
 	d->pci_bus = bus_pci_init(devinit->machine,
-	    0 /*  TODO: pciirq  */,
+	    "TODO: irq" /*  TODO: pciirq  */,
 	    0x90000000 /*  TODO: pci_io_offset  */,
 	    0x90010000 /*  TODO: pci_mem_offset  */,
 	    0xffff0000 /*  TODO: pci_portbase  */,
 	    0x00000000 /*  TODO: pci_membase  */,
-	    29 /*  TODO: pci_irqbase  */,
+	    "TODO: pci irqbase 29" /*  TODO: pci_irqbase  */,
 	    0x90000000 /*  TODO: isa_portbase  */,
 	    0x90010000 /*  TODO: isa_membase  */,
-	    0 /*  TODO: isa_irqbase  */);
+	    "TODO: isa_irqbase" /*  TODO: isa_irqbase  */);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_I80321_LENGTH,

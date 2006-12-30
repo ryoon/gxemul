@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.223 2006-12-29 23:05:25 debug Exp $
+ *  $Id: devices.h,v 1.224 2006-12-30 02:16:22 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -280,6 +280,8 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 /*  dev_footbridge:  */
 #define N_FOOTBRIDGE_TIMERS		4
 struct footbridge_data {
+	struct interrupt irq;
+
 	struct pci_data *pcibus;
 
 	int		console_handle;
@@ -289,6 +291,7 @@ struct footbridge_data {
 	uint32_t	timer_value[N_FOOTBRIDGE_TIMERS];
 	uint32_t	timer_control[N_FOOTBRIDGE_TIMERS];
 
+	struct interrupt timer_irq[N_FOOTBRIDGE_TIMERS];
 	struct timer	*timer[N_FOOTBRIDGE_TIMERS];
 	int		pending_timer_interrupts[N_FOOTBRIDGE_TIMERS];
 
@@ -297,8 +300,6 @@ struct footbridge_data {
 
 	uint32_t        fiq_status;
 	uint32_t        fiq_enable;
-
-	struct interrupt irq;
 }; 
 
 /*  dev_gc.c:  */

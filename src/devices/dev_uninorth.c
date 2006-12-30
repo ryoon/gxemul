@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_uninorth.c,v 1.5 2006-12-29 23:05:24 debug Exp $
+ *  $Id: dev_uninorth.c,v 1.6 2006-12-30 02:16:22 debug Exp $
  *  
  *  Uni-North PCI controller (as used by MacPPC).
  */
@@ -123,7 +123,6 @@ struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	uint64_t addr, int isa_irqbase, int pciirq)
 {
 	struct uninorth_data *d;
-	int pci_irqbase = 0;	/*  TODO  */
 	uint64_t pci_io_offset, pci_mem_offset;
 	uint64_t isa_portbase = 0, isa_membase = 0;
 	uint64_t pci_portbase = 0, pci_membase = 0;
@@ -146,8 +145,8 @@ struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	/*  Create a PCI bus:  */
 	d->pci_data = bus_pci_init(machine, "TODO: irq stuff",
 	    pci_io_offset, pci_mem_offset,
-	    pci_portbase, pci_membase, pci_irqbase,
-	    isa_portbase, isa_membase, isa_irqbase);
+	    pci_portbase, pci_membase, "TODO: pci_irqbase",
+	    isa_portbase, isa_membase, "TODO: isa_irqbase");
 
 	/*  Add the PCI glue for the controller itself:  */
 	bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "uninorth");

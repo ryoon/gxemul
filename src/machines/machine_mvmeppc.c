@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.13 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.14 2006-12-30 12:23:27 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -62,7 +62,7 @@ MACHINE_SETUP(mvmeppc)
 	case MACHINE_MVMEPPC_1600:
 		machine->machine_name = "MVME1600";
 
-		machine->md_int.prep_data = device_add(machine, "prep");
+//		machine->md_int.prep_data = device_add(machine, "prep");
 //		machine->isa_pic_data.native_irq = 1;   /*  Semi-bogus  */
 
 fatal("TODO: Legacy rewrite\n");

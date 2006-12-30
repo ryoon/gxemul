@@ -25,15 +25,19 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.4 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_prep.c,v 1.5 2006-12-30 12:23:27 debug Exp $
  *
- *  PReP interrupt controller.
+ *  PReP mainbus.
+ *
+ *  o)  ISA bus
+ *  o)  Interrupt controller
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_isa.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
@@ -42,9 +46,6 @@
 #include "misc.h"
 
 
-/*
- *  dev_prep_access():
- */
 DEVICE_ACCESS(prep)
 {
 	/*  struct prep_data *d = extra;  */
@@ -79,6 +80,10 @@ DEVINIT(prep)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    0xbffff000, 0x1000, dev_prep_access, d, DM_DEFAULT, NULL);
+
+	/*  This works for at least the IBM 6050:  */
+	bus_isa_init(devinit->machine, devinit->interrupt_path, BUS_ISA_IDE0 |
+	    BUS_ISA_IDE1, 0x80000000, 0xc0000000);
 
 	devinit->return_ptr = d;
 

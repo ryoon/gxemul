@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.12 2006-12-29 22:05:25 debug Exp $
+ *  $Id: interrupts.c,v 1.13 2006-12-30 12:23:27 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -946,6 +946,7 @@ abort();
 		else
 			cpu_interrupt_ack(m->cpus[1], 65);
 		break;
+#if 0
 	case MACHINE_PREP:
 	case MACHINE_MVMEPPC:
 		if (irq_nr < 32) {
@@ -959,6 +960,7 @@ abort();
 		else
 			cpu_interrupt_ack(cpu, 65);
 		break;
+#endif
 	}
 }
 

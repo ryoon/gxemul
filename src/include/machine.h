@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.141 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine.h,v 1.142 2006-12-30 12:23:27 debug Exp $
  */
 
 #include <sys/types.h>
@@ -257,7 +257,6 @@ struct machine {
 		} ip32;
 		struct footbridge_data *footbridge_data;
 		struct bebox_data *bebox_data;
-		struct prep_data *prep_data;
 		struct cpc700_data *cpc700_data;
 		struct gc_data *gc_data;
 		struct v3_data *v3_data;

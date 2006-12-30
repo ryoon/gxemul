@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.12 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine_prep.c,v 1.13 2006-12-30 12:23:27 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -48,6 +48,8 @@
 
 MACHINE_SETUP(prep)
 {
+	char tmpstr[300];
+
 	struct pci_data *pci_data;
 	char *model_name = "";
 
@@ -62,18 +64,12 @@ MACHINE_SETUP(prep)
 		if (machine->emulated_hz == 0)
 			machine->emulated_hz = 20000000;
 
-		machine->md_int.prep_data = device_add(machine, "prep");
-//		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = isa32_interrupt;
+		snprintf(tmpstr, sizeof(tmpstr), "prep irq=%s.cpu[%i]",
+		    machine->path, machine->bootstrap_cpu);
+		device_add(machine, tmpstr);
 
 		pci_data = dev_eagle_init(machine, machine->memory,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
-
-		bus_isa_init(machine, machine->path, BUS_ISA_IDE0 |
-		    BUS_ISA_IDE1, 0x80000000, 0xc0000000);
 
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 13, 0, "dec21143");
@@ -90,18 +86,12 @@ abort();
 		/*  TODO: _EXACT_ model name for mvme2400?  */
 		model_name = "MOT MVME2400";
 
-		machine->md_int.prep_data = device_add(machine, "prep");
-//		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = isa32_interrupt;
+		snprintf(tmpstr, sizeof(tmpstr), "prep irq=%s.cpu[%i]",
+		    machine->path, machine->bootstrap_cpu);
+		device_add(machine, tmpstr);
 
 		pci_data = dev_eagle_init(machine, machine->memory,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
-
-		bus_isa_init(machine, machine->path, BUS_ISA_IDE0 |
-		    BUS_ISA_IDE1, 0x80000000, 0xc0000000);
 
 		break;
 

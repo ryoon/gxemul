@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.65 2006-12-28 12:09:33 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.66 2006-12-30 12:23:27 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -37,6 +37,7 @@
 
 #include "cpu.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -55,6 +56,9 @@
 
 void ppc_pc_to_pointers(struct cpu *);
 void ppc32_pc_to_pointers(struct cpu *);
+
+void ppc_irq_interrupt_assert(struct interrupt *interrupt);
+void ppc_irq_interrupt_deassert(struct interrupt *interrupt);
 
 
 /*
@@ -213,6 +217,20 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		char tmpstr[5];
 		snprintf(tmpstr, sizeof(tmpstr), "sr%i", i);
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.ppc.sr[i]);
+	}
+
+	/*  Register the CPU as an interrupt handler:  */
+	{
+		struct interrupt template;
+		char name[150];
+		snprintf(name, sizeof(name), "%s", cpu->path);
+		memset(&template, 0, sizeof(template));
+		template.line = 0;
+		template.name = name;
+		template.extra = cpu;
+		template.interrupt_assert = ppc_irq_interrupt_assert;
+		template.interrupt_deassert = ppc_irq_interrupt_deassert;
+		interrupt_handler_register(&template);
 	}
 
 	return 1;
@@ -656,49 +674,24 @@ char *ppc_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 }
 
 
-// TODO: Rewrite this legacy stuff:
-#if 0
 /*
- *  ppc_cpu_interrupt():
- *
- *  0..31 are used as BeBox interrupt numbers, 32..47 = ISA,
- *  64 is used as a "re-assert" signal to cpu->machine->md_interrupt().
- *
- *  TODO: don't hardcode to BeBox!
+ *  ppc_irq_interrupt_assert():
  */
-int ppc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
+void ppc_irq_interrupt_assert(struct interrupt *interrupt)
 {
-	/*  fatal("ppc_cpu_interrupt(): 0x%x\n", (int)irq_nr);  */
-	if (irq_nr <= 64) {
-		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(
-			    cpu->machine, cpu, irq_nr, 1);
-		else
-			fatal("ppc_cpu_interrupt(): md_interrupt == NULL\n");
-	} else {
-		/*  Assert PPC IRQ:  */
-		cpu->cd.ppc.irq_asserted = 1;
-	}
-	return 1;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
+	cpu->cd.ppc.irq_asserted = 1;
 }
 
 
 /*
- *  ppc_cpu_interrupt_ack():
+ *  ppc_irq_interrupt_deassert():
  */
-int ppc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
+void ppc_irq_interrupt_deassert(struct interrupt *interrupt)
 {
-	if (irq_nr <= 64) {
-		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(cpu->machine,
-			    cpu, irq_nr, 0);
-	} else {
-		/*  De-assert PPC IRQ:  */
-		cpu->cd.ppc.irq_asserted = 0;
-	}
-	return 1;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
+	cpu->cd.ppc.irq_asserted = 0;
 }
-#endif
 
 
 /*

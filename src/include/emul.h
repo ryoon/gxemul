@@ -2,7 +2,7 @@
 #define	EMUL_H
 
 /*
- *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.40 2006-11-24 16:45:57 debug Exp $
+ *  $Id: emul.h,v 1.41 2006-12-30 13:31:00 debug Exp $
  */
 
 #include "misc.h"

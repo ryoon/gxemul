@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.275 2006-11-24 16:45:56 debug Exp $
+ *  $Id: emul.c,v 1.276 2006-12-30 13:30:51 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */

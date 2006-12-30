@@ -2,7 +2,7 @@
 #define	OPCODES_PPC_H
 
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.49 2006-03-05 16:51:55 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.50 2006-12-30 13:31:01 debug Exp $
  *
  *
  *  PPC and POWER opcodes. These are gathered from various sources.

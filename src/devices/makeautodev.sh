@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+#  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautodev.sh,v 1.6 2006-02-09 20:02:59 debug Exp $
+#  $Id: makeautodev.sh,v 1.7 2006-12-30 13:31:00 debug Exp $
 
 
 printf "Generating autodev.c... "

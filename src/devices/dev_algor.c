@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_algor.c,v 1.3 2006-08-14 17:45:47 debug Exp $
+ *  $Id: dev_algor.c,v 1.4 2006-12-30 13:30:57 debug Exp $
  *
  *  Algor misc. stuff.
  *

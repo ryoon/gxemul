@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.10 2006-07-21 16:55:41 debug Exp $
+ *  $Id: dev_adb.c,v 1.11 2006-12-30 13:30:57 debug Exp $
  *
  *  ADB (Apple Desktop Bus) controller.
  *

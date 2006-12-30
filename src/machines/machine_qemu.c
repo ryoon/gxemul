@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.10 2006-12-30 02:43:38 debug Exp $
+ *  $Id: machine_qemu.c,v 1.11 2006-12-30 13:31:02 debug Exp $
  *
  *  This file contains semi-bogus machine descriptions for experimental
  *  machines, mimicing those emulated by Fabrice Bellard's QEMU.

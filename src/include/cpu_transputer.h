@@ -2,7 +2,7 @@
 #define	CPU_TRANSPUTER_H
 
 /*
- *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.h,v 1.6 2006-07-23 15:42:20 debug Exp $
+ *  $Id: cpu_transputer.h,v 1.7 2006-12-30 13:31:00 debug Exp $
  */
 
 #include "misc.h"

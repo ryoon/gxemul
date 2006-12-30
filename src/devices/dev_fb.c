@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.127 2006-10-22 04:20:53 debug Exp $
+ *  $Id: dev_fb.c,v 1.128 2006-12-30 13:30:57 debug Exp $
  *  
  *  Generic framebuffer device.
  *

@@ -2,7 +2,7 @@
 #define	CPU_MIPS_H
 
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.52 2006-12-30 02:43:38 debug Exp $
+ *  $Id: cpu_mips.h,v 1.53 2006-12-30 13:31:00 debug Exp $
  */
 
 #include "interrupt.h"

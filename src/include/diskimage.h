@@ -2,7 +2,7 @@
 #define	DISKIMAGE_H
 
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.33 2006-11-08 01:21:27 debug Exp $
+ *  $Id: diskimage.h,v 1.34 2006-12-30 13:31:00 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */

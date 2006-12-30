@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr_loadstore.c,v 1.3 2006-07-26 23:21:48 debug Exp $
+ *  $Id: cpu_sparc_instr_loadstore.c,v 1.4 2006-12-30 13:30:55 debug Exp $
  *
  *  SPARC load/store instructions; the following args are used:
  *  

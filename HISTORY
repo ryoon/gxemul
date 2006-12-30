@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1438 2006-12-30 13:04:55 debug Exp $
+$Id: HISTORY,v 1.1439 2006-12-30 13:30:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3201,3 +3201,4 @@ Changelog for GXemul:
 		Making PReP machines (IBM 6050) work again.
 		Beginning to convert the GT PCI controller (for e.g. Malta
 		and Cobalt emulation). Some things work, but not everything.
+		Updating Copyright notices for 2007.

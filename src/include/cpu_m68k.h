@@ -2,7 +2,7 @@
 #define	CPU_M68K_H
 
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.14 2006-08-21 14:44:22 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.15 2006-12-30 13:31:00 debug Exp $
  */
 
 #include "misc.h"

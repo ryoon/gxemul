@@ -2,7 +2,7 @@
 #define	SH4_DMACREG_H
 
 /*
- *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: sh4_dmacreg.h,v 1.1 2006-11-11 01:02:17 debug Exp $
+ *  $Id: sh4_dmacreg.h,v 1.2 2006-12-30 13:31:01 debug Exp $
  *
  *  SH4 DMAC (DMA Controller) registers, as listed in the SH-7750 manual.
  */

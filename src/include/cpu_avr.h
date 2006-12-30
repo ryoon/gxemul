@@ -2,7 +2,7 @@
 #define	CPU_AVR_H
 
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.17 2006-07-16 13:32:27 debug Exp $
+ *  $Id: cpu_avr.h,v 1.18 2006-12-30 13:31:00 debug Exp $
  */
 
 #include "misc.h"

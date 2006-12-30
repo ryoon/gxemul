@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.21 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_kn02.c,v 1.22 2006-12-30 13:30:58 debug Exp $
  *  
  *  KN02 stuff ("3MAX", DECstation type 2).  See include/dec_kn02.h for more
  *  details.

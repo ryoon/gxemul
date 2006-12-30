@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.6 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_macppc.c,v 1.7 2006-12-30 13:31:02 debug Exp $
  *
  *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
  *        systems. They do not model real PowerMacs, but should be enough to

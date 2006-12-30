@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.16 2006-12-30 02:16:22 debug Exp $
+ *  $Id: dev_i80321.c,v 1.17 2006-12-30 13:30:58 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *

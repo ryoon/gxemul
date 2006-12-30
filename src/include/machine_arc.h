@@ -2,7 +2,7 @@
 #define	MACHINE_ARC_H
 
 /*
- *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_arc.h,v 1.2 2006-09-05 06:13:27 debug Exp $
+ *  $Id: machine_arc.h,v 1.3 2006-12-30 13:31:01 debug Exp $
  */
 
 #include <sys/types.h>

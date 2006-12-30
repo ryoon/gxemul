@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.10 2006-09-01 16:52:58 debug Exp $
+ *  $Id: memory_mips.c,v 1.11 2006-12-30 13:30:56 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  */

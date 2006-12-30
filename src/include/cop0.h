@@ -2,7 +2,7 @@
 #define	COP0_H
 
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.12 2006-10-02 08:03:16 debug Exp $
+ *  $Id: cop0.h,v 1.13 2006-12-30 13:31:00 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */

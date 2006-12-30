@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.19 2006-12-28 12:09:33 debug Exp $
+ *  $Id: cpu_x86.c,v 1.20 2006-12-30 13:30:55 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *

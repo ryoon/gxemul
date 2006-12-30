@@ -2,7 +2,7 @@
 #define	MEMORY_H
 
 /*
- *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.53 2006-11-08 03:01:29 debug Exp $
+ *  $Id: memory.h,v 1.54 2006-12-30 13:31:01 debug Exp $
  *
  *  Memory related functions.
  */

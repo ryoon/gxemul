@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.4 2006-07-26 23:21:48 debug Exp $
+ *  $Id: ps2_bios.c,v 1.5 2006-12-30 13:31:03 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */

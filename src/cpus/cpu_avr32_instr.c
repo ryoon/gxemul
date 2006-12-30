@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr32_instr.c,v 1.1 2006-10-25 09:24:06 debug Exp $
+ *  $Id: cpu_avr32_instr.c,v 1.2 2006-12-30 13:30:53 debug Exp $
  *
  *  AVR32 instructions.
  *

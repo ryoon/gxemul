@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.24 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.25 2006-12-30 13:30:53 debug Exp $
  *
  *  ARM coprocessor emulation.
  */

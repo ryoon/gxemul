@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.41 2006-10-02 09:26:53 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.42 2006-12-30 13:30:59 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *

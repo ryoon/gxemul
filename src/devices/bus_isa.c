@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.12 2006-12-29 22:05:24 debug Exp $
+ *  $Id: bus_isa.c,v 1.13 2006-12-30 02:43:38 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -223,7 +223,7 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 		wdc0_irq = wdc1_irq = 13;
 	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.-1 addr=0x%llx",
+	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s addr=0x%llx",
 	    interrupt_base_path, (long long)(isa_portbase + 0x20));
 	d->pic1 = machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 	d->ptr_to_pending_timer_interrupts =
@@ -233,7 +233,7 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 	if (bus_isa_flags & BUS_ISA_NO_SECOND_PIC)
 		bus_isa_flags &= ~BUS_ISA_NO_SECOND_PIC;
 	else {
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.-1 addr="
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.2 addr="
 		    "0x%llx", interrupt_base_path,
 		    (long long)(isa_portbase + 0xa0));
 		d->pic2 = machine->isa_pic_data.pic2 =

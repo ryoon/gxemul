@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.51 2006-11-24 16:45:56 debug Exp $
+ *  $Id: cpu_mips.h,v 1.52 2006-12-30 02:43:38 debug Exp $
  */
 
 #include "interrupt.h"
@@ -231,6 +231,7 @@ struct mips_cpu {
 	/*  Count/compare timer:  */
 	int		compare_register_set;
 	int		compare_interrupts_pending;
+	struct interrupt irq_compare;
 	struct timer	*timer;
 
 	int		rmw;		/*  Read-Modify-Write  */

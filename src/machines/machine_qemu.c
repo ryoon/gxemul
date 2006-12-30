@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.9 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine_qemu.c,v 1.10 2006-12-30 02:43:38 debug Exp $
  *
  *  This file contains semi-bogus machine descriptions for experimental
  *  machines, mimicing those emulated by Fabrice Bellard's QEMU.
@@ -128,19 +128,19 @@ MACHINE_REGISTER(qemu_arm)
 
 MACHINE_SETUP(qemu_mips)
 {
+	char tmpstr[300];
+
 	machine->machine_name = "QEMU MIPS";
 	cpu->byte_order = EMUL_BIG_ENDIAN;
 
-	/*  An ISA bus, I/O ports at 0x14000000, memory at 0x10000000...  */
-	bus_isa_init(machine, machine->path, BUS_ISA_IDE0 | BUS_ISA_IDE1,
+	/*
+	 *  An ISA bus, I/O ports at 0x14000000, memory at 0x10000000,
+	 *  connected to MIPS irq 2:
+	 */
+	snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
+	    machine->path, machine->bootstrap_cpu);
+	bus_isa_init(machine, tmpstr, BUS_ISA_IDE0 | BUS_ISA_IDE1,
 	    0x14000000ULL, 0x10000000ULL);
-
-	/*  ... and an ISA interrupt controller, connected to MIPS irq 2:  */
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = isa8_interrupt;
-//	machine->isa_pic_data.native_irq = 2;
 
 	if (!machine->prom_emulation)
 		return;

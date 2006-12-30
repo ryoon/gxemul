@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.71 2006-12-28 12:09:33 debug Exp $
+ *  $Id: cpu_mips.c,v 1.72 2006-12-30 02:43:37 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -316,6 +316,9 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		template.interrupt_assert = mips_cpu_interrupt_assert;
 		template.interrupt_deassert = mips_cpu_interrupt_deassert;
 		interrupt_handler_register(&template);
+
+		if (i == 7)
+			INTERRUPT_CONNECT(name, cpu->cd.mips.irq_compare);
 	}
 
 	/*  System coprocessor (0), and FPU (1):  */

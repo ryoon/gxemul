@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.133 2006-12-28 12:09:33 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.134 2006-12-30 02:43:37 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -411,12 +411,14 @@ while (cycles-- > 0)
 /*  Not yet.  TODO  */
 			if (cpu->machine->emulated_hz > 0) {
 				if (cpu->cd.mips.compare_interrupts_pending > 0)
-					cpu_interrupt(cpu, 7);
+					INTERRUPT_ASSERT(
+					    cpu->cd.mips.irq_compare);
 			} else
 #endif
 			{
 				if (diff1 > 0 && diff2 <= 0)
-					cpu_interrupt(cpu, 7);
+					INTERRUPT_ASSERT(
+					    cpu->cd.mips.irq_compare);
 			}
 		}
 	}

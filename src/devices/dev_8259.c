@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.27 2006-08-23 15:45:30 debug Exp $
+ *  $Id: dev_8259.c,v 1.28 2006-12-30 02:43:38 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -110,8 +110,12 @@ DEVICE_ACCESS(8259)
 				d->isr = 0;
 				/*  Recalculate interrupt assertions,
 				    if necessary:  */
-				if ((old_irr & ~d->ier) != (d->irr & ~d->ier))
-					cpu_interrupt(cpu, d->irq_nr);
+				if ((old_irr & ~d->ier) != (d->irr & ~d->ier)) {
+					if (d->irr & ~d->ier)
+						INTERRUPT_ASSERT(d->irq);
+					else
+						INTERRUPT_DEASSERT(d->irq);
+				}
 			} else if ((idata >= 0x21 && idata <= 0x27) ||
 			    (idata >= 0x60 && idata <= 0x67) ||
 			    (idata >= 0xe0 && idata <= 0xe7)) {
@@ -120,8 +124,12 @@ DEVICE_ACCESS(8259)
 				d->irr &= ~(1 << (idata & 7));
 				d->isr &= ~(1 << (idata & 7));
 				/*  Recalc. int assertions, if necessary:  */
-				if ((old_irr & ~d->ier) != (d->irr & ~d->ier))
-					cpu_interrupt(cpu, d->irq_nr);
+				if ((old_irr & ~d->ier) != (d->irr & ~d->ier)) {
+					if (d->irr & ~d->ier)
+						INTERRUPT_ASSERT(d->irq);
+					else
+						INTERRUPT_DEASSERT(d->irq);
+				}
 			} else if (idata == 0x68) {
 				/*  Set Special Mask Mode  */
 				/*  TODO  */
@@ -208,8 +216,12 @@ DEVICE_ACCESS(8259)
 
 			/*  Recalculate interrupt assertions,
 			    if necessary:  */
-			if ((d->irr & ~old_ier) != (d->irr & ~d->ier))
-				cpu_interrupt(cpu, d->irq_nr);
+			if ((d->irr & ~old_ier) != (d->irr & ~d->ier)) {
+				if (d->irr & ~d->ier)
+					INTERRUPT_ASSERT(d->irq);
+				else
+					INTERRUPT_DEASSERT(d->irq);
+			}
 		} else {
 			odata = d->ier;
 		}
@@ -257,7 +269,8 @@ DEVINIT(8259)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pic8259_data));
-	d->irq_nr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	name2 = malloc(nlen);
 	snprintf(name2, nlen, "%s", devinit->name);

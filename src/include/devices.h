@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.224 2006-12-30 02:16:22 debug Exp $
+ *  $Id: devices.h,v 1.225 2006-12-30 02:43:38 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -53,7 +53,7 @@ struct timer;
 
 /*  dev_8259.c:  */
 struct pic8259_data {
-	int		irq_nr;		/*  if connected to another 8259  */
+	struct interrupt irq;
 
 	int		irq_base;
 	int		current_command;

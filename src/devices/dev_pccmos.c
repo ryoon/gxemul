@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.25 2006-12-29 22:05:24 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.26 2006-12-30 13:04:56 debug Exp $
  *  
  *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
  *
@@ -142,6 +142,7 @@ DEVINIT(pccmos)
 		break;
 	case MACHINE_QEMU_MIPS:
 	case MACHINE_X86:
+	case MACHINE_COBALT:
 	case MACHINE_BEBOX:
 	case MACHINE_PREP:
 	case MACHINE_MVMEPPC:

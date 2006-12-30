@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.14 2006-12-30 12:23:27 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.15 2006-12-30 13:04:56 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -109,7 +109,7 @@ abort();
 
 		/*  GT64260 interrupt and PCI controller:  */
 		pci_data = dev_gt_init(machine, machine->memory,
-		    0xf1000000, 0 /* TODO: irq */, 0 /* TODO: pciirq */, 260);
+		    0xf1000000, "TODO: timer irq", "TODO: isa irq", 260);
 
 		/*  TODO: irq  */
 		device_add(machine, "ns16550 irq=0 addr=0xf1120000");

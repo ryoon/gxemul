@@ -25,13 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.6 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.7 2006-12-30 13:04:56 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_isa.h"
 #include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
@@ -44,7 +45,7 @@
 
 MACHINE_SETUP(cobalt)
 {
-	char tmpstr[500];
+	char tmpstr[500], tmpstr2[500];
 	struct pci_data *pci_data;
 	struct memory *mem = machine->memory;
 
@@ -66,28 +67,16 @@ MACHINE_SETUP(cobalt)
 	 *		interrupts at ISA interrupt 9.)
 	 */
 
-	/*  ISA interrupt controllers:  */
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x10000020");
-	machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x100000a0");
-	machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
+	/*  ISA bus at MIPS irq 6:  */
+	snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].6",
+	    machine->path, machine->bootstrap_cpu);
+	bus_isa_init(machine, tmpstr, 0, 0x10000000, 0x14000000 /* TODO */);
 
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = isa8_interrupt;
-//	machine->isa_pic_data.native_irq = 6;
+	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].5"
+	    " addr=0x1c800000 name2=tty0 in_use=1",
+	    machine->path, machine->bootstrap_cpu);
+	machine->main_console_handle = (size_t) device_add(machine, tmpstr);
 
-	dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
-
-	machine->main_console_handle = (size_t) device_add(machine,
-	    "ns16550 irq=5 addr=0x1c800000 name2=tty0 in_use=1");
-
-	/*  TODO: bus_isa_init() ?  */
-
-#if 0
-	device_add(machine,
-	    "ns16550 irq=0 addr=0x1f000010 name2=tty1 in_use=0");
-#endif
 
 	/*
 	 *  According to NetBSD/cobalt:
@@ -103,9 +92,14 @@ abort();
 	 *	VP) ATA33 cr
 	 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
 	 *
-	 *  The PCI controller interrupts at ISA interrupt 9.
+	 *  The PCI controller interrupts at ISA interrupt 9. (TODO?)
 	 */
-	pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 8 + 9, 11);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
+	    machine->path, machine->bootstrap_cpu);
+	snprintf(tmpstr2, sizeof(tmpstr2), "%s.cpu[%i].6",
+	    machine->path, machine->bootstrap_cpu);
+	pci_data = dev_gt_init(machine, mem, 0x14000000, tmpstr,
+	    tmpstr2, 11);
 	bus_pci_add(machine, pci_data, mem, 0,  7, 0, "dec21143");
 	/*  bus_pci_add(machine, pci_data, mem, 0,  8, 0, "symbios_860");
 	    PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.225 2006-12-30 02:43:38 debug Exp $
+ *  $Id: devices.h,v 1.226 2006-12-30 13:04:56 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -318,7 +318,7 @@ struct gc_data *dev_gc_init(struct machine *, struct memory *, uint64_t addr,
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *);
 struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int pciirq, int type);
+	uint64_t baseaddr, char *timer_irq_path, char *isa_irq_path, int type);
 
 /*  dev_i80321.c:  */
 struct i80321_data {

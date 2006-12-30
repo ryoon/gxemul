@@ -1,4 +1,4 @@
-$Id: TODO,v 1.421 2006-12-30 12:23:26 debug Exp $
+$Id: TODO,v 1.422 2006-12-30 13:04:56 debug Exp $
 
 Current work package:
 
@@ -32,7 +32,7 @@ Current work package:
 		o  Configuration file syntax stuff...
 		o  LOTS and LOTS of rewrites for all devices, cpus,
 		   busses, interrupt controllers, etc.
-		o  SMP
+		o  SMP!
 
 
 Other possible work packages to concentrate on in the future:
@@ -55,6 +55,10 @@ Other possible work packages to concentrate on in the future:
       very nice to have.
 
   x)  Userland emulation (e.g. NetBSD syscall emulation).
+
+
+And of course, there are _LOTS_ of minor TODOs spread out throughout
+the source code, which must be fixed sooner or later.
 
 
 ----------------------------------------------------------------------------

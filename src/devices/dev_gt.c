@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.46 2006-12-30 02:16:22 debug Exp $
+ *  $Id: dev_gt.c,v 1.47 2006-12-30 13:04:56 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -41,6 +41,7 @@
 #include "bus_pci.h"
 #include "cpu.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -59,11 +60,10 @@
 
 
 struct gt_data {
-	int		pci_irqbase;
 	int		type;
 
 	struct timer	*timer;
-	int		timer0_irqnr;
+	struct interrupt timer0_irq;
 	int		interrupt_hz;
 	int		pending_timer0_interrupts;
 
@@ -91,7 +91,7 @@ DEVICE_TICK(gt)
 	struct gt_data *d = (struct gt_data *) extra;
 
 	if (d->pending_timer0_interrupts > 0)
-		cpu_interrupt(cpu, d->timer0_irqnr);
+		INTERRUPT_ASSERT(d->timer0_irq);
 }
 
 
@@ -144,7 +144,7 @@ DEVICE_ACCESS(gt)
 			return 1;
 		} else {
 			odata = GTIC_T0EXP;
-			cpu_interrupt_ack(cpu, d->timer0_irqnr);
+			INTERRUPT_DEASSERT(d->timer0_irq);
 
 			if (d->pending_timer0_interrupts > 0)
 				d->pending_timer0_interrupts --;
@@ -156,7 +156,9 @@ DEVICE_ACCESS(gt)
 
 	case GT_PCI0_INTR_ACK:
 		odata = cpu->machine->isa_pic_data.last_int;
-		cpu_interrupt_ack(cpu, d->pci_irqbase + odata);
+fatal("TODO: GT_PCI0_INTR_ACK\n");
+abort();
+//		cpu_interrupt_ack(cpu, d->pci_irqbase + odata);
 		break;
 
 	case GT_TIMER_CTRL:
@@ -218,12 +220,11 @@ DEVICE_ACCESS(gt)
  *  is added to the bus, then a pointer to the bus is returned.
  */
 struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int pciirq, int type)
+	uint64_t baseaddr, char *timer_irq_path, char *isa_irq_path, int type)
 {
 	struct gt_data *d;
 	uint64_t pci_portbase = 0, pci_membase = 0;
 	uint64_t isa_portbase = 0, isa_membase = 0;
-	int isa_irqbase = 0, pci_irqbase = 0;
 	uint64_t pci_io_offset = 0, pci_mem_offset = 0;
 	char *gt_name = "NO";
 
@@ -233,7 +234,8 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct gt_data));
-	d->timer0_irqnr = irq_nr;
+
+	INTERRUPT_CONNECT(timer_irq_path, d->timer0_irq);
 
 	switch (type) {
 	case 11:
@@ -244,10 +246,8 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		pci_mem_offset = 0;
 		pci_portbase = 0x10000000ULL;
 		pci_membase = 0x10100000ULL;
-		pci_irqbase = 8;
 		isa_portbase = 0x10000000ULL;
 		isa_membase = 0x10100000ULL;
-		isa_irqbase = 8;
 		break;
 	case 120:
 		/*  EVBMIPS (Malta):  */
@@ -257,10 +257,8 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		pci_mem_offset = 0;
 		pci_portbase = 0x18000000ULL;
 		pci_membase = 0x10000000ULL;
-		pci_irqbase = 8;
 		isa_portbase = 0x18000000ULL;
 		isa_membase = 0x10000000ULL;
-		isa_irqbase = 8;
 		break;
 	case 260:
 		/*  MVMEPPC (mvme5500):  */
@@ -270,17 +268,13 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		pci_mem_offset = 0;
 		pci_portbase = 0x18000000ULL;
 		pci_membase = 0x10000000ULL;
-		pci_irqbase = 8;
 		isa_portbase = 0x18000000ULL;
 		isa_membase = 0x10000000ULL;
-		isa_irqbase = 8;
 		break;
 	default:fatal("dev_gt_init(): unimplemented GT type (%i).\n", type);
 		exit(1);
 	}
 
-
-	d->pci_irqbase = pci_irqbase;
 
 	/*
 	 *  TODO: FIX THESE! Hardcoded numbers = bad.
@@ -298,7 +292,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	d->pci_data = bus_pci_init(machine,
 	    "TODO irq stuff!", pci_io_offset, pci_mem_offset,
 	    pci_portbase, pci_membase, "TODO: pci_irqbase",
-	    isa_portbase, isa_membase, "TODO: isa_irqbase");
+	    isa_portbase, isa_membase, isa_irq_path);
 
 	/*
 	 *  According to NetBSD/cobalt:

@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.4 2006-12-29 21:05:06 debug Exp $
+ *  $Id: interrupt.c,v 1.5 2006-12-30 13:04:56 debug Exp $
  *
  *  The interrupt subsystem.
+ *
+ *  (Currently under development. TODO: Comment it better once it has
+ *  stabilized.)
  */
 
 #include <stdio.h>

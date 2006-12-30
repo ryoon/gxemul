@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.15 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.16 2006-12-30 13:04:56 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,7 +47,7 @@
 
 MACHINE_SETUP(evbmips)
 {
-	char tmpstr[1000];
+	char tmpstr[1000], tmpstr2[1000];
 	struct pci_data *pci_data;
 	int i;
 
@@ -67,21 +67,23 @@ MACHINE_SETUP(evbmips)
 			cpu->byte_order = EMUL_BIG_ENDIAN;
 		}
 
-fatal("TODO: Legacy rewrite\n");
-abort();
+		/*  ISA bus at MIPS irq 2:  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
+		    machine->path, machine->bootstrap_cpu);
+		bus_isa_init(machine, tmpstr, 0, 0x18000000, 0x10000000);
 
-//		machine->md_interrupt = isa8_interrupt;
-//		machine->isa_pic_data.native_irq = 2;
-
-		bus_isa_init(machine, machine->path, 0,
-		    0x18000000, 0x10000000);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x"
-		    " name2=tty2 in_use=0", MALTA_CBUSUART);
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].4 "
+		    "addr=0x%x name2=tty2 in_use=0", machine->path,
+		    machine->bootstrap_cpu, MALTA_CBUSUART);
 		device_add(machine, tmpstr);
 
+		/*  Add a GT controller; timer interrupts at ISA irq 9:  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.isa.9",
+		    machine->path, machine->bootstrap_cpu);
+		snprintf(tmpstr2, sizeof(tmpstr2), "%s.cpu[%i].2",
+		    machine->path, machine->bootstrap_cpu);
 		pci_data = dev_gt_init(machine, machine->memory, 0x1be00000,
-		    8+9, 8+9, 120);
+		    tmpstr, tmpstr2, 120);
 
 		if (machine->use_x11) {
 			if (strlen(machine->boot_string_argument) < 3) {

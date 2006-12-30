@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.14 2006-12-30 13:31:01 debug Exp $
+ *  $Id: interrupts.c,v 1.15 2006-12-30 13:40:08 debug Exp $
  *
  *  Machine-dependent interrupt glue.
+ *
+ *  NOTE/TODO: Most of the contents of this module should be removed,
+ *             once the new interrupt system stabilizes.
  */
 
 #include <stdio.h>

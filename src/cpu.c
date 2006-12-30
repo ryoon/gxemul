@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.364 2006-12-30 13:30:51 debug Exp $
+ *  $Id: cpu.c,v 1.365 2006-12-30 13:42:23 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -242,6 +242,8 @@ char *cpu_gdb_stub(struct cpu *cpu, char *cmd)
  *
  *  LEGACY stuff; cpu_interrupt and cpu_interrupt_ack should not be used
  *  anymore!
+ *
+ *  TODO: Remove these.
  */
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {

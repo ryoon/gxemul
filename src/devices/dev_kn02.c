@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.22 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_kn02.c,v 1.23 2006-12-31 21:35:26 debug Exp $
  *  
- *  KN02 stuff ("3MAX", DECstation type 2).  See include/dec_kn02.h for more
- *  details.
+ *  KN02 mainbus (TurboChannel interrupt controller).
+ *
+ *  Used in DECstation type 2 ("3MAX").  See include/dec_kn02.h for more info.
  */
 
 #include <stdio.h>
@@ -36,19 +37,50 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
+#include "interrupt.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
 #define	DEV_KN02_LENGTH		0x1000
 
+
+struct kn02_data {
+	uint8_t		csr[sizeof(uint32_t)];
+
+	/*  Dummy fill bytes, so dyntrans can be used:  */
+	uint8_t		filler[DEV_KN02_LENGTH - sizeof(uint32_t)];
+
+	struct interrupt irq;
+};
+
+
 /*
- *  dev_kn02_access():
+ *  kn02_interrupt_assert(), kn02_interrupt_deassert():
+ *
+ *  Called whenever a KN02 (TurboChannel) interrupt is asserted/deasserted.
  */
+void kn02_interrupt_assert(struct interrupt *interrupt)
+{
+	struct kn02_data *d = interrupt->extra;
+	d->csr[0] |= (1 << interrupt->line);
+	if (d->csr[0] & d->csr[2])
+		INTERRUPT_ASSERT(d->irq);
+}
+void kn02_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct kn02_data *d = interrupt->extra;
+	d->csr[0] &= ~(1 << interrupt->line);
+	if (!(d->csr[0] & d->csr[2]))
+		INTERRUPT_DEASSERT(d->irq);
+}
+
+
 DEVICE_ACCESS(kn02)
 {
-	struct kn02_csr *d = extra;
+	struct kn02_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -69,13 +101,19 @@ DEVICE_ACCESS(kn02)
 			 *  LEDs in the emulator, so those bits are just
 			 *  ignored.)
 			 */
+			int old_assert = (d->csr[0] & d->csr[2])? 1 : 0;
+			int new_assert;
 			/* fatal("[ kn02: write to CSR: 0x%08x ]\n", idata); */
 
 			d->csr[1] = (idata >> 8) & 255;
 			d->csr[2] = (idata >> 16) & 255;
 
 			/*  Recalculate interrupt assertions:  */
-			cpu_interrupt(cpu, 8);
+			new_assert = (d->csr[0] & d->csr[2])? 1 : 0;
+			if (new_assert != old_assert)
+				INTERRUPT_ASSERT(d->irq);
+			else
+				INTERRUPT_DEASSERT(d->irq);
 		}
 		break;
 	default:
@@ -95,24 +133,40 @@ DEVICE_ACCESS(kn02)
 }
 
 
-/*
- *  dev_kn02_init():
- */
-struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr)
+DEVINIT(kn02)
 {
-	struct kn02_csr *d;
+	struct kn02_data *d;
+	int i;
 
-	d = malloc(sizeof(struct kn02_csr));
+	d = malloc(sizeof(struct kn02_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct kn02_csr));
+	memset(d, 0, sizeof(struct kn02_data));
 
-	memory_device_register(mem, "kn02", baseaddr, DEV_KN02_LENGTH,
-	    dev_kn02_access, d, DM_DYNTRANS_OK, &d->csr[0]);
+	/*  Connect the KN02 to a specific MIPS CPU interrupt line:  */
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
-	return d;
+	/*  Register the 8 possible TurboChannel interrupts:  */
+	for (i=0; i<8; i++) {
+		struct interrupt template;
+		char tmpstr[300];
+		snprintf(tmpstr, sizeof(tmpstr), "%s.kn02.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = tmpstr;
+		template.extra = d;
+		template.interrupt_assert = kn02_interrupt_assert;
+		template.interrupt_deassert = kn02_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_KN02_LENGTH, dev_kn02_access, d,
+	    DM_DYNTRANS_OK, &d->csr[0]);
+
+	return 1;
 }
 

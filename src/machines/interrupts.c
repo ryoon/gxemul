@@ -25,12 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.15 2006-12-30 13:40:08 debug Exp $
+ *  $Id: interrupts.c,v 1.16 2006-12-31 21:35:26 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
- *  NOTE/TODO: Most of the contents of this module should be removed,
- *             once the new interrupt system stabilizes.
+ *  NOTE/TODO: Most of the contents of this module should be removed!
  */
 
 #include <stdio.h>
@@ -47,36 +46,9 @@
 
 #include "dec_kmin.h"
 #include "dec_kn01.h"
-#include "dec_kn02.h"
 #include "dec_kn03.h"
 #include "dec_5100.h"
 #include "dec_maxine.h"
-
-
-/*
- *  DECstation KN02 interrupts:
- */
-void kn02_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
-{
-	int current;
-
-	irq_nr -= 8;
-	irq_nr &= 0xff;
-
-	if (assrt) {
-		/*  OR in the irq_nr into the CSR:  */
-		m->md_int.kn02_csr->csr[0] |= irq_nr;
-	} else {
-		/*  AND out the irq_nr from the CSR:  */
-		m->md_int.kn02_csr->csr[0] &= ~irq_nr;
-	}
-
-	current = m->md_int.kn02_csr->csr[0] & m->md_int.kn02_csr->csr[2];
-	if (current == 0)
-		cpu_interrupt_ack(cpu, 2);
-	else
-		cpu_interrupt(cpu, 2);
-}
 
 
 /*

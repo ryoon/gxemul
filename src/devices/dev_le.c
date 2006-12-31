@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.53 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_le.c,v 1.54 2006-12-31 21:35:26 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -86,6 +86,7 @@ extern int quiet_mode;
 
 struct le_data {
 	struct interrupt irq;
+	int		irq_asserted;
 
 	uint64_t	buf_start;
 	uint64_t	buf_end;
@@ -537,13 +538,17 @@ static void le_register_fix(struct net *net, struct le_data *d)
 void dev_le_tick(struct cpu *cpu, void *extra)
 {
 	struct le_data *d = (struct le_data *) extra;
+	int new_assert;
 
 	le_register_fix(cpu->machine->emul->net, d);
 
-	if (d->reg[0] & LE_INTR && d->reg[0] & LE_INEA)
+	new_assert = (d->reg[0] & LE_INTR) && (d->reg[0] & LE_INEA);
+	if (new_assert && !d->irq_asserted)
 		INTERRUPT_ASSERT(d->irq);
-	else
+	if (d->irq_asserted && !new_assert)
 		INTERRUPT_DEASSERT(d->irq);
+
+	d->irq_asserted = new_assert;
 }
 
 

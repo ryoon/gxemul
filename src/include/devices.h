@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.227 2006-12-30 13:31:00 debug Exp $
+ *  $Id: devices.h,v 1.228 2006-12-31 21:35:26 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -183,8 +183,11 @@ struct cpc700_data *dev_cpc700_init(struct machine *, struct memory *);
 #define	DEV_DC7085_LENGTH		0x0000000000000080
 /*  see dc7085.h for more info  */
 void dev_dc7085_tick(struct cpu *cpu, void *);
-int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-int dev_dc7085_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+int dev_dc7085_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, char *irq_path, int use_fb);
 
 /*  dev_dec5800.c:  */
 #define	DEV_DEC5800_LENGTH			0x1000	/*  ?  */
@@ -383,15 +386,6 @@ void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
 #define	DEV_VDAC_OVERRA			    0x1c
 int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
-
-/*  dev_kn02.c:  */
-struct kn02_csr {
-	uint8_t		csr[sizeof(uint32_t)];
-	uint8_t		filler[4096 - sizeof(uint32_t)];  /*  for dyntrans mapping  */
-};
-int dev_kn02_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr);
 
 /*  dev_kn220.c:  */
 #define	DEV_DEC5500_IOBOARD_LENGTH		0x100000

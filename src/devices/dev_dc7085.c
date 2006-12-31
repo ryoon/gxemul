@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.59 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.60 2006-12-31 21:35:26 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -63,7 +63,7 @@ struct dc_data {
 
 	int			tx_scanner;
 
-	int			irqnr;
+	struct interrupt	irq;
 	int			use_fb;
 
 	struct lk201_data	lk201;
@@ -131,7 +131,7 @@ DEVICE_TICK(dc7085)
 			if (d->regs.dc_tcr & (1 << d->tx_scanner)) {
 				d->regs.dc_csr |= CSR_TRDY;
 				if (d->regs.dc_csr & CSR_TIE)
-					cpu_interrupt(cpu, d->irqnr);
+					INTERRUPT_ASSERT(d->irq);
 
 				d->regs.dc_csr &= ~CSR_TX_LINE_NUM;
 				d->regs.dc_csr |= (d->tx_scanner << 8);
@@ -155,7 +155,7 @@ DEVICE_TICK(dc7085)
 		d->regs.dc_csr |= CSR_RDONE;
 
 	if ((d->regs.dc_csr & CSR_RDONE) && (d->regs.dc_csr & CSR_RIE))
-		cpu_interrupt(cpu, d->irqnr);
+		INTERRUPT_ASSERT(d->irq);
 }
 
 
@@ -221,7 +221,7 @@ DEVICE_ACCESS(dc7085)
 			    (lineno << RBUF_LINE_NUM_SHIFT) | ch;
 
 			d->regs.dc_csr &= ~CSR_RDONE;
-			cpu_interrupt_ack(cpu, d->irqnr);
+			INTERRUPT_DEASSERT(d->irq);
 
 			d->just_transmitted_something = 4;
 		}
@@ -232,7 +232,7 @@ DEVICE_ACCESS(dc7085)
 			    (int)idata);  */
 			d->regs.dc_tcr = idata;
 			d->regs.dc_csr &= ~CSR_TRDY;
-			cpu_interrupt_ack(cpu, d->irqnr);
+			INTERRUPT_DEASSERT(d->irq);
 			goto do_return;
 		} else {
 			/*  read:  */
@@ -250,7 +250,7 @@ DEVICE_ACCESS(dc7085)
 			lk201_tx_data(&d->lk201, line_no, idata);
 
 			d->regs.dc_csr &= ~CSR_TRDY;
-			cpu_interrupt_ack(cpu, d->irqnr);
+			INTERRUPT_DEASSERT(d->irq);
 
 			d->just_transmitted_something = 4;
 		} else {
@@ -293,7 +293,7 @@ do_return:
  *  DECstation keyboard, instead of a plain serial console.
  */
 int dev_dc7085_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int use_fb)
+	uint64_t baseaddr, char *irq_path, int use_fb)
 {
 	struct dc_data *d;
 
@@ -303,7 +303,8 @@ int dev_dc7085_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct dc_data));
-	d->irqnr  = irq_nr;
+
+	INTERRUPT_CONNECT(irq_path, d->irq);
 	d->use_fb = use_fb;
 
 	d->regs.dc_csr = CSR_TRDY | CSR_MSE;

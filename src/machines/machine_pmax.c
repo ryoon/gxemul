@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.16 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_pmax.c,v 1.17 2006-12-31 21:35:26 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -60,8 +60,8 @@ MACHINE_SETUP(pmax)
 	char *framebuffer_console_name, *serial_console_name, *init_bootpath;
 	int color_fb_flag, i;
 	int boot_scsi_boardnumber = 3, boot_net_boardnumber = 3;
-//	char *turbochannel_default_gfx_card = "PMAG-BA";
-//		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA  */
+	char *turbochannel_default_gfx_card = "PMAG-BA";
+		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA  */
 	struct xx {
 		struct btinfo_magic a;
 		struct btinfo_bootpath b;
@@ -126,8 +126,10 @@ MACHINE_SETUP(pmax)
 		    tmpstr, 4*1048576);
 		dev_sii_init(machine, mem, KN01_SYS_SII, KN01_SYS_SII_B_START,
 		    KN01_SYS_SII_B_END, KN01_INT_SII);
-		dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ,
-		    machine->use_x11);
+fatal("TODO: dc7085 irq\n");
+abort();
+//		dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ,
+//		    machine->use_x11);
 fatal("TODO: mc146818 irq\n");
 abort();
 //		dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, 
@@ -165,70 +167,73 @@ abort();
 		 *  ibus0 at tc0 slot 7 offset 0x0
 		 *  dc0 at ibus0 addr 0x1fe00000
 		 *  mcclock0 at ibus0 addr 0x1fe80000: mc146818
-		 *
-		 *  kn02 shared irq numbers (IP) are offset by +8
-		 *  in the emulator
 		 */
 
-		/*  KN02 interrupts:  */
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = kn02_interrupt;
+		/*  KN02 mainbus (TurboChannel interrupt controller):  */
+		snprintf(tmpstr, sizeof(tmpstr), "kn02 addr=0x%x "
+		    "irq=%s.cpu[%i].2", (int) KN02_SYS_CSR,
+		    machine->path, machine->bootstrap_cpu);
+		device_add(machine, tmpstr);
 
 		/*
-		 *  TURBOchannel slots 0, 1, and 2 are free for
-		 *  option cards.  Let's put in zero or more graphics
-		 *  boards:
+		 *  TURBOchannel slots 0, 1, and 2 are free for option cards.
+		 *  Let's put in zero or more graphics boards:
 		 *
-		 *  TODO: It's also possible to have larger graphics
-		 *  cards that occupy several slots. How to solve
-		 *  this nicely?
+		 *  TODO: It's also possible to have larger graphics cards that
+		 *  occupy several slots. How should this be solved nicely?
 		 */
-fatal("TODO: turbochannel init rewrite!\n");
-abort();
-#if 0
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.kn02.%i",
+		    machine->path, machine->bootstrap_cpu, 0);
 		dev_turbochannel_init(machine, mem, 0,
 		    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
 		    machine->n_gfx_cards >= 1?
 			turbochannel_default_gfx_card : "",
-		    KN02_IP_SLOT0 +8);
+		    tmpstr);
 
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.kn02.%i",
+		    machine->path, machine->bootstrap_cpu, 1);
 		dev_turbochannel_init(machine, mem, 1,
 		    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
 		    machine->n_gfx_cards >= 2?
 			turbochannel_default_gfx_card : "",
-		    KN02_IP_SLOT1 +8);
+		    tmpstr);
 
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.kn02.%i",
+		    machine->path, machine->bootstrap_cpu, 2);
 		dev_turbochannel_init(machine, mem, 2,
 		    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
 		    machine->n_gfx_cards >= 3?
 			turbochannel_default_gfx_card : "",
-		    KN02_IP_SLOT2 +8);
+		    tmpstr);
 
 		/*  TURBOchannel slots 3 and 4 are reserved.  */
 
 		/*  TURBOchannel slot 5 is PMAZ-AA ("asc" SCSI).  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.kn02.%i",
+		    machine->path, machine->bootstrap_cpu, 5);
 		dev_turbochannel_init(machine, mem, 5,
 		    KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END,
-		    "PMAZ-AA", KN02_IP_SCSI +8);
+		    "PMAZ-AA", tmpstr);
 
 		/*  TURBOchannel slot 6 is PMAD-AA ("le" ethernet).  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.kn02.%i",
+		    machine->path, machine->bootstrap_cpu, 6);
 		dev_turbochannel_init(machine, mem, 6,
 		    KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END,
-		    "PMAD-AA", KN02_IP_LANCE +8);
-#endif
+		    "PMAD-AA", tmpstr);
 
 		/*  TURBOchannel slot 7 is system stuff.  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.kn02.%i",
+		    machine->path, machine->bootstrap_cpu, 7);
 		machine->main_console_handle =
 		    dev_dc7085_init(machine, mem,
-		    KN02_SYS_DZ, KN02_IP_DZ +8, machine->use_x11);
-fatal("TODO: mc146818 irq\n");
-abort();
-//		dev_mc146818_init(machine, mem,
-//		    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
+		    KN02_SYS_DZ, tmpstr, machine->use_x11);
 
-		machine->md_int.kn02_csr =
-		    dev_kn02_init(cpu, mem, KN02_SYS_CSR);
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KN02_INT_CLOCK);
+		dev_mc146818_init(machine, mem,
+		    KN02_SYS_CLOCK, tmpstr, MC146818_DEC, 1);
 
 		framebuffer_console_name = "osconsole=0,7";
 								/*  fb,keyb  */
@@ -650,8 +655,10 @@ fatal("TODO: mc146818 irq\n");
 abort();
 //		dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, 4,
 //		    MC146818_DEC, 1);
-		dev_dc7085_init(machine, mem, KN230_SYS_DZ0,
-		    KN230_CSR_INTR_DZ0, machine->use_x11);/*  NOTE: CSR_INTR  */
+fatal("TODO: dc7085 irq\n");
+abort();
+//		dev_dc7085_init(machine, mem, KN230_SYS_DZ0,
+//		    KN230_CSR_INTR_DZ0, machine->use_x11);/*  NOTE: CSR_INTR  */
 		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ1,
 		    KN230_CSR_INTR_OPT0, machine->use_x11);
 			NOTE: CSR_INTR  */

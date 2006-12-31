@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.83 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_asc.c,v 1.84 2006-12-31 21:35:26 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
  *
@@ -102,7 +102,7 @@ struct asc_data {
 
 	void		*turbochannel;
 	struct interrupt irq;
-	int		irq_caused_last_time;
+	int		irq_asserted;
 
 	/*  Current state and transfer:  */
 	int		cur_state;
@@ -155,9 +155,12 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 DEVICE_TICK(asc)
 {
 	struct asc_data *d = extra;
+	int new_assert = d->reg_ro[NCR_STAT] & NCRSTAT_INT;
 
-	if (d->reg_ro[NCR_STAT] & NCRSTAT_INT)
+	if (new_assert && !d->irq_asserted)
 		INTERRUPT_ASSERT(d->irq);
+
+	d->irq_asserted = new_assert;
 }
 
 
@@ -1197,6 +1200,7 @@ break;
 		}
 
 		INTERRUPT_DEASSERT(d->irq);
+		d->irq_asserted = 0;
 	}
 
 	if (regnr == NCR_CFG1) {

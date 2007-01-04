@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.16 2006-12-31 21:35:26 debug Exp $
+ *  $Id: interrupts.c,v 1.17 2007-01-04 20:49:22 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
@@ -41,8 +41,6 @@
 #include "machine.h"
 #include "machine_interrupts.h"
 #include "misc.h"
-
-#include "crimereg.h"
 
 #include "dec_kmin.h"
 #include "dec_kn01.h"
@@ -481,130 +479,6 @@ just_assert_and_such:
 		cpu_interrupt(cpu, 5);
 	if ((stat & mask) & 0xfff8000000000000ULL)
 		cpu_interrupt(cpu, 6);
-}
-
-
-/*
- *  SGI "IP32" interrupt routine:
- */
-void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
-	int irq_nr, int assrt)
-{
-	/*
-	 *  The 64-bit word at crime offset 0x10 is CRIME_INTSTAT,
-	 *  which contains the current interrupt bits. CRIME_INTMASK
-	 *  contains a mask of which bits are actually in use.
-	 *
-	 *  crime hardcoded at 0x14000000, for SGI-IP32.
-	 *  If any of these bits are asserted, then physical MIPS
-	 *  interrupt 2 should be asserted.
-	 *
-	 *  TODO:  how should all this be done nicely?
-	 */
-
-	uint64_t crime_addr = CRIME_INTSTAT;
-	uint64_t mace_addr = 0x10;
-	uint64_t crime_interrupts, crime_interrupts_mask;
-	uint64_t mace_interrupts, mace_interrupt_mask;
-	unsigned int i;
-	unsigned char x[8];
-
-	/*  Read current MACE interrupt assertions:  */
-	memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr,
-	    sizeof(uint64_t));
-	mace_interrupts = 0;
-	for (i=0; i<sizeof(uint64_t); i++) {
-		mace_interrupts <<= 8;
-		mace_interrupts |= x[i];
-	}
-
-	/*  Read current MACE interrupt mask:  */
-	memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr + 8,
-	    sizeof(uint64_t));
-	mace_interrupt_mask = 0;
-	for (i=0; i<sizeof(uint64_t); i++) {
-		mace_interrupt_mask <<= 8;
-		mace_interrupt_mask |= x[i];
-	}
-
-	/*
-	 *  This mapping of both MACE and CRIME interrupts into the same
-	 *  'int' is really ugly.
-	 *
-	 *  If MACE_PERIPH_MISC or MACE_PERIPH_SERIAL is set, then mask
-	 *  that bit out and treat the rest of the word as the mace interrupt
-	 *  bitmask.
-	 *
-	 *  TODO: fix.
-	 */
-	if (irq_nr & MACE_PERIPH_SERIAL) {
-		if (assrt)
-			mace_interrupts |= (irq_nr & ~MACE_PERIPH_SERIAL);
-		else
-			mace_interrupts &= ~(irq_nr & ~MACE_PERIPH_SERIAL);
-
-		irq_nr = MACE_PERIPH_SERIAL;
-		if ((mace_interrupts & mace_interrupt_mask) == 0)
-			assrt = 0;
-		else
-			assrt = 1;
-	}
-
-	/*  Hopefully _MISC and _SERIAL will not be both on at the same time. */
-	if (irq_nr & MACE_PERIPH_MISC) {
-		if (assrt)
-			mace_interrupts |= (irq_nr & ~MACE_PERIPH_MISC);
-		else
-			mace_interrupts &= ~(irq_nr & ~MACE_PERIPH_MISC);
-
-		irq_nr = MACE_PERIPH_MISC;
-		if ((mace_interrupts & mace_interrupt_mask) == 0)
-			assrt = 0;
-		else
-			assrt = 1;
-	}
-
-	/*  Write back MACE interrupt assertions:  */
-	for (i=0; i<sizeof(uint64_t); i++)
-		x[7-i] = mace_interrupts >> (i*8);
-	memcpy(m->md_int.ip32.mace_data->reg + mace_addr, x, sizeof(uint64_t));
-
-	/*  Read CRIME_INTSTAT:  */
-	memcpy(x, m->md_int.ip32.crime_data->reg + crime_addr,
-	    sizeof(uint64_t));
-	crime_interrupts = 0;
-	for (i=0; i<sizeof(uint64_t); i++) {
-		crime_interrupts <<= 8;
-		crime_interrupts |= x[i];
-	}
-
-	if (assrt)
-		crime_interrupts |= irq_nr;
-	else
-		crime_interrupts &= ~irq_nr;
-
-	/*  Write back CRIME_INTSTAT:  */
-	for (i=0; i<sizeof(uint64_t); i++)
-		x[7-i] = crime_interrupts >> (i*8);
-	memcpy(m->md_int.ip32.crime_data->reg + crime_addr, x,
-	    sizeof(uint64_t));
-
-	/*  Read CRIME_INTMASK:  */
-	memcpy(x, m->md_int.ip32.crime_data->reg + CRIME_INTMASK,
-	    sizeof(uint64_t));
-	crime_interrupts_mask = 0;
-	for (i=0; i<sizeof(uint64_t); i++) {
-		crime_interrupts_mask <<= 8;
-		crime_interrupts_mask |= x[i];
-	}
-
-	if ((crime_interrupts & crime_interrupts_mask) == 0)
-		cpu_interrupt_ack(cpu, 2);
-	else
-		cpu_interrupt(cpu, 2);
-
-	/*  printf("sgi_crime_machine_irq(%i,%i): new interrupts = 0x%08x\n",
-	    assrt, irq_nr, crime_interrupts);  */
 }
 
 

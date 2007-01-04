@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.10 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_sgi.c,v 1.11 2007-01-04 20:49:22 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -420,8 +420,11 @@ abort();
 		dev_ram_init(machine, 0x40000000ULL, 128 * 1048576,
 		    DEV_RAM_MIRROR, 0x10000000);
 
+		/*  Connect CRIME (Interrupt Controller) to MIPS irq 2:  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
+		    machine->path, machine->bootstrap_cpu);
 		machine->md_int.ip32.crime_data = dev_crime_init(machine,
-		    mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
+		    mem, 0x14000000, tmpstr, machine->use_x11);	/*  crime0  */
 		dev_sgi_mte_init(mem, 0x15000000);		/*  mte ???  */
 		dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  */
 
@@ -449,12 +452,6 @@ abort();
 		 * 	  1f3a0000	  mcclock0
 		 */
 
-		machine->md_int.ip32.mace_data =
-		    dev_mace_init(mem, 0x1f310000, 2);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = sgi_ip32_interrupt;
-
 		/*
 		 *  IRQ mapping is really ugly.  TODO: fix
 		 *
@@ -479,27 +476,32 @@ abort();
 		    "eaddr=%02x:%02x:%02x:%02x:%02x:%02x",
 		    macaddr[0], macaddr[1], macaddr[2],
 		    macaddr[3], macaddr[4], macaddr[5]);
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.crime.0x%x",
+		    machine->path, machine->bootstrap_cpu, MACE_ETHERNET);
 		dev_sgi_mec_init(machine, mem, 0x1f280000,
-		    MACE_ETHERNET, macaddr);
+		    tmpstr, macaddr);
 
 		dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr="
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
 		    "0x1f390000 addr_mult=0x100 in_use=%i name2=tty0",
-		    (1<<20) + MACE_PERIPH_SERIAL, machine->use_x11? 0 : 1);
+		    machine->path, machine->bootstrap_cpu,
+		    MACE_PERIPH_SERIAL, 20, machine->use_x11? 0 : 1);
 		j = (size_t)device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr="
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
 		    "0x1f398000 addr_mult=0x100 in_use=%i name2=tty1",
-		    (1<<26) + MACE_PERIPH_SERIAL, 0);
+		    machine->path, machine->bootstrap_cpu,
+		    MACE_PERIPH_SERIAL, 26, 0);
 		device_add(machine, tmpstr);
 
 		machine->main_console_handle = j;
 
 		/*  TODO: Once this works, it should be enabled
 		    always, not just when using X!  */
+#if 0
 fatal("TODO: legacy SGI rewrite\n");
 abort();
-#if 0
 		if (machine->use_x11) {
 			i = dev_pckbc_init(machine, mem, 0x1f320000,
 			    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
@@ -509,10 +511,13 @@ abort();
 		}
 #endif
 
-fatal("TODO: legacy SGI rewrite\n");
-abort();
-//		dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) +
-//		    MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "%s.cpu[%i].2.crime.0x%x.mace.%i",
+		    machine->path, machine->bootstrap_cpu,
+		    MACE_PERIPH_MISC, 8);
+		dev_mc146818_init(machine, mem, 0x1f3a0000, tmpstr,
+		    MC146818_SGI, 0x40);  /*  mcclock0  */
+
 		machine->main_console_handle = (size_t)device_add(machine,
 		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 
@@ -525,8 +530,11 @@ abort();
 		 *	ahc1            at pci0 dev 2 function ?
 		 */
 
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "%s.cpu[%i].2.crime.0x%x", machine->path,
+		    machine->bootstrap_cpu, MACE_PCI_BRIDGE);
 		pci_data = dev_macepci_init(machine, mem, 0x1f080000,
-		    MACE_PCI_BRIDGE);	/*  macepci0  */
+		    tmpstr);		/*  macepci0  */
 		/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0,
 		    "ne2000");  TODO  */
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.228 2006-12-31 21:35:26 debug Exp $
+ *  $Id: devices.h,v 1.229 2007-01-04 20:49:22 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -615,31 +615,45 @@ struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine, struct memory *
 
 /*  dev_sgi_ip32.c:  */
 #define	DEV_CRIME_LENGTH		0x0000000000001000
+struct mace_data;
 struct crime_data {
-	unsigned char	reg[DEV_CRIME_LENGTH];
-	int		irq_nr;
-	int		use_fb;
+	unsigned char		reg[DEV_CRIME_LENGTH];
+	struct interrupt	irq;
+	int			use_fb;
+	struct mace_data	*mace;
 };
-int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct crime_data *dev_crime_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+int dev_crime_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+struct crime_data *dev_crime_init(struct machine *machine,
+	struct memory *mem, uint64_t baseaddr, char *irq_path, int use_fb);
 #define	DEV_MACE_LENGTH			0x100
 struct mace_data {
 	unsigned char	reg[DEV_MACE_LENGTH];
-	int		irqnr;
+	struct interrupt	irq_periph;
+	struct interrupt	irq_misc;
 };
-int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
 #define	DEV_MACEPCI_LENGTH		0x1000
-int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_macepci_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int pciirq);
+int dev_macepci_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+struct pci_data *dev_macepci_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, char *irq_path);
 #define	DEV_SGI_MEC_LENGTH		0x1000
-int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_mec_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, unsigned char *macaddr);
+int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, char *irq_path, unsigned char *macaddr);
 #define	DEV_SGI_UST_LENGTH		0x10000
-int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
 void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_SGI_MTE_LENGTH		0x10000
-int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
 void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sii.c:  */

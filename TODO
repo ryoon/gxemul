@@ -1,4 +1,4 @@
-$Id: TODO,v 1.422 2006-12-30 13:04:56 debug Exp $
+$Id: TODO,v 1.423 2007-01-04 20:49:22 debug Exp $
 
 Current work package:
 
@@ -12,23 +12,7 @@ Current work package:
       devices must be manually checked/fixed as well. All CPUs and
       interrupt controllers will have to be rewritten.
 
-	Work done so far:
-		o  Some ideas about using semi-relative paths (strings)
-		   instead of integers for interrupt identification.
-		o  Legacy cpu_interrupt and _ack print fatal error messages
-		   and abort(), so all old code _must_ be rewritten to work.
-		o  Some work on ISA, PCI, and various devices and machines;
-		   the CATS, NetWinder, QEMU_MIPS, and PReP machines should
-		   already work with the new interrupt system. (Possibly
-		   also the Dreamcast mode.)
-
-	Next step:
-		o  Start to rewrite the TurboChannel interrupt controllers
-		   to let the DECstation emulation mode use the new system.
-		   This will (hopefully) enable at least the 3max machine
-		   mode to start working again.
-
-	TODO:
+      TODO:
 		o  Configuration file syntax stuff...
 		o  LOTS and LOTS of rewrites for all devices, cpus,
 		   busses, interrupt controllers, etc.

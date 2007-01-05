@@ -1,4 +1,4 @@
-$Id: TODO,v 1.425 2007-01-05 16:02:53 debug Exp $
+$Id: TODO,v 1.426 2007-01-05 16:42:56 debug Exp $
 
 Current work package:
 
@@ -15,7 +15,9 @@ Current work package:
       TODO:
 		o  PCI interrupt routing:   see dec21143 etc.
 
-		o  struct machine.md_int should go away
+		o  struct machine.md_int should go away.
+		o  src/include/machine_interrupts.h should go away.
+		o  src/machines/interrupts.c should go away.
 
 		o  Configuration file syntax stuff...
 

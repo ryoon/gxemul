@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.18 2007-01-05 16:02:54 debug Exp $
+ *  $Id: interrupts.c,v 1.19 2007-01-05 16:42:57 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
- *  NOTE/TODO: Most of the contents of this module should be removed!
+ *
+ *  NOTE: This file is legacy code, and should be removed as soon as it
+ *        has been rewritten / moved.
  */
 
 #include <stdio.h>
@@ -45,7 +47,6 @@
 #include "dec_kmin.h"
 #include "dec_kn01.h"
 #include "dec_kn03.h"
-#include "dec_5100.h"
 #include "dec_maxine.h"
 
 
@@ -122,56 +123,6 @@ void maxine_interrupt(struct machine *m, struct cpu *cpu,
 		cpu_interrupt(cpu, XINE_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, XINE_INT_TC3);
-}
-
-
-/*
- *  DECstation KN230 interrupts:
- */
-void kn230_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
-{
-	int r2 = 0;
-
-	m->md_int.kn230_csr->csr |= irq_nr;
-
-	switch (irq_nr) {
-	case KN230_CSR_INTR_SII:
-	case KN230_CSR_INTR_LANCE:
-		r2 = 3;
-		break;
-	case KN230_CSR_INTR_DZ0:
-	case KN230_CSR_INTR_OPT0:
-	case KN230_CSR_INTR_OPT1:
-		r2 = 2;
-		break;
-	default:
-		fatal("kn230_interrupt(): irq_nr = %i ?\n", irq_nr);
-	}
-
-	if (assrt) {
-		/*  OR in the irq_nr mask into the CSR:  */
-		m->md_int.kn230_csr->csr |= irq_nr;
-
-		/*  Assert MIPS interrupt 2 or 3:  */
-		cpu_interrupt(cpu, r2);
-	} else {
-		/*  AND out the irq_nr mask from the CSR:  */
-		m->md_int.kn230_csr->csr &= ~irq_nr;
-
-		/*  If the CSR interrupt bits are all zero,
-		    clear the bit in the cause register as well.  */
-		if (r2 == 2) {
-			/*  irq 2:  */
-			if ((m->md_int.kn230_csr->csr & (KN230_CSR_INTR_DZ0
-			    | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) == 0)
-				cpu_interrupt_ack(cpu, r2);
-		} else {
-			/*  irq 3:  */
-			if ((m->md_int.kn230_csr->csr & (KN230_CSR_INTR_SII |
-			    KN230_CSR_INTR_LANCE)) == 0)
-				cpu_interrupt_ack(cpu, r2);
-		}
-	}
 }
 
 

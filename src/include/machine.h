@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.144 2007-01-05 16:02:54 debug Exp $
+ *  $Id: machine.h,v 1.145 2007-01-05 16:42:57 debug Exp $
  */
 
 #include <sys/types.h>
@@ -57,8 +57,7 @@ struct memory;
 struct of_data;
 struct settings;
 
-/*  Ugly:  */
-struct kn230_csr;
+// TODO: These should go away!
 struct dec_ioasic_data;
 struct ps2_data;
 struct dec5800_data;
@@ -234,7 +233,6 @@ struct machine {
 
 	/*  Machine-dependent interrupt specific structs:  */
 	union {
-		struct kn230_csr *kn230_csr;
 		struct dec_ioasic_data *dec_ioasic_data;
 		struct ps2_data *ps2_data;
 		struct dec5800_data *dec5800_csr;

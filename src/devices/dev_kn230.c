@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.16 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_kn230.c,v 1.17 2007-01-05 16:42:57 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -36,20 +36,69 @@
 
 #include "device.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+#include "dec_5100.h"
+
 
 #define	DEV_KN230_LENGTH		0x1c00000
 
+struct kn230_data {
+	struct interrupt	mips_irq_2;
+	struct interrupt	mips_irq_3;
 
-/*
- *  dev_kn230_access():
+	uint32_t		csr;
+};
+
+
+/*  
+ *  kn230_interrupt_assert():
+ *  kn230_interrupt_deassert():
+ *
+ *  Called whenever a KN230 interrupt is asserted/deasserted.
  */
+void kn230_interrupt_assert(struct interrupt *interrupt)
+{
+	struct kn230_data *d = interrupt->extra;
+	int assert2 = 0, assert3 = 0;
+
+	d->csr |= interrupt->line;
+	if (d->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE))
+		assert3 = 1;
+	if (d->csr & (KN230_CSR_INTR_DZ0 |
+	    KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1))
+		assert2 = 1;
+
+	if (assert2)
+                INTERRUPT_ASSERT(d->mips_irq_2);
+	if (assert3)
+                INTERRUPT_ASSERT(d->mips_irq_2);
+}
+void kn230_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct kn230_data *d = interrupt->extra;
+	int assert2 = 0, assert3 = 0;
+
+	d->csr &= ~interrupt->line;
+	if (d->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE))
+		assert3 = 1;
+	if (d->csr & (KN230_CSR_INTR_DZ0 |
+	    KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1))
+		assert2 = 1;
+
+	if (!assert2)
+                INTERRUPT_DEASSERT(d->mips_irq_2);
+	if (!assert3)
+                INTERRUPT_DEASSERT(d->mips_irq_2);
+}
+
+
 DEVICE_ACCESS(kn230)
 {
-	struct kn230_csr *d = extra;
+	struct kn230_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -85,14 +134,41 @@ DEVICE_ACCESS(kn230)
 
 DEVINIT(kn230)
 {
-	struct kn230_csr *d;
+	struct kn230_data *d;
+	char tmpstr[300];
+	int i;
 
-	d = malloc(sizeof(struct kn230_csr));
+	d = malloc(sizeof(struct kn230_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct kn230_csr));
+	memset(d, 0, sizeof(struct kn230_data));
+
+	/*
+	 *  devinit->interrupt_path points to the MIPS cpu itself.
+	 *  The KN230 interrupt controller interrupts at MIPS interrupts
+	 *  2 and 3, depending on which KN230 is asserted.
+	 */
+	snprintf(tmpstr, sizeof(tmpstr), "%s.2", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_2);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.3", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_3);
+
+	/*  Register KN230 interrupts 8..15:  */
+	for (i=8; i<=15; i++) {
+		struct interrupt template;
+		char tmpstr[300];
+		snprintf(tmpstr, sizeof(tmpstr), "%s.kn230.0x%x",
+		    devinit->interrupt_path, 1 << i);
+		memset(&template, 0, sizeof(template));
+		template.line = 1 << i;
+		template.name = tmpstr;
+		template.extra = d;
+                template.interrupt_assert = kn230_interrupt_assert;
+                template.interrupt_deassert = kn230_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_KN230_LENGTH, dev_kn230_access, d,

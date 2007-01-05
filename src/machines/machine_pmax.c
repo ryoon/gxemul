@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.18 2007-01-05 15:20:06 debug Exp $
+ *  $Id: machine_pmax.c,v 1.19 2007-01-05 16:42:57 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -74,7 +74,9 @@ MACHINE_SETUP(pmax)
 
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
-	/*  An R2020 or R3220 memory thingy:  */
+	/*
+	 *  Add an R2020 or R3220 writeback memory thing:
+	 */
 	cpu->cd.mips.coproc[3] = mips_coproc_new(cpu, 3);
 
 	/*  There aren't really any good standard values...  */
@@ -647,10 +649,10 @@ abort();
 			    "cannot have a graphical framebuffer. "
 			    "Continuing anyway.\n");
 
-		/*  KN230 interrupts:  */
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = kn230_interrupt;
+		/*  KN230 mainbus / interrupt controller:  */
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "kn230 addr=0x%"PRIx64, (uint64_t) KN230_SYS_ICSR);
+		device_add(machine, tmpstr);
 
 		/*
 		 *  According to NetBSD/pmax:
@@ -658,33 +660,32 @@ abort();
 		 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 		 *  sii0 at ibus0 addr 0x1a000000
 		 */
-fatal("TODO: mc146818 irq\n");
-abort();
-//		dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, 4,
-//		    MC146818_DEC, 1);
-fatal("TODO: dc7085 irq\n");
-abort();
-//		dev_dc7085_init(machine, mem, KN230_SYS_DZ0,
-//		    KN230_CSR_INTR_DZ0, machine->use_x11);/*  NOTE: CSR_INTR  */
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, 4);
+		dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, tmpstr,
+		    MC146818_DEC, 1);
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].kn230.0x%x",
+		    machine->path, machine->bootstrap_cpu, KN230_CSR_INTR_DZ0);
+		dev_dc7085_init(machine, mem, KN230_SYS_DZ0,
+		    tmpstr, machine->use_x11);
+
 		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ1,
-		    KN230_CSR_INTR_OPT0, machine->use_x11);
-			NOTE: CSR_INTR  */
+		    KN230_CSR_INTR_OPT0, machine->use_x11);  */
 		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2,
-		    KN230_CSR_INTR_OPT1, machine->use_x11);
-			NOTE: CSR_INTR  */
+		    KN230_CSR_INTR_OPT1, machine->use_x11);  */
 
-fatal("TODO: kn230 dev_le_init rewrite\n");
-exit(1);
-//		dev_le_init(machine, mem, KN230_SYS_LANCE,
-//		    KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END,
-//		    KN230_CSR_INTR_LANCE, 4*1048576);
-//		dev_sii_init(machine, mem, KN230_SYS_SII,
-//		    KN230_SYS_SII_B_START, KN230_SYS_SII_B_END,
-//		    KN230_CSR_INTR_SII);
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].kn230.0x%x",
+		    machine->path, machine->bootstrap_cpu, KN230_CSR_INTR_LANCE);
+		dev_le_init(machine, mem, KN230_SYS_LANCE,
+		    KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END,
+		    tmpstr, 4*1048576);
 
-		snprintf(tmpstr, sizeof(tmpstr),
-		    "kn230 addr=0x%"PRIx64, (uint64_t) KN230_SYS_ICSR);
-		machine->md_int.kn230_csr = device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].kn230.0x%x",
+		    machine->path, machine->bootstrap_cpu, KN230_CSR_INTR_SII);
+		dev_sii_init(machine, mem, KN230_SYS_SII,
+		    KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, tmpstr);
 
 		serial_console_name = "osconsole=0";
 		break;

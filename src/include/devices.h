@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.231 2007-01-05 16:02:54 debug Exp $
+ *  $Id: devices.h,v 1.232 2007-01-05 16:42:57 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -360,11 +360,6 @@ struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu, struct me
 #define	DEV_SGEC_LENGTH		0x1000
 int dev_sgec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
-
-/*  dev_kn230.c:  */
-struct kn230_csr {
-	uint32_t	csr;
-};
 
 /*  dev_le.c:  */
 #define	DEV_LE_LENGTH			0x1c0200

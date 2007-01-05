@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.119 2006-12-30 13:30:54 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.120 2007-01-05 16:42:56 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -4586,6 +4586,25 @@ X(to_be_translated)
 		}
 		fatal("COP2 functionality not yet implemented\n");
 		goto bad;
+		break;
+
+	case HI6_COP3:
+		/*  Always cause a coprocessor unusable exception if
+		    there is no coprocessor 3:  */
+		if (cpu->cd.mips.coproc[3] == NULL) {
+			ic->f = instr(cpu);
+			ic->arg[0] = 3;
+			break;
+		}
+
+		if (iword == 0x4d00ffff) {
+			/*  R2020 writeback thing, used by e.g. NetBSD/pmax
+			    on MIPSMATE.  */
+			ic->f = instr(nop);
+		} else {
+			fatal("COP3 iword=0x%08x\n", iword);
+			goto bad;
+		}
 		break;
 
 	case HI6_SPECIAL2:

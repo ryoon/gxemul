@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.93 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.94 2007-01-05 17:31:51 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -572,7 +572,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			 *  Acknowledging an interrupt decreases the
 			 *  number of pending "real world" timer ticks.
 			 */
-			if (d->reg[MC_REGC * 4] & MC_REGC_PF)
+			if (d->reg[MC_REGC * 4] & MC_REGC_PF &&
+			    d->pending_timer_interrupts > 0)
 				d->pending_timer_interrupts --;
 
 			d->reg[MC_REGC * 4] = 0x00;

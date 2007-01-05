@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.75 2006-12-30 13:30:56 debug Exp $
+ *  $Id: bus_pci.c,v 1.76 2007-01-05 15:20:06 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -1183,8 +1183,7 @@ PCIINIT(symphony_82c105)
 PCIINIT(dec21143)
 {
 	uint64_t port, memaddr;
-	int irq = 0;		/*  TODO  */
-	int pci_int_line = 0x101;
+	int pci_int_line = 0x101, irq = 0;
 	char tmpstr[200];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
@@ -1239,8 +1238,9 @@ PCIINIT(dec21143)
 	allocate_device_space(pd, 0x100, 0x100, &port, &memaddr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx addr2=0x%llx "
-	    "irq=%i pci_little_endian=1", (long long)port, (long long)memaddr,
-	    irq);
+	    "irq=%s.%i pci_little_endian=1", (long long)port,
+	    (long long)memaddr, pd->pcibus->irq_path_pci, irq);
+
 	device_add(machine, tmpstr);
 }
 

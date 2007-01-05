@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1441 2007-01-04 20:49:21 debug Exp $
+$Id: HISTORY,v 1.1442 2007-01-05 15:20:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3206,3 +3206,6 @@ Changelog for GXemul:
 		machine mode now works with the new interrupt system :-]
 20070105	Beginning to convert the SGI O2 machine to the new interrupt
 		system; finally converting O2 (IP32) devices to devinit, etc.
+20070106	Continuing on the interrupt system redesign/rewrite; KN01
+		(PMAX) interrupts are now converted, Dreamcast ASIC interrupts
+		should work again, etc.

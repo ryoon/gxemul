@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_asic.c,v 1.5 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dreamcast_asic.c,v 1.6 2007-01-05 15:20:06 debug Exp $
  *  
  *  Dreamcast ASIC.
  *
@@ -62,6 +62,10 @@ struct dreamcast_asic_data {
 	int		asserted_13;
 	int		asserted_11;
 	int		asserted_9;
+
+	struct interrupt irq_13;
+	struct interrupt irq_11;
+	struct interrupt irq_9;
 };
 
 
@@ -86,21 +90,21 @@ DEVICE_TICK(dreamcast_asic)
 
 	if (d->asserted_13 != old_asserted_13) {
 		if (d->asserted_13)
-			cpu_interrupt(cpu, SH_INTEVT_IRL13);
+			INTERRUPT_ASSERT(d->irq_13);
 		else
-			cpu_interrupt_ack(cpu, SH_INTEVT_IRL13);
+			INTERRUPT_DEASSERT(d->irq_13);
 	}
 	if (d->asserted_11 != old_asserted_11) {
 		if (d->asserted_11)
-			cpu_interrupt(cpu, SH_INTEVT_IRL11);
+			INTERRUPT_ASSERT(d->irq_11);
 		else
-			cpu_interrupt_ack(cpu, SH_INTEVT_IRL11);
+			INTERRUPT_DEASSERT(d->irq_11);
 	}
 	if (d->asserted_9 != old_asserted_9) {
 		if (d->asserted_9)
-			cpu_interrupt(cpu, SH_INTEVT_IRL9);
+			INTERRUPT_ASSERT(d->irq_9);
 		else
-			cpu_interrupt_ack(cpu, SH_INTEVT_IRL9);
+			INTERRUPT_DEASSERT(d->irq_9);
 	}
 }
 
@@ -190,6 +194,7 @@ DEVICE_ACCESS(dreamcast_asic)
 
 DEVINIT(dreamcast_asic)
 {
+	char tmpstr[300];
 	struct machine *machine = devinit->machine;
 	struct dreamcast_asic_data *d =
 	    malloc(sizeof(struct dreamcast_asic_data));
@@ -197,7 +202,19 @@ DEVINIT(dreamcast_asic)
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
+
 	memset(d, 0, sizeof(struct dreamcast_asic_data));
+
+	/*  Connect to SH4 interrupt levels 13, 11, and 9:  */
+	snprintf(tmpstr, sizeof(tmpstr), "%s.irq[0x%x]",
+	    devinit->interrupt_path, SH_INTEVT_IRL13);
+	INTERRUPT_CONNECT(tmpstr, d->irq_13);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.irq[0x%x]",
+	    devinit->interrupt_path, SH_INTEVT_IRL11);
+	INTERRUPT_CONNECT(tmpstr, d->irq_11);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.irq[0x%x]",
+	    devinit->interrupt_path, SH_INTEVT_IRL9);
+	INTERRUPT_CONNECT(tmpstr, d->irq_9);
 
 	memory_device_register(machine->memory, devinit->name, SYSASIC_BASE,
 	    SYSASIC_SIZE, dev_dreamcast_asic_access, d, DM_DEFAULT, NULL);

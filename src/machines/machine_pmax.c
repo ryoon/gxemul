@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.17 2006-12-31 21:35:26 debug Exp $
+ *  $Id: machine_pmax.c,v 1.18 2007-01-05 15:20:06 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -120,22 +120,29 @@ MACHINE_SETUP(pmax)
 		    &fb->color_plane_mask);
 		dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette,
 		    color_fb_flag);
-		snprintf(tmpstr, sizeof(tmpstr), "%i", KN01_INT_LANCE);
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KN01_INT_LANCE);
 		dev_le_init(machine, mem, KN01_SYS_LANCE,
 		    KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END,
 		    tmpstr, 4*1048576);
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KN01_INT_SII);
 		dev_sii_init(machine, mem, KN01_SYS_SII, KN01_SYS_SII_B_START,
-		    KN01_SYS_SII_B_END, KN01_INT_SII);
-fatal("TODO: dc7085 irq\n");
-abort();
-//		dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ,
-//		    machine->use_x11);
-fatal("TODO: mc146818 irq\n");
-abort();
-//		dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, 
-//KN01_INT_CLOCK,
-//		    MC146818_DEC, 1);
-		dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
+		    KN01_SYS_SII_B_END, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KN01_INT_DZ);
+		dev_dc7085_init(machine, mem, KN01_SYS_DZ, tmpstr,
+		    machine->use_x11);
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KN01_INT_CLOCK);
+		dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, tmpstr,
+		    MC146818_DEC, 1);
+
+		dev_kn01_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 		framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
 		serial_console_name      = "osconsole=3";	/*  3  */
@@ -671,9 +678,9 @@ exit(1);
 //		dev_le_init(machine, mem, KN230_SYS_LANCE,
 //		    KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END,
 //		    KN230_CSR_INTR_LANCE, 4*1048576);
-		dev_sii_init(machine, mem, KN230_SYS_SII,
-		    KN230_SYS_SII_B_START, KN230_SYS_SII_B_END,
-		    KN230_CSR_INTR_SII);
+//		dev_sii_init(machine, mem, KN230_SYS_SII,
+//		    KN230_SYS_SII_B_START, KN230_SYS_SII_B_END,
+//		    KN230_CSR_INTR_SII);
 
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "kn230 addr=0x%"PRIx64, (uint64_t) KN230_SYS_ICSR);

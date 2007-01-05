@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01.c,v 1.9 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_kn01.c,v 1.10 2007-01-05 15:20:06 debug Exp $
  *  
  *  KN01 stuff ("PMAX", DECstation type 1); CSR (System Control Register)
  *  and VDAC.
@@ -49,9 +49,9 @@
 #include "dec_kn01.h"
 
 
-struct kn01_csr_data {
-	int		color_fb;
-	int		csr;
+struct kn01_data {
+	int			color_fb;
+	uint32_t		csr;
 };
 
 
@@ -78,12 +78,9 @@ struct vdac_data {
 };
 
 
-/*
- *  dev_kn01_csr_access():
- */
-DEVICE_ACCESS(kn01_csr)
+DEVICE_ACCESS(kn01)
 {
-	struct kn01_csr_data *k = extra;
+	struct kn01_data *d = extra;
 	int csr;
 
 	if (writeflag == MEM_WRITE) {
@@ -93,11 +90,11 @@ DEVICE_ACCESS(kn01_csr)
 
 	/*  Read:  */
 	if (len != 2 || relative_addr != 0) {
-		fatal("[ kn01_csr: trying to read something which is not "
+		fatal("[ kn01: trying to read something which is not "
 		    "the first half-word of the csr ]");
 	}
 
-	csr = k->csr;
+	csr = d->csr;
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		data[0] = csr & 0xff;
@@ -254,23 +251,23 @@ void dev_vdac_init(struct memory *mem, uint64_t baseaddr,
 
 
 /*
- *  dev_kn01_csr_init():
+ *  dev_kn01_init():
  */
-void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb)
+void dev_kn01_init(struct memory *mem, uint64_t baseaddr, int color_fb)
 {
-	struct kn01_csr_data *k = malloc(sizeof(struct kn01_csr_data));
-	if (k == NULL) {
+	struct kn01_data *d = malloc(sizeof(struct kn01_data));
+	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
-	memset(k, 0, sizeof(struct kn01_csr_data));
-	k->color_fb = color_fb;
+	memset(d, 0, sizeof(struct kn01_data));
+	d->color_fb = color_fb;
 
-	k->csr = 0;
-	k->csr |= (color_fb? 0 : KN01_CSR_MONO);
+	d->csr = 0;
+	d->csr |= (color_fb? 0 : KN01_CSR_MONO);
 
-	memory_device_register(mem, "kn01_csr", baseaddr,
-	    DEV_KN01_CSR_LENGTH, dev_kn01_csr_access, k, DM_DEFAULT, NULL);
+	memory_device_register(mem, "kn01", baseaddr,
+	    DEV_KN01_LENGTH, dev_kn01_access, d, DM_DEFAULT, NULL);
 }
 

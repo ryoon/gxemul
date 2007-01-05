@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.27 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.28 2007-01-05 15:20:06 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -58,6 +58,7 @@
 #include "device.h"
 #include "devices.h"
 #include "emul.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -75,8 +76,8 @@
 #define	ROM_WIDTH		6
 
 struct dec21143_data {
-	int		irq_nr;
-	int		irq_asserted;
+	struct interrupt irq;
+	int		irq_was_asserted;
 
 	/*  PCI:  */
 	int		pci_little_endian;
@@ -479,15 +480,14 @@ void dev_dec21143_tick(struct cpu *cpu, void *extra)
 		d->reg[CSR_STATUS / 8] |= STATUS_AIS;
 
 	asserted = d->reg[CSR_STATUS / 8] & d->reg[CSR_INTEN / 8] & 0x0c01ffff;
-	if (asserted) {
-		cpu_interrupt(cpu, d->irq_nr);
-	} else {
-		if (d->irq_asserted)
-			cpu_interrupt_ack(cpu, d->irq_nr);
-	}
+
+	if (asserted)
+		INTERRUPT_ASSERT(d->irq);
+	if (!asserted && d->irq_was_asserted)
+		INTERRUPT_DEASSERT(d->irq);
 
 	/*  Remember assertion flag:  */
-	d->irq_asserted = asserted;
+	d->irq_was_asserted = asserted;
 }
 
 
@@ -821,9 +821,6 @@ static void dec21143_reset(struct cpu *cpu, struct dec21143_data *d)
 }
 
 
-/*
- *  dev_dec21143_access():
- */
 DEVICE_ACCESS(dec21143)
 {
 	struct dec21143_data *d = extra;
@@ -997,7 +994,7 @@ DEVINIT(dec21143)
 	}
 	memset(d, 0, sizeof(struct dec21143_data));
 
-	d->irq_nr = devinit->irq_nr;
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 	d->pci_little_endian = devinit->pci_little_endian;
 
 	net_generate_unique_mac(devinit->machine, d->mac);

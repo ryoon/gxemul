@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.229 2007-01-04 20:49:22 debug Exp $
+ *  $Id: devices.h,v 1.230 2007-01-05 15:20:06 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -373,9 +373,11 @@ size_t dev_jazz_dma_controller(void *dma_controller_data,
 	unsigned char *data, size_t len, int writeflag);
 
 /*  dev_kn01.c:  */
-#define	DEV_KN01_CSR_LENGTH		0x0000000000000004
-int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
+#define	DEV_KN01_LENGTH			4
+int dev_kn01_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_kn01_init(struct memory *mem, uint64_t baseaddr, int color_fb);
 #define	DEV_VDAC_LENGTH			0x20
 #define	DEV_VDAC_MAPWA			    0x00
 #define	DEV_VDAC_MAP			    0x04
@@ -384,8 +386,11 @@ void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
 #define	DEV_VDAC_OVERWA			    0x10
 #define	DEV_VDAC_OVER			    0x14
 #define	DEV_VDAC_OVERRA			    0x1c
-int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
+int dev_vdac_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_vdac_init(struct memory *mem, uint64_t baseaddr,
+	unsigned char *rgb_palette, int color_fb_flag);
 
 /*  dev_kn220.c:  */
 #define	DEV_DEC5500_IOBOARD_LENGTH		0x100000
@@ -659,8 +664,11 @@ void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
 /*  dev_sii.c:  */
 #define	DEV_SII_LENGTH			0x100
 void dev_sii_tick(struct cpu *cpu, void *);
-int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sii_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
+int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+void dev_sii_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end,
+	char *irq_path);
 
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000

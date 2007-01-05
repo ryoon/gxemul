@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.18 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sii.c,v 1.19 2007-01-05 15:20:06 debug Exp $
  *  
  *  SII SCSI controller, used in some DECstation systems.
  *
@@ -38,6 +38,7 @@
 
 #include "cpu.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -49,7 +50,8 @@
 
 
 struct sii_data {
-	int		irq_nr;
+	struct interrupt irq;
+
 	uint64_t	buf_start;
 	uint64_t	buf_end;
 
@@ -170,15 +172,12 @@ void dev_sii_tick(struct cpu *cpu, void *extra)
 	combine_sii_bits(d);
 
 	if (d->siiregs.csr & SII_IE && d->siiregs.cstat & (SII_CI | SII_DI))
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 	else
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		INTERRUPT_DEASSERT(d->irq);
 }
 
 
-/*
- *  dev_sii_access():
- */
 DEVICE_ACCESS(sii)
 {
 	uint64_t idata = 0, odata = 0;
@@ -447,7 +446,8 @@ DEVICE_ACCESS(sii)
  *  dev_sii_init():
  */
 void dev_sii_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr)
+	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end,
+	char *irq_path)
 {
 	struct sii_data *d = malloc(sizeof(struct sii_data));
 	if (d == NULL) {
@@ -456,11 +456,10 @@ void dev_sii_init(struct machine *machine, struct memory *mem,
 	}
 
 	memset(d, 0, sizeof(struct sii_data));
-	d->irq_nr    = irq_nr;
+	INTERRUPT_CONNECT(irq_path, d->irq);
 	d->buf_start = buf_start;
 	d->buf_end   = buf_end;
-
-	d->regs = (uint16_t *) &d->siiregs;
+	d->regs      = (uint16_t *) &d->siiregs;
 
 	memory_device_register(mem, "sii", baseaddr, DEV_SII_LENGTH,
 	    dev_sii_access, (void *)d, DM_DEFAULT, NULL);

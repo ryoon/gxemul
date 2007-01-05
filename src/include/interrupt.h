@@ -28,12 +28,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.h,v 1.2 2006-12-30 13:31:01 debug Exp $
+ *  $Id: interrupt.h,v 1.3 2007-01-05 15:20:06 debug Exp $
  *
  *  Definitions related to the Interrupt subsystem.
  */
 
 struct interrupt {
+	/*  Functions used to assert and deassert the interrupt.  */
+	void	(*interrupt_assert)(struct interrupt *);
+	void	(*interrupt_deassert)(struct interrupt *);
+
 	/*
 	 *  The interrupt "line" number, or "pin" number, is an internal number
 	 *  used by interrupt_assert() and interrupt_deassert(). It may
@@ -49,10 +53,6 @@ struct interrupt {
 	 *  handle it.
 	 */
 	void	*extra;
-
-	/*  Functions used to assert and deassert the interrupt.  */
-	void	(*interrupt_assert)(struct interrupt *);
-	void	(*interrupt_deassert)(struct interrupt *);
 
 	/*
 	 *  Actual name of the interrupt. This is a complete "path", e.g.

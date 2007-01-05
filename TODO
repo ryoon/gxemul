@@ -1,4 +1,4 @@
-$Id: TODO,v 1.423 2007-01-04 20:49:22 debug Exp $
+$Id: TODO,v 1.424 2007-01-05 15:20:06 debug Exp $
 
 Current work package:
 
@@ -13,9 +13,10 @@ Current work package:
       interrupt controllers will have to be rewritten.
 
       TODO:
+		o  PCI:  dec21143 etc.
+
 		o  Configuration file syntax stuff...
-		o  LOTS and LOTS of rewrites for all devices, cpus,
-		   busses, interrupt controllers, etc.
+
 		o  SMP!
 
 

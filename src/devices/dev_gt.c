@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.48 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_gt.c,v 1.49 2007-01-05 16:50:08 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -156,8 +156,9 @@ DEVICE_ACCESS(gt)
 
 	case GT_PCI0_INTR_ACK:
 		odata = cpu->machine->isa_pic_data.last_int;
+
 fatal("TODO: GT_PCI0_INTR_ACK\n");
-abort();
+
 //		cpu_interrupt_ack(cpu, d->pci_irqbase + odata);
 		break;
 

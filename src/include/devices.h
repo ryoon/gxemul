@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.230 2007-01-05 15:20:06 debug Exp $
+ *  $Id: devices.h,v 1.231 2007-01-05 16:02:54 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -280,31 +280,6 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
 	int xsize, int ysize, int bit_depth, char *name);
 
-/*  dev_footbridge:  */
-#define N_FOOTBRIDGE_TIMERS		4
-struct footbridge_data {
-	struct interrupt irq;
-
-	struct pci_data *pcibus;
-
-	int		console_handle;
-
-	int		timer_tick_countdown[N_FOOTBRIDGE_TIMERS];
-	uint32_t	timer_load[N_FOOTBRIDGE_TIMERS];
-	uint32_t	timer_value[N_FOOTBRIDGE_TIMERS];
-	uint32_t	timer_control[N_FOOTBRIDGE_TIMERS];
-
-	struct interrupt timer_irq[N_FOOTBRIDGE_TIMERS];
-	struct timer	*timer[N_FOOTBRIDGE_TIMERS];
-	int		pending_timer_interrupts[N_FOOTBRIDGE_TIMERS];
-
-	uint32_t        irq_status;
-	uint32_t        irq_enable;
-
-	uint32_t        fiq_status;
-	uint32_t        fiq_enable;
-}; 
-
 /*  dev_gc.c:  */
 struct gc_data {
 	int		reassert_irq;
@@ -322,20 +297,6 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *);
 struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *timer_irq_path, char *isa_irq_path, int type);
-
-/*  dev_i80321.c:  */
-struct i80321_data {
-	/*  Interrupt Controller  */
-	int		reassert_irq;
-	uint32_t	status;
-	uint32_t	enable;
-
-	uint32_t	pci_addr;
-	struct pci_data	*pci_bus;
-
-	/*  Memory Controller:  */
-	uint32_t        mcu_reg[0x100 / sizeof(uint32_t)];
-};
 
 /*  dev_jazz.c:  */
 #define	DEV_JAZZ_LENGTH			0x280
@@ -421,15 +382,6 @@ int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 void dev_m700_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t baseaddr2);
-
-/*  dev_malta.c:  */
-struct malta_data {
-	uint8_t		assert_lo;
-	uint8_t		assert_hi;
-	uint8_t		disable_lo;
-	uint8_t		disable_hi;
-	int		poll_mode;
-};
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100
@@ -619,25 +571,8 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip32.c:  */
-#define	DEV_CRIME_LENGTH		0x0000000000001000
-struct mace_data;
-struct crime_data {
-	unsigned char		reg[DEV_CRIME_LENGTH];
-	struct interrupt	irq;
-	int			use_fb;
-	struct mace_data	*mace;
-};
-int dev_crime_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-struct crime_data *dev_crime_init(struct machine *machine,
-	struct memory *mem, uint64_t baseaddr, char *irq_path, int use_fb);
-#define	DEV_MACE_LENGTH			0x100
-struct mace_data {
-	unsigned char	reg[DEV_MACE_LENGTH];
-	struct interrupt	irq_periph;
-	struct interrupt	irq_misc;
-};
+void dev_crime_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, char *irq_path, int use_fb);
 #define	DEV_MACEPCI_LENGTH		0x1000
 int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,

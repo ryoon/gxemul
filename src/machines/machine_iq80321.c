@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.21 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.22 2007-01-05 16:02:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,7 +44,7 @@
 
 MACHINE_SETUP(iq80321)
 {
-	struct i80321_data *i80321_data;
+	char tmpstr[300];
 	struct pci_data *pci;
 
 	/*
@@ -56,16 +56,16 @@ MACHINE_SETUP(iq80321)
 	machine->machine_name = "Intel IQ80321";
 	machine->stable = 1;
 
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = i80321_interrupt;
 	cpu->cd.arm.coproc[6] = arm_coproc_i80321_6;
 
-	i80321_data = device_add(machine, "i80321 addr=0xffffe000");
-	pci = i80321_data->pci_bus;
+	snprintf(tmpstr, sizeof(tmpstr), "i80321 irq=%s.cpu[%i].irq "
+	    "addr=0xffffe000", machine->path, machine->bootstrap_cpu);
+	pci = device_add(machine, tmpstr);
 
-	device_add(machine, "ns16550 irq=28 addr=0xfe800000 "
-	    "name2='serial console'");
+	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].irq."
+	    "i80321.0x%x addr=0xfe800000 name2='serial console'",
+	    machine->path, machine->bootstrap_cpu, 1 << 28);
+	device_add(machine, tmpstr);
 
 	/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 	dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.11 2007-01-04 20:49:22 debug Exp $
+ *  $Id: machine_sgi.c,v 1.12 2007-01-05 16:02:54 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -423,8 +423,8 @@ abort();
 		/*  Connect CRIME (Interrupt Controller) to MIPS irq 2:  */
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
 		    machine->path, machine->bootstrap_cpu);
-		machine->md_int.ip32.crime_data = dev_crime_init(machine,
-		    mem, 0x14000000, tmpstr, machine->use_x11);	/*  crime0  */
+		dev_crime_init(machine, mem, 0x14000000, tmpstr,
+		    machine->use_x11);				/*  crime0  */
 		dev_sgi_mte_init(mem, 0x15000000);		/*  mte ???  */
 		dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  */
 

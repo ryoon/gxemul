@@ -1,4 +1,4 @@
-$Id: TODO,v 1.424 2007-01-05 15:20:06 debug Exp $
+$Id: TODO,v 1.425 2007-01-05 16:02:53 debug Exp $
 
 Current work package:
 
@@ -13,7 +13,9 @@ Current work package:
       interrupt controllers will have to be rewritten.
 
       TODO:
-		o  PCI:  dec21143 etc.
+		o  PCI interrupt routing:   see dec21143 etc.
+
+		o  struct machine.md_int should go away
 
 		o  Configuration file syntax stuff...
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.17 2007-01-04 20:49:22 debug Exp $
+ *  $Id: interrupts.c,v 1.18 2007-01-05 16:02:54 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
@@ -688,6 +688,7 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
+#if 0
 /*
  *  "Generic" ISA interrupt management, 32 native interrupts, 16 ISA
  *  interrupts.  So far: Footbridge (CATS, NetWinder), BeBox, and PReP.
@@ -812,6 +813,7 @@ abort();
 #endif
 	}
 }
+#endif
 
 
 /*

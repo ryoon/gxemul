@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.51 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.52 2007-01-05 16:02:54 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -57,6 +57,30 @@
 #define	DEV_FOOTBRIDGE_TICK_SHIFT	14
 #define	DEV_FOOTBRIDGE_LENGTH		0x400
 
+#define	N_FOOTBRIDGE_TIMERS		4
+
+struct footbridge_data {
+	struct interrupt irq;
+
+	struct pci_data *pcibus;
+
+	int		console_handle;
+
+	uint32_t	timer_load[N_FOOTBRIDGE_TIMERS];
+	uint32_t	timer_value[N_FOOTBRIDGE_TIMERS];
+	uint32_t	timer_control[N_FOOTBRIDGE_TIMERS];
+
+	struct interrupt timer_irq[N_FOOTBRIDGE_TIMERS];
+	struct timer	*timer[N_FOOTBRIDGE_TIMERS];
+	int		pending_timer_interrupts[N_FOOTBRIDGE_TIMERS];
+
+	uint32_t	irq_status;
+	uint32_t	irq_enable;
+
+	uint32_t	fiq_status;
+	uint32_t	fiq_enable;
+};
+
 
 static void timer_tick0(struct timer *t, void *extra)
 { ((struct footbridge_data *)extra)->pending_timer_interrupts[0] ++; }
@@ -81,7 +105,6 @@ static void reload_timer_value(struct cpu *cpu, struct footbridge_data *d,
 	freq /= (double)cycles;
 
 	d->timer_value[timer_nr] = d->timer_load[timer_nr];
-	d->timer_tick_countdown[timer_nr] = 1;
 
 	/*  printf("%i: %i -> %f Hz\n", timer_nr,
 	    d->timer_load[timer_nr], freq);  */
@@ -579,7 +602,7 @@ DEVINIT(footbridge)
 	machine_add_tickfunction(devinit->machine,
 	    dev_footbridge_tick, d, DEV_FOOTBRIDGE_TICK_SHIFT, 0.0);
 
-	devinit->return_ptr = d;
+	devinit->return_ptr = d->pcibus;
 	return 1;
 }
 

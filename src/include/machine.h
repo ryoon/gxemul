@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.143 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine.h,v 1.144 2007-01-05 16:02:54 debug Exp $
  */
 
 #include <sys/types.h>
@@ -59,17 +59,12 @@ struct settings;
 
 /*  Ugly:  */
 struct kn230_csr;
-struct kn02_csr;
 struct dec_ioasic_data;
 struct ps2_data;
-struct footbridge_data;
 struct dec5800_data;
 struct au1x00_ic_data;
-struct malta_data;
 struct vr41xx_data;
 struct jazz_data;
-struct crime_data;
-struct mace_data;
 struct sgi_ip20_data;
 struct sgi_ip22_data;
 struct sgi_ip30_data;
@@ -240,22 +235,15 @@ struct machine {
 	/*  Machine-dependent interrupt specific structs:  */
 	union {
 		struct kn230_csr *kn230_csr;
-		struct kn02_csr *kn02_csr;
 		struct dec_ioasic_data *dec_ioasic_data;
 		struct ps2_data *ps2_data;
 		struct dec5800_data *dec5800_csr;
 		struct au1x00_ic_data *au1x00_ic_data;
 		struct vr41xx_data *vr41xx_data;       
 		struct jazz_data *jazz_data;
-		struct malta_data *malta_data;
 		struct sgi_ip20_data *sgi_ip20_data;
 		struct sgi_ip22_data *sgi_ip22_data;
 		struct sgi_ip30_data *sgi_ip30_data;
-		struct {
-			struct crime_data *crime_data;
-			struct mace_data *mace_data;
-		} ip32;
-		struct footbridge_data *footbridge_data;
 		struct bebox_data *bebox_data;
 		struct cpc700_data *cpc700_data;
 		struct gc_data *gc_data;

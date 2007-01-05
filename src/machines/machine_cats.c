@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.11 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_cats.c,v 1.12 2007-01-05 16:02:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,6 +48,7 @@
 MACHINE_SETUP(cats)
 {
 	struct ebsaboot ebsaboot;
+	struct pci_data *pci_bus;
 	char bs[300], tmpstr[400];
 	int boot_id = machine->bootdev_id >= 0? machine->bootdev_id : 0;
 
@@ -63,7 +64,7 @@ MACHINE_SETUP(cats)
 
 	snprintf(tmpstr, sizeof(tmpstr), "footbridge irq=%s.cpu[%i].irq"
 	    " addr=0x42000000", machine->path, machine->bootstrap_cpu);
-	machine->md_int.footbridge_data = device_add(machine, tmpstr);
+	pci_bus = device_add(machine, tmpstr);
 
 	/*  DC21285_ROM_BASE (256 KB at 0x41000000)  */
 	dev_ram_init(machine, 0x41000000, 256 * 1024, DEV_RAM_RAM, 0);
@@ -80,8 +81,7 @@ MACHINE_SETUP(cats)
 	/*  OpenBSD reboot needs 0xf??????? to be mapped to phys.:  */
 	dev_ram_init(machine, 0xf0000000, 0x1000000, DEV_RAM_MIRROR, 0x0);
 
-	bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-	    machine->memory, 0xc0, 8, 0, "s3_virge");
+	bus_pci_add(machine, pci_bus, machine->memory, 0xc0, 8, 0, "s3_virge");
 
 	if (!machine->prom_emulation)
 		return;

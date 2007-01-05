@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.25 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.26 2007-01-05 16:02:53 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -373,6 +373,7 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 				cpu->cd.arm.r[rd] = cpu->cd.arm.tisr;
 			else {
 				/*  Writing clears interrupts:  */
+// TODO: How to rewrite this nicely?
 				cpu->cd.arm.tisr &= ~cpu->cd.arm.r[rd];
 				if (!(cpu->cd.arm.tisr & TISR_TMR0))
 					cpu_interrupt_ack(cpu, 9);  /* TMR0 */

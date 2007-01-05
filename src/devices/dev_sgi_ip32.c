@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.49 2007-01-04 20:49:22 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.50 2007-01-05 16:02:54 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -64,6 +64,13 @@
 struct macepci_data {
 	struct pci_data *pci_data;
 	uint32_t	reg[DEV_MACEPCI_LENGTH / 4];
+};
+
+#define	DEV_CRIME_LENGTH		0x1000
+struct crime_data {
+	unsigned char		reg[DEV_CRIME_LENGTH];
+	struct interrupt	irq;
+	int			use_fb;
 };
 
 
@@ -260,7 +267,7 @@ DEVICE_ACCESS(crime)
 /*
  *  dev_crime_init():
  */
-struct crime_data *dev_crime_init(struct machine *machine, struct memory *mem,
+void dev_crime_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *irq_path, int use_fb)
 {
 	struct crime_data *d;
@@ -294,18 +301,24 @@ struct crime_data *dev_crime_init(struct machine *machine, struct memory *mem,
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH,
 	    dev_crime_access, d, DM_DEFAULT, NULL);
 
-	snprintf(tmpstr, sizeof(tmpstr), "mace addr=0x1f310000 "
-	    "irq=%s.crime", irq_path);
-	d->mace = (struct mace_data *) device_add(machine, tmpstr);
+	snprintf(tmpstr, sizeof(tmpstr), "mace addr=0x1f310000 irq=%s.crime",
+	    irq_path);
+	device_add(machine, tmpstr);
 
 	machine_add_tickfunction(machine, dev_crime_tick, d,
 	    CRIME_TICKSHIFT, 0.0);
-
-	return d;
 }
 
 
 /****************************************************************************/
+
+
+#define DEV_MACE_LENGTH		0x100
+struct mace_data {
+	unsigned char		reg[DEV_MACE_LENGTH];
+	struct interrupt	irq_periph;
+	struct interrupt	irq_misc;
+};
 
 
 /*

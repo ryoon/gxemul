@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.11 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.12 2007-01-05 16:02:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,6 +45,7 @@
 MACHINE_SETUP(netwinder)
 {
 	char tmpstr[300];
+	struct pci_data *pci_bus;
 
 	machine->machine_name = "NetWinder";
 	machine->stable = 1;
@@ -58,11 +59,11 @@ MACHINE_SETUP(netwinder)
 
 	snprintf(tmpstr, sizeof(tmpstr), "footbridge irq=%s.cpu[%i].irq"
 	    " addr=0x42000000", machine->path, machine->bootstrap_cpu);
-	machine->md_int.footbridge_data = device_add(machine, tmpstr);
+	pci_bus = device_add(machine, tmpstr);
 
 	if (machine->use_x11) {
-		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-		    machine->memory, 0xc0, 8, 0, "igsfb");
+		bus_pci_add(machine, pci_bus, machine->memory,
+		    0xc0, 8, 0, "igsfb");
 	}
 
 	if (!machine->prom_emulation)

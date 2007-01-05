@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.17 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_i80321.c,v 1.18 2007-01-05 16:02:54 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -51,10 +51,49 @@
 #define	TICK_SHIFT		20
 #define	DEV_I80321_LENGTH	VERDE_PMMR_SIZE
 
+struct i80321_data {
+	/*  Interrupt Controller  */
+	struct interrupt irq;
+	uint32_t	status;
+	uint32_t	enable;
+
+	uint32_t	pci_addr;
+	struct pci_data *pci_bus;
+
+	/*  Memory Controller:  */
+	uint32_t	mcu_reg[0x100 / sizeof(uint32_t)];
+};
+
+
+static void i80321_assert(struct i80321_data *d, uint32_t linemask)
+{
+	d->status |= linemask;
+	if (d->status & d->enable)
+		INTERRUPT_ASSERT(d->irq);
+}
+static void i80321_deassert(struct i80321_data *d, uint32_t linemask)
+{
+	d->status &= ~linemask;
+	if (!(d->status & d->enable))
+		INTERRUPT_DEASSERT(d->irq);
+}
+
+
+/*  
+ *  i80321_interrupt_assert():
+ *  i80321_interrupt_deassert():
+ *
+ *  Called whenever an i80321 interrupt is asserted/deasserted.
+ */
+void i80321_interrupt_assert(struct interrupt *interrupt)
+{ i80321_assert(interrupt->extra, interrupt->line); }
+void i80321_interrupt_deassert(struct interrupt *interrupt)
+{ i80321_deassert(interrupt->extra, interrupt->line); }
+
 
 void dev_i80321_tick(struct cpu *cpu, void *extra)
 {
-	/*  struct i80321_data *d = extra;  */
+	struct i80321_data *d = extra;
 	int do_timer_interrupt = 0;
 
 	if (cpu->cd.arm.tmr0 & TMRx_ENABLE) {
@@ -62,10 +101,10 @@ void dev_i80321_tick(struct cpu *cpu, void *extra)
 	}
 
 	if (do_timer_interrupt) {
-		cpu_interrupt(cpu, 9);
+		i80321_assert(d, 1 << 9);
 		cpu->cd.arm.tisr |= TISR_TMR0;
 	} else {
-		cpu_interrupt_ack(cpu, 9);
+		i80321_deassert(d, 1 << 9);
 		cpu->cd.arm.tisr &= ~TISR_TMR0;
 	}
 }
@@ -223,12 +262,31 @@ DEVINIT(i80321)
 	struct i80321_data *d = malloc(sizeof(struct i80321_data));
 	uint32_t memsize = devinit->machine->physical_ram_in_mb * 1048576;
 	uint32_t base;
+	int i;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct i80321_data));
+
+	/*  Connect to the CPU interrupt pin:  */
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
+
+	/*  Register 32 i80321 interrupts:  */
+	for (i=0; i<32; i++) {
+		struct interrupt template;
+		char tmpstr[300];
+		snprintf(tmpstr, sizeof(tmpstr), "%s.i80321.0x%x",
+		    devinit->interrupt_path, 1 << i);
+		memset(&template, 0, sizeof(template));
+		template.line = 1 << i;
+		template.name = tmpstr;
+		template.extra = d;
+		template.interrupt_assert = i80321_interrupt_assert;
+		template.interrupt_deassert = i80321_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
 
 	d->mcu_reg[MCU_SDBR / sizeof(uint32_t)] = base = 0xa0000000;
 	d->mcu_reg[MCU_SBR0 / sizeof(uint32_t)] = (base + memsize) >> 25;
@@ -252,7 +310,7 @@ DEVINIT(i80321)
 	machine_add_tickfunction(devinit->machine, dev_i80321_tick,
 	    d, TICK_SHIFT, 0.0);
 
-	devinit->return_ptr = d;
+	devinit->return_ptr = d->pci_bus;
 
 	return 1;
 }

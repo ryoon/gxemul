@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.59 2006-12-30 13:30:55 debug Exp $
+ *  $Id: cpu_sh.c,v 1.60 2007-01-05 17:42:23 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -61,8 +61,6 @@
 extern int quiet_mode;
 
 void sh_pc_to_pointers(struct cpu *);
-int sh_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
-int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 
 
 /*
@@ -175,7 +173,7 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*  Register the CPU's interrupts:  */
 	for (i=SH_INTEVT_NMI; i<0x1000; i+=0x20) {
 		struct interrupt template;
-		char name[50];
+		char name[100];
 		snprintf(name, sizeof(name), "%s.irq[0x%x]", cpu->path, i);
 		memset(&template, 0, sizeof(template));
 		template.line = i;
@@ -200,7 +198,38 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 void sh_cpu_interrupt_assert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = interrupt->extra;
-	sh_cpu_interrupt(cpu, interrupt->line);
+	int irq_nr = interrupt->line;
+	int word_index, bit_index;
+
+	/*
+	 *  Note: This gives higher interrupt priority to lower number
+	 *  interrupts. Hopefully this is correct.
+	 */
+
+	if (cpu->cd.sh.int_to_assert == 0 || irq_nr < cpu->cd.sh.int_to_assert)
+		cpu->cd.sh.int_to_assert = irq_nr;
+
+	/*
+	 *  TODO: Keep track of all pending interrupts at multiple levels...
+	 *
+	 *  This is just a quick hack:
+	 */
+	cpu->cd.sh.int_level = 1;
+	if (irq_nr == SH_INTEVT_TMU0_TUNI0)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 12) & 0xf;
+	if (irq_nr == SH_INTEVT_TMU1_TUNI1)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 8) & 0xf;
+	if (irq_nr == SH_INTEVT_TMU2_TUNI2)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 4) & 0xf;
+	if (irq_nr >= SH4_INTEVT_SCIF_ERI &&
+	    irq_nr <= SH4_INTEVT_SCIF_TXI)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_iprc >> 4) & 0xf;
+
+	irq_nr /= 0x20;
+	word_index = irq_nr / (sizeof(uint32_t)*8);
+	bit_index = irq_nr & ((sizeof(uint32_t)*8) - 1);
+
+	cpu->cd.sh.int_pending[word_index] |= (1 << bit_index);
 }
 
 
@@ -210,7 +239,57 @@ void sh_cpu_interrupt_assert(struct interrupt *interrupt)
 void sh_cpu_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = interrupt->extra;
-	sh_cpu_interrupt_ack(cpu, interrupt->line);
+	int irq_nr = interrupt->line;
+	int word_index, bit_index;
+
+	if (cpu->cd.sh.int_to_assert == irq_nr) {
+		/*
+		 *  Rescan all interrupts to see if any are still asserted.
+		 *
+		 *  Note: The scan only has to go from irq_nr + 0x20 to the max
+		 *        index, since any lower interrupt cannot be asserted
+		 *        at this time.
+		 */
+		int i, max = 0x1000;
+		cpu->cd.sh.int_to_assert = 0;
+
+		for (i=irq_nr+0x20; i<max; i+=0x20) {
+			int j = i / 0x20;
+			int word_index = j / (sizeof(uint32_t)*8);
+			int bit_index = j & ((sizeof(uint32_t)*8) - 1);
+
+			/*  Skip entire word if no bits are set:  */
+			if (bit_index == 0 &&
+			    cpu->cd.sh.int_pending[word_index] == 0)
+				i += (sizeof(uint32_t)*8 - 1) * 0x20;
+			else if (cpu->cd.sh.int_pending[word_index]
+			    & (1 << bit_index)) {
+				cpu->cd.sh.int_to_assert = i;
+
+
+/*  Hack. TODO: Fix.  */
+	cpu->cd.sh.int_level = 1;
+	if (i == SH_INTEVT_TMU0_TUNI0)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 12) & 0xf;
+	if (i == SH_INTEVT_TMU1_TUNI1)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 8) & 0xf;
+	if (i == SH_INTEVT_TMU2_TUNI2)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 4) & 0xf;
+	if (i >= SH4_INTEVT_SCIF_ERI &&
+	    i <= SH4_INTEVT_SCIF_TXI)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_iprc >> 4) & 0xf;
+
+
+				break;
+			}
+		}
+	}
+
+	irq_nr /= 0x20;
+	word_index = irq_nr / (sizeof(uint32_t)*8);
+	bit_index = irq_nr & ((sizeof(uint32_t)*8) - 1);
+
+	cpu->cd.sh.int_pending[word_index] &= ~(1 << bit_index);
 }
 
 
@@ -438,105 +517,6 @@ char *sh_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
 	fatal("sh_cpu_gdb_stub(): TODO\n");
 	return NULL;
-}
-
-
-/*
- *  sh_cpu_interrupt():
- *
- *  Note: This gives higher interrupt priority to lower number interrupts.
- *        Hopefully this is correct.
- */
-int sh_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
-{
-	int word_index, bit_index;
-
-	if (cpu->cd.sh.int_to_assert == 0 || irq_nr < cpu->cd.sh.int_to_assert)
-		cpu->cd.sh.int_to_assert = irq_nr;
-
-	/*
-	 *  TODO: Keep track of all pending interrupts at multiple levels...
-	 *
-	 *  This is just a quick hack:
-	 */
-	cpu->cd.sh.int_level = 1;
-	if (irq_nr == SH_INTEVT_TMU0_TUNI0)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 12) & 0xf;
-	if (irq_nr == SH_INTEVT_TMU1_TUNI1)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 8) & 0xf;
-	if (irq_nr == SH_INTEVT_TMU2_TUNI2)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 4) & 0xf;
-	if (irq_nr >= SH4_INTEVT_SCIF_ERI &&
-	    irq_nr <= SH4_INTEVT_SCIF_TXI)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_iprc >> 4) & 0xf;
-
-	irq_nr /= 0x20;
-	word_index = irq_nr / (sizeof(uint32_t)*8);
-	bit_index = irq_nr & ((sizeof(uint32_t)*8) - 1);
-
-	cpu->cd.sh.int_pending[word_index] |= (1 << bit_index);
-
-	return 0;
-}
-
-
-/*
- *  sh_cpu_interrupt_ack():
- */
-int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
-{
-	int word_index, bit_index;
-
-	if (cpu->cd.sh.int_to_assert == irq_nr) {
-		/*
-		 *  Rescan all interrupts to see if any are still asserted.
-		 *
-		 *  Note: The scan only has to go from irq_nr + 0x20 to the max
-		 *        index, since any lower interrupt cannot be asserted
-		 *        at this time.
-		 */
-		int i, max = 0x1000;
-		cpu->cd.sh.int_to_assert = 0;
-
-		for (i=irq_nr+0x20; i<max; i+=0x20) {
-			int j = i / 0x20;
-			int word_index = j / (sizeof(uint32_t)*8);
-			int bit_index = j & ((sizeof(uint32_t)*8) - 1);
-
-			/*  Skip entire word if no bits are set:  */
-			if (bit_index == 0 &&
-			    cpu->cd.sh.int_pending[word_index] == 0)
-				i += (sizeof(uint32_t)*8 - 1) * 0x20;
-			else if (cpu->cd.sh.int_pending[word_index]
-			    & (1 << bit_index)) {
-				cpu->cd.sh.int_to_assert = i;
-
-
-/*  Hack. TODO: Fix.  */
-	cpu->cd.sh.int_level = 1;
-	if (i == SH_INTEVT_TMU0_TUNI0)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 12) & 0xf;
-	if (i == SH_INTEVT_TMU1_TUNI1)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 8) & 0xf;
-	if (i == SH_INTEVT_TMU2_TUNI2)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 4) & 0xf;
-	if (i >= SH4_INTEVT_SCIF_ERI &&
-	    i <= SH4_INTEVT_SCIF_TXI)
-		cpu->cd.sh.int_level = (cpu->cd.sh.intc_iprc >> 4) & 0xf;
-
-
-				break;
-			}
-		}
-	}
-
-	irq_nr /= 0x20;
-	word_index = irq_nr / (sizeof(uint32_t)*8);
-	bit_index = irq_nr & ((sizeof(uint32_t)*8) - 1);
-
-	cpu->cd.sh.int_pending[word_index] &= ~(1 << bit_index);
-
-	return 0;
 }
 
 

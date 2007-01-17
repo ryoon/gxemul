@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.76 2007-01-05 15:20:06 debug Exp $
+ *  $Id: bus_pci.c,v 1.77 2007-01-17 20:11:28 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -339,38 +339,6 @@ static void allocate_device_space(struct pci_device *pd,
 }
 
 
-static void bus_pci_debug_dump__2(struct pci_device *pd)
-{
-	if (pd == NULL)
-		return;
-	bus_pci_debug_dump__2(pd->next);
-	debug("bus %3i, dev %2i, func %i: %s\n",
-	    pd->bus, pd->device, pd->function, pd->name);
-}
-
-
-/*
- *  bus_pci_debug_dump():
- *
- *  Lists the attached PCI devices (in reverse).
- */
-void bus_pci_debug_dump(void *extra)
-{
-	struct pci_data *d = (struct pci_data *) extra;
-	int iadd = DEBUG_INDENTATION;
-
-	debug("pci:\n");
-	debug_indentation(iadd);
-
-	if (d->first_device == NULL)
-		debug("no devices!\n");
-	else
-		bus_pci_debug_dump__2(d->first_device);
-
-	debug_indentation(-iadd);
-}
-
-
 /*
  *  bus_pci_init():
  *
@@ -412,9 +380,6 @@ struct pci_data *bus_pci_init(struct machine *machine, char *irq_path,
 	d->pci_membase           = pci_membase;
 	d->isa_portbase          = isa_portbase;
 	d->isa_membase           = isa_membase;
-
-	/*  Register the bus:  */
-	machine_bus_register(machine, "pci", bus_pci_debug_dump, d);
 
 	/*  Assume that the first 64KB could be used by legacy ISA devices:  */
 	d->cur_pci_portbase = d->pci_portbase + 0x10000;

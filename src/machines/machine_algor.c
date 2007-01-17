@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.16 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_algor.c,v 1.17 2007-01-17 20:11:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,6 +45,9 @@
 
 MACHINE_SETUP(algor)
 {
+	struct pci_data *pci_bus;
+	char tmpstr[300];
+
 	machine->emulated_hz = 166560000;
 
 	switch (machine->machine_subtype) {
@@ -67,21 +70,16 @@ MACHINE_SETUP(algor)
 	 *  2 = ISA
 	 */
 
-	machine->md_int.v3_data = dev_v3_init(machine, machine->memory);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = isa8_interrupt;
-//	machine->isa_pic_data.native_irq = 2;		/*  Primary: ISA  */
-//	machine->isa_pic_data.secondary_mask1 = 0x18;
-//	machine->isa_pic_data.native_secondary_irq = 4;	/*  Secondary: Local  */
+	pci_bus = device_add(machine, "v3");
 
 	device_add(machine, "algor addr=0x1ff00000");
 
-	bus_isa_init(machine, machine->path, BUS_ISA_FDC,
+	snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].v3",
+	    machine->path, machine->bootstrap_cpu);
+	bus_isa_init(machine, tmpstr, BUS_ISA_EXTERNAL_PIC | BUS_ISA_FDC,
 	    0x1d000000, 0x10000000);
 
-	bus_pci_add(machine, machine->md_int.v3_data->pci_data,
-	    machine->memory, 0, 0, 0, "dec21143");
+	bus_pci_add(machine, pci_bus, machine->memory, 0, 0, 0, "dec21143");
 
 	if (!machine->prom_emulation)
 		return;

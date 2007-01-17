@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.14 2006-12-30 13:30:56 debug Exp $
+ *  $Id: bus_isa.c,v 1.15 2007-01-17 20:11:28 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -44,21 +44,6 @@
 #include "interrupt.h"
 #include "machine.h"
 #include "misc.h"
-
-
-/*
- *  bus_isa_debug_dump():
- */
-void bus_isa_debug_dump(void *extra)
-{
-	struct bus_isa_data *d = (struct bus_isa_data *) extra;
-
-	debug("isa:\n");
-	debug_indentation(DEBUG_INDENTATION);
-	debug("portbase:     0x%llx\n", (long long)d->isa_portbase);
-	debug("membase:      0x%llx\n", (long long)d->isa_membase);
-	debug_indentation(-DEBUG_INDENTATION);
-}
 
 
 /*
@@ -158,6 +143,7 @@ void isa_interrupt_deassert(struct interrupt *interrupt)
  *
  *  Flags are zero or more of the following, ORed together:
  *
+ *  BUS_ISA_EXTERNAL_PIC	Don't register/use isa_interrupt_*().
  *  BUS_ISA_IDE0		Include wdc0.
  *  BUS_ISA_IDE1		Include wdc1.
  *  BUS_ISA_FDC			Include a floppy controller. (Dummy.)
@@ -196,23 +182,26 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 
 	d->isa_portbase = isa_portbase;
 	d->isa_membase  = isa_membase;
-	INTERRUPT_CONNECT(interrupt_base_path, d->irq);
 
-	machine_bus_register(machine, "isa", bus_isa_debug_dump, d);
+	if (!(bus_isa_flags & BUS_ISA_EXTERNAL_PIC)) {
+		/*  Connect to the interrupt which we're interrupting
+		    at (usually a CPU):  */
+		INTERRUPT_CONNECT(interrupt_base_path, d->irq);
 
-	for (i=0; i<16; i++) {
-		struct interrupt template;
-		char *name = malloc(strlen(interrupt_base_path) + 15);
-		snprintf(name, strlen(interrupt_base_path) + 15,
-		    "%s.isa.%i", interrupt_base_path, i);
-		memset(&template, 0, sizeof(template));
-		template.line = i;
-		template.name = name;
-		template.extra = d;
-		template.interrupt_assert = isa_interrupt_assert;
-		template.interrupt_deassert = isa_interrupt_deassert;
-		interrupt_handler_register(&template);
-		free(name);
+		/*  Register the 16 possible ISA interrupts:  */
+		for (i=0; i<16; i++) {
+			struct interrupt template;
+			char name[300];
+			snprintf(name, sizeof(name),
+			    "%s.isa.%i", interrupt_base_path, i);
+			memset(&template, 0, sizeof(template));
+			template.line = i;
+			template.name = name;
+			template.extra = d;
+			template.interrupt_assert = isa_interrupt_assert;
+			template.interrupt_deassert = isa_interrupt_deassert;
+			interrupt_handler_register(&template);
+		}
 	}
 
 	kbd_in_use = ((bus_isa_flags & BUS_ISA_PCKBC_FORCE_USE) ||
@@ -223,21 +212,26 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 		wdc0_irq = wdc1_irq = 13;
 	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s addr=0x%llx",
-	    interrupt_base_path, (long long)(isa_portbase + 0x20));
-	d->pic1 = machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-	d->ptr_to_pending_timer_interrupts =
-	    machine->isa_pic_data.pending_timer_interrupts;
-	d->ptr_to_last_int = &machine->isa_pic_data.last_int;
-
-	if (bus_isa_flags & BUS_ISA_NO_SECOND_PIC)
-		bus_isa_flags &= ~BUS_ISA_NO_SECOND_PIC;
-	else {
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.2 addr="
-		    "0x%llx", interrupt_base_path,
-		    (long long)(isa_portbase + 0xa0));
-		d->pic2 = machine->isa_pic_data.pic2 =
+	if (!(bus_isa_flags & BUS_ISA_EXTERNAL_PIC)) {
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s addr=0x%llx",
+		    interrupt_base_path, (long long)(isa_portbase + 0x20));
+		d->pic1 = machine->isa_pic_data.pic1 =
 		    device_add(machine, tmpstr);
+		d->ptr_to_pending_timer_interrupts =
+		    machine->isa_pic_data.pending_timer_interrupts;
+		d->ptr_to_last_int = &machine->isa_pic_data.last_int;
+
+		if (bus_isa_flags & BUS_ISA_NO_SECOND_PIC)
+			bus_isa_flags &= ~BUS_ISA_NO_SECOND_PIC;
+		else {
+			snprintf(tmpstr, sizeof(tmpstr),
+			    "8259 irq=%s.isa.2 addr=0x%llx",
+			    interrupt_base_path,(long long)(isa_portbase+0xa0));
+			d->pic2 = machine->isa_pic_data.pic2 =
+			    device_add(machine, tmpstr);
+		}
+	} else {
+		bus_isa_flags &= ~BUS_ISA_EXTERNAL_PIC;
 	}
 
 	snprintf(tmpstr, sizeof(tmpstr), "8253 irq=%s.isa.%i addr=0x%llx "

@@ -25,9 +25,15 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_v3.c,v 1.6 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_v3.c,v 1.7 2007-01-17 20:11:28 debug Exp $
  *  
  *  V3 Semiconductor PCI controller.
+ *
+ *  The ISA interrupt controller part forwards ISA interrupts as follows
+ *  (on Algor P5064):
+ *
+ *	ISA interrupt 3 and 4		-> MIPS interrupt 4 ("Local")
+ *	All other ISA interrupts	-> MIPS interrupt 2 ("ISA")
  *
  *  See NetBSD's src/sys/arch/algor/pci/ for details.
  */
@@ -40,9 +46,108 @@
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+struct v3_data {
+	struct interrupt	irq_isa;
+	struct interrupt	irq_local;
+	uint8_t			secondary_mask1;
+
+	struct pic8259_data* pic1;
+	struct pic8259_data* pic2;
+	int			*ptr_to_pending_timer_interrupts;
+
+	struct pci_data		*pci_data;
+	uint16_t		lb_map0;
+};
+
+
+/*
+ *  v3_isa_interrupt_common():
+ */
+void v3_isa_interrupt_common(struct v3_data *d, int old_isa_assert)
+{
+	int new_isa_assert;
+
+	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+	/*  (TODO: don't hardcode this here)  */
+	if (d->pic2->irr & ~d->pic2->ier)
+		d->pic1->irr |= 0x04;
+	else
+		d->pic1->irr &= ~0x04;
+
+	new_isa_assert = d->pic1->irr & ~d->pic1->ier;
+
+	if (old_isa_assert == new_isa_assert)
+		return;
+
+	if (new_isa_assert & d->secondary_mask1)
+		INTERRUPT_DEASSERT(d->irq_local);
+	else
+		INTERRUPT_DEASSERT(d->irq_local);
+
+	if (new_isa_assert & ~d->secondary_mask1)
+		INTERRUPT_DEASSERT(d->irq_isa);
+	else
+		INTERRUPT_DEASSERT(d->irq_isa);
+}
+
+
+/*
+ *  v3_isa_interrupt_assert():
+ *
+ *  Called whenever an ISA device asserts an interrupt (0..15).
+ *  If the interrupt number is 16, then it is a re-assert.
+ */
+void v3_isa_interrupt_assert(struct interrupt *interrupt)
+{
+	struct v3_data *d = interrupt->extra;
+	int old_isa_assert, line = interrupt->line;
+	int mask = 1 << (line & 7);
+
+	old_isa_assert = d->pic1->irr & ~d->pic1->ier;
+
+	if (line < 8)
+		d->pic1->irr |= mask;
+	else if (line < 16)
+		d->pic2->irr |= mask;
+
+	v3_isa_interrupt_common(d, old_isa_assert);
+}
+
+
+/*
+ *  v3_isa_interrupt_deassert():
+ *
+ *  Called whenever an ISA device deasserts an interrupt (0..15).
+ *  If the interrupt number is 16, then it is a re-assert.
+ */
+void v3_isa_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct v3_data *d = interrupt->extra;
+	int line = interrupt->line, mask = 1 << (line & 7);
+	int old_irr1 = d->pic1->irr, old_isa_assert;
+
+	old_isa_assert = old_irr1 & ~d->pic1->ier;
+
+	if (line < 8)
+		d->pic1->irr &= ~mask;
+	else if (line < 16)
+		d->pic2->irr &= ~mask;
+
+	/*  If IRQ 0 has been cleared, then this is a timer interrupt.
+	    Let's ack it here:  */
+	if (old_irr1 & 1 && !(d->pic1->irr & 1) &&
+	    d->ptr_to_pending_timer_interrupts != NULL &&
+            (*d->ptr_to_pending_timer_interrupts) > 0)
+                (*d->ptr_to_pending_timer_interrupts) --;
+
+	v3_isa_interrupt_common(d, old_isa_assert);
+}
 
 
 DEVICE_ACCESS(v3_pci)
@@ -138,9 +243,12 @@ DEVICE_ACCESS(v3)
 }
 
 
-struct v3_data *dev_v3_init(struct machine *machine, struct memory *mem)
+DEVINIT(v3)
 {
 	struct v3_data *d;
+	uint32_t isa_port_base = 0x1d000000;
+	char tmpstr[200];
+	int i;
 
 	d = malloc(sizeof(struct v3_data));
 	if (d == NULL) {
@@ -149,37 +257,90 @@ struct v3_data *dev_v3_init(struct machine *machine, struct memory *mem)
 	}
 	memset(d, 0, sizeof(struct v3_data));
 
+	switch (devinit->machine->machine_type) {
+	case MACHINE_ALGOR:
+		snprintf(tmpstr, sizeof(tmpstr), "%s.4",
+		    devinit->interrupt_path);
+		INTERRUPT_CONNECT(tmpstr, d->irq_local);
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.2",
+		    devinit->interrupt_path);
+		INTERRUPT_CONNECT(tmpstr, d->irq_isa);
+
+		d->secondary_mask1 = 0x18;
+		break;
+
+	default:fatal("!\n! WARNING: v3 for non-implemented machine"
+		    " type %i\n!\n", devinit->machine->machine_type);
+		exit(1);
+	}
+
+	/*
+	 *  Register the 16 possible ISA interrupts, plus a dummy. The
+	 *  dummy is used by re-asserts.
+	 */
+	for (i=0; i<17; i++) {
+		struct interrupt template;
+		char n[300];
+		snprintf(n, sizeof(n), "%s.v3.isa.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = v3_isa_interrupt_assert;
+		template.interrupt_deassert = v3_isa_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
+	/*  Register two 8259 PICs:  */
+	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.v3.isa.16 addr=0x%llx",
+	    devinit->interrupt_path, (long long)(isa_port_base + 0x20));
+	d->pic1 = devinit->machine->isa_pic_data.pic1 =
+	    device_add(devinit->machine, tmpstr);
+	d->ptr_to_pending_timer_interrupts =
+	    devinit->machine->isa_pic_data.pending_timer_interrupts;
+
+	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.v3.isa.2 addr=0x%llx",
+	    devinit->interrupt_path, (long long)(isa_port_base + 0xa0));
+	d->pic2 = devinit->machine->isa_pic_data.pic2 =
+	    device_add(devinit->machine, tmpstr);
+
 	/*  Register a PCI bus:  */
 	d->pci_data = bus_pci_init(
-	    machine,
-	    "TODO: irq"		/*  pciirq: TODO  */,
-	    0x1d000000,		/*  pci device io offset  */
-	    0x11000000,		/*  pci device mem offset: TODO  */
-	    0x00000000,		/*  PCI portbase: TODO  */
-	    0x00000000,		/*  PCI membase: TODO  */
+	    devinit->machine,
+	    "TODO: irq"			/*  pciirq: TODO  */,
+	    0x1d000000,			/*  pci device io offset  */
+	    0x11000000,			/*  pci device mem offset: TODO  */
+	    0x00000000,			/*  PCI portbase: TODO  */
+	    0x00000000,			/*  PCI membase: TODO  */
 	    "TODO: pci irq base",	/*  PCI irqbase: TODO  */
-	    0x1d000000,		/*  ISA portbase  */
-	    0x10000000,		/*  ISA membase  */
+	    isa_port_base,		/*  ISA portbase  */
+	    0x10000000,			/*  ISA membase  */
 	    "TODO: isa irq base");	/*  ISA irqbase  */
 
-	switch (machine->machine_type) {
+	switch (devinit->machine->machine_type) {
 	case MACHINE_ALGOR:
-		bus_pci_add(machine, d->pci_data, mem, 0, 2, 0, "piix3_isa");
-		bus_pci_add(machine, d->pci_data, mem, 0, 2, 1, "piix3_ide");
+		bus_pci_add(devinit->machine, d->pci_data,
+		    devinit->machine->memory, 0, 2, 0, "piix3_isa");
+		bus_pci_add(devinit->machine, d->pci_data,
+		    devinit->machine->memory, 0, 2, 1, "piix3_ide");
 		break;
 	default:fatal("!\n! WARNING: v3 for non-implemented machine"
-		    " type %i\n!\n", machine->machine_type);
+		    " type %i\n!\n", devinit->machine->machine_type);
 		exit(1);
 	}
 
 	/*  PCI configuration space:  */
-	memory_device_register(mem, "v3_pci", 0x1ee00000, 0x100000,
-	    dev_v3_pci_access, d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "v3_pci",
+	    0x1ee00000, 0x100000, dev_v3_pci_access, d, DM_DEFAULT, NULL);
 
 	/*  PCI controller:  */
-	memory_device_register(mem, "v3", 0x1ef00000, 0x1000,
-	    dev_v3_access, d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "v3",
+	    0x1ef00000, 0x1000, dev_v3_access, d, DM_DEFAULT, NULL);
 
-	return d;
+	devinit->return_ptr = d;
+
+	return 1;
 }
 

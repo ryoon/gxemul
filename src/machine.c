@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.691 2006-12-30 13:30:52 debug Exp $
+ *  $Id: machine.c,v 1.692 2007-01-17 20:11:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -387,58 +387,6 @@ void machine_statistics_init(struct machine *machine, char *fname)
 
 
 /*
- *  machine_bus_register():
- *
- *  Registers a bus in a machine.
- */
-void machine_bus_register(struct machine *machine, char *busname,
-	void (*debug_dump)(void *), void *extra)
-{
-	struct machine_bus *tmp, *last = NULL, *new;
-
-	new = zeroed_alloc(sizeof(struct machine_bus));
-	new->name = strdup(busname);
-	new->debug_dump = debug_dump;
-	new->extra = extra;
-
-	/*  Register last in the bus list:  */
-	tmp = machine->first_bus;
-	while (tmp != NULL) {
-		last = tmp;
-		tmp = tmp->next;
-	}
-
-	if (last == NULL)
-		machine->first_bus = new;
-	else
-		last->next = new;
-
-	machine->n_busses ++;
-}
-
-
-/*
- *  machine_dump_bus_info():
- *
- *  Dumps info about registered busses.
- */
-void machine_dump_bus_info(struct machine *m)
-{
-	struct machine_bus *bus = m->first_bus;
-	int iadd = DEBUG_INDENTATION;
-
-	if (m->n_busses > 0)
-		debug("busses:\n");
-	debug_indentation(iadd);
-	while (bus != NULL) {
-		bus->debug_dump(bus->extra);
-		bus = bus->next;
-	}
-	debug_indentation(-iadd);
-}
-
-
-/*
  *  machine_dumpinfo():
  *
  *  Dumps info about a machine in some kind of readable format. (Used by
@@ -489,8 +437,6 @@ void machine_dumpinfo(struct machine *m)
 		}
 		debug("\n");
 	}
-
-	machine_dump_bus_info(m);
 
 	diskimage_dump_info(m);
 
@@ -950,9 +896,6 @@ void machine_setup(struct machine *machine)
 			debug(" %s", machine->bootarg);
 		debug("\n");
 	}
-
-	if (verbose >= 2)
-		machine_dump_bus_info(machine);
 
 	if (!machine->stable)
 		fatal("!\n!  NOTE: This machine type is not implemented well"

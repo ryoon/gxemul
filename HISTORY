@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1444 2007-01-05 16:42:56 debug Exp $
+$Id: HISTORY,v 1.1445 2007-01-17 20:11:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3211,3 +3211,9 @@ Changelog for GXemul:
 		moving out stuff from machine.h and devices.h into the
 		corresponding devices, beginning the rewrite of i80321
 		interrupts, etc.
+20070107	Beginning on the rewrite of Eagle interrupt stuff (PReP, etc).
+20070117	Beginning the rewrite of Algor (V3) interrupts (finally
+		changing dev_v3 into devinit style).
+20070118	Removing the "bus" registry concept from machine.h, because
+		it was practically meaningless.
+		Continuing on the rewrite of Algor V3 ISA interrupts.

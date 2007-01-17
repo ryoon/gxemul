@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.8 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_bebox.c,v 1.9 2007-01-17 20:11:28 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/Ports/bebox/ for more info.)
@@ -48,22 +48,15 @@
 
 MACHINE_SETUP(bebox)
 {
-	struct pci_data *pci_data;
+	char tmpstr[300];
 
 	machine->machine_name = "BeBox";
 
-	machine->md_int.bebox_data = device_add(machine, "bebox");
-//	machine->isa_pic_data.native_irq = 5;
+	snprintf(tmpstr, sizeof(tmpstr), "eagle irq=%s.cpu[%i]",
+	    machine->path, machine->bootstrap_cpu);
+	device_add(machine, tmpstr);
 
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = isa32_interrupt;
-
-	pci_data = dev_eagle_init(machine, machine->memory,
-	    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
-
-	bus_isa_init(machine, machine->path, BUS_ISA_IDE0 | BUS_ISA_VGA,
-	    0x80000000, 0xc0000000);
+	device_add(machine, "bebox");
 
 	if (!machine->prom_emulation)
 		return;

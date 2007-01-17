@@ -28,12 +28,22 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.232 2007-01-05 16:42:57 debug Exp $
+ *  $Id: devices.h,v 1.233 2007-01-17 20:11:28 debug Exp $
  *
  *  Memory mapped devices.
  *
- *  TODO: Separate into lots of smaller files? That might speed up a compile,
- *        but I'm not sure that it's a price worth paying.
+ *  NOTE:  Many of these devices are legacy devices, that are here for one
+ *         of these two reasons:
+ *
+ *		A)  Devices introduced before the DEVINIT system had to
+ *		    be declared somewhere.
+ *
+ *		B)  The way interrupt controllers and such were implemented
+ *		    up until release 0.4.3 requires that several parts of
+ *		    the program access internal fields of interrupt
+ *		    controllers' structs.
+ *
+ *         Both A and B need to be solved.
  */
 
 #include <sys/types.h>
@@ -112,16 +122,6 @@ struct au1x00_ic_data {
 
 int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct au1x00_ic_data *dev_au1x00_init(struct machine *machine, struct memory *mem);
-
-/*  dev_bebox.c:  */
-struct bebox_data {
-	/*  The 5 motherboard registers:  */  
-	uint32_t	cpu0_int_mask;
-	uint32_t	cpu1_int_mask;
-	uint32_t	int_status;
-	uint32_t	xpi;
-	uint32_t	resets;
-};
 
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20
@@ -208,10 +208,6 @@ void dev_deccca_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_DECXMI_LENGTH			0x800000
 int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_decxmi_init(struct memory *mem, uint64_t baseaddr);
-
-/*  dev_eagle.c:  */
-struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
-	int irqbase, int pciirq);
 
 /*  dev_fb.c:  */
 #define	DEV_FB_LENGTH		0x3c0000	/*  3c0000 to not colide with */
@@ -617,13 +613,6 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 /*  dev_uninorth.c:  */
 struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	uint64_t addr, int irqbase, int pciirq);
-
-/*  dev_v3.c:  */
-struct v3_data {
-	struct pci_data	*pci_data;
-	uint16_t	lb_map0;
-};
-struct v3_data *dev_v3_init(struct machine *, struct memory *);
 
 /*  dev_vga.c:  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,

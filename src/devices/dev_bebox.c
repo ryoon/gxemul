@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.10 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_bebox.c,v 1.11 2007-01-17 20:11:28 debug Exp $
  *
- *  Emulation of BeBox motherboard registers. See the following URL for more
- *  information:
+ *  Emulation of BeBox motherboard registers (and interrupt controller).
+ *  See the following URL for more information:
  *
  *	http://www.bebox.nu/history.php?s=history/benews/benews27
  */
@@ -44,6 +44,17 @@
 #include "memory.h"
 #include "misc.h"
 
+
+struct bebox_data {
+	/*  The 5 motherboard registers:  */
+	uint32_t	cpu0_int_mask;
+	uint32_t	cpu1_int_mask;
+	uint32_t	int_status;
+	uint32_t	xpi;
+	uint32_t	resets;
+};
+
+// isa uses native ppc irq 5
 
 /*
  *  check_cpu_masks():
@@ -62,9 +73,6 @@ static void check_cpu_masks(struct cpu *cpu, struct bebox_data *d)
 }
 
 
-/*
- *  dev_bebox_access():
- */
 DEVICE_ACCESS(bebox)
 {
 	struct bebox_data *d = extra;

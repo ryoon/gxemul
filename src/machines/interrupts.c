@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.19 2007-01-05 16:42:57 debug Exp $
+ *  $Id: interrupts.c,v 1.20 2007-01-17 20:11:28 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
@@ -505,6 +505,7 @@ void cpc700_interrupt(struct machine *m, struct cpu *cpu,
 }
 
 
+#if 0
 /*
  *  Interrupt function for Cobalt, evbmips (Malta), Algor, and QEMU_MIPS.
  *
@@ -568,9 +569,6 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		m->isa_pic_data.last_int = x;
 	}
 
-fatal("TODO: legacy interrupt stuff.\n");
-abort();
-#if 0
 	if (m->isa_pic_data.secondary_mask1 &
 	    m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
 		cpu_interrupt(cpu, m->isa_pic_data.native_secondary_irq);
@@ -582,8 +580,8 @@ abort();
 		cpu_interrupt(cpu, m->isa_pic_data.native_irq);
 	else
 		cpu_interrupt_ack(cpu, m->isa_pic_data.native_irq);
-#endif
 }
+#endif
 
 
 /*

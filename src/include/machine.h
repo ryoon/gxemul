@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.145 2007-01-05 16:42:57 debug Exp $
+ *  $Id: machine.h,v 1.146 2007-01-17 20:11:28 debug Exp $
  */
 
 #include <sys/types.h>
@@ -77,16 +77,6 @@ struct isa_pic_data {
 };
 
 
-struct machine_bus {
-	struct machine_bus *next;
-
-	char		*name;
-
-	void		(*debug_dump)(void *);
-	void		*extra;
-};
-
-
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
 	struct emul *emul;
@@ -104,6 +94,7 @@ struct machine {
 	int	machine_type;		/*  MACHINE_PMAX, ..  */
 	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
 
+	/*  NOTE/TODO: This isn't working yet:  */
 	int	cycle_accurate;		/*  Set to non-zero for cycle
 					    accurate (slow) emulation.  */
 
@@ -151,11 +142,8 @@ struct machine {
 	int	ncpus;
 	struct cpu **cpus;
 
-	/*  Registered busses:  */
-	struct machine_bus *first_bus;
-	int	n_busses;
-
 	/*  These are used by stuff in cpu.c, mostly:  */
+	/*  TODO: Move to cpu.h!  */
 	int64_t ninstrs;
 	int64_t	ninstrs_show;
 	int64_t	ninstrs_flush;
@@ -226,12 +214,15 @@ struct machine {
 	} md;
 
 	/*  OpenFirmware:  */
+	/*  TODO: Move to the machine-dependent field?  */
 	struct of_data *of_data;
 
 	/*  Bus-specific interrupt data:  */
+	/*  TODO: Remove!  */
 	struct isa_pic_data isa_pic_data;
 
 	/*  Machine-dependent interrupt specific structs:  */
+	/*  TODO: Remove!  */
 	union {
 		struct dec_ioasic_data *dec_ioasic_data;
 		struct ps2_data *ps2_data;
@@ -242,10 +233,8 @@ struct machine {
 		struct sgi_ip20_data *sgi_ip20_data;
 		struct sgi_ip22_data *sgi_ip22_data;
 		struct sgi_ip30_data *sgi_ip30_data;
-		struct bebox_data *bebox_data;
 		struct cpc700_data *cpc700_data;
 		struct gc_data *gc_data;
-		struct v3_data *v3_data;
 	} md_int;
 
 	/*  X11/framebuffer stuff:  */
@@ -541,8 +530,6 @@ void machine_setup(struct machine *);
 void machine_memsize_fix(struct machine *);
 void machine_default_cputype(struct machine *);
 void machine_dumpinfo(struct machine *);
-void machine_bus_register(struct machine *, char *busname,
-	void (*debug_dump)(void *), void *extra);
 int machine_run(struct machine *machine);
 void machine_list_available_types_and_cpus(void);
 struct machine_entry *machine_entry_new(const char *name, 

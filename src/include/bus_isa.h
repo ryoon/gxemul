@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_isa.h,v 1.8 2006-12-30 13:31:00 debug Exp $
+ *  $Id: bus_isa.h,v 1.9 2007-01-17 20:11:28 debug Exp $
  *
  *  ISA bus.
  */
@@ -66,5 +66,6 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 #define	BUS_ISA_PCKBC_NONPCSTYLE	64
 #define	BUS_ISA_NO_SECOND_PIC		128
 #define	BUS_ISA_LPTBASE_3BC		256
+#define	BUS_ISA_EXTERNAL_PIC		512
 
 #endif	/*  BUS_ISA_H  */

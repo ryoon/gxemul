@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.13 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_eagle.c,v 1.14 2007-01-17 20:11:28 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -34,25 +34,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_isa.h"
 #include "bus_pci.h"
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
 struct eagle_data {
-	int		pciirq;
+	struct interrupt irq;
+
 	struct pci_data	*pci_data;
 };
 
 
-/*
- *  dev_eagle_access():
- *
- *  Passes accesses to ISA ports 0xcf8 and 0xcfc onto bus_pci.
- */
 DEVICE_ACCESS(eagle)
 {
 	uint64_t idata = 0, odata = 0;
@@ -61,6 +59,10 @@ DEVICE_ACCESS(eagle)
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len|MEM_PCI_LITTLE_ENDIAN);
+
+	/*
+	 *  Pass accesses to ISA ports 0xcf8 and 0xcfc onto bus_pci_*:
+	 */
 
 	switch (relative_addr) {
 	case 0:	/*  Address:  */
@@ -81,11 +83,7 @@ DEVICE_ACCESS(eagle)
 }
 
 
-/*
- *  dev_eagle_init():
- */
-struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
-	int isa_irqbase, int pciirq)
+DEVINIT(eagle)
 {
 	struct eagle_data *d;
 	uint64_t pci_io_offset, pci_mem_offset;
@@ -98,7 +96,9 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct eagle_data));
-	d->pciirq = pciirq;
+
+	/*  The interrupt path to the CPU at which we are connected:  */
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	/*
 	 *  According to http://www.beatjapan.org/mirror/www.be.com/
@@ -129,30 +129,40 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	isa_membase    = 0xc0000000ULL;
 
 	/*  Create a PCI bus:  */
-	d->pci_data = bus_pci_init(machine, "TODO: irq stuff",
+	d->pci_data = bus_pci_init(devinit->machine, devinit->interrupt_path,
 	    pci_io_offset, pci_mem_offset,
 	    pci_portbase, pci_membase, "TODO: pci_irqbase",
 	    isa_portbase, isa_membase, "TODO: isa_irqbase");
 
 	/*  Add the PCI glue for the controller itself:  */
-	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0, "eagle");
+	bus_pci_add(devinit->machine, d->pci_data,
+	    devinit->machine->memory, 0, 0, 0, "eagle");
 
 	/*  ADDR and DATA configuration ports in ISA space:  */
-	memory_device_register(mem, "eagle", isa_portbase + BUS_PCI_ADDR,
-	    8, dev_eagle_access, d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "eagle",
+	    isa_portbase + BUS_PCI_ADDR, 8, dev_eagle_access, d,
+	    DM_DEFAULT, NULL);
 
-	switch (machine->machine_type) {
+	switch (devinit->machine->machine_type) {
 	case MACHINE_BEBOX:
-		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "i82378zb");
+		bus_isa_init(devinit->machine, devinit->machine->path,
+		    BUS_ISA_IDE0 | BUS_ISA_VGA, isa_portbase, isa_membase);
+		bus_pci_add(devinit->machine, d->pci_data,
+		    devinit->machine->memory, 0, 11, 0, "i82378zb");
 		break;
 	case MACHINE_PREP:
-		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "ibm_isa");
+		bus_isa_init(devinit->machine, devinit->machine->path,
+		    BUS_ISA_IDE0 | BUS_ISA_VGA, isa_portbase, isa_membase);
+		bus_pci_add(devinit->machine, d->pci_data,
+		    devinit->machine->memory, 0, 11, 0, "ibm_isa");
 		break;
 	case MACHINE_MVMEPPC:
-		switch (machine->machine_subtype) {
+		bus_isa_init(devinit->machine, devinit->machine->path,
+		    BUS_ISA_LPTBASE_3BC, isa_portbase, isa_membase);
+		switch (devinit->machine->machine_subtype) {
 		case MACHINE_MVMEPPC_1600:
-			bus_pci_add(machine, d->pci_data, mem, 0, 11, 0,
-			    "i82378zb");
+			bus_pci_add(devinit->machine, d->pci_data,
+			    devinit->machine->memory, 0, 11, 0, "i82378zb");
 			break;
 		default:fatal("unimplemented machine subtype for "
 			    "eagle/mvmeppc\n");
@@ -163,6 +173,6 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 
-	return d->pci_data;
+	return 1;
 }
 

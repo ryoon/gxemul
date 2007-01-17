@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.16 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.17 2007-01-17 20:11:28 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -55,6 +55,7 @@
 
 MACHINE_SETUP(mvmeppc)
 {
+	char tmpstr[300];
 	struct pci_data *pci_data = NULL;
 
 	switch (machine->machine_subtype) {
@@ -62,18 +63,15 @@ MACHINE_SETUP(mvmeppc)
 	case MACHINE_MVMEPPC_1600:
 		machine->machine_name = "MVME1600";
 
-//		machine->md_int.prep_data = device_add(machine, "prep");
-//		machine->isa_pic_data.native_irq = 1;   /*  Semi-bogus  */
-
 fatal("TODO: Legacy rewrite\n");
 abort();
 //		machine->md_interrupt = isa32_interrupt;
+//		machine->md_int.prep_data = device_add(machine, "prep");
+//		machine->isa_pic_data.native_irq = 1;   /*  Semi-bogus  */
 
-		pci_data = dev_eagle_init(machine, machine->memory,
-		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
-        
-		bus_isa_init(machine, machine->path, BUS_ISA_LPTBASE_3BC,
-		    0x80000000, 0xc0000000);
+		snprintf(tmpstr, sizeof(tmpstr), "eagle irq=%s.cpu[%i]",
+		    machine->path, machine->bootstrap_cpu);
+		device_add(machine, tmpstr);
 
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 14, 0, "dec21143");

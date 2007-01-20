@@ -1,4 +1,4 @@
-/*  GXemul: $Id: sgi_macereg.h,v 1.1 2007-01-04 20:49:22 debug Exp $  */
+/*  GXemul: $Id: sgi_macereg.h,v 1.2 2007-01-20 16:11:26 debug Exp $  */
 /*  $NetBSD: macereg.h,v 1.2 2005/12/11 12:18:54 christos Exp $  */
 
 #ifndef SGI_MACEREG_H
@@ -82,12 +82,20 @@
 #define MACE_PERIF		0x300000
 #define MACE_ISA_EXT		0x380000
 
+#if 1
+/*  GXemul, making it easier to use offsets further down:  */
+#define MACE_AUDIO		0
+#define MACE_ISA		0
+#define MACE_KBDMS		0
+#define MACE_I2C		0
+#define MACE_UST_MSC		0
+#else
 #define MACE_AUDIO		(MACE_PERIF + 0x00000)
 #define MACE_ISA		(MACE_PERIF + 0x10000)
 #define MACE_KBDMS		(MACE_PERIF + 0x20000)
 #define MACE_I2C		(MACE_PERIF + 0x30000)
 #define MACE_UST_MSC		(MACE_PERIF + 0x40000)
-
+#endif
 
 
 /***********************

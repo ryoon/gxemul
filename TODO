@@ -1,4 +1,4 @@
-$Id: TODO,v 1.427 2007-01-17 20:11:27 debug Exp $
+$Id: TODO,v 1.428 2007-01-20 13:26:20 debug Exp $
 
 Current work package:
 
@@ -14,17 +14,14 @@ Current work package:
 
       TODO:
 		o  PCI interrupt routing:   see dec21143 etc.
-
-	ALGOR! Flytta in secondary-hanteringen i bus_isa.c?
-
-	Flytta ninstrs etc. från machine.h till cpu.h?
-
 		o  struct machine.md_int should go away.
-		o  src/include/machine_interrupts.h should go away.
-		o  src/machines/interrupts.c should go away.
-
-		o  Configuration file syntax stuff...
-
+		o  src/include/machine_interrupts.h should go away completely
+		o  src/machines/interrupts.c should go away completely
+		o  Configuration file syntax:
+		    x  Allow runtime addition of interrupt controllers!
+		    x  Allow devices to be connected to those controllers.
+		    x  Allow semi-automagic busses (e.g. the ISA bus)
+		       to connect to these interrupts as well.
 		o  SMP!
 
 
@@ -33,8 +30,9 @@ Other possible work packages to concentrate on in the future:
   x)  Experiment with more CPU archs; the ones I want to concentrate on
       next are probably Alpha and SPARC, but possibly also non-fixed-length
       ISAs such as AVR32 (if there are easily available pre-compiled
-      operating system binaries available for that arch). The latter would
-      require more design work on the dyntrans system, though.
+      operating system binaries available for that arch) or AMD64/x86. The
+      ones with variable-length instructions would require more design work
+      on the dyntrans system, though.
 
   x)  Redesign of the networking subsystem, at least the NAT translation
       part. The current way of allowing raw ethernet frames to be

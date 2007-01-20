@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.17 2007-01-17 20:11:28 debug Exp $
+ *  $Id: machine_algor.c,v 1.18 2007-01-20 13:26:20 debug Exp $
  */
 
 #include <stdio.h>
@@ -79,7 +79,8 @@ MACHINE_SETUP(algor)
 	bus_isa_init(machine, tmpstr, BUS_ISA_EXTERNAL_PIC | BUS_ISA_FDC,
 	    0x1d000000, 0x10000000);
 
-	bus_pci_add(machine, pci_bus, machine->memory, 0, 0, 0, "dec21143");
+	/*  bus_pci_add(machine, pci_bus, machine->memory, 0, 0, 0,
+	    "dec21143");  */
 
 	if (!machine->prom_emulation)
 		return;

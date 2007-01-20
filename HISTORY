@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1445 2007-01-17 20:11:27 debug Exp $
+$Id: HISTORY,v 1.1446 2007-01-20 13:26:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3217,3 +3217,5 @@ Changelog for GXemul:
 20070118	Removing the "bus" registry concept from machine.h, because
 		it was practically meaningless.
 		Continuing on the rewrite of Algor V3 ISA interrupts.
+20070121	More work on Algor interrupts; they are now working again,
+		well enough to run NetBSD/algor. :-)

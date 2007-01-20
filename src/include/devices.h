@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.233 2007-01-17 20:11:28 debug Exp $
+ *  $Id: devices.h,v 1.234 2007-01-20 13:26:20 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -88,11 +88,6 @@ struct dec_ioasic_data {
 };
 int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int rackmount_flag);
-
-/*  dev_algor.c:  */
-struct algor_data {
-	uint64_t	base_addr;
-};
 
 /*  dev_asc.c:  */
 #define	DEV_ASC_DEC_LENGTH		0x40000
@@ -447,11 +442,6 @@ int dev_pmagja_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 void dev_pmagja_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *irq_path);
-
-/*  dev_prep.c:  */
-struct prep_data {
-	uint32_t	int_status;
-};
 
 /*  dev_px.c:  */
 struct px_data {

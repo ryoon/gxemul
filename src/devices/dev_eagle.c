@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.14 2007-01-17 20:11:28 debug Exp $
+ *  $Id: dev_eagle.c,v 1.15 2007-01-20 13:26:20 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -172,6 +172,8 @@ DEVINIT(eagle)
 	default:fatal("unimplemented machine type for eagle\n");
 		exit(1);
 	}
+
+	devinit->return_ptr = d->pci_data;
 
 	return 1;
 }

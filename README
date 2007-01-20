@@ -1,4 +1,4 @@
-$Id: README,v 1.113 2006-12-30 13:30:50 debug Exp $
+$Id: README,v 1.114 2007-01-20 13:26:20 debug Exp $
 
 Working on what will become 0.5.0.
 
@@ -24,6 +24,10 @@ interpretation and recompilation into native code. However, the dynamic
 translation system used in GXemul does not (currently) generate native 
 code, and thus does not require platform-specific back-ends. In plain 
 English, this means that the dyntrans system works on any host platform.
+
+The documentation lists the machines and guest operating systems that can 
+be regarded as "working" in GXemul. The best working guest operating 
+systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 Possible uses of the emulator include:
 

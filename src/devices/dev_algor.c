@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_algor.c,v 1.4 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_algor.c,v 1.5 2007-01-20 13:26:20 debug Exp $
  *
  *  Algor misc. stuff.
  *
@@ -41,11 +41,20 @@
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 #include "algor_p5064reg.h"
+
+
+struct algor_data {
+	uint64_t		base_addr;
+	struct interrupt	mips_irq_2;
+	struct interrupt	mips_irq_3;
+	struct interrupt	mips_irq_4;
+};
 
 
 DEVICE_ACCESS(algor)
@@ -89,7 +98,7 @@ DEVICE_ACCESS(algor)
 
 			/*  Read => ack:  */
 			cpu->machine->isa_pic_data.pic1->irr &= ~0x18;
-			cpu_interrupt_ack(cpu, 4);
+			INTERRUPT_DEASSERT(d->mips_irq_4);
 		} else {
 			if (idata & LOCINT_COM1)
 				cpu->machine->isa_pic_data.pic1->ier &= ~0x10;
@@ -115,7 +124,7 @@ DEVICE_ACCESS(algor)
 		n = "P5064_PCIINT";
 		if (writeflag == MEM_READ) {
 			odata = 0;
-			cpu_interrupt_ack(cpu, 3);
+			INTERRUPT_DEASSERT(d->mips_irq_3);
 		}
 		break;
 
@@ -151,7 +160,7 @@ DEVICE_ACCESS(algor)
 
 			/*  Read => ack:  */
 			cpu->machine->isa_pic_data.pic2->irr &= ~0xc0;
-			cpu_interrupt_ack(cpu, 2);
+			INTERRUPT_DEASSERT(d->mips_irq_2);
 		}
 		break;
 
@@ -192,6 +201,7 @@ DEVICE_ACCESS(algor)
 
 DEVINIT(algor)
 {
+	char tmpstr[200];
 	struct algor_data *d = malloc(sizeof(struct algor_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -199,15 +209,22 @@ DEVINIT(algor)
 	}
 	memset(d, 0, sizeof(struct algor_data));
 
+	d->base_addr = devinit->addr;
 	if (devinit->addr != 0x1ff00000) {
 		fatal("The Algor base address should be 0x1ff00000.\n");
 		exit(1);
 	}
 
+	/*  Connect to MIPS irq 2, 3, and 4:  */
+	snprintf(tmpstr, sizeof(tmpstr), "%s.2", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_2);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.3", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_3);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.4", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_4);
+
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, 0x100000, dev_algor_access, d, DM_DEFAULT, NULL);
-
-	d->base_addr = devinit->addr;
 
 	devinit->return_ptr = d;
 

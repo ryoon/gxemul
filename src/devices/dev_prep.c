@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.6 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_prep.c,v 1.7 2007-01-20 13:26:20 debug Exp $
  *
  *  PReP mainbus.
  *
@@ -44,6 +44,11 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+struct prep_data {
+	uint32_t		int_status;
+};
 
 
 DEVICE_ACCESS(prep)
@@ -84,8 +89,6 @@ DEVINIT(prep)
 	/*  This works for at least the IBM 6050:  */
 	bus_isa_init(devinit->machine, devinit->interrupt_path, BUS_ISA_IDE0 |
 	    BUS_ISA_IDE1, 0x80000000, 0xc0000000);
-
-	devinit->return_ptr = d;
 
 	return 1;
 }

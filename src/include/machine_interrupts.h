@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_interrupts.h,v 1.4 2007-01-05 16:42:57 debug Exp $
+ *  $Id: machine_interrupts.h,v 1.5 2007-01-20 13:26:20 debug Exp $
  *
  *  NOTE/TODO: This file should go away, as soon as interrupts have been
  *             rewritten!
@@ -51,8 +51,6 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 	int irq_nr, int assrt);
 void cpc700_interrupt(struct machine *m, struct cpu *cpu,
 	int irq_nr, int assrt);
-void x86_pc_interrupt(struct machine *m, struct cpu *, int irq_nr, int assrt);
-void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
 void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
 
 #endif	/*  MACHINE_INTERRUPTS_H  */

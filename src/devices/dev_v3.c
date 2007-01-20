@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_v3.c,v 1.7 2007-01-17 20:11:28 debug Exp $
+ *  $Id: dev_v3.c,v 1.8 2007-01-20 13:26:20 debug Exp $
  *  
  *  V3 Semiconductor PCI controller.
  *
@@ -86,12 +86,12 @@ void v3_isa_interrupt_common(struct v3_data *d, int old_isa_assert)
 		return;
 
 	if (new_isa_assert & d->secondary_mask1)
-		INTERRUPT_DEASSERT(d->irq_local);
+		INTERRUPT_ASSERT(d->irq_local);
 	else
 		INTERRUPT_DEASSERT(d->irq_local);
 
 	if (new_isa_assert & ~d->secondary_mask1)
-		INTERRUPT_DEASSERT(d->irq_isa);
+		INTERRUPT_ASSERT(d->irq_isa);
 	else
 		INTERRUPT_DEASSERT(d->irq_isa);
 }
@@ -248,6 +248,8 @@ DEVINIT(v3)
 	struct v3_data *d;
 	uint32_t isa_port_base = 0x1d000000;
 	char tmpstr[200];
+	char isa_irq_base[200];
+	char pci_irq_base[200];
 	int i;
 
 	d = malloc(sizeof(struct v3_data));
@@ -306,18 +308,23 @@ DEVINIT(v3)
 	d->pic2 = devinit->machine->isa_pic_data.pic2 =
 	    device_add(devinit->machine, tmpstr);
 
+	snprintf(isa_irq_base, sizeof(isa_irq_base), "%s.v3",
+	    devinit->interrupt_path);
+	snprintf(pci_irq_base, sizeof(pci_irq_base), "%s.v3",
+	    devinit->interrupt_path);
+
 	/*  Register a PCI bus:  */
 	d->pci_data = bus_pci_init(
 	    devinit->machine,
-	    "TODO: irq"			/*  pciirq: TODO  */,
+	    pci_irq_base		/*  pciirq: TODO  */,
 	    0x1d000000,			/*  pci device io offset  */
 	    0x11000000,			/*  pci device mem offset: TODO  */
 	    0x00000000,			/*  PCI portbase: TODO  */
 	    0x00000000,			/*  PCI membase: TODO  */
-	    "TODO: pci irq base",	/*  PCI irqbase: TODO  */
+	    pci_irq_base,		/*  PCI irqbase  */
 	    isa_port_base,		/*  ISA portbase  */
 	    0x10000000,			/*  ISA membase  */
-	    "TODO: isa irq base");	/*  ISA irqbase  */
+	    isa_irq_base);		/*  ISA irqbase  */
 
 	switch (devinit->machine->machine_type) {
 	case MACHINE_ALGOR:
@@ -339,7 +346,7 @@ DEVINIT(v3)
 	memory_device_register(devinit->machine->memory, "v3",
 	    0x1ef00000, 0x1000, dev_v3_access, d, DM_DEFAULT, NULL);
 
-	devinit->return_ptr = d;
+	devinit->return_ptr = d->pci_data;
 
 	return 1;
 }

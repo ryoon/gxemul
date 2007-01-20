@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.77 2007-01-17 20:11:28 debug Exp $
+ *  $Id: bus_pci.c,v 1.78 2007-01-20 13:26:20 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -1169,11 +1169,6 @@ PCIINIT(dec21143)
 		break;
 	case MACHINE_COBALT:
 		/*  On Cobalt, IRQ 7 = PCI.  */
-		irq = 8 + 7;
-		pci_int_line = 0x407;
-		break;
-	case MACHINE_ALGOR:
-		/*  TODO  */
 		irq = 8 + 7;
 		pci_int_line = 0x407;
 		break;

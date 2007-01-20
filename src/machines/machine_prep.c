@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.15 2007-01-17 20:11:28 debug Exp $
+ *  $Id: machine_prep.c,v 1.16 2007-01-20 13:26:20 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -70,7 +70,7 @@ MACHINE_SETUP(prep)
 
 		snprintf(tmpstr, sizeof(tmpstr), "eagle irq=%s.cpu[%i]",
 		    machine->path, machine->bootstrap_cpu);
-		device_add(machine, tmpstr);
+		pci_data = device_add(machine, tmpstr);
 
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 13, 0, "dec21143");
@@ -93,7 +93,7 @@ MACHINE_SETUP(prep)
 
 		snprintf(tmpstr, sizeof(tmpstr), "eagle irq=%s.cpu[%i]",
 		    machine->path, machine->bootstrap_cpu);
-		device_add(machine, tmpstr);
+		pci_data = device_add(machine, tmpstr);
 
 		break;
 

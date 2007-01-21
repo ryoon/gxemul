@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.22 2007-01-05 16:02:54 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.23 2007-01-21 21:02:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -37,7 +37,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

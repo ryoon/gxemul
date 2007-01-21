@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.16 2007-01-20 13:26:20 debug Exp $
+ *  $Id: machine_prep.c,v 1.17 2007-01-21 21:02:57 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -40,7 +40,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

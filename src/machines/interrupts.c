@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.21 2007-01-20 13:26:20 debug Exp $
+ *  $Id: interrupts.c,v 1.22 2007-01-21 21:02:57 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
@@ -184,70 +184,6 @@ void jazz_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		cpu_interrupt(cpu, 6);
 	else
 		cpu_interrupt_ack(cpu, 6);
-}
-
-
-/*
- *  VR41xx interrupt routine:
- *
- *  irq_nr = 8 + x
- *	x = 0..15 for level1
- *	x = 16..31 for level2
- *	x = 32+y for GIU interrupt y
- */
-void vr41xx_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
-{
-	int giu_irq = 0;
-
-	irq_nr -= 8;
-	if (irq_nr >= 32) {
-		giu_irq = irq_nr - 32;
-
-		if (assrt)
-			m->md_int.vr41xx_data->giuint |= (1 << giu_irq);
-		else
-			m->md_int.vr41xx_data->giuint &= ~(1 << giu_irq);
-	}
-
-	/*  TODO: This is wrong. What about GIU bit 8?  */
-
-	if (irq_nr != 8) {
-		/*  If any GIU bit is asserted, then assert the main
-		    GIU interrupt:  */
-		if (m->md_int.vr41xx_data->giuint &
-		    m->md_int.vr41xx_data->giumask)
-			vr41xx_interrupt(m, cpu, 8 + 8, 1);
-		else
-			vr41xx_interrupt(m, cpu, 8 + 8, 0);
-	}
-
-	/*  debug("vr41xx_interrupt(): irq_nr=%i assrt=%i\n",
-	    irq_nr, assrt);  */
-
-	if (irq_nr < 16) {
-		if (assrt)
-			m->md_int.vr41xx_data->sysint1 |= (1 << irq_nr);
-		else
-			m->md_int.vr41xx_data->sysint1 &= ~(1 << irq_nr);
-	} else if (irq_nr < 32) {
-		irq_nr -= 16;
-		if (assrt)
-			m->md_int.vr41xx_data->sysint2 |= (1 << irq_nr);
-		else
-			m->md_int.vr41xx_data->sysint2 &= ~(1 << irq_nr);
-	}
-
-	/*  TODO: Which hardware interrupt pin?  */
-
-	/*  debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
-	    m->md_int.vr41xx_data->sysint1, m->md_int.vr41xx_data->msysint1,
-	    m->md_int.vr41xx_data->sysint2, m->md_int.vr41xx_data->msysint2); */
-
-	if ((m->md_int.vr41xx_data->sysint1 & m->md_int.vr41xx_data->msysint1) |
-	    (m->md_int.vr41xx_data->sysint2 & m->md_int.vr41xx_data->msysint2))
-		cpu_interrupt(cpu, 2);
-	else
-		cpu_interrupt_ack(cpu, 2);
 }
 
 

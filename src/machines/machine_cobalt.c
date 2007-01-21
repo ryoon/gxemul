@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.8 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.9 2007-01-21 21:02:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -38,7 +38,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

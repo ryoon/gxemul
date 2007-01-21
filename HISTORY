@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1446 2007-01-20 13:26:19 debug Exp $
+$Id: HISTORY,v 1.1447 2007-01-21 21:02:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3219,3 +3219,5 @@ Changelog for GXemul:
 		Continuing on the rewrite of Algor V3 ISA interrupts.
 20070121	More work on Algor interrupts; they are now working again,
 		well enough to run NetBSD/algor. :-)
+20070122	Converting VR41xx (HPCmips) interrupts. NetBSD/hpcmips
+		can be installed using the new interrupt system :-)

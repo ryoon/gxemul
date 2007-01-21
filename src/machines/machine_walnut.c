@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_walnut.c,v 1.3 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_walnut.c,v 1.4 2007-01-21 21:02:57 debug Exp $
  *
  *  TODO: Other evbppc machines?
  */
@@ -39,7 +39,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

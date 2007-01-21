@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcmips.c,v 1.5 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_hpcmips.c,v 1.6 2007-01-21 21:02:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -36,7 +36,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -87,11 +86,7 @@ MACHINE_SETUP(hpcmips)
 		machine->main_console_handle = (size_t)
 		    device_add(machine, tmpstr);
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4131);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4131);
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -121,12 +116,7 @@ abort();
 		machine->main_console_handle = (size_t)
 		    device_add(machine, tmpstr);
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4121);
-fatal("TODO: Legacy rewrite\n");
-abort();
-
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4121);
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -150,12 +140,7 @@ abort();
 		hpc_fb_bits = 16;
 		hpc_fb_encoding = BIFB_D16_0000;
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4121);
-fatal("TODO: Legacy rewrite\n");
-abort();
-
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4121);
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -179,11 +164,7 @@ abort();
 		hpc_fb_bits = 16;
 		hpc_fb_encoding = BIFB_D16_0000;
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4121);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4121);
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -207,11 +188,7 @@ abort();
 		hpc_fb_bits = 16;
 		hpc_fb_encoding = BIFB_D16_0000;
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4121);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4121);
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -235,11 +212,7 @@ abort();
 		hpc_fb_bits = 16;
 		hpc_fb_encoding = BIFB_D16_0000;
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4121);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4121);
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -263,11 +236,7 @@ abort();
 		hpc_fb_bits = 4;
 		hpc_fb_encoding = BIFB_D4_M2L_F;
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4181);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4181);
 
 		/*  TODO: Hm... irq 17 according to linux, but
 		    VRIP_INTR_SIU (=9) here?  */
@@ -306,11 +275,7 @@ abort();
 		hpc_fb_bits = 16;
 		hpc_fb_encoding = BIFB_D16_0000;
 
-		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
-		    machine->memory, 4121);
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = vr41xx_interrupt;
+		dev_vr41xx_init(machine, machine->memory, 4121);
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -333,11 +298,6 @@ abort();
 	store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.
 	    platid_machine, (hpc_platid_vendor << 22) + (hpc_platid_series<<16)
 	    + (hpc_platid_model <<  8) + hpc_platid_submodel);
-
-	if (machine->use_x11) {
-		machine->main_console_handle =
-		    machine->md_int.vr41xx_data->kiu_console_handle;
-	}
 
 	if (hpc_fb_addr != 0) {
 		dev_fb_init(machine, machine->memory, hpc_fb_addr, VFB_HPC,

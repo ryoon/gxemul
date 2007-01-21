@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.237 2006-12-30 13:30:50 debug Exp $
+$Id: RELEASE,v 1.238 2007-01-21 21:02:57 debug Exp $
 
 Working on what will become 0.5.0.
 
@@ -22,7 +22,7 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 Changes between release 0.4.3 and 0.5.0 include, among other things:
 
-    o)	TODO
+    o)	TODO: interrupt subsystem, dreamcast stuff?
 
 Please read the HISTORY files for more details.
 

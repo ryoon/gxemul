@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.17 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_pcic.c,v 1.18 2007-01-21 21:02:57 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -212,6 +212,7 @@ DEVICE_ACCESS(pcic)
 
 DEVINIT(pcic)
 {
+	char tmpstr[200];
 	struct pcic_data *d = malloc(sizeof(struct pcic_data));
 
 	if (d == NULL) {
@@ -231,12 +232,15 @@ DEVINIT(pcic)
 	    DM_DEFAULT, NULL);
 
 	/*  TODO: find out a good way to specify the address, and the IRQ!  */
-	/*  IRQ 8 + 32 + 9  */
-	device_add(devinit->machine, "wdc addr=0x14000180 irq=49");
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x14000180 irq=%s.giu.9",
+	    devinit->interrupt_path);
+	device_add(devinit->machine, tmpstr);
 
 	/*  TODO: Linux/MobilePro looks at 0x14000170 and 0x1f0...  */
 	/*  Yuck. Now there are two. How should this be solved nicely?  */
-	device_add(devinit->machine, "wdc addr=0x140001f0 irq=49");
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x140001f0 irq=%s.giu.9",
+	    devinit->interrupt_path);
+	device_add(devinit->machine, tmpstr);
 
 	return 1;
 }

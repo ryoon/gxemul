@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.11 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_qemu.c,v 1.12 2007-01-21 21:02:57 debug Exp $
  *
  *  This file contains semi-bogus machine descriptions for experimental
  *  machines, mimicing those emulated by Fabrice Bellard's QEMU.
@@ -43,7 +43,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

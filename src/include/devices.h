@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.234 2007-01-20 13:26:20 debug Exp $
+ *  $Id: devices.h,v 1.235 2007-01-21 21:02:57 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -611,38 +611,6 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	uint64_t videomem_base, uint64_t control_base, char *name);
 
 /*  dev_vr41xx.c:  */
-#define	DEV_VR41XX_LENGTH		0x800		/*  TODO?  */
-struct vr41xx_data {
-	int		cpumodel;
-
-	int		kiu_console_handle;
-	uint32_t	kiu_offset;
-	int		kiu_irq_nr;
-	int		kiu_int_assert;
-	int		d0;
-	int		d1;
-	int		d2;
-	int		d3;
-	int		d4;
-	int		d5;
-	int		dont_clear_next;
-	int		escape_state;
-
-	int		pending_timer_interrupts;
-	struct timer	*timer;
-
-	/*  See icureg.h in NetBSD for more info.  */
-	uint16_t	sysint1;
-	uint16_t	msysint1;
-	uint16_t	giuint;
-	uint16_t	giumask;
-	uint16_t	sysint2;
-	uint16_t	msysint2;
-};
-
-int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
 struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	struct memory *mem, int cpumodel);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.18 2007-01-20 13:26:20 debug Exp $
+ *  $Id: machine_algor.c,v 1.19 2007-01-21 21:02:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -38,7 +38,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

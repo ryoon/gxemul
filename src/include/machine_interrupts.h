@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_interrupts.h,v 1.5 2007-01-20 13:26:20 debug Exp $
+ *  $Id: machine_interrupts.h,v 1.6 2007-01-21 21:02:57 debug Exp $
  *
  *  NOTE/TODO: This file should go away, as soon as interrupts have been
  *             rewritten!
@@ -41,7 +41,6 @@ void kn03_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
 void maxine_interrupt(struct machine *m, struct cpu *cpu,
 	int irq_nr, int assrt);
 void jazz_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
-void vr41xx_interrupt(struct machine *m, struct cpu *, int irq_nr, int assrt);
 void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
 void sgi_ip22_interrupt(struct machine *m, struct cpu *cpu,
 	int irq_nr, int assrt);

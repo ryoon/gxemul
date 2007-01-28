@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.21 2007-01-28 14:15:30 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.22 2007-01-28 14:40:54 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -108,10 +108,13 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 	if (irq_nr < 64) {
 		ms = 1 << (irq_nr & 31);
 
-		if (assrt)
-			m->md_int.au1x00_ic_data->request0_int |= ms;
-		else
-			m->md_int.au1x00_ic_data->request0_int &= ~ms;
+fatal("TODO: legacy interrupt rewrite!\n");
+abort();
+
+//		if (assrt)
+//			m->md_int.au1x00_ic_data->request0_int |= ms;
+//		else
+//			m->md_int.au1x00_ic_data->request0_int &= ~ms;
 
 		/*  TODO: Controller 1  */
 	}

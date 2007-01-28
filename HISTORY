@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1455 2007-01-28 14:31:42 debug Exp $
+$Id: HISTORY,v 1.1456 2007-01-28 14:40:53 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3243,3 +3243,5 @@ Changelog for GXemul:
 		src/include/machine_interrupts.h! Adding fatal error messages
 		+ abort() in the few places that are left to fix.
 		Converting dev_z8530 to the new interrupt system.
+		FINALLY removing the md_int struct completely from the
+		machine struct.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.15 2007-01-28 14:31:43 debug Exp $
+ *  $Id: machine_sgi.c,v 1.16 2007-01-28 14:40:54 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -169,8 +169,10 @@ MACHINE_SETUP(sgi)
 		 */
 
 		/*  int0 at mainbus0 addr 0x1fb801c0  */
-		machine->md_int.sgi_ip20_data = dev_sgi_ip20_init(cpu, mem,
-		    DEV_SGI_IP20_BASE);
+fatal("TODO: SGI legacy interrupt system rewrite!\n");
+abort();
+//		machine->md_int.sgi_ip20_data = dev_sgi_ip20_init(cpu, mem,
+//		    DEV_SGI_IP20_BASE);
 
 		/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:
 		    TODO (or in dev_sgi_ip20?)  */
@@ -215,14 +217,18 @@ MACHINE_SETUP(sgi)
 			strlcat(machine->machine_name,
 			    " (Indy, Indigo2, Challenge S; Full-house)",
 			    MACHINE_NAME_MAXBUF);
-			machine->md_int.sgi_ip22_data =
-			    dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
+fatal("TODO: SGI legacy interrupt system rewrite!\n");
+abort();
+//			machine->md_int.sgi_ip22_data =
+//			    dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
 		} else {
 			strlcat(machine->machine_name,
 			    " (Indy, Indigo2, Challenge S; Guiness)",
 			    MACHINE_NAME_MAXBUF);
-			machine->md_int.sgi_ip22_data =
-			    dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
+fatal("TODO: SGI legacy interrupt system rewrite!\n");
+abort();
+//			machine->md_int.sgi_ip22_data =
+//			    dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
 		}
 
 /*
@@ -358,8 +364,10 @@ abort();
 		strlcat(machine->machine_name, " (Octane)",
 		    MACHINE_NAME_MAXBUF);
 
-		machine->md_int.sgi_ip30_data =
-		    dev_sgi_ip30_init(machine, mem, 0x0ff00000);
+fatal("TODO: SGI legacy interrupt system rewrite!\n");
+abort();
+//		machine->md_int.sgi_ip30_data =
+//		    dev_sgi_ip30_init(machine, mem, 0x0ff00000);
 
 fatal("TODO: Legacy rewrite\n");
 abort();

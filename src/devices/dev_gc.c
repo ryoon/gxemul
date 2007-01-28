@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.10 2007-01-28 11:29:52 debug Exp $
+ *  $Id: dev_gc.c,v 1.11 2007-01-28 14:40:54 debug Exp $
  *  
  *  Grand Central Interrupt controller (used by MacPPC).
  */
@@ -70,20 +70,12 @@ assrt)
                         m->md_int.gc_data->status_hi &= ~mask;
         }
                 
-#if 0
-        printf("status = %08x %08x  enable = %08x %08x\n",
-            m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
-            m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);
-#endif
-
         if (m->md_int.gc_data->status_lo & m->md_int.gc_data->enable_lo ||
             m->md_int.gc_data->status_hi & m->md_int.gc_data->enable_hi)
                 cpu_interrupt(m->cpus[0], 65);
         else
                 cpu_interrupt_ack(m->cpus[0], 65);
 }               
-                        
-
 #endif
 
 DEVICE_ACCESS(gc)

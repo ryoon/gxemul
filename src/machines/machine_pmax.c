@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.21 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_pmax.c,v 1.22 2007-01-28 14:40:54 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -281,8 +281,10 @@ abort();
 		 *	SCSI ID 7			(0x1c300000) slot 12
 		 *  dma for asc0			(0x1c380000) slot 14
 		 */
-		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
-		    mem, 0x1c000000, 0);
+fatal("TODO: dec_ioasic legacy rewrite\n");
+abort();
+//		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
+//		    mem, 0x1c000000, 0);
 fatal("TODO: kmin dev_le_init.\n");
 abort();
 //		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
@@ -362,24 +364,28 @@ abort();
 		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz,
 		 *	SCSI ID 7				(0x1fb00000)
 		 */
-		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
-		    mem, 0x1f800000, 0);
+fatal("TODO: dec_ioasic legacy rewrite\n");
+abort();
+//		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
+//		    mem, 0x1f800000, 0);
 
 fatal("TODO: kn03 dev_le_init rewrite\n");
 abort();
 //		dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0,
 //		    KN03_INTR_LANCE +8, 4 * 65536);
 
-		machine->md_int.dec_ioasic_data->dma_func[3] =
-		    dev_scc_dma_func;
-		machine->md_int.dec_ioasic_data->dma_func_extra[2] =
-		    dev_scc_init(machine, mem, KN03_SYS_SCC_0,
-		    KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-		machine->md_int.dec_ioasic_data->dma_func[2] =
-		    dev_scc_dma_func;
-		machine->md_int.dec_ioasic_data->dma_func_extra[3] =
-		    dev_scc_init(machine, mem, KN03_SYS_SCC_1,
-		    KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+fatal("TODO: dec_ioasic legacy rewrite\n");
+abort();
+//		machine->md_int.dec_ioasic_data->dma_func[3] =
+//		    dev_scc_dma_func;
+//		machine->md_int.dec_ioasic_data->dma_func_extra[2] =
+//		    dev_scc_init(machine, mem, KN03_SYS_SCC_0,
+//		    KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+//		machine->md_int.dec_ioasic_data->dma_func[2] =
+//		    dev_scc_dma_func;
+//		machine->md_int.dec_ioasic_data->dma_func_extra[3] =
+//		    dev_scc_init(machine, mem, KN03_SYS_SCC_1,
+//		    KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 
 fatal("TODO: mc146818 irq\n");
 abort();
@@ -539,8 +545,10 @@ abort();
 		 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8
 		 *	built-in framebuffer			(0xa000000)
 		 */
-		machine->md_int.dec_ioasic_data =
-		    dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
+fatal("TODO: dec_ioasic legacy rewrite\n");
+abort();
+//		machine->md_int.dec_ioasic_data =
+//		    dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 
 fatal("TODO: turbochannel rewrite!\n");
 abort();

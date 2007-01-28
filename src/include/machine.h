@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.151 2007-01-28 13:58:10 debug Exp $
+ *  $Id: machine.h,v 1.152 2007-01-28 14:40:54 debug Exp $
  */
 
 #include <sys/types.h>
@@ -56,12 +56,8 @@ struct memory;
 struct of_data;
 struct settings;
 
-// TODO: These should go away!
-struct dec_ioasic_data;
-struct sgi_ip20_data;
-struct sgi_ip22_data;
-struct sgi_ip30_data;
 
+/*  TODO: This should probably go away...  */
 struct isa_pic_data {
 	struct pic8259_data	*pic1;
 	struct pic8259_data	*pic2;
@@ -214,16 +210,6 @@ struct machine {
 	/*  Bus-specific interrupt data:  */
 	/*  TODO: Remove!  */
 	struct isa_pic_data isa_pic_data;
-
-	/*  Machine-dependent interrupt specific structs:  */
-	/*  TODO: Remove!  */
-	union {
-		struct dec_ioasic_data *dec_ioasic_data;
-		struct sgi_ip20_data *sgi_ip20_data;
-		struct sgi_ip22_data *sgi_ip22_data;
-		struct sgi_ip30_data *sgi_ip30_data;
-		struct cpc700_data *cpc700_data;
-	} md_int;
 
 	/*  X11/framebuffer stuff:  */
 	int	use_x11;

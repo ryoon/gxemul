@@ -1,4 +1,4 @@
-$Id: TODO,v 1.429 2007-01-28 13:08:26 debug Exp $
+$Id: TODO,v 1.430 2007-01-28 14:40:54 debug Exp $
 
 Current work package:
 
@@ -14,9 +14,6 @@ Current work package:
 
       TODO:
 		o  PCI interrupt routing:   see dec21143 etc.
-		o  struct machine.md_int should go away.
-		o  src/include/machine_interrupts.h should go away completely
-		o  src/machines/interrupts.c should go away completely
 		o  Configuration file syntax:
 		    x  Allow runtime addition of interrupt controllers!
 		    x  Allow devices to be connected to those controllers.

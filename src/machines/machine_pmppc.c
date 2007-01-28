@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.7 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.8 2007-01-28 14:40:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -53,10 +53,10 @@ MACHINE_SETUP(pmppc)
 
 	dev_pmppc_init(machine->memory);
 
-	machine->md_int.cpc700_data = dev_cpc700_init(machine, machine->memory);
-
 fatal("TODO: Legacy rewrite\n");
 abort();
+
+//	machine->md_int.cpc700_data = dev_cpc700_init(machine, machine->memory);
 //	machine->md_interrupt = cpc700_interrupt;
 
 	/*  RTC at "ext int 5" = "int 25" in IBM jargon, int
@@ -64,8 +64,8 @@ abort();
 //	dev_mc146818_init(machine, machine->memory, 0x7ff00000, 31-25,
 //	    MC146818_PMPPC, 1);
 
-	bus_pci_add(machine, machine->md_int.cpc700_data->pci_data,
-	    machine->memory, 0, 8, 0, "dec21143");
+//	bus_pci_add(machine, machine->md_int.cpc700_data->pci_data,
+//	    machine->memory, 0, 8, 0, "dec21143");
 }
 
 

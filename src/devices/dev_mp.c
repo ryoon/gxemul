@@ -25,13 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.39 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_mp.c,v 1.40 2007-01-28 13:45:46 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
  *  multiprocessor controller used in any real machine.
  *
- *  TODO: Non-MIPS support.
+ *  NOTE: The devinit irq string should be the part _after_ "cpu[%i].".
+ *        For MIPS, it will be MIPS_IPI_INT.
  */
 
 #include <stdio.h>
@@ -39,9 +40,9 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "cpu_mips.h"
 #include "device.h"
 #include "machine.h"
+#include "interrupt.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -57,15 +58,15 @@ struct mp_data {
 	/*  Each CPU has an array of pending ipis.  */
 	int		*n_pending_ipis;
 	int		**ipi;
+
+	/*  Connections to all CPUs' IPI pins:  */
+	struct interrupt *ipi_irq;
 };
 
 
 extern int single_step;
 
 
-/*
- *  dev_mp_access():
- */
 DEVICE_ACCESS(mp)
 {
 	struct mp_data *d = extra;
@@ -197,10 +198,12 @@ DEVICE_ACCESS(mp)
 					fprintf(stderr, "out of memory\n");
 					exit(1);
 				}
+
 				/*  Add the IPI last in the array:  */
 				d->ipi[i][d->n_pending_ipis[i] - 1] =
 				    idata >> 16;
-				cpu_interrupt(d->cpus[i], MIPS_IPI_INT);
+
+				INTERRUPT_ASSERT(d->ipi_irq[i]);
 			}
 		}
 		break;
@@ -224,9 +227,10 @@ DEVICE_ACCESS(mp)
 				    &d->ipi[cpu->cpu_id][1],
 				    d->n_pending_ipis[cpu->cpu_id]);
 		}
+
 		/*  Deassert the interrupt, if there are no pending IPIs:  */
 		if (d->n_pending_ipis[cpu->cpu_id] == 0)
-			cpu_interrupt_ack(d->cpus[cpu->cpu_id], MIPS_IPI_INT);
+			INTERRUPT_DEASSERT(d->ipi_irq[cpu->cpu_id]);
 		break;
 
 	case DEV_MP_NCYCLES:
@@ -257,7 +261,7 @@ DEVICE_ACCESS(mp)
 DEVINIT(mp)
 {
 	struct mp_data *d;
-	int n;
+	int n, i;
 
 	d = malloc(sizeof(struct mp_data));
 	if (d == NULL) {
@@ -270,6 +274,20 @@ DEVINIT(mp)
 	d->stack_addr = INITIAL_STACK_POINTER;
 
 	n = devinit->machine->ncpus;
+
+	/*  Connect to all CPUs' IPI pins:  */
+	d->ipi_irq = malloc(n * sizeof(struct interrupt));
+	if (d->ipi_irq == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	for (i=0; i<n; i++) {
+		char tmpstr[200];
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%s",
+		    devinit->machine->path, i, devinit->interrupt_path);
+		INTERRUPT_CONNECT(tmpstr, d->ipi_irq[i]);
+	}
+
 	d->n_pending_ipis = malloc(n * sizeof(int));
 	d->ipi = malloc(n * sizeof(int *));
 	if (d->ipi == NULL || d->n_pending_ipis == NULL) {

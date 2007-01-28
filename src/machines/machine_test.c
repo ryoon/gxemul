@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.25 2007-01-28 00:41:17 debug Exp $
+ *  $Id: machine_test.c,v 1.26 2007-01-28 13:45:46 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -460,7 +460,7 @@ MACHINE_SETUP(testmips)
 	    machine->bootstrap_cpu);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64,
+	snprintf(tmpstr, sizeof(tmpstr), "mp irq=6 addr=0x%"PRIx64,
 	    (uint64_t) DEV_MP_ADDRESS);
 	device_add(machine, tmpstr);
 

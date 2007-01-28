@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1452 2007-01-28 13:28:27 debug Exp $
+$Id: HISTORY,v 1.1453 2007-01-28 13:45:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3236,3 +3236,5 @@ Changelog for GXemul:
 		Fixing the JAZZ timer (hardcoding it at 100 Hz, works with
 		NetBSD and it is better than a completely dummy timer as it
 		was before).
+		Converting dev_mp to the new interrupt system, although I
+		haven't had time to actually test it yet.

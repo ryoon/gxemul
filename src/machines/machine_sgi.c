@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.14 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_sgi.c,v 1.15 2007-01-28 14:31:43 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -519,8 +519,12 @@ abort();
 		dev_mc146818_init(machine, mem, 0x1f3a0000, tmpstr,
 		    MC146818_SGI, 0x40);  /*  mcclock0  */
 
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
+		/*  TODO: _WHERE_ does the z8530 interrupt?  */
+		snprintf(tmpstr, sizeof(tmpstr), "z8530 addr=0x1fbd9830 "
+		    "irq=%s.cpu[%i].2 addr_mult=4",
+		    machine->path, machine->bootstrap_cpu);
+		machine->main_console_handle = (size_t)
+		    device_add(machine, tmpstr);
 
 		/*
 		 *  PCI devices:   (according to NetBSD's GENERIC

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.12 2007-01-28 14:15:30 debug Exp $
+ *  $Id: dev_z8530.c,v 1.13 2007-01-28 14:31:43 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -46,6 +46,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -61,7 +62,7 @@
 #define	DEV_Z8530_LENGTH	4
 
 struct z8530_data {
-	int		irq_nr;
+	struct interrupt irq;
 	int		irq_asserted;
 	int		addr_mult;
 
@@ -114,14 +115,11 @@ DEVICE_TICK(z8530)
 	if (!(d->wr[1][9] & ZSWR9_MASTER_IE))
 		asserted = 0;
 
-fatal("TODO: legacy rewrite!\n");
-abort();
+	if (asserted)
+		INTERRUPT_ASSERT(d->irq);
 
-//	if (asserted)
-//		cpu_interrupt(cpu, d->irq_nr);
-
-//	if (d->irq_asserted && !asserted)
-//		cpu_interrupt_ack(cpu, d->irq_nr);
+	if (d->irq_asserted && !asserted)
+		INTERRUPT_DEASSERT(d->irq);
 
 	d->irq_asserted = asserted;
 }
@@ -213,8 +211,10 @@ DEVINIT(z8530)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct z8530_data));
-	d->irq_nr     = devinit->irq_nr;
+
 	d->addr_mult  = devinit->addr_mult;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	snprintf(tmp, sizeof(tmp), "%s [ch-b]", devinit->name);
 	d->console_handle[0] = console_start_slave(devinit->machine, tmp,

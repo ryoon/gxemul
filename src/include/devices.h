@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.237 2007-01-28 11:29:52 debug Exp $
+ *  $Id: devices.h,v 1.238 2007-01-28 13:08:26 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -251,37 +251,6 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *timer_irq_path, char *isa_irq_path, int type);
 
 /*  dev_jazz.c:  */
-#define	DEV_JAZZ_LENGTH			0x280
-struct jazz_data {
-	struct cpu	*cpu;
-
-	/*  Jazz stuff:  */
-	uint32_t	int_enable_mask;
-	uint32_t	int_asserted;
-
-	/*  ISA stuff:  */
-	uint32_t	isa_int_enable_mask;
-	uint32_t	isa_int_asserted;
-
-	int		interval;
-	int		interval_start;
-
-	int		jazz_timer_value;
-	int		jazz_timer_current;
-
-	uint64_t	dma_translation_table_base;
-	uint64_t	dma_translation_table_limit;
-
-	uint32_t	dma0_mode;
-	uint32_t	dma0_enable;
-	uint32_t	dma0_count;
-	uint32_t	dma0_addr;
-
-	uint32_t	dma1_mode;
-	/*  same for dma1,2,3 actually (TODO)  */
-
-	int		led;
-};
 size_t dev_jazz_dma_controller(void *dma_controller_data,
 	unsigned char *data, size_t len, int writeflag);
 

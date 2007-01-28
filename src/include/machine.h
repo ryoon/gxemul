@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.149 2007-01-28 11:29:53 debug Exp $
+ *  $Id: machine.h,v 1.150 2007-01-28 13:08:26 debug Exp $
  */
 
 #include <sys/types.h>
@@ -59,7 +59,6 @@ struct settings;
 
 // TODO: These should go away!
 struct dec_ioasic_data;
-struct jazz_data;
 struct sgi_ip20_data;
 struct sgi_ip22_data;
 struct sgi_ip30_data;
@@ -221,7 +220,6 @@ struct machine {
 	/*  TODO: Remove!  */
 	union {
 		struct dec_ioasic_data *dec_ioasic_data;
-		struct jazz_data *jazz_data;
 		struct sgi_ip20_data *sgi_ip20_data;
 		struct sgi_ip22_data *sgi_ip22_data;
 		struct sgi_ip30_data *sgi_ip30_data;

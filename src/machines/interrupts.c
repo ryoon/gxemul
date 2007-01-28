@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.24 2007-01-28 11:29:53 debug Exp $
+ *  $Id: interrupts.c,v 1.25 2007-01-28 13:08:26 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
@@ -123,67 +123,6 @@ void maxine_interrupt(struct machine *m, struct cpu *cpu,
 		cpu_interrupt(cpu, XINE_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, XINE_INT_TC3);
-}
-
-
-/*
- *  Jazz interrupts (for Acer PICA-61 etc):
- *
- *  0..7			MIPS interrupts
- *  8 + x, where x = 0..15	Jazz interrupts
- *  8 + x, where x = 16..31	ISA interrupt (irq nr + 16)
- */
-void jazz_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
-{
-	uint32_t irq;
-	int isa = 0;
-
-	irq_nr -= 8;
-
-	/*  debug("jazz_interrupt() irq_nr = %i, assrt = %i\n",
-		irq_nr, assrt);  */
-
-	if (irq_nr >= 16) {
-		isa = 1;
-		irq_nr -= 16;
-	}
-
-	irq = 1 << irq_nr;
-
-	if (isa) {
-		if (assrt)
-			m->md_int.jazz_data->isa_int_asserted |= irq;
-		else
-			m->md_int.jazz_data->isa_int_asserted &= ~irq;
-	} else {
-		if (assrt)
-			m->md_int.jazz_data->int_asserted |= irq;
-		else
-			m->md_int.jazz_data->int_asserted &= ~irq;
-	}
-
-	/*  debug("   %08x %08x\n", m->md_int.jazz_data->int_asserted,
-		m->md_int.jazz_data->int_enable_mask);  */
-	/*  debug("   %08x %08x\n", m->md_int.jazz_data->isa_int_asserted,
-		m->md_int.jazz_data->isa_int_enable_mask);  */
-
-	if (m->md_int.jazz_data->int_asserted
-	    /* & m->md_int.jazz_data->int_enable_mask  */ & ~0x8000 )
-		cpu_interrupt(cpu, 3);
-	else
-		cpu_interrupt_ack(cpu, 3);
-
-	if (m->md_int.jazz_data->isa_int_asserted &
-	    m->md_int.jazz_data->isa_int_enable_mask)
-		cpu_interrupt(cpu, 4);
-	else
-		cpu_interrupt_ack(cpu, 4);
-
-	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
-	if (m->md_int.jazz_data->int_asserted & 0x8000)
-		cpu_interrupt(cpu, 6);
-	else
-		cpu_interrupt_ack(cpu, 6);
 }
 
 

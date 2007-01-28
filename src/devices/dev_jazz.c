@@ -25,13 +25,20 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.25 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_jazz.c,v 1.26 2007-01-28 13:08:26 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  *
  *  TODO/NOTE: This is mostly a quick hack, it doesn't really implement
  *  much of the Jazz architecture.  Also, the a0/20 isa-like stuff is
  *  not supposed to be here.
+ *
+ *  TODO: Figure out how the int enable mask works; it seems to be shifted
+ *  10 bits (?) according to NetBSD/arc sources.
+ *
+ *  JAZZ interrupts 0..14 are connected to MIPS irq 3,
+ *  JAZZ interrupt 15 (the timer) is connected to MIPS irq 6,
+ *  and ISA interrupts 0..15 are connected to MIPS irq 4.
  */
 
 #include <stdio.h>
@@ -41,6 +48,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -49,10 +57,89 @@
 #include "pica.h"
 
 
+#define	DEV_JAZZ_LENGTH			0x280
 #define	DEV_JAZZ_TICKSHIFT		14
-
 #define	PICA_TIMER_IRQ			15
 
+struct jazz_data {
+	struct interrupt mips_irq_3;
+	struct interrupt mips_irq_4;
+	struct interrupt mips_irq_6;
+
+	struct cpu	*cpu;
+
+	/*  Jazz stuff:  */
+	uint32_t	int_enable_mask;	/*  TODO!  */
+	uint32_t	int_asserted;
+
+	/*  ISA stuff:  */
+	uint32_t	isa_int_enable_mask;
+	uint32_t	isa_int_asserted;
+
+	int		interval;
+	int		interval_start;
+
+	int		jazz_timer_value;
+	int		jazz_timer_current;
+	struct interrupt jazz_timer_irq;
+
+	uint64_t	dma_translation_table_base;
+	uint64_t	dma_translation_table_limit;
+
+	uint32_t	dma0_mode;
+	uint32_t	dma0_enable;
+	uint32_t	dma0_count;
+	uint32_t	dma0_addr;
+
+	uint32_t	dma1_mode;
+	/*  same for dma1,2,3 actually (TODO)  */
+
+	int		led;
+};
+
+
+void reassert_isa_interrupts(struct jazz_data *d)
+{
+	if (d->isa_int_asserted & d->isa_int_enable_mask)
+		INTERRUPT_ASSERT(d->mips_irq_4);
+	else
+		INTERRUPT_DEASSERT(d->mips_irq_4);
+}
+
+
+void jazz_interrupt_assert(struct interrupt *interrupt)
+{
+	struct jazz_data *d = interrupt->extra;
+	d->int_asserted |= (1 << interrupt->line);
+
+	if (d->int_asserted & 0x7fff)
+		INTERRUPT_ASSERT(d->mips_irq_3);
+	if (d->int_asserted & 0x8000)
+		INTERRUPT_ASSERT(d->mips_irq_6);
+}
+void jazz_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct jazz_data *d = interrupt->extra;
+	d->int_asserted &= ~(1 << interrupt->line);
+
+	if (!(d->int_asserted & 0x7fff))
+		INTERRUPT_DEASSERT(d->mips_irq_3);
+	if (!(d->int_asserted & 0x8000))
+		INTERRUPT_DEASSERT(d->mips_irq_6);
+}
+void jazz_isa_interrupt_assert(struct interrupt *interrupt)
+{
+	struct jazz_data *d = interrupt->extra;
+	d->isa_int_asserted |= (1 << interrupt->line);
+	reassert_isa_interrupts(d);
+}
+void jazz_isa_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct jazz_data *d = interrupt->extra;
+	d->isa_int_asserted &= ~(1 << interrupt->line);
+	reassert_isa_interrupts(d);
+}
+ 
 
 /*
  *  dev_jazz_dma_controller():
@@ -134,10 +221,7 @@ size_t dev_jazz_dma_controller(void *dma_controller_data,
 }
 
 
-/*
- *  dev_jazz_tick():
- */
-void dev_jazz_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(jazz)
 {
 	struct jazz_data *d = extra;
 
@@ -147,7 +231,7 @@ void dev_jazz_tick(struct cpu *cpu, void *extra)
 		d->interval -= 2;
 		if (d->interval <= 0) {
 			debug("[ jazz: interval timer interrupt ]\n");
-			cpu_interrupt(cpu, 8 + PICA_TIMER_IRQ);
+			INTERRUPT_ASSERT(d->jazz_timer_irq);
 		}
 	}
 
@@ -156,15 +240,12 @@ void dev_jazz_tick(struct cpu *cpu, void *extra)
 		d->jazz_timer_current -= 5;
 		if (d->jazz_timer_current < 1) {
 			d->jazz_timer_current = d->jazz_timer_value;
-			cpu_interrupt(cpu, 6);
+			INTERRUPT_ASSERT(d->mips_irq_6);
 		}
 	}
 }
 
 
-/*
- *  dev_jazz_access():
- */
 DEVICE_ACCESS(jazz)
 {
 	struct jazz_data *d = (struct jazz_data *) extra;
@@ -264,7 +345,7 @@ printf("R4030_SYS_ISA_VECTOR: w=%i\n", writeflag);
 		break;
 	case R4030_SYS_IT_STAT:
 		/*  Accessing this word seems to acknowledge interrupts?  */
-		cpu_interrupt_ack(cpu, 8 + PICA_TIMER_IRQ);
+		INTERRUPT_DEASSERT(d->jazz_timer_irq);
 		if (writeflag == MEM_WRITE)
 			d->interval = idata;
 		else
@@ -273,9 +354,28 @@ printf("R4030_SYS_ISA_VECTOR: w=%i\n", writeflag);
 		break;
 	case R4030_SYS_EXT_IMASK:
 		if (writeflag == MEM_WRITE) {
+			int old_assert_3 = (0x7fff &
+			    d->int_asserted & d->int_enable_mask);
+			int old_assert_6 = (0x8000 &
+			    d->int_asserted & d->int_enable_mask);
+			int new_assert_3, new_assert_6;
+
 			d->int_enable_mask = idata;
-			/*  Do a "nonsense" interrupt recalibration:  */
-			cpu_interrupt_ack(cpu, 8);
+
+			new_assert_3 =
+			    d->int_asserted & d->int_enable_mask & 0x7fff;
+			new_assert_6 =
+			    d->int_asserted & d->int_enable_mask & 0x8000;
+
+			if (old_assert_3 && !new_assert_3)
+				INTERRUPT_DEASSERT(d->mips_irq_3);
+			else if (!old_assert_3 && new_assert_3)
+				INTERRUPT_ASSERT(d->mips_irq_3);
+
+			if (old_assert_6 && !new_assert_6)
+				INTERRUPT_DEASSERT(d->mips_irq_6);
+			else if (!old_assert_6 && new_assert_6)
+				INTERRUPT_ASSERT(d->mips_irq_6);
 		} else
 			odata = d->int_enable_mask;
 		break;
@@ -297,9 +397,6 @@ printf("R4030_SYS_ISA_VECTOR: w=%i\n", writeflag);
 }
 
 
-/*
- *  dev_jazz_led_access():
- */
 DEVICE_ACCESS(jazz_led)
 {
 	struct jazz_data *d = (struct jazz_data *) extra;
@@ -359,7 +456,8 @@ DEVICE_ACCESS(jazz_a0)
 		if (writeflag == MEM_WRITE) {
 			/*  TODO: only if idata == 0x20?  */
 			d->isa_int_asserted &= 0xff;
-			cpu_interrupt_ack(cpu, 8 + 0);
+
+			reassert_isa_interrupts(d);
 		}
 		break;
 	case 1:
@@ -369,8 +467,8 @@ DEVICE_ACCESS(jazz_a0)
 			    (d->isa_int_enable_mask & 0xff) | idata;
 			debug("[ jazz_isa_a0: setting isa_int_enable_mask "
 			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
-			/*  Recompute interrupt stuff:  */
-			cpu_interrupt_ack(cpu, 8 + 0);
+
+			reassert_isa_interrupts(d);
 		} else
 			odata = d->isa_int_enable_mask;
 		break;
@@ -410,7 +508,7 @@ DEVICE_ACCESS(jazz_20)
 		if (writeflag == MEM_WRITE) {
 			/*  TODO: only if idata == 0x20?  */
 			d->isa_int_asserted &= 0xff00;
-			cpu_interrupt_ack(cpu, 8 + 0);
+			reassert_isa_interrupts(d);
 		}
 		break;
 	case 1:
@@ -420,8 +518,8 @@ DEVICE_ACCESS(jazz_20)
 			    (d->isa_int_enable_mask & 0xff00) | idata;
 			debug("[ jazz_isa_20: setting isa_int_enable_mask "
 			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
-			/*  Recompute interrupt stuff:  */
-			cpu_interrupt_ack(cpu, 8 + 0);
+
+			reassert_isa_interrupts(d);
 		} else
 			odata = d->isa_int_enable_mask;
 		break;
@@ -489,7 +587,7 @@ DEVICE_ACCESS(jazz_jazzio)
 	}
 
 	/*  This is needed by Windows NT during startup:  */
-	cpu_interrupt_ack(cpu, 3);
+	INTERRUPT_DEASSERT(d->mips_irq_3);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -500,6 +598,8 @@ DEVICE_ACCESS(jazz_jazzio)
 
 DEVINIT(jazz)
 {
+	char tmpstr[300];
+	int i;
 	struct jazz_data *d = malloc(sizeof(struct jazz_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -510,6 +610,52 @@ DEVINIT(jazz)
 	d->cpu = devinit->machine->cpus[0];	/*  TODO  */
 
 	d->isa_int_enable_mask = 0xffff;
+
+	/*
+	 *  Register 16 native JAZZ irqs, and 16 ISA irqs:
+	 *
+	 *  emul[x].machine[y].cpu[z].jazz.%i		(native)
+	 *  emul[x].machine[y].cpu[z].jazz.isa.%i	(ISA)
+	 */
+	for (i=0; i<16; i++) {
+		struct interrupt template;
+		char n[300];
+		snprintf(n, sizeof(n), "%s.jazz.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = jazz_interrupt_assert;
+		template.interrupt_deassert = jazz_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+	for (i=0; i<16; i++) {
+		struct interrupt template;
+		char n[300];
+		snprintf(n, sizeof(n), "%s.jazz.isa.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = jazz_isa_interrupt_assert;
+		template.interrupt_deassert = jazz_isa_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
+	/*  Connect to MIPS CPU interrupt lines:  */
+	snprintf(tmpstr, sizeof(tmpstr), "%s.3", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_3);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.4", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_4);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.6", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->mips_irq_6);
+
+	/*  Connect to JAZZ timer interrupt:  */
+	snprintf(tmpstr, sizeof(tmpstr), "%s.jazz.%i",
+	    devinit->interrupt_path, PICA_TIMER_IRQ);
+	INTERRUPT_CONNECT(tmpstr, d->jazz_timer_irq);
 
 	memory_device_register(devinit->machine->memory, "jazz",
 	    devinit->addr, DEV_JAZZ_LENGTH,

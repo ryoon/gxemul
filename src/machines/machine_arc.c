@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.10 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_arc.c,v 1.11 2007-01-28 13:08:26 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,8 +48,10 @@
 MACHINE_SETUP(arc)
 {
 	struct pci_data *pci_data;
+	void *jazz_data;
 	struct memory *mem = machine->memory;
 	char tmpstr[1000];
+	char tmpstr2[1000];
 	int i, j;
 	char *eaddr_string = "eaddr=10:20:30:40:50:60";		/*  bogus  */
 	unsigned char macaddr[6];
@@ -103,8 +105,11 @@ MACHINE_SETUP(arc)
 		device_add(machine, "sn addr=0x80001000 irq=0");
 		dev_mc146818_init(machine, mem, 0x80004000ULL, 0,
 		    MC146818_ARC_NEC, 1);
-		i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042,
-		    0, 0, machine->use_x11, 0);
+
+fatal("TODO: legacy rewrite\n");
+abort();
+//		i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042,
+//		    0, 0, machine->use_x11, 0);
 
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "ns16550 irq=3 addr=0x80006000 in_use=%i name2=tty0",
@@ -236,26 +241,29 @@ MACHINE_SETUP(arc)
 			exit(1);
 		}
 
-		machine->md_int.jazz_data = device_add(machine,
-		    "jazz addr=0x80000000");
+		jazz_data = device_add(machine, "jazz addr=0x80000000");
 
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = jazz_interrupt;
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		i = dev_pckbc_init(machine, mem, 0x80005000ULL,
-//		    PCKBC_JAZZ, 8 + 6, 8 + 7,
-//		    machine->use_x11, 0);
-
+		/*  Keyboard IRQ is jazz.6, mouse is jazz.7  */
 		snprintf(tmpstr, sizeof(tmpstr),
-		    "ns16550 irq=16 addr=0x80006000 in_use=%i"
-		    " name2=tty0", machine->use_x11? 0 : 1);
+		    "%s.cpu[%i].jazz.6", machine->path,
+		    machine->bootstrap_cpu);
+		snprintf(tmpstr2, sizeof(tmpstr2),
+		    "%s.cpu[%i].jazz.7", machine->path,
+		    machine->bootstrap_cpu);
+		i = dev_pckbc_init(machine, mem, 0x80005000ULL,
+		    PCKBC_JAZZ, tmpstr, tmpstr2,
+		    machine->use_x11, 0);
+
+		/*  Serial controllers at JAZZ irq 8 and 9:  */
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "ns16550 irq=%s.cpu[%i].jazz.8 addr=0x80006000"
+		    " in_use=%i name2=tty0", machine->path,
+		    machine->bootstrap_cpu, machine->use_x11? 0 : 1);
 		j = (size_t)device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr),
-		    "ns16550 irq=17 addr=0x80007000 in_use=%i"
-		    " name2=tty1", 0);
+		    "ns16550 irq=%s.cpu[%i].jazz.9 addr=0x80007000"
+		    " in_use=0 name2=tty1", machine->path,
+		    machine->bootstrap_cpu);
 		device_add(machine, tmpstr);
 
 		if (machine->use_x11)
@@ -285,23 +293,33 @@ abort();
 			break;
 		}
 
-		/*  irq 8 + 4  */
-		device_add(machine, "sn addr=0x80001000 irq=12");
+		/*  SN at JAZZ irq 4  */
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "sn addr=0x80001000 irq=%s.cpu[%i].jazz.4",
+		    machine->path, machine->bootstrap_cpu);
+		device_add(machine, tmpstr);
 
-fatal("TODO: Rewrite initialization of dev_asc_init for PICA!\n");
-abort();
-//		dev_asc_init(machine, mem, 0x80002000ULL, 8 + 5, NULL,
-//		    DEV_ASC_PICA, dev_jazz_dma_controller,
-//		    machine->md_int.jazz_data);
+		/*  ASC at JAZZ irq 5  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].jazz.5", 
+		    machine->path, machine->bootstrap_cpu);
+		dev_asc_init(machine, mem, 0x80002000ULL, tmpstr, NULL,
+		    DEV_ASC_PICA, dev_jazz_dma_controller, jazz_data);
 
-		device_add(machine, "fdc addr=0x80003000, irq=0");
+		/*  FDC at JAZZ irq 1  */
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "fdc addr=0x80003000 irq=%s.cpu[%i].jazz.1",
+		    machine->path, machine->bootstrap_cpu);
+		device_add(machine, tmpstr);
 
-//		dev_mc146818_init(machine, mem,
-//		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
+		/*  MC146818 at MIPS irq 2:  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2", 
+		    machine->path, machine->bootstrap_cpu);
+		dev_mc146818_init(machine, mem,
+		    0x80004000ULL, tmpstr, MC146818_ARC_JAZZ, 1);
 
 #if 0
 Not yet.
-		/*  irq = 8+16 + 14  */
+		/*  WDC at ISA irq 14  */
 		device_add(machine, "wdc addr=0x900001f0, irq=38");
 #endif
 
@@ -320,11 +338,10 @@ Not yet.
 		strlcat(machine->machine_name, " (Microsoft Jazz, "
 		    "Olivetti M700)", MACHINE_NAME_MAXBUF);
 
-		machine->md_int.jazz_data = device_add(machine,
-		    "jazz addr=0x80000000");
+		device_add(machine, "jazz addr=0x80000000");
+
 fatal("TODO: Legacy rewrite\n");
 abort();
-//		machine->md_interrupt = jazz_interrupt;
 
 //		dev_mc146818_init(machine, mem,
 //		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.12 2007-01-05 16:02:54 debug Exp $
+ *  $Id: machine_sgi.c,v 1.13 2007-01-28 13:08:26 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -268,8 +268,10 @@ abort();
 		    "z8530 addr=0x1fbd9830 irq=363 addr_mult=4");
 
 		/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
-		j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
-		    0, 0, machine->use_x11, 0);  /*  TODO: irq numbers  */
+fatal("TODO: legacy rewrite\n");
+abort();
+//		j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
+//		    0, 0, machine->use_x11, 0);  /*  TODO: irq numbers  */
 
 		if (machine->use_x11)
 			machine->main_console_handle = j;

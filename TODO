@@ -1,4 +1,4 @@
-$Id: TODO,v 1.428 2007-01-20 13:26:20 debug Exp $
+$Id: TODO,v 1.429 2007-01-28 13:08:26 debug Exp $
 
 Current work package:
 
@@ -22,6 +22,8 @@ Current work package:
 		    x  Allow devices to be connected to those controllers.
 		    x  Allow semi-automagic busses (e.g. the ISA bus)
 		       to connect to these interrupts as well.
+		o  All newly introduced C++-style comments, //, which have
+		   to do with the legacy interrupt rewrite...
 		o  SMP!
 
 

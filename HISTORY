@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1451 2007-01-28 13:08:25 debug Exp $
+$Id: HISTORY,v 1.1452 2007-01-28 13:28:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3232,4 +3232,7 @@ Changelog for GXemul:
 		Beginning to convert the MacPPC GC (Grand Central) interrupt
 		controller to the new interrupt system.
 		Converting Jazz interrupts (PICA61 etc.) to the new interrupt
-		system.
+		system. NetBSD/arc can be installed again :-)
+		Fixing the JAZZ timer (hardcoding it at 100 Hz, works with
+		NetBSD and it is better than a completely dummy timer as it
+		was before).

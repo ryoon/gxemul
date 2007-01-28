@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.26 2007-01-28 13:08:26 debug Exp $
+ *  $Id: dev_jazz.c,v 1.27 2007-01-28 13:28:27 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  *
@@ -35,6 +35,8 @@
  *
  *  TODO: Figure out how the int enable mask works; it seems to be shifted
  *  10 bits (?) according to NetBSD/arc sources.
+ *
+ *  TODO: Don't hardcode the timer to 100 Hz.
  *
  *  JAZZ interrupts 0..14 are connected to MIPS irq 3,
  *  JAZZ interrupt 15 (the timer) is connected to MIPS irq 6,
@@ -52,6 +54,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 #include "jazz_r4030_dma.h"
 #include "pica.h"
@@ -79,6 +82,8 @@ struct jazz_data {
 	int		interval;
 	int		interval_start;
 
+	struct timer	*timer;
+	int		pending_timer_interrupts;
 	int		jazz_timer_value;
 	int		jazz_timer_current;
 	struct interrupt jazz_timer_irq;
@@ -221,6 +226,13 @@ size_t dev_jazz_dma_controller(void *dma_controller_data,
 }
 
 
+static void timer_tick(struct timer *t, void *extra)
+{
+	struct jazz_data *d = extra;
+	d->pending_timer_interrupts ++;
+}
+
+
 DEVICE_TICK(jazz)
 {
 	struct jazz_data *d = extra;
@@ -230,9 +242,13 @@ DEVICE_TICK(jazz)
 	    && (d->int_enable_mask & 2) /* Hm? */ ) {
 		d->interval -= 2;
 		if (d->interval <= 0) {
-			debug("[ jazz: interval timer interrupt ]\n");
-			INTERRUPT_ASSERT(d->jazz_timer_irq);
+			/*  debug("[ jazz: interval timer interrupt ]\n");
+			  INTERRUPT_ASSERT(d->jazz_timer_irq);  */
 		}
+
+		/*  New timer system:  */
+		if (d->pending_timer_interrupts > 0)
+			INTERRUPT_ASSERT(d->jazz_timer_irq);
 	}
 
 	/*  Linux?  */
@@ -240,8 +256,12 @@ DEVICE_TICK(jazz)
 		d->jazz_timer_current -= 5;
 		if (d->jazz_timer_current < 1) {
 			d->jazz_timer_current = d->jazz_timer_value;
-			INTERRUPT_ASSERT(d->mips_irq_6);
+			/*  INTERRUPT_ASSERT(d->mips_irq_6);  */
 		}
+
+		/*  New timer system:  */
+		if (d->pending_timer_interrupts > 0)
+			INTERRUPT_ASSERT(d->mips_irq_6);
 	}
 }
 
@@ -346,6 +366,9 @@ printf("R4030_SYS_ISA_VECTOR: w=%i\n", writeflag);
 	case R4030_SYS_IT_STAT:
 		/*  Accessing this word seems to acknowledge interrupts?  */
 		INTERRUPT_DEASSERT(d->jazz_timer_irq);
+		if (d->pending_timer_interrupts > 0)
+			d->pending_timer_interrupts --;
+
 		if (writeflag == MEM_WRITE)
 			d->interval = idata;
 		else
@@ -676,6 +699,8 @@ DEVINIT(jazz)
 	    0xf0000000ULL, 4, dev_jazz_jazzio_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
+	/*  Add a timer, hardcoded to 100 Hz. TODO: Don't hardcode!  */
+	d->timer = timer_add(100.0, timer_tick, d);
 	machine_add_tickfunction(devinit->machine, dev_jazz_tick,
 	    d, DEV_JAZZ_TICKSHIFT, 0.0);
 

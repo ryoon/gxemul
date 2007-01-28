@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.9 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_ohci.c,v 1.10 2007-01-28 00:41:17 debug Exp $
  *  
  *  USB OHCI (Open Host Controller Interface).
  *
@@ -38,6 +38,7 @@
 
 #include "cpu.h"
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -53,9 +54,9 @@
 
 
 struct ohci_data {
-	int	irq_nr;
+	struct interrupt	irq;
 
-	int	port1reset;
+	int			port1reset;
 };
 
 
@@ -82,7 +83,7 @@ DEVICE_ACCESS(ohci)
 		name = "COMMAND_STATUS";
 		if (idata == 0x2) {
 fatal("URK\n");
-			cpu_interrupt(cpu, d->irq_nr);
+			INTERRUPT_ASSERT(d->irq);
 		}
 		break;
 	case OHCI_INTERRUPT_STATUS:
@@ -159,7 +160,8 @@ DEVINIT(ohci)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ohci_data));
-	d->irq_nr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1447 2007-01-21 21:02:56 debug Exp $
+$Id: HISTORY,v 1.1448 2007-01-28 00:41:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3221,3 +3221,9 @@ Changelog for GXemul:
 		well enough to run NetBSD/algor. :-)
 20070122	Converting VR41xx (HPCmips) interrupts. NetBSD/hpcmips
 		can be installed using the new interrupt system :-)
+20070123	Making the testmips mode work with the new interrupt system.
+20070127	Beginning to convert DEC5800 devices to devinit, and to the
+		new interrupt system.
+		Converting Playstation 2 devices to devinit, and converting
+		the interrupt system. Also fixing a severe bug: the interrupt
+		mask register on Playstation 2 is bitwise _toggled_ on writes.

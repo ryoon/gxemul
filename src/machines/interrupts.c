@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.22 2007-01-21 21:02:57 debug Exp $
+ *  $Id: interrupts.c,v 1.23 2007-01-28 00:41:17 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
@@ -188,74 +188,6 @@ void jazz_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 
 /*
- *  Playstation 2 interrupt routine:
- *
- *  irq_nr =	8 + x		normal irq x
- *		8 + 16 + y	dma irq y
- *		8 + 32 + 0	sbus irq 0 (pcmcia)
- *		8 + 32 + 1	sbus irq 1 (usb)
- */
-void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
-{
-	irq_nr -= 8;
-	/*  debug("ps2_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);  */
-
-	if (irq_nr >= 32) {
-		int msk = 0;
-		switch (irq_nr - 32) {
-		case 0:	/*  PCMCIA:  */
-			msk = 0x100;
-			break;
-		case 1:	/*  USB:  */
-			msk = 0x400;
-			break;
-		default:
-			fatal("ps2_interrupt(): bad irq_nr %i\n", irq_nr);
-		}
-
-		if (assrt)
-			m->md_int.ps2_data->sbus_smflg |= msk;
-		else
-			m->md_int.ps2_data->sbus_smflg &= ~msk;
-
-		if (m->md_int.ps2_data->sbus_smflg != 0)
-			cpu_interrupt(cpu, 8 + 1);
-		else
-			cpu_interrupt_ack(cpu, 8 + 1);
-		return;
-	}
-
-	if (assrt) {
-		/*  OR into the INTR:  */
-		if (irq_nr < 16)
-			m->md_int.ps2_data->intr |= (1 << irq_nr);
-		else
-			m->md_int.ps2_data->dmac_reg[0x601] |=
-			    (1 << (irq_nr-16));
-	} else {
-		/*  AND out of the INTR:  */
-		if (irq_nr < 16)
-			m->md_int.ps2_data->intr &= ~(1 << irq_nr);
-		else
-			m->md_int.ps2_data->dmac_reg[0x601] &=
-			    ~(1 << (irq_nr-16));
-	}
-
-	/*  TODO: Hm? How about the mask?  */
-	if (m->md_int.ps2_data->intr /*  & m->md_int.ps2_data->imask */ )
-		cpu_interrupt(cpu, 2);
-	else
-		cpu_interrupt_ack(cpu, 2);
-
-	/*  TODO: mask?  */
-	if (m->md_int.ps2_data->dmac_reg[0x601] & 0xffff)
-		cpu_interrupt(cpu, 3);
-	else
-		cpu_interrupt_ack(cpu, 3);
-}
-
-
-/*
  *  SGI "IP22" interrupt routine:
  */
 void sgi_ip22_interrupt(struct machine *m, struct cpu *cpu,
@@ -366,55 +298,6 @@ just_assert_and_such:
 		cpu_interrupt(cpu, 5);
 	if ((stat & mask) & 0xfff8000000000000ULL)
 		cpu_interrupt(cpu, 6);
-}
-
-
-/*
- *  Au1x00 interrupt routine:
- *
- *  TODO: This is just bogus so far.  For more info, read this:
- *  http://www.meshcube.org/cgi-bin/viewcvs.cgi/kernel/linux/arch/
- *	mips/au1000/common/
- *
- *  CPU int 2 = IC 0, request 0
- *  CPU int 3 = IC 0, request 1
- *  CPU int 4 = IC 1, request 0
- *  CPU int 5 = IC 1, request 1
- *
- *  Interrupts 0..31 are on interrupt controller 0, interrupts 32..63 are
- *  on controller 1.
- *
- *  Special case: if irq_nr == 64+8, then this just updates the CPU
- *  interrupt assertions.
- */
-void au1x00_interrupt(struct machine *m, struct cpu *cpu,
-	int irq_nr, int assrt)
-{
-	uint32_t ms;
-
-	irq_nr -= 8;
-	debug("au1x00_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
-
-	if (irq_nr < 64) {
-		ms = 1 << (irq_nr & 31);
-
-		if (assrt)
-			m->md_int.au1x00_ic_data->request0_int |= ms;
-		else
-			m->md_int.au1x00_ic_data->request0_int &= ~ms;
-
-		/*  TODO: Controller 1  */
-	}
-
-	if ((m->md_int.au1x00_ic_data->request0_int &
-	    m->md_int.au1x00_ic_data->mask) != 0)
-		cpu_interrupt(cpu, 2);
-	else
-		cpu_interrupt_ack(cpu, 2);
-
-	/*  TODO: What _is_ request1?  */
-
-	/*  TODO: Controller 1  */
 }
 
 

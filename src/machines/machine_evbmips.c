@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.18 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.19 2007-01-28 00:41:17 debug Exp $
  */
 
 #include <stdio.h>
@@ -120,11 +120,7 @@ MACHINE_SETUP(evbmips)
 			    "meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = au1x00_interrupt;
-		machine->md_int.au1x00_ic_data = dev_au1x00_init(machine,
-		    machine->memory);
+		device_add(machine, "au1x00");
 
 		/*
 		 *  TODO:  Which non-Au1500 devices, and at what addresses?
@@ -147,11 +143,9 @@ abort();
 	case MACHINE_EVBMIPS_PB1000:
 		machine->machine_name = "PB1000 (evbmips)";
 		cpu->byte_order = EMUL_BIG_ENDIAN;
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = au1x00_interrupt;
-		machine->md_int.au1x00_ic_data = dev_au1x00_init(machine,
-		    machine->memory);
+
+		device_add(machine, "au1x00");
+
 		/*  TODO  */
 		break;
 

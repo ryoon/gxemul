@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.235 2007-01-21 21:02:57 debug Exp $
+ *  $Id: devices.h,v 1.236 2007-01-28 00:41:17 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -101,23 +101,6 @@ void dev_asc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr
 		unsigned char *data, size_t len, int writeflag),
 	void *dma_controller_data);
 
-/*  dev_au1x00.c:  */
-struct au1x00_ic_data {
-	int		ic_nr;
-	uint32_t	request0_int;
-	uint32_t	request1_int;
-	uint32_t	config0;
-	uint32_t	config1;
-	uint32_t	config2;
-	uint32_t	source;
-	uint32_t	assign_request;
-	uint32_t	wakeup;
-	uint32_t	mask;
-};
-
-int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct au1x00_ic_data *dev_au1x00_init(struct machine *machine, struct memory *mem);
-
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20
 #define	DEV_BT431_NREGS			0x800	/*  ?  */
@@ -185,17 +168,6 @@ int dev_dc7085_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *irq_path, int use_fb);
 
 /*  dev_dec5800.c:  */
-#define	DEV_DEC5800_LENGTH			0x1000	/*  ?  */
-struct dec5800_data {
-        uint32_t        csr;
-	uint32_t	vector_0x50;
-};
-int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct dec5800_data *dev_dec5800_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
-/*  16 slots, 0x2000 bytes each  */
-#define	DEV_DECBI_LENGTH			0x20000
-int dev_decbi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_decbi_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_DECCCA_LENGTH			0x10000	/*  ?  */
 #define	DEC_DECCCA_BASEADDR			0x19000000	/*  ?  I just made this up  */
 int dev_deccca_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -405,36 +377,6 @@ int dev_pmppc_board_access(struct cpu *cpu, struct memory *mem,
 	void *);
 void dev_pmppc_init(struct memory *mem);
 
-/*  dev_ps2_spd.c:  */
-#define	DEV_PS2_SPD_LENGTH		0x800
-int dev_ps2_spd_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-void dev_ps2_spd_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr);
-
-/*  dev_ps2_stuff.c:  */
-#include "ps2_dmacreg.h"
-#define N_PS2_DMA_CHANNELS              10
-#define	N_PS2_TIMERS			4
-struct ps2_data {
-	uint32_t	timer_count[N_PS2_TIMERS];
-	uint32_t	timer_comp[N_PS2_TIMERS];
-	uint32_t	timer_mode[N_PS2_TIMERS];
-	uint32_t	timer_hold[N_PS2_TIMERS];	/*  NOTE: only 0 and 1 are valid  */
-
-        uint64_t	dmac_reg[DMAC_REGSIZE / 0x10];
-
-	uint64_t	other_memory_base[N_PS2_DMA_CHANNELS];
-
-	uint32_t	intr;
-	uint32_t	imask;
-	uint32_t	sbus_smflg;
-};
-#define	DEV_PS2_STUFF_LENGTH		0x10000
-int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct ps2_data *dev_ps2_stuff_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
-
 /*  dev_pmagja.c:  */
 #define	DEV_PMAGJA_LENGTH		0x3c0000
 int dev_pmagja_access(struct cpu *cpu, struct memory *mem,
@@ -588,8 +530,10 @@ void dev_sii_init(struct machine *machine, struct memory *mem,
 
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000
-int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ssc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *);
+int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+void dev_ssc_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, char *irq_path, int use_fb);
 
 /*  dev_turbochannel.c:  */
 #define	DEV_TURBOCHANNEL_LEN		0x0470

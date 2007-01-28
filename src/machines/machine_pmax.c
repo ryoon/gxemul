@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.19 2007-01-05 16:42:57 debug Exp $
+ *  $Id: machine_pmax.c,v 1.20 2007-01-28 00:41:17 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -451,11 +451,14 @@ abort();
 		 *  Clock uses interrupt 3 (shared with XMI?).
 		 */
 
-		machine->md_int.dec5800_csr = dev_dec5800_init(machine,
-		    mem, 0x10000000);
-		dev_decbi_init(mem, 0x10000000);
-		dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11,
-		    &machine->md_int.dec5800_csr->csr);
+		device_add(machine, "dec5800 addr=0x10000000");
+		device_add(machine, "decbi addr=0x10000000");
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].dec5800.28",
+		    machine->path, machine->bootstrap_cpu);
+		dev_ssc_init(machine, mem, 0x10140000,
+		    tmpstr, machine->use_x11);
+
 		dev_decxmi_init(mem, 0x11800000);
 		dev_deccca_init(mem, DEC_DECCCA_BASEADDR);
 
@@ -491,8 +494,8 @@ abort();
 		/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 		/*  error registers (?) at 0x17000000 and 0x10080000  */
 		device_add(machine, "kn210 addr=0x10080000");
-		dev_ssc_init(machine, mem, 0x10140000, 0,
-		    machine->use_x11, NULL);	/*  TODO:  not irq 0  */
+		dev_ssc_init(machine, mem, 0x10140000, "irq? TODO",
+		    machine->use_x11);
 		break;
 
 	case MACHINE_DEC_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -611,8 +614,8 @@ abort();
 		 *  asc (scsi) at 0x17100000.
 		 */
 
-		dev_ssc_init(machine, mem, 0x10140000, 0,
-		    machine->use_x11, NULL);		/*  TODO:  not irq 0  */
+		dev_ssc_init(machine, mem, 0x10140000, "TODO: irq",
+		    machine->use_x11);
 
 		/*  something at 0x17000000, ultrix says "cpu 0 panic: "
 		    "DS5500 I/O Board is missing" if this is not here  */

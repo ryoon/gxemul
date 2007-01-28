@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.8 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.9 2007-01-28 00:41:17 debug Exp $
  */
 
 #include <stdio.h>
@@ -55,6 +55,7 @@ static int int_to_bcd(int i)
 
 MACHINE_SETUP(playstation2)
 {
+	char tmpstr[200];
 	int tmplen;
 	char *tmp;
 	time_t timet;
@@ -84,20 +85,17 @@ MACHINE_SETUP(playstation2)
 	 *	ohci0: OHCI version 1.0
 	 */
 
-	machine->md_int.ps2_data = dev_ps2_stuff_init(machine,
-	    machine->memory, 0x10000000);
+	device_add(machine, "ps2 addr=0x10000000");
 	device_add(machine, "ps2_gs addr=0x12000000");
 	device_add(machine, "ps2_ether addr=0x14001000");
 
 	/*  TODO: how much?  */
 	dev_ram_init(machine, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);
 
-	/*  irq = 8 + 32 + 1 (SBUS/USB)  */
-	device_add(machine, "ohci addr=0x1f801600 irq=41");
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = ps2_interrupt;
+	/*  OHCI at SBUS irq 1:  */
+	snprintf(tmpstr, sizeof(tmpstr), "ohci addr=0x1f801600 irq="
+	    "%s.cpu[%i].ps2_sbus.1", machine->path, machine->bootstrap_cpu);
+	device_add(machine, tmpstr);
 
 	/*  Set the Harddisk controller present flag, if either
 	    disk 0 or 1 is present:  */
@@ -106,7 +104,7 @@ abort();
 		if (machine->prom_emulation)
 			store_32bit_word(cpu, 0xa0000000 + machine->
 			    physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
-		dev_ps2_spd_init(machine, machine->memory, 0x14000000);
+		device_add(machine, "ps2_spd addr=0x14000000");
 	}
 
 	if (!machine->prom_emulation)

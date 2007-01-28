@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.28 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_ssc.c,v 1.29 2007-01-28 00:41:17 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -59,14 +59,13 @@
 #define SSC_DEBUG
 
 struct ssc_data {
-	int		irq_nr;
 	int		console_handle;
 	int		use_fb;
 
 	int		rx_ctl;
 	int		tx_ctl;
 
-	uint32_t	*csrp;
+	struct interrupt irq;
 };
 
 
@@ -86,34 +85,23 @@ void dev_ssc_tick(struct cpu *cpu, void *extra)
 	/*  rx interrupts enabled, and char avail?  */
 	if (d->rx_ctl & RX_INT_ENABLE && d->rx_ctl & RX_AVAIL) {
 		/*  TODO:  This is for 5800 only!  */
-
-		if (d->csrp != NULL) {
-			unsigned char txvector = 0xf8;
-			(*d->csrp) |= 0x10000000;
-			cpu->memory_rw(cpu, cpu->mem, 0x40000050, &txvector,
-			    1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
-			cpu_interrupt(cpu, 2);
-		}
+		unsigned char txvector = 0xf8;
+		cpu->memory_rw(cpu, cpu->mem, 0x40000050, &txvector,
+		    1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+		INTERRUPT_ASSERT(d->irq);
 	}
 
 	/*  tx interrupts enabled?  */
 	if (d->tx_ctl & TX_INT_ENABLE) {
 		/*  TODO:  This is for 5800 only!  */
-
-		if (d->csrp != NULL) {
-			unsigned char txvector = 0xfc;
-			(*d->csrp) |= 0x10000000;
-			cpu->memory_rw(cpu, cpu->mem, 0x40000050, &txvector,
-			    1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
-			cpu_interrupt(cpu, 2);
-		}
+		unsigned char txvector = 0xfc;
+		cpu->memory_rw(cpu, cpu->mem, 0x40000050, &txvector,
+		    1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+		INTERRUPT_ASSERT(d->irq);
 	}
 }
 
 
-/*
- *  dev_ssc_access():
- */
 DEVICE_ACCESS(ssc)
 {
 	uint64_t idata = 0, odata = 0;
@@ -135,11 +123,8 @@ DEVICE_ACCESS(ssc)
 		} else {
 			d->rx_ctl = idata;
 
-			/*  TODO:  This only works for 5800  */
-			if (d->csrp != NULL) {
-				(*d->csrp) &= ~0x10000000;
-				cpu_interrupt_ack(cpu, 2);
-			}
+			INTERRUPT_DEASSERT(d->irq);
+
 #ifdef SSC_DEBUG_TXRX
 			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n",
 			    (long)relative_addr, (int)idata);
@@ -173,11 +158,8 @@ DEVICE_ACCESS(ssc)
 		} else {
 			d->tx_ctl = idata;
 
-			/*  TODO:  This only works for 5800  */
-			if (d->csrp != NULL) {
-				(*d->csrp) &= ~0x10000000;
-				cpu_interrupt_ack(cpu, 2);
-			}
+			INTERRUPT_DEASSERT(d->irq);
+
 #ifdef SSC_DEBUG_TXRX
 			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n",
 			    (long)relative_addr, (int)idata);
@@ -246,7 +228,7 @@ DEVICE_ACCESS(ssc)
  *  dev_ssc_init():
  */
 void dev_ssc_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *csrp)
+	uint64_t baseaddr, char *irq_path, int use_fb)
 {
 	struct ssc_data *d;
 
@@ -256,10 +238,10 @@ void dev_ssc_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ssc_data));
-	d->irq_nr = irq_nr;
 	d->use_fb = use_fb;
-	d->csrp   = csrp;
 	d->console_handle = console_start_slave(machine, "SSC", 1);
+
+	INTERRUPT_CONNECT(irq_path, d->irq);
 
 	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH,
 	    dev_ssc_access, d, DM_DEFAULT, NULL);

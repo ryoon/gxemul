@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.20 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.21 2007-01-28 00:41:16 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -45,16 +45,43 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "device.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
-/*
- *  dev_dec5800_tick():
- */
-void dev_dec5800_tick(struct cpu *cpu, void *extra)
+#define DEV_DEC5800_LENGTH		0x1000		/*  TODO  */
+
+struct dec5800_data {
+	uint32_t	csr;
+	struct interrupt cpu_irq;
+
+	uint32_t	vector_0x50;
+
+	struct interrupt timer_irq;
+};
+
+
+void dec5800_interrupt_assert(struct interrupt *interrupt)
+{
+	struct dec5800_data *d = interrupt->extra;
+	d->csr |= (1 << interrupt->line);
+	if (d->csr & 0x10000000)
+		INTERRUPT_ASSERT(d->cpu_irq);
+}
+void dec5800_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct dec5800_data *d = interrupt->extra;
+	d->csr &= ~(1 << interrupt->line);
+	if (!(d->csr & 0x10000000))
+		INTERRUPT_DEASSERT(d->cpu_irq);
+}
+
+
+DEVICE_TICK(dec5800)
 {
 	struct dec5800_data *d = extra;
 
@@ -65,14 +92,11 @@ void dev_dec5800_tick(struct cpu *cpu, void *extra)
 		/*  Set timer interrupt pending bit:  */
 		d->csr |= 0x20000000;
 
-		cpu_interrupt(cpu, 3);
+		INTERRUPT_ASSERT(d->timer_irq);
 	}
 }
 
 
-/*
- *  dev_dec5800_vectors_access():
- */
 DEVICE_ACCESS(dec5800_vectors)
 {
 	uint64_t idata = 0, odata = 0;
@@ -102,9 +126,6 @@ DEVICE_ACCESS(dec5800_vectors)
 }
 
 
-/*
- *  dev_dec5800_access():
- */
 DEVICE_ACCESS(dec5800)
 {
 	uint64_t idata = 0, odata = 0;
@@ -128,7 +149,7 @@ DEVICE_ACCESS(dec5800)
 
 			/*  Ack. timer interrupts:  */
 			d->csr &= ~0x20000000;
-			cpu_interrupt_ack(cpu, 3);
+			INTERRUPT_DEASSERT(d->timer_irq);
 
 			debug("[ dec5800: write to csr: 0x%08x ]\n",
 			    (int)idata);
@@ -151,13 +172,11 @@ DEVICE_ACCESS(dec5800)
 }
 
 
-/*
- *  dev_dec5800_init():
- */
-struct dec5800_data *dev_dec5800_init(struct machine *machine,
-	struct memory *mem, uint64_t baseaddr)
+DEVINIT(dec5800)
 {
 	struct dec5800_data *d;
+	char tmpstr[200];
+	int i;
 
 	d = malloc(sizeof(struct dec5800_data));
 	if (d == NULL) {
@@ -166,14 +185,37 @@ struct dec5800_data *dev_dec5800_init(struct machine *machine,
 	}
 	memset(d, 0, sizeof(struct dec5800_data));
 
-	memory_device_register(mem, "dec5800", baseaddr,
-	    DEV_DEC5800_LENGTH, dev_dec5800_access, d, DM_DEFAULT, NULL);
-	memory_device_register(mem, "dec5800_vectors",
-	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access,
-	    d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_dec5800_tick, d, 14, 0.0);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.2", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->cpu_irq);
 
-	return d;
+	snprintf(tmpstr, sizeof(tmpstr), "%s.3", devinit->interrupt_path);
+	INTERRUPT_CONNECT(tmpstr, d->timer_irq);
+
+	/*  Register 32 CSR interrupts, corresponding to bits in the CSR:  */
+	for (i=0; i<32; i++) {
+		char n[200];
+		struct interrupt template;
+		snprintf(n, sizeof(n), "%s.dec5800.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = dec5800_interrupt_assert;
+		template.interrupt_deassert = dec5800_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
+	memory_device_register(devinit->machine->memory, "dec5800",
+	    devinit->addr, DEV_DEC5800_LENGTH, dev_dec5800_access,
+	    d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "dec5800_vectors",
+	    devinit->addr + 0x30000000, 0x100, dev_dec5800_vectors_access,
+	    d, DM_DEFAULT, NULL);
+	machine_add_tickfunction(devinit->machine, dev_dec5800_tick,
+	    d, 14, 0.0);
+
+	return 1;
 }
 
 
@@ -182,14 +224,14 @@ struct dec5800_data *dev_dec5800_init(struct machine *machine,
 
 #include "bireg.h"
 
+/*  16 slots, 0x2000 bytes each  */
+#define DEV_DECBI_LENGTH		0x20000
+
 struct decbi_data {
 	int		csr[NNODEBI];
 };
 
 
-/*
- *  dev_decbi_access():
- */
 DEVICE_ACCESS(decbi)
 {
 	uint64_t idata = 0, odata = 0;
@@ -272,10 +314,7 @@ DEVICE_ACCESS(decbi)
 }
 
 
-/*
- *  dev_decbi_init():
- */
-void dev_decbi_init(struct memory *mem, uint64_t baseaddr)
+DEVINIT(decbi)
 {
 	struct decbi_data *d;
 
@@ -286,8 +325,11 @@ void dev_decbi_init(struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct decbi_data));
 
-	memory_device_register(mem, "decbi", baseaddr + 0x2000,
-	    DEV_DECBI_LENGTH - 0x2000, dev_decbi_access, d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "decbi",
+	    devinit->addr + 0x2000, DEV_DECBI_LENGTH - 0x2000,
+	    dev_decbi_access, d, DM_DEFAULT, NULL);
+
+	return 1;
 }
 
 
@@ -303,9 +345,6 @@ struct deccca_data {
 };
 
 
-/*
- *  dev_deccca_access():
- */
 DEVICE_ACCESS(deccca)
 {
 	uint64_t idata = 0, odata = 0;

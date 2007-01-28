@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.24 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_test.c,v 1.25 2007-01-28 00:41:17 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -455,8 +455,9 @@ MACHINE_SETUP(testmips)
 	machine->stable = 1;
 	cpu->byte_order = EMUL_BIG_ENDIAN;
 
-	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=2",
-	    (uint64_t) DEV_CONS_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=%s."
+	    "cpu[%i].2", (uint64_t) DEV_CONS_ADDRESS, machine->path,
+	    machine->bootstrap_cpu);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64,
@@ -471,12 +472,14 @@ MACHINE_SETUP(testmips)
 	    (uint64_t) DEV_DISK_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=3",
-	    (uint64_t) DEV_ETHER_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=%s."
+	    "cpu[%i].3", (uint64_t) DEV_ETHER_ADDRESS, machine->path,
+	    machine->bootstrap_cpu);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=4",
-	    (uint64_t) DEV_RTC_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=%s."
+	    "cpu[%i].4", (uint64_t) DEV_RTC_ADDRESS, machine->path,
+	    machine->bootstrap_cpu);
 	device_add(machine, tmpstr);
 }
 

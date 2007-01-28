@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.52 2007-01-05 16:02:54 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.53 2007-01-28 00:41:16 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -199,9 +199,6 @@ DEVICE_ACCESS(footbridge_isa)
 	}
 
 	x = cpu->machine->isa_pic_data.last_int;
-	if (x == 0)
-		cpu_interrupt_ack(cpu, 32 + x);
-
 	if (x < 8)
 		odata = cpu->machine->isa_pic_data.pic1->irq_base + x;
 	else

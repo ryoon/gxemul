@@ -25,13 +25,18 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.29 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.30 2007-01-28 00:41:17 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
  *	offset 0x0000	timer control
  *	offset 0x8000	DMA controller
  *	offset 0xf000	Interrupt register
+ *
+ *  The 16 normal PS2 interrupts interrupt at MIPS interrupt 2.
+ *  The 16 DMA interrupts are connected to MIPS interrupt 3.
+ *
+ *  SBUS interrupts go via PS2 interrupt 1.
  */
 
 #include <stdio.h>
@@ -39,7 +44,7 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -52,11 +57,84 @@
 /*  NOTE/TODO: This should be the same as in ps2_gs:  */
 #define	DEV_PS2_GIF_FAKE_BASE		0x50000000
 
+#define	N_PS2_DMA_CHANNELS		10
+#define	N_PS2_TIMERS			4
 
-/*
- *  dev_ps2_stuff_tick():
- */
-void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
+struct ps2_data {
+	uint32_t	timer_count[N_PS2_TIMERS];
+	uint32_t	timer_comp[N_PS2_TIMERS];
+	uint32_t	timer_mode[N_PS2_TIMERS];
+	uint32_t	timer_hold[N_PS2_TIMERS];
+				/*  NOTE: only 0 and 1 are valid  */
+	struct interrupt timer_irq[N_PS2_TIMERS];
+
+	uint64_t	dmac_reg[DMAC_REGSIZE / 0x10];
+	struct interrupt dmac_irq;		/*  MIPS irq 3  */
+	struct interrupt dma_channel2_irq;	/*  irq path of channel 2  */
+
+	uint64_t	other_memory_base[N_PS2_DMA_CHANNELS];
+
+	uint32_t	intr;
+	uint32_t	imask;
+	uint32_t	sbus_smflg;
+	struct interrupt intr_irq;		/*  MIPS irq 2  */
+	struct interrupt sbus_irq;		/*  PS2 irq 1  */
+};
+
+#define	DEV_PS2_LENGTH		0x10000
+
+
+void ps2_intr_interrupt_assert(struct interrupt *interrupt)
+{
+	struct ps2_data *d = interrupt->extra;
+	d->intr |= (1 << interrupt->line);
+	if (d->intr & d->imask)
+		INTERRUPT_ASSERT(d->intr_irq);
+}
+void ps2_intr_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct ps2_data *d = interrupt->extra;
+	d->intr &= ~(1 << interrupt->line);
+	if (!(d->intr & d->imask))
+		INTERRUPT_DEASSERT(d->intr_irq);
+}
+void ps2_dmac_interrupt_assert(struct interrupt *interrupt)
+{
+	struct ps2_data *d = interrupt->extra;
+	d->dmac_reg[0x601] |= (1 << interrupt->line);
+	/*  TODO: DMA interrupt mask?  */
+	if (d->dmac_reg[0x601] & 0xffff)
+		INTERRUPT_ASSERT(d->dmac_irq);
+}
+void ps2_dmac_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct ps2_data *d = interrupt->extra;
+	d->dmac_reg[0x601] &= ~(1 << interrupt->line);
+	/*  TODO: DMA interrupt mask?  */
+	if (!(d->dmac_reg[0x601] & 0xffff))
+		INTERRUPT_DEASSERT(d->dmac_irq);
+}
+void ps2_sbus_interrupt_assert(struct interrupt *interrupt)
+{
+	/*  Note: sbus irq 0 = mask 0x100, sbus irq 1 = mask 0x400  */
+	struct ps2_data *d = interrupt->extra;
+	d->sbus_smflg |= (1 << (8 + interrupt->line * 2));
+	/*  TODO: SBUS interrupt mask?  */
+	if (d->sbus_smflg != 0)
+		INTERRUPT_ASSERT(d->sbus_irq);
+}
+void ps2_sbus_interrupt_deassert(struct interrupt *interrupt)
+{
+	/*  Note: sbus irq 0 = mask 0x100, sbus irq 1 = mask 0x400  */
+	struct ps2_data *d = interrupt->extra;
+	d->sbus_smflg &= ~(1 << (8 + interrupt->line * 2));
+	/*  TODO: SBUS interrupt mask?  */
+	if (d->sbus_smflg == 0)
+		INTERRUPT_DEASSERT(d->sbus_irq);
+}
+
+
+DEVICE_TICK(ps2)
 {
 	struct ps2_data *d = extra;
 	int i;
@@ -75,8 +153,8 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 			if (d->timer_mode[i] & T_MODE_ZRET)
 				d->timer_count[i] = 0;
 
-			/*  irq 9 is timer0, etc.  */
-			cpu_interrupt(cpu, 8 + 9 + i);
+printf("yo %i %08x %08x\n", i, d->intr, d->imask);
+			INTERRUPT_ASSERT(d->timer_irq[i]);
 
 			/*  timer 1..3 are "single-shot"? TODO  */
 			if (i > 0) {
@@ -88,10 +166,7 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_ps2_stuff_access():
- */
-DEVICE_ACCESS(ps2_stuff)
+DEVICE_ACCESS(ps2)
 {
 	uint64_t idata = 0, odata = 0;
 	int regnr = 0;
@@ -127,50 +202,50 @@ DEVICE_ACCESS(ps2_stuff)
 				/*  :-)  TODO: remove this?  */
 				d->timer_count[timer_nr] ++;
 			}
-			debug("[ ps2_stuff: read timer %i count: 0x%llx ]\n",
+			debug("[ ps2: read timer %i count: 0x%llx ]\n",
 			    timer_nr, (long long)odata);
 		} else {
 			d->timer_count[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i count: 0x%llx ]\n",
+			debug("[ ps2: write timer %i count: 0x%llx ]\n",
 			    timer_nr, (long long)idata);
 		}
 		break;
 	case 0x0010:	/*  timer mode  */
 		if (writeflag == MEM_READ) {
 			odata = d->timer_mode[timer_nr];
-			debug("[ ps2_stuff: read timer %i mode: 0x%llx ]\n",
+			debug("[ ps2: read timer %i mode: 0x%llx ]\n",
 			    timer_nr, (long long)odata);
 		} else {
 			d->timer_mode[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i mode: 0x%llx ]\n",
+			debug("[ ps2: write timer %i mode: 0x%llx ]\n",
 			    timer_nr, (long long)idata);
 		}
 		break;
 	case 0x0020:	/*  timer comp  */
 		if (writeflag == MEM_READ) {
 			odata = d->timer_comp[timer_nr];
-			debug("[ ps2_stuff: read timer %i comp: 0x%llx ]\n",
+			debug("[ ps2: read timer %i comp: 0x%llx ]\n",
 			    timer_nr, (long long)odata);
 		} else {
 			d->timer_comp[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i comp: 0x%llx ]\n",
+			debug("[ ps2: write timer %i comp: 0x%llx ]\n",
 			    timer_nr, (long long)idata);
 		}
 		break;
 	case 0x0030:	/*  timer hold  */
 		if (writeflag == MEM_READ) {
 			odata = d->timer_hold[timer_nr];
-			debug("[ ps2_stuff: read timer %i hold: 0x%llx ]\n",
+			debug("[ ps2: read timer %i hold: 0x%llx ]\n",
 			    timer_nr, (long long)odata);
 			if (timer_nr >= 2)
-				fatal("[ WARNING: ps2_stuff: read from non-"
+				fatal("[ WARNING: ps2: read from non-"
 				    "existant timer %i hold register ]\n");
 		} else {
 			d->timer_hold[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i hold: 0x%llx ]\n",
+			debug("[ ps2: write timer %i hold: 0x%llx ]\n",
 			    timer_nr, (long long)idata);
 			if (timer_nr >= 2)
-				fatal("[ WARNING: ps2_stuff: write to "
+				fatal("[ WARNING: ps2: write to "
 				    "non-existant timer %i hold register ]\n",
 				    timer_nr);
 		}
@@ -179,10 +254,10 @@ DEVICE_ACCESS(ps2_stuff)
 	case 0x8000 + D2_CHCR_REG:
 		if (writeflag==MEM_READ) {
 			odata = d->dmac_reg[regnr];
-			/*  debug("[ ps2_stuff: dmac read from D2_CHCR "
+			/*  debug("[ ps2: dmac read from D2_CHCR "
 			    "(0x%llx) ]\n", (long long)d->dmac_reg[regnr]);  */
 		} else {
-			/*  debug("[ ps2_stuff: dmac write to D2_CHCR, "
+			/*  debug("[ ps2: dmac write to D2_CHCR, "
 			    "data 0x%016llx ]\n", (long long) idata);  */
 			if (idata & D_CHCR_STR) {
 				int length = d->dmac_reg[D2_QWC_REG/0x10] * 16;
@@ -192,7 +267,7 @@ DEVICE_ACCESS(ps2_stuff)
 				    D2_TADR_REG/0x10];
 				unsigned char *copy_buf;
 
-				debug("[ ps2_stuff: dmac [ch2] transfer addr="
+				debug("[ ps2: dmac [ch2] transfer addr="
 				    "0x%016llx len=0x%lx ]\n", (long long)
 				    d->dmac_reg[D2_MADR_REG/0x10],
 				    (long)length);
@@ -200,7 +275,7 @@ DEVICE_ACCESS(ps2_stuff)
 				copy_buf = malloc(length);
 				if (copy_buf == NULL) {
 					fprintf(stderr, "out of memory in "
-					    "dev_ps2_stuff_access()\n");
+					    "dev_ps2_access()\n");
 					exit(1);
 				}
 				cpu->memory_rw(cpu, cpu->mem, from_addr,
@@ -217,9 +292,9 @@ DEVICE_ACCESS(ps2_stuff)
 				idata &= ~D_CHCR_STR;
 
 				/*  interrupt DMA channel 2  */
-				cpu_interrupt(cpu, 8 + 16 + 2);
+				INTERRUPT_ASSERT(d->dma_channel2_irq);
 			} else
-				debug("[ ps2_stuff: dmac [ch2] stopping "
+				debug("[ ps2: dmac [ch2] stopping "
 				    "transfer ]\n");
 			d->dmac_reg[regnr] = idata;
 			return 1;
@@ -242,8 +317,7 @@ DEVICE_ACCESS(ps2_stuff)
 			d->dmac_reg[regnr] |= oldmask;
 			if (((d->dmac_reg[regnr] & 0xffff) &
 			    ((d->dmac_reg[regnr]>>16) & 0xffff)) == 0) {
-				/*  irq 3 is the DMAC  */
-				cpu_interrupt_ack(cpu, 3);
+				INTERRUPT_DEASSERT(d->dmac_irq);
 			}
 		} else {
 			/*  Hm... make it seem like the mask bits are (at
@@ -256,56 +330,58 @@ DEVICE_ACCESS(ps2_stuff)
 	case 0xf000:	/*  interrupt register  */
 		if (writeflag == MEM_READ) {
 			odata = d->intr;
-			debug("[ ps2_stuff: read from Interrupt Register:"
+			debug("[ ps2: read from Interrupt Register:"
 			    " 0x%llx ]\n", (long long)odata);
 
 			/*  TODO: This is _NOT_ correct behavior:  */
-			d->intr = 0;
-			cpu_interrupt_ack(cpu, 2);
+//			d->intr = 0;
+//			INTERRUPT_DEASSERT(d->intr_irq);
 		} else {
-			debug("[ ps2_stuff: write to Interrupt Register: "
+			debug("[ ps2: write to Interrupt Register: "
 			    "0x%llx ]\n", (long long)idata);
 			/*  Clear out bits that are set in idata:  */
 			d->intr &= ~idata;
 
 			if ((d->intr & d->imask) == 0)
-				cpu_interrupt_ack(cpu, 2);
+				INTERRUPT_DEASSERT(d->intr_irq);
 		}
 		break;
 
 	case 0xf010:	/*  interrupt mask  */
 		if (writeflag == MEM_READ) {
 			odata = d->imask;
-			/*  debug("[ ps2_stuff: read from Interrupt Mask "
+			/*  debug("[ ps2: read from Interrupt Mask "
 			    "Register: 0x%llx ]\n", (long long)odata);  */
 		} else {
-			/*  debug("[ ps2_stuff: write to Interrupt Mask "
+			/*  debug("[ ps2: write to Interrupt Mask "
 			    "Register: 0x%llx ]\n", (long long)idata);  */
-			d->imask = idata;
+			/*  Note: written value indicates which bits
+			    to _toggle_, not which bits to set!  */
+			d->imask ^= idata;
 		}
 		break;
 
 	case 0xf230:	/*  sbus interrupt register?  */
 		if (writeflag == MEM_READ) {
 			odata = d->sbus_smflg;
-			debug("[ ps2_stuff: read from SBUS SMFLG:"
+			debug("[ ps2: read from SBUS SMFLG:"
 			    " 0x%llx ]\n", (long long)odata);
 		} else {
 			/*  Clear bits on write:  */
-			debug("[ ps2_stuff: write to SBUS SMFLG:"
+			debug("[ ps2: write to SBUS SMFLG:"
 			    " 0x%llx ]\n", (long long)idata);
 			d->sbus_smflg &= ~idata;
 			/*  irq 1 is SBUS  */
 			if (d->sbus_smflg == 0)
-				cpu_interrupt_ack(cpu, 8 + 1);
+				INTERRUPT_DEASSERT(d->sbus_irq);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ ps2_stuff: read from addr 0x%x: 0x%llx ]\n",
+			debug("[ ps2: read from addr 0x%x: 0x%llx ]\n",
 			    (int)relative_addr, (long long)odata);
 		} else {
-			debug("[ ps2_stuff: write to addr 0x%x: 0x%llx ]\n",
+			debug("[ ps2: write to addr 0x%x: 0x%llx ]\n",
 			    (int)relative_addr, (long long)idata);
 		}
 	}
@@ -317,13 +393,12 @@ DEVICE_ACCESS(ps2_stuff)
 }
 
 
-/*
- *  dev_ps2_stuff_init():
- */
-struct ps2_data *dev_ps2_stuff_init(struct machine *machine,
-	struct memory *mem, uint64_t baseaddr)
+DEVINIT(ps2)
 {
 	struct ps2_data *d;
+	int i;
+	struct interrupt template;
+	char n[300];
 
 	d = malloc(sizeof(struct ps2_data));
 	if (d == NULL) {
@@ -334,11 +409,74 @@ struct ps2_data *dev_ps2_stuff_init(struct machine *machine,
 
 	d->other_memory_base[DMA_CH_GIF] = DEV_PS2_GIF_FAKE_BASE;
 
-	memory_device_register(mem, "ps2_stuff", baseaddr,
-	    DEV_PS2_STUFF_LENGTH, dev_ps2_stuff_access, d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(machine,
-	    dev_ps2_stuff_tick, d, TICK_STEPS_SHIFT, 0.0);
+	/*  Connect to MIPS irq 2 (interrupt controller) and 3 (dmac):  */
+	snprintf(n, sizeof(n), "%s.2", devinit->interrupt_path);
+	INTERRUPT_CONNECT(n, d->intr_irq);
+	snprintf(n, sizeof(n), "%s.3", devinit->interrupt_path);
+	INTERRUPT_CONNECT(n, d->dmac_irq);
 
-	return d;
+	/*
+	 *  Register interrupts:
+	 *
+	 *	16 normal IRQs	(emul[x].machine[x].cpu[x].ps2_intr.%i)
+	 *	16 DMA IRQs	(emul[x].machine[x].cpu[x].ps2_dmac.%i)
+	 *	 2 sbus IRQs	(emul[x].machine[x].cpu[x].ps2_sbus.%i)
+	 */
+	for (i=0; i<16; i++) {
+		snprintf(n, sizeof(n), "%s.ps2_intr.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = ps2_intr_interrupt_assert;
+		template.interrupt_deassert = ps2_intr_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+	for (i=0; i<16; i++) {
+		snprintf(n, sizeof(n), "%s.ps2_dmac.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = ps2_dmac_interrupt_assert;
+		template.interrupt_deassert = ps2_dmac_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+	for (i=0; i<2; i++) {
+		snprintf(n, sizeof(n), "%s.ps2_sbus.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = ps2_sbus_interrupt_assert;
+		template.interrupt_deassert = ps2_sbus_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
+	/*  Connect to DMA channel 2 irq:  */
+	snprintf(n, sizeof(n), "%s.ps2_dmac.2", devinit->interrupt_path);
+	INTERRUPT_CONNECT(n, d->dma_channel2_irq);
+
+	/*  Connect to SBUS interrupt, at ps2 interrupt 1:  */
+	snprintf(n, sizeof(n), "%s.ps2_intr.1", devinit->interrupt_path);
+	INTERRUPT_CONNECT(n, d->sbus_irq);
+
+	/*  Connect to the timers' interrupts:  */
+	for (i=0; i<N_PS2_TIMERS; i++) {
+		/*  PS2 irq 9 is timer0, etc.  */
+		snprintf(n, sizeof(n), "%s.ps2_intr.%i",
+		    devinit->interrupt_path, 9 + i);
+		INTERRUPT_CONNECT(n, d->timer_irq[i]);
+	}
+
+	memory_device_register(devinit->machine->memory, "ps2", devinit->addr,
+	    DEV_PS2_LENGTH, dev_ps2_access, d, DM_DEFAULT, NULL);
+	machine_add_tickfunction(devinit->machine,
+	    dev_ps2_tick, d, TICK_STEPS_SHIFT, 0.0);
+
+	return 1;
 }
 

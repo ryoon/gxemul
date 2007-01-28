@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.19 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.20 2007-01-28 00:41:16 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -40,13 +40,26 @@
 
 #include "console.h"
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 #include "aureg.h"
 
+
+struct au1x00_ic_data {
+	int		ic_nr;
+	uint32_t	request0_int;
+	uint32_t	request1_int;
+	uint32_t	config0;
+	uint32_t	config1;
+	uint32_t	config2;
+	uint32_t	source;
+	uint32_t	assign_request;
+	uint32_t	wakeup;
+	uint32_t	mask;
+};
 
 struct au1x00_uart_data {
 	int		console_handle;
@@ -62,6 +75,58 @@ struct au1x00_pc_data {
 	uint32_t	reg[PC_SIZE/4 + 2];
 	int		irq_nr;
 };
+
+
+#if 0
+/*  TODO: Convert this to the new interrupt syntax  */
+/*
+ *  Au1x00 interrupt routine:
+ *
+ *  TODO: This is just bogus so far.  For more info, read this:
+ *  http://www.meshcube.org/cgi-bin/viewcvs.cgi/kernel/linux/arch/
+ *	mips/au1000/common/
+ *
+ *  CPU int 2 = IC 0, request 0
+ *  CPU int 3 = IC 0, request 1
+ *  CPU int 4 = IC 1, request 0
+ *  CPU int 5 = IC 1, request 1
+ *
+ *  Interrupts 0..31 are on interrupt controller 0, interrupts 32..63 are
+ *  on controller 1.
+ *
+ *  Special case: if irq_nr == 64+8, then this just updates the CPU
+ *  interrupt assertions.
+ */
+void au1x00_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
+{
+	uint32_t ms;
+
+	irq_nr -= 8;
+	debug("au1x00_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
+
+	if (irq_nr < 64) {
+		ms = 1 << (irq_nr & 31);
+
+		if (assrt)
+			m->md_int.au1x00_ic_data->request0_int |= ms;
+		else
+			m->md_int.au1x00_ic_data->request0_int &= ~ms;
+
+		/*  TODO: Controller 1  */
+	}
+
+	if ((m->md_int.au1x00_ic_data->request0_int &
+	    m->md_int.au1x00_ic_data->mask) != 0)
+		cpu_interrupt(cpu, 2);
+	else
+		cpu_interrupt_ack(cpu, 2);
+
+	/*  TODO: What _is_ request1?  */
+
+	/*  TODO: Controller 1  */
+}
+#endif
 
 
 /*
@@ -288,12 +353,9 @@ DEVICE_ACCESS(au1x00_pc)
 }
 
 
-/*
- *  dev_au1x00_init():
- */
-struct au1x00_ic_data *dev_au1x00_init(struct machine *machine,
-	struct memory *mem)
+DEVINIT(au1x00)
 {
+	struct machine *machine = devinit->machine;
 	struct au1x00_ic_data *d_ic0;
 	struct au1x00_ic_data *d_ic1;
 	struct au1x00_uart_data *d0;
@@ -344,24 +406,24 @@ struct au1x00_ic_data *dev_au1x00_init(struct machine *machine,
 
 	d_pc->irq_nr = 14;
 
-	memory_device_register(mem, "au1x00_ic0",
+	memory_device_register(machine->memory, "au1x00_ic0",
 	    IC0_BASE, 0x100, dev_au1x00_ic_access, d_ic0, DM_DEFAULT, NULL);
-	memory_device_register(mem, "au1x00_ic1",
+	memory_device_register(machine->memory, "au1x00_ic1",
 	    IC1_BASE, 0x100, dev_au1x00_ic_access, d_ic1, DM_DEFAULT, NULL);
 
-	memory_device_register(mem, "au1x00_uart0", UART0_BASE, UART_SIZE,
-	    dev_au1x00_uart_access, d0, DM_DEFAULT, NULL);
-	memory_device_register(mem, "au1x00_uart1", UART1_BASE, UART_SIZE,
-	    dev_au1x00_uart_access, d1, DM_DEFAULT, NULL);
-	memory_device_register(mem, "au1x00_uart2", UART2_BASE, UART_SIZE,
-	    dev_au1x00_uart_access, d2, DM_DEFAULT, NULL);
-	memory_device_register(mem, "au1x00_uart3", UART3_BASE, UART_SIZE,
-	    dev_au1x00_uart_access, d3, DM_DEFAULT, NULL);
+	memory_device_register(machine->memory, "au1x00_uart0", UART0_BASE,
+	    UART_SIZE, dev_au1x00_uart_access, d0, DM_DEFAULT, NULL);
+	memory_device_register(machine->memory, "au1x00_uart1", UART1_BASE,
+	    UART_SIZE, dev_au1x00_uart_access, d1, DM_DEFAULT, NULL);
+	memory_device_register(machine->memory, "au1x00_uart2", UART2_BASE,
+	    UART_SIZE, dev_au1x00_uart_access, d2, DM_DEFAULT, NULL);
+	memory_device_register(machine->memory, "au1x00_uart3", UART3_BASE,
+	    UART_SIZE, dev_au1x00_uart_access, d3, DM_DEFAULT, NULL);
 
-	memory_device_register(mem, "au1x00_pc", PC_BASE, PC_SIZE + 0x8,
-	    dev_au1x00_pc_access, d_pc, DM_DEFAULT, NULL);
+	memory_device_register(machine->memory, "au1x00_pc", PC_BASE,
+	    PC_SIZE+0x8, dev_au1x00_pc_access, d_pc, DM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_au1x00_pc_tick, d_pc, 15, 0.0);
 
-	return d_ic0;
+	return 1;
 }
 

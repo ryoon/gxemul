@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ahc.c,v 1.6 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_ahc.c,v 1.7 2007-01-28 00:41:16 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -163,10 +163,6 @@ DEVICE_ACCESS(ahc)
 			fatal("[ ahc: UNIMPLEMENTED read from address 0x%x ]\n",
 			    (int)relative_addr);
 	}
-
-#if 0
-cpu_interrupt(cpu, 0x200);
-#endif
 
 #ifdef AHC_DEBUG
 	if (ok) {

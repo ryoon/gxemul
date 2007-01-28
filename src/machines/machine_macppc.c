@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.7 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_macppc.c,v 1.8 2007-01-28 11:29:53 debug Exp $
  *
  *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
  *        systems. They do not model real PowerMacs, but should be enough to
@@ -61,12 +61,7 @@ MACHINE_SETUP(macppc)
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 40000000;
 
-	machine->md_int.gc_data = dev_gc_init(machine, machine->memory,
-	    0xf3000000, 64);
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = gc_interrupt;
+	device_add(machine, "gc addr=0xf3000000");
 
 	pci_data = dev_uninorth_init(machine, machine->memory, 0xe2000000,
 	    64 /*  isa irq base */, 0 /*  pci irq: TODO */);

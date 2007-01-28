@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.148 2007-01-28 00:41:17 debug Exp $
+ *  $Id: machine.h,v 1.149 2007-01-28 11:29:53 debug Exp $
  */
 
 #include <sys/types.h>
@@ -226,7 +226,6 @@ struct machine {
 		struct sgi_ip22_data *sgi_ip22_data;
 		struct sgi_ip30_data *sgi_ip30_data;
 		struct cpc700_data *cpc700_data;
-		struct gc_data *gc_data;
 	} md_int;
 
 	/*  X11/framebuffer stuff:  */

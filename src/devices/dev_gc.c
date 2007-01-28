@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.9 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_gc.c,v 1.10 2007-01-28 11:29:52 debug Exp $
  *  
  *  Grand Central Interrupt controller (used by MacPPC).
  */
@@ -35,11 +35,56 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+
+#define	DEV_GC_LENGTH		0x100
+
+struct gc_data {
+	struct interrupt cpu_irq;
+
+	uint32_t	status_hi;
+	uint32_t	status_lo;
+	uint32_t	enable_hi;
+	uint32_t	enable_lo;
+};
+
+
+#if 0
+void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int 
+assrt)
+{
+        uint32_t mask = 1 << (irq_nr & 31);
+        if (irq_nr < 32) {
+                if (assrt)
+                        m->md_int.gc_data->status_lo |= mask;
+                else
+                        m->md_int.gc_data->status_lo &= ~mask;
+        }
+        if (irq_nr >= 32 && irq_nr < 64) {
+                if (assrt)
+                        m->md_int.gc_data->status_hi |= mask;
+                else
+                        m->md_int.gc_data->status_hi &= ~mask;
+        }
+                
+#if 0
+        printf("status = %08x %08x  enable = %08x %08x\n",
+            m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
+            m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);
+#endif
+
+        if (m->md_int.gc_data->status_lo & m->md_int.gc_data->enable_lo ||
+            m->md_int.gc_data->status_hi & m->md_int.gc_data->enable_hi)
+                cpu_interrupt(m->cpus[0], 65);
+        else
+                cpu_interrupt_ack(m->cpus[0], 65);
+}               
+                        
+
+#endif
 
 DEVICE_ACCESS(gc)
 {
@@ -71,19 +116,35 @@ DEVICE_ACCESS(gc)
 		if (writeflag == MEM_READ)
 			odata = d->enable_hi;
 		else {
-			uint32_t old_enable_hi = d->enable_hi;
+			int old_assert = (d->status_lo & d->enable_lo
+			    || d->status_hi & d->enable_hi);
+			int new_assert;
 			d->enable_hi = idata;
-			if (d->enable_hi != old_enable_hi)
-				cpu_interrupt(cpu, d->reassert_irq);
+
+			new_assert = (d->status_lo & d->enable_lo ||
+			    d->status_hi & d->enable_hi);
+
+			if (old_assert && !new_assert)
+				INTERRUPT_DEASSERT(d->cpu_irq);
+			else if (!old_assert && new_assert)
+				INTERRUPT_ASSERT(d->cpu_irq);
 		}
 		break;
 
 	case 0x18:
 		if (writeflag == MEM_WRITE) {
-			uint32_t old_status_hi = d->status_hi;
+			int old_assert = (d->status_lo & d->enable_lo
+			    || d->status_hi & d->enable_hi);
+			int new_assert;
 			d->status_hi &= ~idata;
-			if (d->status_hi != old_status_hi)
-				cpu_interrupt(cpu, d->reassert_irq);
+
+			new_assert = (d->status_lo & d->enable_lo ||
+			    d->status_hi & d->enable_hi);
+
+			if (old_assert && !new_assert)
+				INTERRUPT_DEASSERT(d->cpu_irq);
+			else if (!old_assert && new_assert)
+				INTERRUPT_ASSERT(d->cpu_irq);
 		}
 		break;
 
@@ -96,24 +157,40 @@ DEVICE_ACCESS(gc)
 		if (writeflag == MEM_READ)
 			odata = d->enable_lo;
 		else {
-			uint32_t old_enable_lo = d->enable_lo;
+			int old_assert = (d->status_lo & d->enable_lo
+			    || d->status_hi & d->enable_hi);
+			int new_assert;
 			d->enable_lo = idata;
-			if (d->enable_lo != old_enable_lo)
-				cpu_interrupt(cpu, d->reassert_irq);
+
+			new_assert = (d->status_lo & d->enable_lo ||
+			    d->status_hi & d->enable_hi);
+
+			if (old_assert && !new_assert)
+				INTERRUPT_DEASSERT(d->cpu_irq);
+			else if (!old_assert && new_assert)
+				INTERRUPT_ASSERT(d->cpu_irq);
 		}
 		break;
 
 	case 0x28:
 		if (writeflag == MEM_WRITE) {
-			uint32_t old_status_lo = d->status_lo;
+			int old_assert = (d->status_lo & d->enable_lo
+			    || d->status_hi & d->enable_hi);
+			int new_assert;
 			d->status_lo &= ~idata;
-			if (d->status_lo != old_status_lo)
-				cpu_interrupt(cpu, d->reassert_irq);
+
+			new_assert = (d->status_lo & d->enable_lo ||
+			    d->status_hi & d->enable_hi);
+
+			if (old_assert && !new_assert)
+				INTERRUPT_DEASSERT(d->cpu_irq);
+			else if (!old_assert && new_assert)
+				INTERRUPT_ASSERT(d->cpu_irq);
 		}
 		break;
 
 	case 0x2c:
-		/*  Avoir a debug message.  */
+		/*  Avoid a debug message.  */
 		break;
 
 	default:if (writeflag == MEM_WRITE) {
@@ -133,11 +210,7 @@ DEVICE_ACCESS(gc)
 }
 
 
-/*
- *  dev_gc_init():
- */
-struct gc_data *dev_gc_init(struct machine *machine, struct memory *mem,
-	uint64_t addr, int reassert_irq)
+DEVINIT(gc)
 {
 	struct gc_data *d;
 
@@ -147,11 +220,13 @@ struct gc_data *dev_gc_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct gc_data));
-	d->reassert_irq = reassert_irq;
 
-	memory_device_register(mem, "gc", addr, 0x100,
-	    dev_gc_access, d, DM_DEFAULT, NULL);
+	/*  Connect to the CPU:  */
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->cpu_irq);
 
-	return d;
+	memory_device_register(devinit->machine->memory, "gc",
+	    devinit->addr, DEV_GC_LENGTH, dev_gc_access, d, DM_DEFAULT, NULL);
+
+	return 1;
 }
 

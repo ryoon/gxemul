@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.236 2007-01-28 00:41:17 debug Exp $
+ *  $Id: devices.h,v 1.237 2007-01-28 11:29:52 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -242,17 +242,6 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
 	int xsize, int ysize, int bit_depth, char *name);
-
-/*  dev_gc.c:  */
-struct gc_data {
-	int		reassert_irq;
-	uint32_t	status_hi;
-	uint32_t	status_lo;
-	uint32_t	enable_hi;
-	uint32_t	enable_lo;
-};
-struct gc_data *dev_gc_init(struct machine *, struct memory *, uint64_t addr,
-	int reassert_irq);
 
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x1000

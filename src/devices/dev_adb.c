@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.11 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_adb.c,v 1.12 2007-01-28 11:29:52 debug Exp $
  *
  *  ADB (Apple Desktop Bus) controller.
  *
@@ -48,6 +48,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -75,7 +76,7 @@ static char *via_regname[N_VIA_REGS] = {
 	"vPCR",  "vIFR",  "vIER",  "(unknown)" };
 
 struct adb_data {
-	int		irq_nr;
+	struct interrupt irq;
 	int		int_asserted;
 
 	int		kbd_dev;
@@ -112,18 +113,18 @@ struct adb_data {
 DEVICE_TICK(adb)
 {
 	struct adb_data *d = extra;
-	int a;
+	int assert;
 
-	a = d->reg[vIFR >> VIA_REG_SHIFT] & IFR_ANY;
-	if (a == IFR_ANY && d->int_enable)
-		a = 1;
+	assert = d->reg[vIFR >> VIA_REG_SHIFT] & IFR_ANY;
+	if (assert == IFR_ANY && d->int_enable)
+		assert = 1;
 
-	if (a)
-		cpu_interrupt(cpu, d->irq_nr);
+	if (assert)
+		INTERRUPT_ASSERT(d->irq);
 	else if (d->int_asserted)
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		INTERRUPT_DEASSERT(d->irq);
 
-	d->int_asserted = a;
+	d->int_asserted = assert;
 }
 
 
@@ -444,7 +445,8 @@ DEVINIT(adb)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct adb_data));
-	d->irq_nr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	adb_reset(d);
 

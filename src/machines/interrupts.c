@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.23 2007-01-28 00:41:17 debug Exp $
+ *  $Id: interrupts.c,v 1.24 2007-01-28 11:29:53 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  *
@@ -321,41 +321,6 @@ void cpc700_interrupt(struct machine *m, struct cpu *cpu,
 		cpu_interrupt(cpu, 65);
 	else
 		cpu_interrupt_ack(cpu, 65);
-}
-
-
-/*
- *  Grand Central interrupt handler.
- *
- *  (Used by MacPPC.)
- */
-void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
-{
-	uint32_t mask = 1 << (irq_nr & 31);
-	if (irq_nr < 32) {
-		if (assrt)
-			m->md_int.gc_data->status_lo |= mask;
-		else
-			m->md_int.gc_data->status_lo &= ~mask;
-	}
-	if (irq_nr >= 32 && irq_nr < 64) {
-		if (assrt)
-			m->md_int.gc_data->status_hi |= mask;
-		else
-			m->md_int.gc_data->status_hi &= ~mask;
-	}
-
-#if 0
-	printf("status = %08x %08x  enable = %08x %08x\n",
-	    m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
-	    m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);
-#endif
-
-	if (m->md_int.gc_data->status_lo & m->md_int.gc_data->enable_lo ||
-	    m->md_int.gc_data->status_hi & m->md_int.gc_data->enable_hi)
-		cpu_interrupt(m->cpus[0], 65);
-	else
-		cpu_interrupt_ack(m->cpus[0], 65);
 }
 
 

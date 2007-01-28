@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.692 2007-01-17 20:11:27 debug Exp $
+ *  $Id: machine.c,v 1.693 2007-01-28 14:15:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,7 +45,6 @@
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 #include "net.h"

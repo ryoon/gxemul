@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.36 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_scc.c,v 1.37 2007-01-28 14:15:30 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -184,8 +184,11 @@ DEVICE_TICK(scc)
 				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
 				    & SCC_RR3_TX_IP_A ||
 				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
-				    & SCC_RR3_TX_IP_B)
-					cpu_interrupt(cpu, d->irq_nr);
+				    & SCC_RR3_TX_IP_B) {
+fatal("TODO: legacy rewrite!\n");
+abort();
+//					cpu_interrupt(cpu, d->irq_nr);
+				}
 			}
 
 			/*  RX interrupts?  */
@@ -204,8 +207,11 @@ DEVICE_TICK(scc)
 				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
 				    & SCC_RR3_RX_IP_A ||
 				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
-				    & SCC_RR3_RX_IP_B)
-					cpu_interrupt(cpu, d->irq_nr);
+				    & SCC_RR3_RX_IP_B) {
+fatal("TODO: legacy rewrite!\n");
+abort();
+//					cpu_interrupt(cpu, d->irq_nr);
+				}
 			}
 
 			if (d->scc_register_w[N_SCC_REGS + SCC_WR1] &
@@ -227,9 +233,11 @@ DEVICE_TICK(scc)
 				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
 				    & SCC_RR3_EXT_IP_B)
 {
-					cpu_interrupt(cpu, d->irq_nr);
+fatal("TODO: legacy rewrite!\n");
+abort();
+//					cpu_interrupt(cpu, d->irq_nr);
 /*  TODO: huh?  */
-cpu_interrupt(cpu, 8 + 0x02000000);
+//cpu_interrupt(cpu, 8 + 0x02000000);
 }
 			}
 		}
@@ -346,7 +354,10 @@ DEVICE_ACCESS(scc)
 
 				d->scc_register_r[port * N_SCC_REGS +
 				    SCC_RR3] = 0;
-				cpu_interrupt_ack(cpu, d->irq_nr);
+
+fatal("TODO: legacy rewrite!\n");
+abort();
+//				cpu_interrupt_ack(cpu, d->irq_nr);
 			}
 
 #ifdef SCC_DEBUG
@@ -393,7 +404,10 @@ DEVICE_ACCESS(scc)
 
 			/*  TODO:  perhaps only clear the RX part of RR3?  */
 			d->scc_register_r[N_SCC_REGS + SCC_RR3] = 0;
-			cpu_interrupt_ack(cpu, d->irq_nr);
+
+fatal("TODO: legacy rewrite!\n");
+abort();
+//			cpu_interrupt_ack(cpu, d->irq_nr);
 
 			debug("[ scc: (port %i) read from 0x%08lx: 0x%02x ]\n",
 			    port, (long)relative_addr, (int)odata);

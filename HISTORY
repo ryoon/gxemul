@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1453 2007-01-28 13:45:45 debug Exp $
+$Id: HISTORY,v 1.1454 2007-01-28 14:15:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3238,3 +3238,7 @@ Changelog for GXemul:
 		was before).
 		Converting dev_mp to the new interrupt system, although I
 		haven't had time to actually test it yet.
+		Completely removing src/machines/interrupts.c, cpu_interrupt
+		and cpu_interrupt_ack in src/cpu.c, and
+		src/include/machine_interrupts.h! Adding fatal error messages
+		+ abort() in the few places that are left to fix.

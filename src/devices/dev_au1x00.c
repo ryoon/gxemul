@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.20 2007-01-28 00:41:16 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.21 2007-01-28 14:15:30 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -116,11 +116,14 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 		/*  TODO: Controller 1  */
 	}
 
-	if ((m->md_int.au1x00_ic_data->request0_int &
-	    m->md_int.au1x00_ic_data->mask) != 0)
-		cpu_interrupt(cpu, 2);
-	else
-		cpu_interrupt_ack(cpu, 2);
+fatal("TODO: legacy interrupt rewrite!\n");
+abort();
+
+//	if ((m->md_int.au1x00_ic_data->request0_int &
+//	    m->md_int.au1x00_ic_data->mask) != 0)
+//		cpu_interrupt(cpu, 2);
+//	else
+//		cpu_interrupt_ack(cpu, 2);
 
 	/*  TODO: What _is_ request1?  */
 
@@ -239,8 +242,11 @@ DEVICE_ACCESS(au1x00_ic)
 		}
 	}
 
-	if (writeflag == MEM_WRITE)
-		cpu_interrupt(cpu, 8 + 64);
+fatal("TODO: legacy interrupt rewrite!\n");
+abort();
+
+//	if (writeflag == MEM_WRITE)
+//		cpu_interrupt(cpu, 8 + 64);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -308,12 +314,15 @@ DEVICE_ACCESS(au1x00_uart)
 
 DEVICE_TICK(au1x00_pc)
 {
-	struct au1x00_pc_data *d = extra;
+/*	struct au1x00_pc_data *d = extra;  */
 
 	/*  Periodic ticks at 32768 Hz? TODO  */
 
-	if (d->reg[PC_COUNTER_CONTROL/4] & CC_EN1)
-		cpu_interrupt(cpu, 8 + d->irq_nr);
+fatal("TODO: legacy interrupt rewrite!\n");
+abort();
+
+//	if (d->reg[PC_COUNTER_CONTROL/4] & CC_EN1)
+//		cpu_interrupt(cpu, 8 + d->irq_nr);
 }
 
 

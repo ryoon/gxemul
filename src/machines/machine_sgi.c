@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.13 2007-01-28 13:08:26 debug Exp $
+ *  $Id: machine_sgi.c,v 1.14 2007-01-28 14:15:30 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -46,7 +46,6 @@
 #include "devices.h"
 #include "diskimage.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 #include "net.h"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.22 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.23 2007-01-28 14:15:30 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -52,7 +52,9 @@ void dev_sgi_ip30_tick(struct cpu *cpu, void *extra)
 	if (d->imask0 & ((int64_t)1<<50)) {
 		/*  TODO: Only interrupt if reg 0x20000 (the counter)
 			has passed the compare (0x30000).  */
-		cpu_interrupt(cpu, 8+1 + 50);
+fatal("IP30 legacy interrupt rewrite: TODO\n");
+abort();
+//		cpu_interrupt(cpu, 8+1 + 50);
 	}
 }
 
@@ -98,19 +100,25 @@ DEVICE_ACCESS(sgi_ip30)
 	case 0x10020:	/*  Set ISR, according to Linux/IP30  */
 		d->isr = idata;
 		/*  Recalculate CPU interrupt assertions:  */
-		cpu_interrupt(cpu, 8);
+fatal("IP30 legacy interrupt rewrite: TODO\n");
+abort();
+//		cpu_interrupt(cpu, 8);
 		break;
 	case 0x10028:	/*  Clear ISR, according to Linux/IP30  */
 		d->isr &= ~idata;
 		/*  Recalculate CPU interrupt assertions:  */
-		cpu_interrupt(cpu, 8);
+fatal("IP30 legacy interrupt rewrite: TODO\n");
+abort();
+//		cpu_interrupt(cpu, 8);
 		break;
 	case 0x10030:	/*  Interrupt Status Register  */
 		if (writeflag == MEM_WRITE) {
 			/*  Clear-on-write  (TODO: is this correct?)  */
 			d->isr &= ~idata;
 			/*  Recalculate CPU interrupt assertions:  */
-			cpu_interrupt(cpu, 8);
+fatal("IP30 legacy interrupt rewrite: TODO\n");
+abort();
+//			cpu_interrupt(cpu, 8);
 		} else {
 			odata = d->isr;
 		}

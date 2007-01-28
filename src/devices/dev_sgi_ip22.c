@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.29 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.30 2007-01-28 14:15:30 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -320,7 +320,11 @@ DEVICE_ACCESS(sgi_ip22)
 			 *  some interrupt which should never be used anyway.
 			 *  (TODO: Fix this.)
 			 */
-			cpu_interrupt_ack(cpu, 8 + 63);
+
+fatal("TODO: ip22 legacy interrupt rewrite!\n");
+abort();
+
+//			cpu_interrupt_ack(cpu, 8 + 63);
 			debug("[ sgi_ip22: write to local0 IRQ MASK, "
 			    "data=0x%llx ]\n", (long long)idata);
 		} else {
@@ -340,7 +344,10 @@ DEVICE_ACCESS(sgi_ip22)
 	case 0x0c:	/*  local1 irq mask  */
 		if (writeflag == MEM_WRITE) {
 			/*  See commen above, about local0 irq mask.  */
-			cpu_interrupt_ack(cpu, 8 + 63);
+
+fatal("TODO: ip22 legacy interrupt rewrite!\n");
+abort();
+//			cpu_interrupt_ack(cpu, 8 + 63);
 			debug("[ sgi_ip22: write to local1 IRQ MASK, "
 			    "data=0x%llx ]\n", (long long)idata);
 		} else {

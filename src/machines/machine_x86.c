@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_x86.c,v 1.6 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_x86.c,v 1.7 2007-01-28 14:15:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -37,7 +37,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

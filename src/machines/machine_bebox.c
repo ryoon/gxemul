@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.9 2007-01-17 20:11:28 debug Exp $
+ *  $Id: machine_bebox.c,v 1.10 2007-01-28 14:15:30 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/Ports/bebox/ for more info.)
@@ -41,7 +41,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 

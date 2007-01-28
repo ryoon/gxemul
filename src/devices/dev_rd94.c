@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.38 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_rd94.c,v 1.39 2007-01-28 14:15:30 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -70,7 +70,10 @@ DEVICE_TICK(rd94)
 		d->interval --;
 		if (d->interval <= 0) {
 			debug("[ rd94: interval timer interrupt ]\n");
-			cpu_interrupt(cpu, 5);
+
+fatal("TODO: rd94 legacy interrupt rewrite\n");
+abort();
+//			cpu_interrupt(cpu, 5);
 		}
 	}
 }
@@ -112,6 +115,9 @@ DEVICE_ACCESS(rd94)
 				odata = 0;
 		}
 		debug("[ rd94: intstat1 ]\n");
+
+fatal("TODO: rd94 legacy interrupt rewrite\n");
+abort();
 /*		cpu_interrupt_ack(cpu, 3); */
 		break;
 
@@ -121,6 +127,9 @@ DEVICE_ACCESS(rd94)
 			odata = 0;	/*  TODO  */
 		}
 		debug("[ rd94: intstat2 ]\n");
+
+fatal("TODO: rd94 legacy interrupt rewrite\n");
+abort();
 /*		cpu_interrupt_ack(cpu, 4); */
 		break;
 
@@ -130,7 +139,10 @@ DEVICE_ACCESS(rd94)
 			odata = 0;	/*  return value does not matter?  */
 		}
 		debug("[ rd94: intstat3 ]\n");
-		cpu_interrupt_ack(cpu, 5);
+
+fatal("TODO: rd94 legacy interrupt rewrite\n");
+abort();
+//		cpu_interrupt_ack(cpu, 5);
 		d->interval = d->interval_start;
 		break;
 
@@ -140,7 +152,9 @@ DEVICE_ACCESS(rd94)
 			odata = 0;	/*  return value does not matter?  */
 		}
 		fatal("[ rd94: intstat4 ]\n");
-		cpu_interrupt_ack(cpu, 6);
+fatal("TODO: rd94 legacy interrupt rewrite\n");
+abort();
+//		cpu_interrupt_ack(cpu, 6);
 		break;
 
 	case RD94_SYS_CPUID:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.16 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.17 2007-01-28 14:15:30 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -187,8 +187,10 @@ DEVICE_ACCESS(dec_ioasic)
 
 			/*  Make sure that the CPU interrupt is deasserted as
 			    well:  */
-			if (idata != 0)
-				cpu_interrupt_ack(cpu, 8 + idata);
+fatal("TODO: interrupt rewrite!\n");
+abort();
+//			if (idata != 0)
+//				cpu_interrupt_ack(cpu, 8 + idata);
 		}
 		break;
 
@@ -196,7 +198,9 @@ DEVICE_ACCESS(dec_ioasic)
 		if (writeflag == MEM_WRITE) {
 			d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10] =
 			    idata;
-			cpu_interrupt_ack(cpu, 8 + 0);
+fatal("TODO: interrupt rewrite!\n");
+abort();
+//			cpu_interrupt_ack(cpu, 8 + 0);
 		} else
 			odata = d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) /
 			    0x10];

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.103 2006-12-30 13:31:00 debug Exp $
+ *  $Id: cpu.h,v 1.104 2007-01-28 14:15:30 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -420,8 +420,6 @@ int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr);
 char *cpu_gdb_stub(struct cpu *cpu, char *cmd);
 
-int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
-int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);
 void cpu_functioncall_trace_return(struct cpu *cpu);
 

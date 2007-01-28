@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.33 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.34 2007-01-28 14:15:30 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -68,12 +68,15 @@ struct wdsc_data {
 
 DEVICE_TICK(wdsc)
 {
-	struct wdsc_data *d = extra;
+/*	struct wdsc_data *d = extra;  */
 
-	if (d->irq_pending)
-		cpu_interrupt(cpu, d->irq_nr);
-	else
-		cpu_interrupt_ack(cpu, d->irq_nr);
+fatal("TODO: legacy interrupt rewrite!\n");
+abort();
+
+//	if (d->irq_pending)
+//		cpu_interrupt(cpu, d->irq_nr);
+//	else
+//		cpu_interrupt_ack(cpu, d->irq_nr);
 }
 
 

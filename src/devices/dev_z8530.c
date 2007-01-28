@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.11 2006-12-30 13:31:00 debug Exp $
+ *  $Id: dev_z8530.c,v 1.12 2007-01-28 14:15:30 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -114,11 +114,14 @@ DEVICE_TICK(z8530)
 	if (!(d->wr[1][9] & ZSWR9_MASTER_IE))
 		asserted = 0;
 
-	if (asserted)
-		cpu_interrupt(cpu, d->irq_nr);
+fatal("TODO: legacy rewrite!\n");
+abort();
 
-	if (d->irq_asserted && !asserted)
-		cpu_interrupt_ack(cpu, d->irq_nr);
+//	if (asserted)
+//		cpu_interrupt(cpu, d->irq_nr);
+
+//	if (d->irq_asserted && !asserted)
+//		cpu_interrupt_ack(cpu, d->irq_nr);
 
 	d->irq_asserted = asserted;
 }

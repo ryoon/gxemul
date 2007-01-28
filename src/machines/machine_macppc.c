@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.8 2007-01-28 11:29:53 debug Exp $
+ *  $Id: machine_macppc.c,v 1.9 2007-01-28 14:15:30 debug Exp $
  *
  *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
  *        systems. They do not model real PowerMacs, but should be enough to
@@ -40,7 +40,6 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
-#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 #include "of.h"

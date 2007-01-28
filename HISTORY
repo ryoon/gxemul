@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1448 2007-01-28 00:41:16 debug Exp $
+$Id: HISTORY,v 1.1449 2007-01-28 11:06:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3227,3 +3227,5 @@ Changelog for GXemul:
 		Converting Playstation 2 devices to devinit, and converting
 		the interrupt system. Also fixing a severe bug: the interrupt
 		mask register on Playstation 2 is bitwise _toggled_ on writes.
+20070128	Removing the dummy NetGear machine mode and the 8250 device
+		(which was only used by the NetGear machine).

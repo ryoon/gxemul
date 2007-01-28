@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.48 2006-12-30 13:30:55 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.49 2007-01-28 16:59:06 debug Exp $
  *
  *  SH instructions.
  *
@@ -2032,12 +2032,16 @@ X(ldtlb)
 	cpu->cd.sh.utlb_hi[urc] = cpu->cd.sh.pteh;
 	cpu->cd.sh.utlb_lo[urc] = cpu->cd.sh.ptel;
 
-	if ((old_lo & SH4_PTEL_SZ_MASK) == SH4_PTEL_SZ_4K)
-		cpu->invalidate_translation_caches(cpu,
-		    old_hi & 0xfffff000, INVALIDATE_VADDR);
-	else
-		cpu->invalidate_translation_caches(cpu,
-		    old_hi & 0xfffff000, INVALIDATE_ALL);
+	/*  Invalidate the old mapping, if it belonged to the same ASID:  */
+	if ((old_hi & SH4_PTEH_ASID_MASK) ==
+	    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK)) {
+		if ((old_lo & SH4_PTEL_SZ_MASK) == SH4_PTEL_SZ_4K)
+			cpu->invalidate_translation_caches(cpu,
+			    old_hi & 0xfffff000, INVALIDATE_VADDR);
+		else
+			cpu->invalidate_translation_caches(cpu,
+			    old_hi & 0xfffff000, INVALIDATE_ALL);
+	}
 }
 
 

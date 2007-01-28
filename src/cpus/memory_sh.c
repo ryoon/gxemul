@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.13 2006-12-30 13:30:56 debug Exp $
+ *  $Id: memory_sh.c,v 1.14 2007-01-28 16:59:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -156,6 +156,20 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 		 */
 		if (i >= 0) {
 			int r = random() % SH_N_ITLB_ENTRIES;
+
+			/*  NOTE: Make sure that the old mapping for
+			    that itlb entry is invalidated:  */
+			cpu->invalidate_translation_caches(cpu,
+			    cpu->cd.sh.itlb_hi[r] & ~0xfff, INVALIDATE_VADDR);
+
+			/*
+			 *  TODO / NOTE: I am NOT really sure why this is
+			 *  necessary here. This needs to be investigated
+			 *  further.
+			 */
+			cpu->invalidate_code_translation(cpu,
+			    cpu->cd.sh.itlb_lo[r] & ~0xfff, INVALIDATE_PADDR);
+
 			cpu->cd.sh.itlb_hi[r] = cpu->cd.sh.utlb_hi[i];
 			cpu->cd.sh.itlb_lo[r] = cpu->cd.sh.utlb_lo[i];
 		}

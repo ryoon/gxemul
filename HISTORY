@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1456 2007-01-28 14:40:53 debug Exp $
+$Id: HISTORY,v 1.1457 2007-01-28 16:59:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3245,3 +3245,6 @@ Changelog for GXemul:
 		Converting dev_z8530 to the new interrupt system.
 		FINALLY removing the md_int struct completely from the
 		machine struct.
+		SH4 fixes (adding a PADDR invalidation in the ITLB replacement
+		code in memory_sh.c); the NetBSD/dreamcast LiveCD now runs
+		all the way to the login prompt, and can be interacted with :-)

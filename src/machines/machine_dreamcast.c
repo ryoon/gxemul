@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.29 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.30 2007-01-28 16:59:06 debug Exp $
  *
  *  Dreamcast.
  */
@@ -117,7 +117,7 @@ MACHINE_SETUP(dreamcast)
 	dev_ram_init(machine, 0x0e000000, 16 * 1048576, DEV_RAM_RAM, 0);
 
 	device_add(machine, "pvr");
-	device_add(machine, "mb8696x addr=0x600400 addr_mult=4");
+/*	device_add(machine, "mb8696x addr=0x600400 addr_mult=4");  */
 	device_add(machine, "dreamcast_asic");
 	device_add(machine, "dreamcast_g2");
 	device_add(machine, "dreamcast_gdrom");

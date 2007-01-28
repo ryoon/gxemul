@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.27 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sh4.c,v 1.28 2007-01-28 16:59:06 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -212,12 +212,17 @@ DEVICE_ACCESS(sh4_itlb_aa)
 		if (idata & SH4_ITLB_AA_V)
 			cpu->cd.sh.itlb_lo[e] |= SH4_PTEL_V;
 
-		if (safe_to_invalidate)
-			cpu->invalidate_translation_caches(cpu,
-			    old_hi & ~0xfff, INVALIDATE_VADDR);
-		else
-			cpu->invalidate_translation_caches(cpu,
-			    0, INVALIDATE_ALL);
+		/*  Invalidate if this ITLB entry previously belonged to the
+		    currently running process:  */
+		if ((old_hi & SH4_ITLB_AA_ASID_MASK) ==
+		    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK)) {
+			if (safe_to_invalidate)
+				cpu->invalidate_translation_caches(cpu,
+				    old_hi & ~0xfff, INVALIDATE_VADDR);
+			else
+				cpu->invalidate_translation_caches(cpu,
+				    0, INVALIDATE_ALL);
+		}
 	} else {
 		odata = cpu->cd.sh.itlb_hi[e] &
 		    (SH4_ITLB_AA_VPN_MASK | SH4_ITLB_AA_ASID_MASK);
@@ -251,12 +256,18 @@ DEVICE_ACCESS(sh4_itlb_da1)
 		cpu->cd.sh.itlb_lo[e] &= ~mask;
 		cpu->cd.sh.itlb_lo[e] |= (idata & mask);
 
-		if (safe_to_invalidate)
-			cpu->invalidate_translation_caches(cpu,
-			    cpu->cd.sh.itlb_hi[e] & ~0xfff, INVALIDATE_VADDR);
-		else
-			cpu->invalidate_translation_caches(cpu,
-			    0, INVALIDATE_ALL);
+		/*  Invalidate if this ITLB entry belongs to the
+		    currently running process:  */
+		if ((cpu->cd.sh.itlb_hi[e] & SH4_ITLB_AA_ASID_MASK) ==
+		    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK)) {
+			if (safe_to_invalidate)
+				cpu->invalidate_translation_caches(cpu,
+				    cpu->cd.sh.itlb_hi[e] & ~0xfff,
+				    INVALIDATE_VADDR);
+			else
+				cpu->invalidate_translation_caches(cpu,
+				    0, INVALIDATE_ALL);
+		}
 	} else {
 		odata = cpu->cd.sh.itlb_lo[e] & mask;
 		memory_writemax64(cpu, data, len, odata);
@@ -401,12 +412,18 @@ DEVICE_ACCESS(sh4_utlb_da1)
 		cpu->cd.sh.utlb_lo[e] &= ~mask;
 		cpu->cd.sh.utlb_lo[e] |= (idata & mask);
 
-		if (safe_to_invalidate)
-			cpu->invalidate_translation_caches(cpu,
-			    cpu->cd.sh.utlb_hi[e] & ~0xfff, INVALIDATE_VADDR);
-		else
-			cpu->invalidate_translation_caches(cpu,
-			    0, INVALIDATE_ALL);
+		/*  Invalidate if this UTLB entry belongs to the
+		    currently running process:  */
+		if ((cpu->cd.sh.utlb_hi[e] & SH4_ITLB_AA_ASID_MASK) ==
+		    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK)) {
+			if (safe_to_invalidate)
+				cpu->invalidate_translation_caches(cpu,
+				    cpu->cd.sh.utlb_hi[e] & ~0xfff,
+				    INVALIDATE_VADDR);
+			else
+				cpu->invalidate_translation_caches(cpu,
+				    0, INVALIDATE_ALL);
+		}
 	} else {
 		odata = cpu->cd.sh.utlb_lo[e] & mask;
 		memory_writemax64(cpu, data, len, odata);
@@ -461,7 +478,11 @@ DEVICE_ACCESS(sh4)
 			cpu->cd.sh.pteh = idata;
 
 			if ((idata & SH4_PTEH_ASID_MASK) != old_asid) {
-				/*  TODO: Don't invalidate everything?  */
+				/*
+				 *  TODO: Don't invalidate everything,
+				 *  only those pages that belonged to the
+				 *  old asid.
+				 */
 				cpu->invalidate_translation_caches(
 				    cpu, 0, INVALIDATE_ALL);
 			}

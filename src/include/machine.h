@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.150 2007-01-28 13:08:26 debug Exp $
+ *  $Id: machine.h,v 1.151 2007-01-28 13:58:10 debug Exp $
  */
 
 #include <sys/types.h>
@@ -43,7 +43,6 @@
 
 
 #define	MAX_BREAKPOINTS		8
-#define	BREAKPOINT_FLAG_R	1
 
 #define	MAX_TICK_FUNCTIONS	16
 

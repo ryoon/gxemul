@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.152 2007-01-28 14:40:54 debug Exp $
+ *  $Id: machine.h,v 1.153 2007-01-28 14:53:51 debug Exp $
  */
 
 #include <sys/types.h>
@@ -201,11 +201,8 @@ struct machine {
 		struct machine_arcbios	arc;
 		struct machine_pmax	pmax;
 		struct machine_pc	pc;
+		struct of_data		*of_data;
 	} md;
-
-	/*  OpenFirmware:  */
-	/*  TODO: Move to the machine-dependent field?  */
-	struct of_data *of_data;
 
 	/*  Bus-specific interrupt data:  */
 	/*  TODO: Remove!  */

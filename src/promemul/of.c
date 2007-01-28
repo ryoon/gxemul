@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.20 2006-12-30 13:31:02 debug Exp $
+ *  $Id: of.c,v 1.21 2007-01-28 14:53:51 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -163,7 +163,7 @@ OF_SERVICE(call_method_5_2)
 {
 	if (strcmp(arg[0], "set-colors") == 0) {
 		/*  Used by OpenBSD/macppc:  */
-		struct vfb_data *v = cpu->machine->of_data->vfb_data;
+		struct vfb_data *v = cpu->machine->md.of_data->vfb_data;
 		int color = OF_GET_ARG(3);
 		uint64_t ptr = OF_GET_ARG(4);
 		unsigned char rgb[3];
@@ -199,7 +199,7 @@ OF_SERVICE(call_method_6_2)
 
 OF_SERVICE(child)
 {
-	struct of_device *od = cpu->machine->of_data->of_devices;
+	struct of_device *od = cpu->machine->md.of_data->of_devices;
 	int handle = OF_GET_ARG(0);
 	OF_FIND(od, od->parent == handle);
 	store_32bit_word(cpu, base + retofs, od == NULL? 0 : od->handle);
@@ -216,7 +216,7 @@ OF_SERVICE(exit)
 
 OF_SERVICE(finddevice)
 {
-	int h = find_device_handle(cpu->machine->of_data, arg[0]);
+	int h = find_device_handle(cpu->machine->md.of_data, arg[0]);
 	store_32bit_word(cpu, base + retofs, h);
 	return h>0? 0 : -1;
 }
@@ -224,7 +224,7 @@ OF_SERVICE(finddevice)
 
 OF_SERVICE(getprop)
 {
-	struct of_device *od = cpu->machine->of_data->of_devices;
+	struct of_device *od = cpu->machine->md.of_data->of_devices;
 	struct of_device_property *pr;
 	int handle = OF_GET_ARG(0), i, len_returned = 0;
 	uint64_t buf = OF_GET_ARG(2);
@@ -271,7 +271,7 @@ ret:
 
 OF_SERVICE(getproplen)
 {
-	struct of_device *od = cpu->machine->of_data->of_devices;
+	struct of_device *od = cpu->machine->md.of_data->of_devices;
 	struct of_device_property *pr;
 	int handle = OF_GET_ARG(0);
 
@@ -348,7 +348,7 @@ OF_SERVICE(package_to_path)
 
 OF_SERVICE(parent)
 {
-	struct of_device *od = cpu->machine->of_data->of_devices;
+	struct of_device *od = cpu->machine->md.of_data->of_devices;
 	int handle = OF_GET_ARG(0);
 	OF_FIND(od, od->handle == handle);
 	store_32bit_word(cpu, base + retofs, od == NULL? 0 : od->parent);
@@ -358,7 +358,7 @@ OF_SERVICE(parent)
 
 OF_SERVICE(peer)
 {
-	struct of_device *od = cpu->machine->of_data->of_devices;
+	struct of_device *od = cpu->machine->md.of_data->of_devices;
 	int handle = OF_GET_ARG(0), parent = 0, peer = 0, seen_self = 1;
 
 	if (handle == 0) {
@@ -375,7 +375,7 @@ OF_SERVICE(peer)
 	parent = od->parent;
 	seen_self = 0;
 
-	od = cpu->machine->of_data->of_devices;
+	od = cpu->machine->md.of_data->of_devices;
 
 	while (od != NULL) {
 		if (od->parent == parent) {
@@ -689,7 +689,7 @@ static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
  */
 void of_emul_init_isa(struct machine *machine)
 {
-	struct of_data *ofd = machine->of_data;
+	struct of_data *ofd = machine->md.of_data;
 	unsigned char *isa_ranges;
 
 	of_add_device(ofd, "isa", "/");
@@ -720,7 +720,7 @@ bad:
  */
 void of_emul_init_adb(struct machine *machine)
 {
-	struct of_data *ofd = machine->of_data;
+	struct of_data *ofd = machine->md.of_data;
 	unsigned char *adb_interrupts, *adb_reg;
 
 	adb_interrupts = malloc(4 * sizeof(uint32_t));
@@ -760,7 +760,7 @@ bad:
  */
 void of_emul_init_zs(struct machine *machine)
 {
-	struct of_data *ofd = machine->of_data;
+	struct of_data *ofd = machine->md.of_data;
 	unsigned char *zs_interrupts, *zs_reg;
 
 	zs_reg = malloc(6 * sizeof(uint32_t));
@@ -836,7 +836,7 @@ bad:
  */
 void of_emul_init_uninorth(struct machine *machine)
 {
-	struct of_data *ofd = machine->of_data;
+	struct of_data *ofd = machine->md.of_data;
 	unsigned char *uninorth_reg, *uninorth_bus_range, *uninorth_ranges;
 	unsigned char *macio_aa, *ata_interrupts, *ata_reg;
 	struct of_device *ic;
@@ -1057,7 +1057,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	if (verbose >= 2)
 		of_dump_all(ofd);
 
-	machine->of_data = ofd;
+	machine->md.of_data = ofd;
 	return ofd;
 
 bad:
@@ -1078,7 +1078,7 @@ int of_emul(struct cpu *cpu)
 	char *arg[OF_N_MAX_ARGS];
 	uint64_t base, ptr;
 	struct of_service *os;
-	struct of_data *of_data = cpu->machine->of_data;
+	struct of_data *of_data = cpu->machine->md.of_data;
 
 	if (of_data == NULL) {
 		fatal("of_emul(): no of_data struct?\n");

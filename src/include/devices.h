@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.238 2007-01-28 13:08:26 debug Exp $
+ *  $Id: devices.h,v 1.239 2007-01-29 18:06:52 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -148,14 +148,6 @@ int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr,
 	unsigned char *color_plane_mask);
-
-/*  dev_cpc700.c:  */
-struct cpc700_data {
-	struct pci_data	*pci_data;
-	uint32_t	sr;	/*  Status register (interrupt)  */
-	uint32_t	er;	/*  Enable register  */
-};
-struct cpc700_data *dev_cpc700_init(struct machine *, struct memory *);
 
 /*  dev_dc7085.c:  */
 #define	DEV_DC7085_LENGTH		0x0000000000000080
@@ -328,12 +320,6 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int type, char *keyboard_irqpath,
 	char *mouse_irqpath, int in_use, int pc_style_flag);
-
-/*  dev_pmppc.c:  */
-int dev_pmppc_board_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
-	void *);
-void dev_pmppc_init(struct memory *mem);
 
 /*  dev_pmagja.c:  */
 #define	DEV_PMAGJA_LENGTH		0x3c0000

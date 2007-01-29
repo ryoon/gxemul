@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.8 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_cpc700.c,v 1.9 2007-01-29 18:06:52 debug Exp $
  *  
  *  IBM CPC700 bridge; PCI and interrupt controller.
  */
@@ -37,12 +37,37 @@
 #include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 #include "cpc700reg.h"
+
+
+struct cpc700_data {
+	struct interrupt ppc_irq;	/*  Connected to the CPU  */
+
+	uint32_t	sr;		/*  Interrupt Status register  */
+	uint32_t	er;		/*  Interrupt Enable register  */
+
+	struct pci_data *pci_data;	/*  PCI bus  */
+};
+
+
+void cpc700_interrupt_assert(struct interrupt *interrupt)
+{
+	struct cpc700_data *d = interrupt->extra;
+	d->sr |= (1 << interrupt->line);
+	if (d->sr & d->er)
+		INTERRUPT_ASSERT(d->ppc_irq);
+}
+void cpc700_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct cpc700_data *d = interrupt->extra;
+	d->sr &= ~(1 << interrupt->line);
+	if (!(d->sr & d->er))
+		INTERRUPT_DEASSERT(d->ppc_irq);
+}
 
 
 /*
@@ -95,10 +120,13 @@ DEVICE_ACCESS(cpc700_int)
 
 	case CPC_UIC_SR:
 		/*  Status register (cleared by writing ones):  */
-		if (writeflag == MEM_READ)
+		if (writeflag == MEM_READ) {
 			odata = d->sr;
-		else
+		} else {
 			d->sr &= ~idata;
+			if (!(d->sr & d->er))
+				INTERRUPT_DEASSERT(d->ppc_irq);
+		}
 		break;
 
 	case CPC_UIC_SRS:
@@ -106,24 +134,35 @@ DEVICE_ACCESS(cpc700_int)
 		if (writeflag == MEM_READ) {
 			fatal("[ cpc700_int: read from CPC_UIC_SRS? ]\n");
 			odata = d->sr;
-		} else
+		} else {
 			d->sr = idata;
+			if (d->sr & d->er)
+				INTERRUPT_ASSERT(d->ppc_irq);
+			else
+				INTERRUPT_DEASSERT(d->ppc_irq);
+		}
 		break;
 
 	case CPC_UIC_ER:
 		/*  Enable register:  */
-		if (writeflag == MEM_READ)
+		if (writeflag == MEM_READ) {
 			odata = d->er;
-		else
+		} else {
 			d->er = idata;
+			if (d->sr & d->er)
+				INTERRUPT_ASSERT(d->ppc_irq);
+			else
+				INTERRUPT_DEASSERT(d->ppc_irq);
+		}
 		break;
 
 	case CPC_UIC_MSR:
 		/*  Masked status:  */
-		if (writeflag == MEM_READ)
+		if (writeflag == MEM_READ) {
 			odata = d->sr & d->er;
-		else
+		} else {
 			fatal("[ cpc700_int: write to CPC_UIC_MSR? ]\n");
+		}
 		break;
 
 	default:if (writeflag == MEM_WRITE) {
@@ -143,13 +182,11 @@ DEVICE_ACCESS(cpc700_int)
 }
 
 
-/*
- *  dev_cpc700_init():
- */
-struct cpc700_data *dev_cpc700_init(struct machine *machine, struct memory *mem)
+DEVINIT(cpc700)
 {
 	struct cpc700_data *d;
 	char tmp[300];
+	int i;
 
 	d = malloc(sizeof(struct cpc700_data));
 	if (d == NULL) {
@@ -158,45 +195,70 @@ struct cpc700_data *dev_cpc700_init(struct machine *machine, struct memory *mem)
 	}
 	memset(d, 0, sizeof(struct cpc700_data));
 
+	/*  Connect to the CPU's interrupt pin:  */
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->ppc_irq);
+
+	/*  Register 32 CPC700 interrupts:  */
+	for (i=0; i<32; i++) {
+		struct interrupt template;
+		char n[300];
+		snprintf(n, sizeof(n), "%s.cpc700.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = cpc700_interrupt_assert;
+		template.interrupt_deassert = cpc700_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
 	/*  Register a PCI bus:  */
+	snprintf(tmp, sizeof(tmp), "%s.cpc700", devinit->interrupt_path);
 	d->pci_data = bus_pci_init(
-	    machine,
-	    0			/*  pciirq: TODO  */,
+	    devinit->machine,
+	    tmp,		/*  pciirq path  */
 	    0,			/*  pci device io offset  */
 	    0,			/*  pci device mem offset  */
 	    CPC_PCI_IO_BASE,	/*  PCI portbase  */
 	    CPC_PCI_MEM_BASE,	/*  PCI membase: TODO  */
-	    0,			/*  PCI irqbase: TODO  */
+	    tmp,		/*  PCI irqbase  */
 	    0,			/*  ISA portbase: TODO  */
 	    0,			/*  ISA membase: TODO  */
-	    0);			/*  ISA irqbase: TODO  */
+	    tmp);		/*  ISA irqbase  */
 
-	switch (machine->machine_type) {
+	switch (devinit->machine->machine_type) {
+
 	case MACHINE_PMPPC:
-		bus_pci_add(machine, d->pci_data, mem, 0, 0, 0,
-		    "heuricon_pmppc");
+		bus_pci_add(devinit->machine, d->pci_data,
+		    devinit->machine->memory, 0, 0, 0, "heuricon_pmppc");
 		break;
+
 	default:fatal("!\n! WARNING: cpc700 for non-implemented machine"
 		    " type\n!\n");
 		exit(1);
 	}
 
 	/*  PCI configuration registers:  */
-	memory_device_register(mem, "cpc700_pci", CPC_PCICFGADR, 8,
-	    dev_cpc700_pci_access, d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "cpc700_pci",
+	    CPC_PCICFGADR, 8, dev_cpc700_pci_access, d, DM_DEFAULT, NULL);
 
 	/*  Interrupt controller:  */
-	memory_device_register(mem, "cpc700_int", CPC_UIC_BASE, CPC_UIC_SIZE,
-	    dev_cpc700_int_access, d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "cpc700_int",
+	    CPC_UIC_BASE, CPC_UIC_SIZE, dev_cpc700_int_access, d,
+	    DM_DEFAULT, NULL);
 
 	/*  Two serial ports:  */
-	snprintf(tmp, sizeof(tmp), "ns16550 irq=%i addr=0x%llx name2=tty0",
-	    31 - CPC_IB_UART_0, (long long)CPC_COM0);
-	machine->main_console_handle = (size_t)device_add(machine, tmp);
-	snprintf(tmp, sizeof(tmp), "ns16550 irq=%i addr=0x%llx name2=tty1",
-	    31 - CPC_IB_UART_1, (long long)CPC_COM1);
-	device_add(machine, tmp);
+	snprintf(tmp, sizeof(tmp), "ns16550 irq=%s.cpc700.%i addr=0x%llx "
+	    "name2=tty0", devinit->interrupt_path, 31 - CPC_IB_UART_0,
+	    (long long)CPC_COM0);
+	devinit->machine->main_console_handle = (size_t)
+	    device_add(devinit->machine, tmp);
+	snprintf(tmp, sizeof(tmp), "ns16550 irq=%s.cpc700.%i addr=0x%llx "
+	    "name2=tty1", devinit->interrupt_path, 31 - CPC_IB_UART_1,
+	    (long long)CPC_COM1);
+	device_add(devinit->machine, tmp);
 
-	return d;
+	return 1;
 }
 

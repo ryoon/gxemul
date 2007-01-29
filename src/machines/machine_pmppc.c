@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.8 2007-01-28 14:40:54 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.9 2007-01-29 18:06:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,25 +44,29 @@
 
 MACHINE_SETUP(pmppc)
 {
+	char tmpstr[300];
+
 	/*
 	 *  NetBSD/pmppc (http://www.netbsd.org/Ports/pmppc/)
 	 */
 	machine->machine_name = "Artesyn's PM/PPC board";
+
+	/*  Bogus default speed = 33 MHz  */
 	if (machine->emulated_hz == 0)
-		machine->emulated_hz = 10000000;
+		machine->emulated_hz = 33000000;
 
-	dev_pmppc_init(machine->memory);
+	/*  PM/PPC specific motherboard registers:  */
+	device_add(machine, "pmppc");
 
-fatal("TODO: Legacy rewrite\n");
-abort();
-
-//	machine->md_int.cpc700_data = dev_cpc700_init(machine, machine->memory);
-//	machine->md_interrupt = cpc700_interrupt;
+	/*  PCI and Interrupt controller:  */
+	device_add(machine, "cpc700");
 
 	/*  RTC at "ext int 5" = "int 25" in IBM jargon, int
 	    31-25 = 6 for the rest of us.  */
-//	dev_mc146818_init(machine, machine->memory, 0x7ff00000, 31-25,
-//	    MC146818_PMPPC, 1);
+	snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].cpc700.%i",
+	    machine->path, machine->bootstrap_cpu, 31-25);
+	dev_mc146818_init(machine, machine->memory, 0x7ff00000, tmpstr,
+	    MC146818_PMPPC, 1);
 
 //	bus_pci_add(machine, machine->md_int.cpc700_data->pci_data,
 //	    machine->memory, 0, 8, 0, "dec21143");

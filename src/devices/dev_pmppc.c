@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmppc.c,v 1.7 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_pmppc.c,v 1.8 2007-01-29 18:06:52 debug Exp $
  *  
  *  PM/PPC devices.
  *
@@ -37,7 +37,7 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -53,9 +53,6 @@ struct pmppc_data {
 };
 
 
-/*
- *  dev_pmppc_board_access():
- */
 DEVICE_ACCESS(pmppc_board)
 {
 	struct pmppc_data *d = extra;
@@ -113,12 +110,10 @@ DEVICE_ACCESS(pmppc_board)
 }
 
 
-/*
- *  dev_pmppc_init():
- */
-void dev_pmppc_init(struct memory *mem)
+DEVINIT(pmppc)
 {
 	struct pmppc_data *d;
+	struct memory *mem = devinit->machine->memory;
 
 	d = malloc(sizeof(struct pmppc_data));
 	if (d == NULL) {
@@ -164,5 +159,7 @@ void dev_pmppc_init(struct memory *mem)
 
 	memory_device_register(mem, "pmppc_board",
 	    PMPPC_CONFIG0, 0x10, dev_pmppc_board_access, d, DM_DEFAULT, NULL);
+
+	return 1;
 }
 

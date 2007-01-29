@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.28 2007-01-28 16:59:06 debug Exp $
+ *  $Id: dev_sh4.c,v 1.29 2007-01-29 18:06:37 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -213,8 +213,9 @@ DEVICE_ACCESS(sh4_itlb_aa)
 			cpu->cd.sh.itlb_lo[e] |= SH4_PTEL_V;
 
 		/*  Invalidate if this ITLB entry previously belonged to the
-		    currently running process:  */
-		if ((old_hi & SH4_ITLB_AA_ASID_MASK) ==
+		    currently running process, or if it was shared:  */
+		if (cpu->cd.sh.ptel & SH4_PTEL_SH ||
+		    (old_hi & SH4_ITLB_AA_ASID_MASK) ==
 		    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK)) {
 			if (safe_to_invalidate)
 				cpu->invalidate_translation_caches(cpu,
@@ -248,6 +249,7 @@ DEVICE_ACCESS(sh4_itlb_da1)
 	}
 
 	if (writeflag == MEM_WRITE) {
+		uint32_t old_lo = cpu->cd.sh.itlb_lo[e];
 		int safe_to_invalidate = 0;
 		if ((cpu->cd.sh.itlb_lo[e] & SH4_PTEL_SZ_MASK)==SH4_PTEL_SZ_4K)
 			safe_to_invalidate = 1;
@@ -257,8 +259,9 @@ DEVICE_ACCESS(sh4_itlb_da1)
 		cpu->cd.sh.itlb_lo[e] |= (idata & mask);
 
 		/*  Invalidate if this ITLB entry belongs to the
-		    currently running process:  */
-		if ((cpu->cd.sh.itlb_hi[e] & SH4_ITLB_AA_ASID_MASK) ==
+		    currently running process, or if it was shared:  */
+		if (old_lo & SH4_PTEL_SH ||
+		    (cpu->cd.sh.itlb_hi[e] & SH4_ITLB_AA_ASID_MASK) ==
 		    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK)) {
 			if (safe_to_invalidate)
 				cpu->invalidate_translation_caches(cpu,
@@ -404,6 +407,7 @@ DEVICE_ACCESS(sh4_utlb_da1)
 	}
 
 	if (writeflag == MEM_WRITE) {
+		uint32_t old_lo = cpu->cd.sh.utlb_lo[e];
 		int safe_to_invalidate = 0;
 		if ((cpu->cd.sh.utlb_lo[e] & SH4_PTEL_SZ_MASK)==SH4_PTEL_SZ_4K)
 			safe_to_invalidate = 1;
@@ -413,8 +417,9 @@ DEVICE_ACCESS(sh4_utlb_da1)
 		cpu->cd.sh.utlb_lo[e] |= (idata & mask);
 
 		/*  Invalidate if this UTLB entry belongs to the
-		    currently running process:  */
-		if ((cpu->cd.sh.utlb_hi[e] & SH4_ITLB_AA_ASID_MASK) ==
+		    currently running process, or if it was shared:  */
+		if (old_lo & SH4_PTEL_SH ||
+		    (cpu->cd.sh.utlb_hi[e] & SH4_ITLB_AA_ASID_MASK) ==
 		    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK)) {
 			if (safe_to_invalidate)
 				cpu->invalidate_translation_caches(cpu,
@@ -523,9 +528,15 @@ DEVICE_ACCESS(sh4)
 		} else {
 			if (idata & SH4_MMUCR_TI) {
 				/*  TLB invalidate.  */
+				int i;
+				for (i = 0; i < SH_N_ITLB_ENTRIES; i++)
+					cpu->cd.sh.itlb_lo[i] &=
+					    ~SH4_PTEL_V;
 
-				/*  TODO: Only invalidate something specific?
-				    And not everything?  */
+				for (i = 0; i < SH_N_UTLB_ENTRIES; i++)
+					cpu->cd.sh.utlb_lo[i] &=
+					    ~SH4_PTEL_V;
+
 				cpu->invalidate_translation_caches(cpu,
 				    0, INVALIDATE_ALL);
 

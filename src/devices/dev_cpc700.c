@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.9 2007-01-29 18:06:52 debug Exp $
+ *  $Id: dev_cpc700.c,v 1.10 2007-01-29 19:03:16 debug Exp $
  *  
  *  IBM CPC700 bridge; PCI and interrupt controller.
  */
@@ -258,6 +258,8 @@ DEVINIT(cpc700)
 	    "name2=tty1", devinit->interrupt_path, 31 - CPC_IB_UART_1,
 	    (long long)CPC_COM1);
 	device_add(devinit->machine, tmp);
+
+	devinit->return_ptr = d->pci_data;
 
 	return 1;
 }

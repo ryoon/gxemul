@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.9 2007-01-29 18:06:52 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.10 2007-01-29 19:03:16 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,6 +44,7 @@
 
 MACHINE_SETUP(pmppc)
 {
+	struct pci_data *pci_data;
 	char tmpstr[300];
 
 	/*
@@ -59,7 +60,7 @@ MACHINE_SETUP(pmppc)
 	device_add(machine, "pmppc");
 
 	/*  PCI and Interrupt controller:  */
-	device_add(machine, "cpc700");
+	pci_data = device_add(machine, "cpc700");
 
 	/*  RTC at "ext int 5" = "int 25" in IBM jargon, int
 	    31-25 = 6 for the rest of us.  */
@@ -68,8 +69,7 @@ MACHINE_SETUP(pmppc)
 	dev_mc146818_init(machine, machine->memory, 0x7ff00000, tmpstr,
 	    MC146818_PMPPC, 1);
 
-//	bus_pci_add(machine, machine->md_int.cpc700_data->pci_data,
-//	    machine->memory, 0, 8, 0, "dec21143");
+	bus_pci_add(machine, pci_data, machine->memory, 0, 8, 0, "dec21143");
 }
 
 

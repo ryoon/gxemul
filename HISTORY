@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1458 2007-01-29 18:06:51 debug Exp $
+$Id: HISTORY,v 1.1459 2007-01-29 18:32:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3250,3 +3250,6 @@ Changelog for GXemul:
 		all the way to the login prompt, and can be interacted with :-)
 		Converting the CPC700 controller (PCI and interrupt controller
 		for PM/PPC) to the new interrupt system.
+20070129	Fixing MACE ISA interrupts (SGI IP32 emulation). Both NetBSD/
+		sgimips' and OpenBSD/sgi's ramdisk kernels can now be
+		interacted with again.

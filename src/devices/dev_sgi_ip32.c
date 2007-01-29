@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.50 2007-01-05 16:02:54 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.51 2007-01-29 18:32:01 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -328,7 +328,7 @@ struct mace_data {
 void mace_interrupt_assert(struct interrupt *interrupt)
 {
 	struct mace_data *d = (struct mace_data *) interrupt->extra;
-	uint32_t line = interrupt->line;
+	uint32_t line = 1 << interrupt->line;
 
 	d->reg[MACE_ISA_INT_STATUS + 4] |= ((line >> 24) & 255);
 	d->reg[MACE_ISA_INT_STATUS + 5] |= ((line >> 16) & 255);
@@ -348,21 +348,21 @@ void mace_interrupt_assert(struct interrupt *interrupt)
 void mace_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct mace_data *d = (struct mace_data *) interrupt->extra;
-	uint32_t line = interrupt->line;
+	uint32_t line = 1 << interrupt->line;
 
-	d->reg[MACE_ISA_INT_STATUS + 0] |= ((line >> 24) & 255);
-	d->reg[MACE_ISA_INT_STATUS + 1] |= ((line >> 16) & 255);
-	d->reg[MACE_ISA_INT_STATUS + 2] |= ((line >> 8) & 255);
-	d->reg[MACE_ISA_INT_STATUS + 3] |= (line & 255);
+	d->reg[MACE_ISA_INT_STATUS + 4] |= ((line >> 24) & 255);
+	d->reg[MACE_ISA_INT_STATUS + 5] |= ((line >> 16) & 255);
+	d->reg[MACE_ISA_INT_STATUS + 6] |= ((line >> 8) & 255);
+	d->reg[MACE_ISA_INT_STATUS + 7] |= (line & 255);
 
 	/*  High bits = PERIPH  */
-	if (!((d->reg[MACE_ISA_INT_STATUS+0] & d->reg[MACE_ISA_INT_MASK+0]) |
-	    (d->reg[MACE_ISA_INT_STATUS+1] & d->reg[MACE_ISA_INT_MASK+1])))
+	if (!((d->reg[MACE_ISA_INT_STATUS+4] & d->reg[MACE_ISA_INT_MASK+4]) |
+	    (d->reg[MACE_ISA_INT_STATUS+5] & d->reg[MACE_ISA_INT_MASK+5])))
 		INTERRUPT_DEASSERT(d->irq_periph);
 
 	/*  Low bits = MISC  */
-	if (!((d->reg[MACE_ISA_INT_STATUS+2] & d->reg[MACE_ISA_INT_MASK+2]) |
-	    (d->reg[MACE_ISA_INT_STATUS+3] & d->reg[MACE_ISA_INT_MASK+3])))
+	if (!((d->reg[MACE_ISA_INT_STATUS+6] & d->reg[MACE_ISA_INT_MASK+6]) |
+	    (d->reg[MACE_ISA_INT_STATUS+7] & d->reg[MACE_ISA_INT_MASK+7])))
 		INTERRUPT_DEASSERT(d->irq_misc);
 }
 

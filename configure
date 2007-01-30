@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.237 2006-12-30 13:30:50 debug Exp $
+#  $Id: configure,v 1.238 2007-01-30 19:21:54 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -196,6 +196,7 @@ if [ z$ENABLEMIPS = zYES ]; then
 	CPU_ARCHS="$CPU_ARCHS cpu_mips.o cpu_mips_coproc.o "
 	CPU_ARCHS="$CPU_ARCHS cpu_mips_instr_unaligned.o"
 	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore"
+	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore_multi"
 fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h

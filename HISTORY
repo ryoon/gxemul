@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1459 2007-01-29 18:32:01 debug Exp $
+$Id: HISTORY,v 1.1460 2007-01-30 19:21:53 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3253,3 +3253,5 @@ Changelog for GXemul:
 20070129	Fixing MACE ISA interrupts (SGI IP32 emulation). Both NetBSD/
 		sgimips' and OpenBSD/sgi's ramdisk kernels can now be
 		interacted with again.
+20070130	Moving out the MIPS multi_lw and _sw instruction combinations
+		so that they are auto-generated at compile time instead.

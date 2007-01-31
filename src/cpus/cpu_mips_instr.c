@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.121 2007-01-30 19:21:54 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.122 2007-01-31 21:21:53 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3841,6 +3841,57 @@ X(to_be_translated)
 			cpu->cd.mips.combination_check = COMBINE(addiu);
 		if (ic->f == instr(daddiu))
 			cpu->cd.mips.combination_check = COMBINE(b_daddiu);
+#if 0
+#ifdef NATIVE_CODE_GENERATION
+#if 0
+   0:   a1 0a 87 21 84 91 01    mov    0x1918421870a,%eax
+   7:   00 00 
+   9:   05 34 12 00 00          add    $0x1234,%eax
+   e:   a3 0a 89 67 45 11 00    mov    %eax,0x114567890a
+  15:   00 00 
+   e:   c3                      retq   
+#endif
+if (ic->f == instr(addiu))
+{
+int i;
+uint32_t x = ic->arg[2];
+uint64_t y1 = (size_t) (void *) &cpu->cd.mips.gpr[rs];
+uint64_t y2 = (size_t) (void *) &cpu->cd.mips.gpr[rt];
+uint8_t *p = cpu->translation_cache + cpu->translation_cache_cur_ofs;
+ic->f = (void *) p;
+
+for (i=0; i<100; i++) {
+*p++ = 0xa1;
+*p++ = y1;
+*p++ = y1 >> 8;
+*p++ = y1 >> 16;
+*p++ = y1 >> 24;
+*p++ = y1 >> 32;
+*p++ = y1 >> 40;
+*p++ = y1 >> 48;
+*p++ = y1 >> 56;
+*p++ = 0x05;
+*p++ = x;
+*p++ = x >> 8;
+*p++ = x >> 16;
+*p++ = x >> 24;
+*p++ = 0xa3;
+*p++ = y2;
+*p++ = y2 >> 8;
+*p++ = y2 >> 16;
+*p++ = y2 >> 24;
+*p++ = y2 >> 32;
+*p++ = y2 >> 40;
+*p++ = y2 >> 48;
+*p++ = y2 >> 56;
+}
+
+*p++ = 0xc3;
+
+cpu->translation_cache_cur_ofs += 32*100;
+}
+#endif
+#endif
 		break;
 
 	case HI6_LUI:

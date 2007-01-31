@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.289 2006-12-30 13:30:52 debug Exp $
+ *  $Id: main.c,v 1.290 2007-01-31 21:21:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -59,6 +59,8 @@ int extra_argc;
 char **extra_argv;
 char *progname;
 
+size_t dyntrans_cache_size = DEFAULT_DYNTRANS_CACHE_SIZE;
+int native_code_translation_enabled = 1;
 int skip_srandom_call = 0;
 
 
@@ -309,12 +311,16 @@ static void usage(int longusage)
 #endif
 
 	printf("\nGeneral options:\n");
+	printf("  -B        disable native code generation, even if the "
+	    "host supports it\n");
 	printf("  -c cmd    add cmd as a command to run before starting "
 	    "the simulation\n");
 	printf("  -D        skip the srandom call at startup\n");
 	printf("  -H        display a list of possible CPU and "
 	    "machine types\n");
 	printf("  -h        display this help message\n");
+	printf("  -k n      set dyntrans translation caches to n MB (default"
+	    " size is %i MB)\n", DEFAULT_DYNTRANS_CACHE_SIZE / 1048576);
 	printf("  -K        force the debugger to be entered at the end "
 	    "of a simulation\n");
 	printf("  -q        quiet mode (don't print startup messages)\n");
@@ -355,7 +361,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:TtU"
+	    "BC:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:TtU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -367,6 +373,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
+		case 'B':
+			native_code_translation_enabled = 0;
+			break;
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;
@@ -451,6 +460,14 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			}
 			msopts = 1;
 			break;
+		case 'k':
+			dyntrans_cache_size = atoi(optarg) * 1048576;
+			if (dyntrans_cache_size < 1) {
+				fprintf(stderr, "The dyntrans cache size must"
+				    " be at least 1 MB.\n");
+				exit(1);
+			}
+			break;
 		case 'K':
 			force_debugger_at_exit = 1;
 			break;
@@ -514,6 +531,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 's':
 			machine_statistics_init(m, optarg);
+			native_code_translation_enabled = 0;
 			msopts = 1;
 			break;
 		case 'T':
@@ -720,6 +738,10 @@ int main(int argc, char *argv[])
 	profil((char *)samples, sizeof(samples), (vm_offset_t) 0x400000, 8192);
 #endif
 
+#ifndef NATIVE_CODE_GENERATION
+	native_code_translation_enabled = 0;
+#endif
+
 
 	progname = argv[0];
 
@@ -741,8 +763,14 @@ int main(int argc, char *argv[])
 	settings_add(global_settings, "false", 0, SETTINGS_TYPE_INT,
 	    SETTINGS_FORMAT_BOOL, (void *)&constant_false);
 
+	/*  Read-only settings:  */
+	settings_add(global_settings, "native_code_translation_enabled", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
+	    (void *)&native_code_translation_enabled);
 	settings_add(global_settings, "single_step", 0,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&single_step);
+
+	/*  Read/write settings:  */
 	settings_add(global_settings, "force_debugger_at_exit", 1,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
 	    (void *)&force_debugger_at_exit);

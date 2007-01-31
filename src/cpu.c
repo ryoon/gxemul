@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.366 2007-01-28 14:15:29 debug Exp $
+ *  $Id: cpu.c,v 1.367 2007-01-31 21:21:52 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -42,6 +42,8 @@
 #include "misc.h"
 #include "settings.h"
 
+
+extern size_t dyntrans_cache_size;
 
 static struct cpu_family *first_cpu_family = NULL;
 
@@ -307,10 +309,18 @@ void cpu_functioncall_trace_return(struct cpu *cpu)
  */
 void cpu_create_or_reset_tc(struct cpu *cpu)
 {
-	size_t s = DYNTRANS_CACHE_SIZE + DYNTRANS_CACHE_MARGIN;
+	size_t s = dyntrans_cache_size + DYNTRANS_CACHE_MARGIN;
 
-	if (cpu->translation_cache == NULL)
+	if (cpu->translation_cache == NULL) {
 		cpu->translation_cache = zeroed_alloc(s);
+
+#ifdef NATIVE_CODE_GENERATION
+		mprotect(cpu->translation_cache, s, PROT_READ |
+		    PROT_WRITE | PROT_EXEC);
+#endif
+	}
+
+	cpu->currently_translating_to_native = 0;
 
 	/*  Create an empty table at the beginning of the translation cache:  */
 	memset(cpu->translation_cache, 0, sizeof(uint32_t)

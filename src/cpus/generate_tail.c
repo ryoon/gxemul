@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.13 2006-12-30 13:30:56 debug Exp $
+ *  $Id: generate_tail.c,v 1.14 2007-01-31 21:21:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -65,6 +65,8 @@ int main(int argc, char *argv[])
 	b = argv[2];
 
 	printf("\n/*\n *  AUTOMATICALLY GENERATED! Do not edit.\n */\n\n");
+
+	printf("extern size_t dyntrans_cache_size;\n");
 
 	printf("#ifdef DYNTRANS_32\n");
 	printf("#define MODE32\n");

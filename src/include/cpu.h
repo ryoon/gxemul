@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.104 2007-01-28 14:15:30 debug Exp $
+ *  $Id: cpu.h,v 1.105 2007-01-31 21:21:53 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -284,7 +284,7 @@ struct cpu_family {
 #define	N_SAFE_DYNTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_DYNTRANS_LIMIT	((1 << (N_SAFE_DYNTRANS_LIMIT_SHIFT - 1)) - 1)
 
-#define	DYNTRANS_CACHE_SIZE		(32*1048576)
+#define	DEFAULT_DYNTRANS_CACHE_SIZE	(32*1048576)
 #define	DYNTRANS_CACHE_MARGIN		200000
 
 #define	N_BASE_TABLE_ENTRIES		32768
@@ -377,10 +377,22 @@ struct cpu {
 	 *  _decreases_ n_translated_instrs. That way, once the dyntrans loop
 	 *  exits, only real instructions will be counted, and not the
 	 *  "nothing" instructions.
+	 *
+	 *  The translation cache is a relative large chunk of memory (say,
+	 *  32 MB) which is used for translations. When it has been used up,
+	 *  everything restarts from scratch.
+	 *
+	 *  When translating to native code, currently_translating_to_native
+	 *  is non-zero, and native_code_function_pointer points to the
+	 *  "ic->f" which will be modified (once the translation has finished)
+ 	 *  to point to the newly translated code.
 	 */
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
+	int		currently_translating_to_native;
+	int		nr_of_instructions_translated_to_native;
+	void		*native_code_function_pointer;
 
 	/*
 	 *  CPU-family dependent:

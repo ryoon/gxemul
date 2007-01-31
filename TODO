@@ -1,4 +1,17 @@
-$Id: TODO,v 1.430 2007-01-28 14:40:54 debug Exp $
+$Id: TODO,v 1.431 2007-01-31 21:21:52 debug Exp $
+
+
+Native code generation backend:
+
+	Whenever translation_cache_cur_ofs is modified, any current native code
+	generation must be saved/flushed/stored/whatever.
+
+	Branches till andra redan översatta block = öka next_ic och ninstrs och sedan göra native jump?
+
+	x68/amd64 code generator: kom ihåg innehåll i register, mata endast ut om det skiljer sig?
+
+	absrakt syntax för att mata ut native opcodes!
+
 
 Current work package:
 

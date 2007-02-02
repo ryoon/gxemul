@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.53 2007-01-28 00:41:16 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.54 2007-02-02 20:01:38 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -487,7 +487,7 @@ DEVICE_ACCESS(footbridge)
 DEVINIT(footbridge)
 {
 	struct footbridge_data *d;
-	char irq_path[300], irq_path_isa[300], irq_path_pci[300];
+	char irq_path[300], irq_path_isa[300];
 	uint64_t pci_addr = 0x7b000000;
 	int i;
 
@@ -537,8 +537,6 @@ DEVINIT(footbridge)
 			INTERRUPT_CONNECT(tmpstr, d->timer_irq[i-IRQ_TIMER_1]);
 	}
 
-	snprintf(irq_path_pci, sizeof(irq_path_pci), "%s.pci", irq_path);
-
 	switch (devinit->machine->machine_type) {
 	case MACHINE_CATS:
 		snprintf(irq_path_isa, sizeof(irq_path_isa), "%s.10", irq_path);
@@ -558,7 +556,7 @@ DEVINIT(footbridge)
 	    0x80000000,		/*  PCI device mem offset  */
 	    0x00000000,		/*  PCI port base  */
 	    0x00000000,		/*  PCI mem base  */
-	    irq_path_pci,	/*  PCI irq base  */
+	    irq_path,		/*  PCI irq base  */
 	    0x7c000000,		/*  ISA port base  */
 	    0x80000000,		/*  ISA mem base  */
 	    irq_path_isa);	/*  ISA port base  */

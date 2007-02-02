@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.82 2007-01-31 21:21:52 debug Exp $
+.\" $Id: gxemul.1,v 1.83 2007-02-02 17:44:03 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -56,9 +56,16 @@ real machine.
 .Pp
 Processors (ARM, MIPS, PowerPC, SuperH) are emulated using dynamic translation.
 However, unlike some other dynamically translating emulators, GXemul does
-not currently generate native code, only a "runnable intermediate
+not need to generate native code, only a "runnable intermediate
 representation", and will thus run on any host architecture, without the
 need to implement per-architecture backends.
+.Pp
+(Note for release 0.4.4: There is an experimental framework for 
+translation into native code, but this is not enabled by default. It is 
+only available on amd64 hosts. Use the
+.Fl b
+command line option to enable it, but please be 
+aware that this is not stable yet.)
 .Pp
 The emulator can be invoked in the following ways:
 .Pp
@@ -385,11 +392,10 @@ as an X11 display to use for framebuffers.
 .\" .Pp
 General options:
 .Bl -tag -width Ds
+.It Fl b
+Enable native code generation at runtime.
 .It Fl B
-Disable native code generation at runtime, even is GXemul was compiled 
-with native code generation for the host CPU. (This option may be useful 
-when trying to find/isolate bugs which may have to do with the native 
-code generation feature.)
+Disable native code generation at runtime.
 .It Fl c Ar cmd
 Add
 .Ar cmd
@@ -506,7 +512,7 @@ real-world processor.
 .Nm
 is in general not timing-accurate. Some emulation modes
 (DECstation, CATS, NetWinder, MobilePro (hpcmips), Malta (evbmips),
-Cobalt, Algor, and Dreamcast) try to make the guest
+Cobalt, Algor, Dreamcast, and PICA-61) try to make the guest
 operating system's clock run at the same speed as the host clock.
 However, the number of instructions executed per clock tick can
 obviously vary, depending on the current CPU load on the host.

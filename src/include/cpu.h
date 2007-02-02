@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.105 2007-01-31 21:21:53 debug Exp $
+ *  $Id: cpu.h,v 1.106 2007-02-02 17:44:04 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -392,7 +392,8 @@ struct cpu {
 	size_t		translation_cache_cur_ofs;
 	int		currently_translating_to_native;
 	int		nr_of_instructions_translated_to_native;
-	void		*native_code_function_pointer;
+	unsigned char	*native_cur_output_ptr;
+	void		**native_code_function_pointer;
 
 	/*
 	 *  CPU-family dependent:

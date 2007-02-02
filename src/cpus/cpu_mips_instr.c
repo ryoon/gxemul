@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.122 2007-01-31 21:21:53 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.123 2007-02-02 17:44:04 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3377,6 +3377,12 @@ X(to_be_translated)
 	int in_crosspage_delayslot = 0;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 	int store, signedness, size;
+#ifdef NATIVE_CODE_GENERATION
+	int native = 0;
+
+	if (!cpu->currently_translating_to_native)
+		cpu->native_code_function_pointer = (void *) &ic->f;
+#endif
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
@@ -3660,6 +3666,23 @@ X(to_be_translated)
 
 			if (ic->f == instr(addu))
 				cpu->cd.mips.combination_check = COMBINE(addu);
+
+#ifdef NATIVE_CODE_GENERATION
+#ifdef MODE32
+			if (native_code_translation_enabled &&
+			    !cpu->delay_slot && ic->f == instr(addu))
+				native = native_add_p32_p32_p32(cpu,
+				    &reg(&cpu->cd.mips.gpr[rs]),
+				    &reg(&cpu->cd.mips.gpr[rt]),
+				    &reg(&cpu->cd.mips.gpr[rd]));
+			if (native_code_translation_enabled &&
+			    !cpu->delay_slot && ic->f == instr(subu))
+				native = native_sub_p32_p32_p32(cpu,
+				    &reg(&cpu->cd.mips.gpr[rs]),
+				    &reg(&cpu->cd.mips.gpr[rt]),
+				    &reg(&cpu->cd.mips.gpr[rd]));
+#endif
+#endif
 			break;
 
 		case SPECIAL_JR:
@@ -3841,57 +3864,32 @@ X(to_be_translated)
 			cpu->cd.mips.combination_check = COMBINE(addiu);
 		if (ic->f == instr(daddiu))
 			cpu->cd.mips.combination_check = COMBINE(b_daddiu);
-#if 0
+
 #ifdef NATIVE_CODE_GENERATION
-#if 0
-   0:   a1 0a 87 21 84 91 01    mov    0x1918421870a,%eax
-   7:   00 00 
-   9:   05 34 12 00 00          add    $0x1234,%eax
-   e:   a3 0a 89 67 45 11 00    mov    %eax,0x114567890a
-  15:   00 00 
-   e:   c3                      retq   
-#endif
-if (ic->f == instr(addiu))
-{
-int i;
-uint32_t x = ic->arg[2];
-uint64_t y1 = (size_t) (void *) &cpu->cd.mips.gpr[rs];
-uint64_t y2 = (size_t) (void *) &cpu->cd.mips.gpr[rt];
-uint8_t *p = cpu->translation_cache + cpu->translation_cache_cur_ofs;
-ic->f = (void *) p;
-
-for (i=0; i<100; i++) {
-*p++ = 0xa1;
-*p++ = y1;
-*p++ = y1 >> 8;
-*p++ = y1 >> 16;
-*p++ = y1 >> 24;
-*p++ = y1 >> 32;
-*p++ = y1 >> 40;
-*p++ = y1 >> 48;
-*p++ = y1 >> 56;
-*p++ = 0x05;
-*p++ = x;
-*p++ = x >> 8;
-*p++ = x >> 16;
-*p++ = x >> 24;
-*p++ = 0xa3;
-*p++ = y2;
-*p++ = y2 >> 8;
-*p++ = y2 >> 16;
-*p++ = y2 >> 24;
-*p++ = y2 >> 32;
-*p++ = y2 >> 40;
-*p++ = y2 >> 48;
-*p++ = y2 >> 56;
-}
-
-*p++ = 0xc3;
-
-cpu->translation_cache_cur_ofs += 32*100;
-}
+#ifdef MODE32
+		if (native_code_translation_enabled &&
+		    !cpu->delay_slot && ic->f == instr(addiu))
+			native = native_add_p32_s16_p32(cpu,
+			    &reg(&cpu->cd.mips.gpr[rs]),
+			    (int16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
+		if (native_code_translation_enabled &&
+		    !cpu->delay_slot && ic->f == instr(andi))
+			native = native_and_p32_u16_p32(cpu,
+			    &reg(&cpu->cd.mips.gpr[rs]),
+			    (uint16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
+		if (native_code_translation_enabled &&
+		    !cpu->delay_slot && ic->f == instr(ori))
+			native = native_or_p32_u16_p32(cpu,
+			    &reg(&cpu->cd.mips.gpr[rs]),
+			    (uint16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
+		if (native_code_translation_enabled &&
+		    !cpu->delay_slot && ic->f == instr(xori))
+			native = native_xor_p32_u16_p32(cpu,
+			    &reg(&cpu->cd.mips.gpr[rs]),
+			    (uint16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
 #endif
 #endif
+
 		break;
 
 	case HI6_LUI:
@@ -3902,6 +3900,13 @@ cpu->translation_cache_cur_ofs += 32*100;
 		    instruction combinations, to do lui + addiu, etc.  */
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
+#ifdef NATIVE_CODE_GENERATION
+#ifdef MODE32
+		if (native_code_translation_enabled && !cpu->delay_slot)
+			native = native_set_u32_p32(cpu,
+			    ic->arg[1], &reg(&cpu->cd.mips.gpr[rt]));
+#endif
+#endif
 		break;
 
 	case HI6_J:
@@ -4597,6 +4602,7 @@ cpu->translation_cache_cur_ofs += 32*100;
 	default:goto bad;
 	}
 
+
 #ifdef MODE32
 	if (x64) {
 		static int has_warned = 0;
@@ -4606,6 +4612,13 @@ cpu->translation_cache_cur_ofs += 32*100;
 			    "pc=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc);
 		has_warned = 1;
 		ic->f = instr(reserved);
+	}
+#endif
+
+#ifdef NATIVE_CODE_GENERATION
+	if (cpu->currently_translating_to_native &&
+	    (!native || cpu->cd.mips.next_ic->f != instr(to_be_translated))) {
+		native_commit(cpu);
 	}
 #endif
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1461 2007-01-31 21:21:52 debug Exp $
+$Id: HISTORY,v 1.1462 2007-02-02 17:44:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3255,10 +3255,15 @@ Changelog for GXemul:
 		interacted with again.
 20070130	Moving out the MIPS multi_lw and _sw instruction combinations
 		so that they are auto-generated at compile time instead.
-20070131	Adding a -k command line option to set the size of the dyntrans
+20070131	Adding detection of amd64/x86_64 hosts in the configure script,
+		for doing initial experiments (again :-) with native code
+		generation.
+		Adding a -k command line option to set the size of the dyntrans
 		cache, and a -B command line option to disable native code
 		generation, even if GXemul was compiled with support for
 		native code generation for the specific host CPU architecture.
-		Adding detection of amd64/x86_64 hosts in the configure script,
-		for doing initial experiments (again :-) with native code
-		generation.
+20070201	Experimenting with a skeleton for native code generation.
+		Changing the default behaviour, so that native code generation
+		is now disabled by default, and has to be enabled by using
+		-b on the command line.
+20070202	Continuing the native code generation experiments.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.367 2007-01-31 21:21:52 debug Exp $
+ *  $Id: cpu.c,v 1.368 2007-02-02 17:44:03 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -44,6 +44,7 @@
 
 
 extern size_t dyntrans_cache_size;
+extern int native_code_translation_enabled;
 
 static struct cpu_family *first_cpu_family = NULL;
 
@@ -315,8 +316,10 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 		cpu->translation_cache = zeroed_alloc(s);
 
 #ifdef NATIVE_CODE_GENERATION
-		mprotect(cpu->translation_cache, s, PROT_READ |
-		    PROT_WRITE | PROT_EXEC);
+		if (native_code_translation_enabled) {
+			mprotect(cpu->translation_cache, s,
+			    PROT_READ | PROT_WRITE | PROT_EXEC);
+		}
 #endif
 	}
 

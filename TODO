@@ -1,16 +1,4 @@
-$Id: TODO,v 1.431 2007-01-31 21:21:52 debug Exp $
-
-
-Native code generation backend:
-
-	Whenever translation_cache_cur_ofs is modified, any current native code
-	generation must be saved/flushed/stored/whatever.
-
-	Branches till andra redan översatta block = öka next_ic och ninstrs och sedan göra native jump?
-
-	x68/amd64 code generator: kom ihåg innehåll i register, mata endast ut om det skiljer sig?
-
-	absrakt syntax för att mata ut native opcodes!
+$Id: TODO,v 1.432 2007-02-02 17:44:03 debug Exp $
 
 
 Current work package:
@@ -33,8 +21,21 @@ Current work package:
 		    x  Allow semi-automagic busses (e.g. the ISA bus)
 		       to connect to these interrupts as well.
 		o  All newly introduced C++-style comments, //, which have
-		   to do with the legacy interrupt rewrite...
+		   to do with the legacy interrupt rewrite, should be
+		   fixed/removed.
 		o  SMP!
+
+
+I'm also playing around again with native code generation.
+
+	absrakt syntax för att mata ut native opcodes!
+	Intermediärkod som sedan, för ett _HELT_ block,
+	kompileras till nativkod...
+	x68/amd64 code generator: kom ihåg innehåll i register,
+	mata endast ut om det skiljer sig.
+	Branches till andra redan översatta block = öka next_ic
+	  och ninstrs och sedan göra native jump?
+	Load/store = jätteviktiga.
 
 
 Other possible work packages to concentrate on in the future:

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.239 2007-01-31 21:21:52 debug Exp $
+#  $Id: configure,v 1.240 2007-02-02 17:44:03 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1086,13 +1086,6 @@ rm -f _test_end*
 
 printf "native code generation backend... "
 
-if [ z"`uname -m`" = zalpha ]; then
-	NATIVE_CODE_GENERATION=YES
-	printf "Alpha\n"
-	printf "#define NATIVE_CODE_GENERATION\n" >> config.h
-	printf "#define HOST_ARCH_ALPHA\n" >> config.h
-fi
-
 if [ z"`uname -m`" = zamd64 ]; then
 	NATIVE_CODE_GENERATION=YES
 	printf "amd64\n"
@@ -1134,7 +1127,7 @@ echo "" >> _Makefile.header
 
 #  Create the Makefiles:
 D=". src src/include src/cpus src/debugger src/devices src/devices/fonts"
-D="$D src/machines src/net src/promemul"
+D="$D src/machines src/native src/net src/promemul"
 for a in $D; do
 	echo "creating $a/Makefile"
 	touch $a/Makefile

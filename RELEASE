@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.242 2007-02-03 16:43:47 debug Exp $
+$Id: RELEASE,v 1.243 2007-02-03 16:50:40 debug Exp $
 
 Working on what will become 0.4.4.
 
@@ -14,6 +14,11 @@ GXemul is an experimental instruction-level machine emulator. Several
 emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
+
+Processors (ARM, MIPS, PowerPC, SuperH) are emulated using dynamic 
+translation. Unlike some other dynamically translating emulators, GXemul 
+does not need to generate native code, only a "runnable intermediate 
+representation", and will thus run on any host architecture.
 
 The documentation lists the machines and guest operating systems that can 
 be regarded as "working" in GXemul. The best working guest operating 

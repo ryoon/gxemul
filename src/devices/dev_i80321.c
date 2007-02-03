@@ -25,12 +25,17 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.18 2007-01-05 16:02:54 debug Exp $
+ *  $Id: dev_i80321.c,v 1.19 2007-02-03 16:55:55 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
- *  TODO: This is mostly just a dummy device.
- *  TODO 2: This is hardcoded for little endian emulation.
+ *	o)  Interrupt controller
+ *	o)  Timer
+ *	o)  PCI controller
+ *
+ *  TODO:
+ *	o)  LOTS of things left to implement.
+ *	o)  This is hardcoded for little endian emulation.
  */
 
 #include <stdio.h>
@@ -40,7 +45,6 @@
 #include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

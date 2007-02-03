@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_avr.c,v 1.5 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_avr.c,v 1.6 2007-02-03 20:14:23 debug Exp $
  *  
  *  AVR I/O and register area.
  *
@@ -41,7 +41,6 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

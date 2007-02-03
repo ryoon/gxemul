@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.13 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_disk.c,v 1.14 2007-02-03 20:14:23 debug Exp $
  *
  *  Basic "disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
@@ -37,7 +37,6 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.239 2007-01-29 18:06:52 debug Exp $
+ *  $Id: devices.h,v 1.240 2007-02-03 20:14:24 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -133,13 +133,6 @@ struct vfb_data;
 void dev_bt459_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t baseaddr_irq, struct vfb_data *vfb_data,
 	int color_fb_flag, char *irq_path, int type);
-
-/*  dev_cons.c:  */
-struct cons_data {
-	int			console_handle;
-	int			in_use;
-	struct interrupt	irq;
-};
 
 /*  dev_colorplanemask.c:  */
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010
@@ -411,31 +404,6 @@ struct sgi_ip22_data {
 };
 int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct sgi_ip22_data *dev_sgi_ip22_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int guiness_flag);
-
-/*  dev_sgi_ip30.c:  */
-#define	DEV_SGI_IP30_LENGTH		0x80000
-struct sgi_ip30_data {
-	/*  ip30:  */
-	uint64_t		imask0;		/*  0x10000  */
-	uint64_t		reg_0x10018;
-	uint64_t		isr;		/*  0x10030  */
-	uint64_t		reg_0x20000;
-	uint64_t		reg_0x30000;
-
-	/*  ip30_2:  */
-	uint64_t		reg_0x0029c;
-
-	/*  ip30_3:  */
-	uint64_t		reg_0x00284;
-
-	/*  ip30_4:  */
-	uint64_t		reg_0x000b0;
-
-	/*  ip30_5:  */
-	uint64_t		reg_0x00000;
-};
-int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip32.c:  */
 void dev_crime_init(struct machine *machine, struct memory *mem,

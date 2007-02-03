@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta_lcd.c,v 1.8 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_malta_lcd.c,v 1.9 2007-02-03 20:14:23 debug Exp $
  *
  *  Malta (evbmips) LCD thingy. Mostly a dummy device.
  */
@@ -36,7 +36,6 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.11 2007-01-17 20:11:28 debug Exp $
+ *  $Id: dev_bebox.c,v 1.12 2007-02-03 20:14:23 debug Exp $
  *
  *  Emulation of BeBox motherboard registers (and interrupt controller).
  *  See the following URL for more information:
@@ -39,7 +39,6 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

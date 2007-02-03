@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_asic.c,v 1.6 2007-01-05 15:20:06 debug Exp $
+ *  $Id: dev_dreamcast_asic.c,v 1.7 2007-02-03 20:14:23 debug Exp $
  *  
  *  Dreamcast ASIC.
  *
@@ -40,7 +40,6 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

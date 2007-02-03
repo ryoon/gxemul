@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_rtc.c,v 1.2 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dreamcast_rtc.c,v 1.3 2007-02-03 20:14:23 debug Exp $
  *  
  *  Dreamcast Real-Time Clock.
  *
@@ -44,7 +44,6 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

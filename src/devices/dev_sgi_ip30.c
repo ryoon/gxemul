@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.23 2007-01-28 14:15:30 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.24 2007-02-03 20:14:23 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -37,10 +37,34 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+#define	DEV_SGI_IP30_LENGTH		0x80000
+
+struct sgi_ip30_data {
+	/*  ip30:  */
+	uint64_t                imask0;         /*  0x10000  */
+	uint64_t                reg_0x10018;
+	uint64_t                isr;            /*  0x10030  */
+	uint64_t                reg_0x20000;
+	uint64_t                reg_0x30000;
+
+	/*  ip30_2:  */
+	uint64_t                reg_0x0029c;
+
+	/*  ip30_3:  */
+	uint64_t                reg_0x00284;
+
+	/*  ip30_4:  */
+	uint64_t                reg_0x000b0;
+
+	/*  ip30_5:  */
+	uint64_t                reg_0x00000;
+};
 
 
 void dev_sgi_ip30_tick(struct cpu *cpu, void *extra)
@@ -352,11 +376,7 @@ DEVICE_ACCESS(sgi_ip30_5)
 }
 
 
-/*
- *  dev_sgi_ip30_init():
- */
-struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine,
-	struct memory *mem, uint64_t baseaddr)
+DEVINIT(sgi_ip30)
 {
 	struct sgi_ip30_data *d = malloc(sizeof(struct sgi_ip30_data));
 	if (d == NULL) {
@@ -365,20 +385,25 @@ struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine,
 	}
 	memset(d, 0, sizeof(struct sgi_ip30_data));
 
-	memory_device_register(mem, "sgi_ip30_1", baseaddr,
-	    DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d,
+	memory_device_register(devinit->machine->memory, "sgi_ip30_1",
+	    devinit->addr, DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d,
 	    DM_DEFAULT, NULL);
-	memory_device_register(mem, "sgi_ip30_2", 0x10000000,
-	    0x10000, dev_sgi_ip30_2_access, (void *)d, DM_DEFAULT, NULL);
-	memory_device_register(mem, "sgi_ip30_3", 0x1f000000,
-	    0x10000, dev_sgi_ip30_3_access, (void *)d, DM_DEFAULT, NULL);
-	memory_device_register(mem, "sgi_ip30_4", 0x1f600000,
-	    0x10000, dev_sgi_ip30_4_access, (void *)d, DM_DEFAULT, NULL);
-	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000,
-	    0x10000, dev_sgi_ip30_5_access, (void *)d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "sgi_ip30_2", 
+	    0x10000000, 0x10000, dev_sgi_ip30_2_access, (void *)d, DM_DEFAULT,
+	    NULL);
+	memory_device_register(devinit->machine->memory, "sgi_ip30_3",
+	    0x1f000000, 0x10000, dev_sgi_ip30_3_access, (void *)d, DM_DEFAULT,
+	    NULL);
+	memory_device_register(devinit->machine->memory, "sgi_ip30_4",
+	    0x1f600000, 0x10000, dev_sgi_ip30_4_access, (void *)d, DM_DEFAULT,
+	    NULL);
+	memory_device_register(devinit->machine->memory, "sgi_ip30_5",
+	    0x1f6c0000, 0x10000, dev_sgi_ip30_5_access, (void *)d, DM_DEFAULT,
+	    NULL);
 
-	machine_add_tickfunction(machine, dev_sgi_ip30_tick, d, 16, 0.0);
+	machine_add_tickfunction(devinit->machine,
+	    dev_sgi_ip30_tick, d, 16, 0.0);
 
-	return d;
+	return 1;
 }
 

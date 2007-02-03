@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.10 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.11 2007-02-03 20:14:23 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -51,7 +51,6 @@
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

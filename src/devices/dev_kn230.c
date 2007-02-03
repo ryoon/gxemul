@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.17 2007-01-05 16:42:57 debug Exp $
+ *  $Id: dev_kn230.c,v 1.18 2007-02-03 20:14:23 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -35,7 +35,6 @@
 #include <string.h>
 
 #include "device.h"
-#include "devices.h"
 #include "interrupt.h"
 #include "machine.h"
 #include "memory.h"

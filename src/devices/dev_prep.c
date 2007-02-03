@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.7 2007-01-20 13:26:20 debug Exp $
+ *  $Id: dev_prep.c,v 1.8 2007-02-03 20:14:23 debug Exp $
  *
  *  PReP mainbus.
  *
@@ -40,7 +40,6 @@
 #include "bus_isa.h"
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

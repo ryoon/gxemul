@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.94 2007-02-02 17:44:03 debug Exp $
+#  $Id: Makefile.skel,v 1.95 2007-02-03 10:02:30 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -49,6 +49,7 @@ clean:
 	cd debugger; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 	cd machines; $(MAKE) clean; cd ..
+	cd native; $(MAKE) clean; cd ..
 	cd net; $(MAKE) clean; cd ..
 	cd promemul; $(MAKE) clean; cd ..
 
@@ -58,6 +59,7 @@ clean_all: clean
 	cd debugger; $(MAKE) clean_all; cd ..
 	cd devices; $(MAKE) clean_all; cd ..
 	cd machines; $(MAKE) clean_all; cd ..
+	cd native; $(MAKE) clean_all; cd ..
 	cd net; $(MAKE) clean_all; cd ..
 	cd promemul; $(MAKE) clean_all; cd ..
 	rm -f Makefile

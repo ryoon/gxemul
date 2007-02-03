@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.241 2007-02-03 16:18:56 debug Exp $
+$Id: RELEASE,v 1.242 2007-02-03 16:43:47 debug Exp $
 
 Working on what will become 0.4.4.
 
@@ -32,9 +32,9 @@ Changes between release 0.4.3 and 0.4.4 include, among other things:
 
 	  x)  Some machine types which happened to work in release 0.4.3,
 	      but were not listed in the documentation as working, may
-	      have stopped working now. As always, the documentation
-	      should indicate the machine modes and guest OSes that are
-	      supposed to work.
+	      have stopped working now. As always, the documentation should
+	      indicate the combinations of machine modes and guest OSes that
+	      are supposed to work.
 
     o)	SuperH (SH4) emulation is now somewhat more stable, enough to let a
 	NetBSD/dreamcast Live CD be usable.

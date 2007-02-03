@@ -25,12 +25,20 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.6 2006-12-30 13:30:52 debug Exp $
+ *  $Id: interrupt.c,v 1.7 2007-02-03 16:41:42 debug Exp $
  *
  *  The interrupt subsystem.
  *
- *  (Currently under development. TODO: Comment it better once it has
- *  stabilized.)
+ *  Interrupts have a "path", e.g. "emul[0].machine[0].cpu.5". A device which
+ *  wishes to cause this interrupt needs to connect to it.
+ *
+ *  The possible interrupt paths are registered by CPUs, interrupt controllers,
+ *  etc., that have a way of receiving interrupt requests. The physical
+ *  version of an interrupt path is usually a "pin" on the CPU, or similar.
+ *
+ *  Once connected, the interrupt can be asserted or deasserted.
+ *
+ *  For examples on how it is used, see the various devices in src/devices/.
  */
 
 #include <stdio.h>

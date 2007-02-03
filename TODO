@@ -1,4 +1,4 @@
-$Id: TODO,v 1.432 2007-02-02 17:44:03 debug Exp $
+$Id: TODO,v 1.433 2007-02-03 10:00:52 debug Exp $
 
 
 Current work package:
@@ -24,18 +24,6 @@ Current work package:
 		   to do with the legacy interrupt rewrite, should be
 		   fixed/removed.
 		o  SMP!
-
-
-I'm also playing around again with native code generation.
-
-	absrakt syntax för att mata ut native opcodes!
-	Intermediärkod som sedan, för ett _HELT_ block,
-	kompileras till nativkod...
-	x68/amd64 code generator: kom ihåg innehåll i register,
-	mata endast ut om det skiljer sig.
-	Branches till andra redan översatta block = öka next_ic
-	  och ninstrs och sedan göra native jump?
-	Load/store = jätteviktiga.
 
 
 Other possible work packages to concentrate on in the future:
@@ -104,11 +92,14 @@ Dyntrans:
 	    (containing code)
 	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
-	x)  true recompilation backend? think carefully about this,
-	    experiment in a separate project (not in GXemul)
-		o) First test would be to just implement a simple
-		   instruction such as MIPS' addiu or lui, on AMD64
-		   hosts...
+	x)  true recompilation backend? think carefully about this.
+		o)  abstract syntax for emitting opcopdes
+		o)  convert into native code only after an entire
+			block has been translated? probably best.
+		o)  x86/amd64 code generator can be very similar... perhaps
+		o)  branches to already translated code blocks can
+			link the blocks together
+		o)  load/store are the most important.
 
 Simple Valgrind-like checks?
 	o)  Mark every address with bits which tell whether or not the address

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.103 2006-12-30 13:30:51 debug Exp $
+$Id: intro.html,v 1.104 2007-02-03 10:00:52 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -220,6 +220,10 @@ The architectures that are emulated well enough to let at least one
 guest operating system run (per architecture) are ARM, MIPS, PowerPC,
 and SuperH.
 
+<p>Please read the page about <a href="guestoses.html">guest operating
+systems</a> for more information about the machines and operating systems 
+that can be considered "working" in the emulator.
+
 
 
 
@@ -232,9 +236,10 @@ and SuperH.
 GXemul should compile and run on any modern host architecture (64-bit or 
 32-bit word-length).
 
-<p>(The dynamic translation engine translates into an intermediate 
-representation, but not currently into native code. This means that there 
-is no need for per-host architecture backend code.)
+<p>Note: The dynamic translation engine does <i>not</i> require backends 
+for native code generation to be written for each individual host 
+architecture; the "intermediate representation" that the dyntrans system 
+uses can be executed on any host architecture.
 
 
 
@@ -425,14 +430,18 @@ number of executed instructions, etc. When single-stepping, these
 translations are invalidated, and replaced by normal instruction calls
 (one per emulated instruction).
 
-<p><b>Native Code Back-ends: (not in this release)</b>
+<p><b>Native Code Back-ends:</b>
 
-<p>In theory, it will be possible to implement native code generation
-(similar to what is used in high-performance emulators such as QEMU),
-as long as that generated code abides to the C ABI on the host, but
-for now I wanted to make sure that GXemul works without such native
-code back-ends. For this reason, since release 0.4.0, GXemul is
-completely free of native code back-ends.
+<p>In theory, it will be possible to implement native code generation,
+similar to what is used in high-performance emulators such as QEMU,
+as long as that generated code abides to the C ABI on the host.
+
+<p>However, since I wanted to make sure that GXemul works without such 
+native code back-ends, there are no implemented backends in this release.
+
+<p>(There is a place-holder in the source code for native code generation, 
+which can be used for experiments, but it does not contain any working 
+code at the moment.)
 
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.123 2007-02-02 17:44:04 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.124 2007-02-03 10:00:52 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3532,6 +3532,13 @@ X(to_be_translated)
 				default:goto bad;
 				}
 			}
+
+#ifdef NATIVE_CODE_GENERATION
+		if (native_code_translation_enabled &&
+		    !cpu->delay_slot && ic->f == instr(nop))
+			native = native_nop(cpu);
+#endif
+
 			break;
 
 		case SPECIAL_ADD:
@@ -3667,22 +3674,6 @@ X(to_be_translated)
 			if (ic->f == instr(addu))
 				cpu->cd.mips.combination_check = COMBINE(addu);
 
-#ifdef NATIVE_CODE_GENERATION
-#ifdef MODE32
-			if (native_code_translation_enabled &&
-			    !cpu->delay_slot && ic->f == instr(addu))
-				native = native_add_p32_p32_p32(cpu,
-				    &reg(&cpu->cd.mips.gpr[rs]),
-				    &reg(&cpu->cd.mips.gpr[rt]),
-				    &reg(&cpu->cd.mips.gpr[rd]));
-			if (native_code_translation_enabled &&
-			    !cpu->delay_slot && ic->f == instr(subu))
-				native = native_sub_p32_p32_p32(cpu,
-				    &reg(&cpu->cd.mips.gpr[rs]),
-				    &reg(&cpu->cd.mips.gpr[rt]),
-				    &reg(&cpu->cd.mips.gpr[rd]));
-#endif
-#endif
 			break;
 
 		case SPECIAL_JR:
@@ -3864,32 +3855,6 @@ X(to_be_translated)
 			cpu->cd.mips.combination_check = COMBINE(addiu);
 		if (ic->f == instr(daddiu))
 			cpu->cd.mips.combination_check = COMBINE(b_daddiu);
-
-#ifdef NATIVE_CODE_GENERATION
-#ifdef MODE32
-		if (native_code_translation_enabled &&
-		    !cpu->delay_slot && ic->f == instr(addiu))
-			native = native_add_p32_s16_p32(cpu,
-			    &reg(&cpu->cd.mips.gpr[rs]),
-			    (int16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
-		if (native_code_translation_enabled &&
-		    !cpu->delay_slot && ic->f == instr(andi))
-			native = native_and_p32_u16_p32(cpu,
-			    &reg(&cpu->cd.mips.gpr[rs]),
-			    (uint16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
-		if (native_code_translation_enabled &&
-		    !cpu->delay_slot && ic->f == instr(ori))
-			native = native_or_p32_u16_p32(cpu,
-			    &reg(&cpu->cd.mips.gpr[rs]),
-			    (uint16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
-		if (native_code_translation_enabled &&
-		    !cpu->delay_slot && ic->f == instr(xori))
-			native = native_xor_p32_u16_p32(cpu,
-			    &reg(&cpu->cd.mips.gpr[rs]),
-			    (uint16_t)iword, &reg(&cpu->cd.mips.gpr[rt]));
-#endif
-#endif
-
 		break;
 
 	case HI6_LUI:
@@ -3902,7 +3867,8 @@ X(to_be_translated)
 			ic->f = instr(nop);
 #ifdef NATIVE_CODE_GENERATION
 #ifdef MODE32
-		if (native_code_translation_enabled && !cpu->delay_slot)
+		if (native_code_translation_enabled && !cpu->delay_slot
+		    && (addr & 0xffc) >= 4)
 			native = native_set_u32_p32(cpu,
 			    ic->arg[1], &reg(&cpu->cd.mips.gpr[rt]));
 #endif
@@ -4616,8 +4582,13 @@ X(to_be_translated)
 #endif
 
 #ifdef NATIVE_CODE_GENERATION
-	if (cpu->currently_translating_to_native &&
-	    (!native || cpu->cd.mips.next_ic->f != instr(to_be_translated))) {
+	/*
+	 *  End the native code generation when an instruction is translated
+	 *  (or found in the following slow) which is not translatable.
+	 */
+	if (cpu->currently_translating_to_native && (!native ||
+	    (addr & 0xffc) == 0xffc ||
+	    cpu->cd.mips.next_ic->f != instr(to_be_translated))) {
 		native_commit(cpu);
 	}
 #endif

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.83 2007-02-02 17:44:03 debug Exp $
+.\" $Id: gxemul.1,v 1.84 2007-02-03 10:00:52 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -59,13 +59,6 @@ However, unlike some other dynamically translating emulators, GXemul does
 not need to generate native code, only a "runnable intermediate
 representation", and will thus run on any host architecture, without the
 need to implement per-architecture backends.
-.Pp
-(Note for release 0.4.4: There is an experimental framework for 
-translation into native code, but this is not enabled by default. It is 
-only available on amd64 hosts. Use the
-.Fl b
-command line option to enable it, but please be 
-aware that this is not stable yet.)
 .Pp
 The emulator can be invoked in the following ways:
 .Pp
@@ -393,9 +386,12 @@ as an X11 display to use for framebuffers.
 General options:
 .Bl -tag -width Ds
 .It Fl b
-Enable native code generation at runtime.
+Enable native code generation at runtime. This is not really implemented
+yet. Don't use it unless you know what you are doing. It will most
+likely not work.
 .It Fl B
-Disable native code generation at runtime.
+Disable native code generation at runtime. (This is the default in
+GXemul 0.4.4; there are no implemented native code generation backends.)
 .It Fl c Ar cmd
 Add
 .Ar cmd

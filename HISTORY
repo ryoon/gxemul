@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1462 2007-02-02 17:44:02 debug Exp $
+$Id: HISTORY,v 1.1463 2007-02-03 10:00:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3267,3 +3267,7 @@ Changelog for GXemul:
 		is now disabled by default, and has to be enabled by using
 		-b on the command line.
 20070202	Continuing the native code generation experiments.
+		Making PCI interrupts work for Footbridge again.
+20070203	More native code generation experiments.
+		Removing most of the native code generation experimental code,
+		it does not make sense to include any quick hacks like this.

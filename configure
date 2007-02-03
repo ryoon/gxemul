@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.240 2007-02-02 17:44:03 debug Exp $
+#  $Id: configure,v 1.241 2007-02-03 10:00:52 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1084,24 +1084,26 @@ rm -f _test_end*
 #
 ###############################################################################
 
-printf "native code generation backend... "
+if [ z$UNSTABLE = zYES ]; then
+	printf "native code generation backend... "
 
-if [ z"`uname -m`" = zamd64 ]; then
-	NATIVE_CODE_GENERATION=YES
-	printf "amd64\n"
-	printf "#define NATIVE_CODE_GENERATION\n" >> config.h
-	printf "#define HOST_ARCH_AMD64\n" >> config.h
-fi
+	if [ z"`uname -m`" = zamd64 ]; then
+		NATIVE_CODE_GENERATION=YES
+		printf "amd64\n"
+		printf "#define NATIVE_CODE_GENERATION\n" >> config.h
+		printf "#define HOST_ARCH_AMD64\n" >> config.h
+	fi
 
-if [ z"`uname -m`" = zx86_64 ]; then
-	NATIVE_CODE_GENERATION=YES
-	printf "amd64\n"
-	printf "#define NATIVE_CODE_GENERATION\n" >> config.h
-	printf "#define HOST_ARCH_AMD64\n" >> config.h
-fi
+	if [ z"`uname -m`" = zx86_64 ]; then
+		NATIVE_CODE_GENERATION=YES
+		printf "amd64\n"
+		printf "#define NATIVE_CODE_GENERATION\n" >> config.h
+		printf "#define HOST_ARCH_AMD64\n" >> config.h
+	fi
 
-if [ z$NATIVE_CODE_GENERATION = z ]; then
-	printf "not yet for this host platform\n"
+	if [ z$NATIVE_CODE_GENERATION = z ]; then
+		printf "not yet for this host platform\n"
+	fi
 fi
 
 

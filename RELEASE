@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.239 2007-02-02 17:44:03 debug Exp $
+$Id: RELEASE,v 1.240 2007-02-03 10:00:52 debug Exp $
 
 Working on what will become 0.4.4.
 
@@ -43,14 +43,6 @@ Changes between release 0.4.3 and 0.4.4 include, among other things:
 	A hardcoded speed like this is very ugly, but it is at least better
 	than before (when the timer wasn't really running at any specific
 	speed at all).
-
-    o)	I have begun experimenting (again :-) with native code generation.
-	Although the whole point of GXemul's current dyntrans system is that
-	it should work on _any_ host architecture, without the need to
-	write per-host backends, it is still fascinating to play around with.
-	The native code generation stuff is not really completely developed
-	yet, but for users who would like to try it out, it can be enabled
-	by adding  -b  to the command line.
 
 Please read the HISTORY files for more details.
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.291 2007-02-02 17:44:03 debug Exp $
+ *  $Id: main.c,v 1.292 2007-02-03 10:00:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -361,7 +361,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "bBC:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:TtU"
+	    "bBC:c:Dd:E:e:G:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif

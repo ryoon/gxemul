@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.73 2006-12-30 13:30:54 debug Exp $
+ *  $Id: cpu_mips.c,v 1.74 2007-02-03 16:18:56 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -310,7 +310,7 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		char name[50];
 		snprintf(name, sizeof(name), "%s.%i", cpu->path, i);
 		memset(&template, 0, sizeof(template));
-		template.line = i;
+		template.line = 1 << (STATUS_IM_SHIFT + i);
 		template.name = name;
 		template.extra = cpu;
 		template.interrupt_assert = mips_cpu_interrupt_assert;
@@ -1821,70 +1821,20 @@ char *mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 
 
 /*
- *  mips_cpu_interrupt_assert():
+ *  mips_cpu_interrupt_assert(), mips_cpu_interrupt_deassert():
+ *
+ *  Assert or deassert a MIPS CPU interrupt by masking in or out bits
+ *  in the CAUSE register of coprocessor 0.
  */
 void mips_cpu_interrupt_assert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = interrupt->extra;
-	mips_cpu_interrupt(cpu, interrupt->line);
+	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] |= interrupt->line;
 }
-
-
-/*
- *  mips_cpu_interrupt_deassert():
- */
 void mips_cpu_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = interrupt->extra;
-	mips_cpu_interrupt_ack(cpu, interrupt->line);
-}
-
-
-/*
- *  mips_cpu_interrupt():
- *
- *  Cause an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
- *  interrupt. 0 and 1 are ignored (software interrupts).
- */
-int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
-{
-	if (irq_nr >= 8) {
-		fatal("mips_cpu_interrupt(): irq_nr = %i; perhaps this is"
-		    " caused by legacy code (?). aborting...\n", irq_nr);
-		abort();
-	}
-
-	if (irq_nr < 2)
-		return 0;
-
-	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] |=
-	    ((1 << irq_nr) << STATUS_IM_SHIFT);
-
-	return 1;
-}
-
-
-/*
- *  mips_cpu_interrupt_ack():
- *
- *  Acknowledge an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
- *  interrupt.  Interrupts 0..1 are ignored (software interrupts).
- */
-int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
-{
-	if (irq_nr >= 8) {
-		fatal("mips_cpu_interrupt_ack(): irq_nr = %i; perhaps this is"
-		    " caused by legacy code (?). aborting...\n", irq_nr);
-		abort();
-	}
-
-	if (irq_nr < 2)
-		return 0;
-
-	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &=
-	    ~((1 << irq_nr) << STATUS_IM_SHIFT);
-
-	return 1;
+	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &= ~interrupt->line;
 }
 
 

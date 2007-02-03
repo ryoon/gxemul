@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1463 2007-02-03 10:00:52 debug Exp $
+$Id: HISTORY,v 1.1464 2007-02-03 16:18:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3271,3 +3271,4 @@ Changelog for GXemul:
 20070203	More native code generation experiments.
 		Removing most of the native code generation experimental code,
 		it does not make sense to include any quick hacks like this.
+		Minor cleanup/removal of some more legacy MIPS interrupt code.

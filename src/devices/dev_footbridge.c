@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.54 2007-02-02 20:01:38 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.55 2007-02-03 16:18:56 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -73,6 +73,8 @@ struct footbridge_data {
 	struct interrupt timer_irq[N_FOOTBRIDGE_TIMERS];
 	struct timer	*timer[N_FOOTBRIDGE_TIMERS];
 	int		pending_timer_interrupts[N_FOOTBRIDGE_TIMERS];
+
+	int		irq_asserted;
 
 	uint32_t	irq_status;
 	uint32_t	irq_enable;
@@ -154,13 +156,12 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 void footbridge_interrupt_assert(struct interrupt *interrupt)
 {
 	struct footbridge_data *d = (struct footbridge_data *) interrupt->extra;
-	int line = interrupt->line;
-	int mask = 1 << line;
+	d->irq_status |= interrupt->line;
 
-	d->irq_status |= mask;
-
-	if (d->irq_status & d->irq_enable)
+	if ((d->irq_status & d->irq_enable) && !d->irq_asserted) {
+		d->irq_asserted = 1;
 		INTERRUPT_ASSERT(d->irq);
+	}
 }
 
 
@@ -170,13 +171,12 @@ void footbridge_interrupt_assert(struct interrupt *interrupt)
 void footbridge_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct footbridge_data *d = (struct footbridge_data *) interrupt->extra;
-	int line = interrupt->line;
-	int mask = 1 << line;
+	d->irq_status &= ~interrupt->line;
 
-	d->irq_status &= ~mask;
-
-	if (d->irq_status & d->irq_enable)
+	if (!(d->irq_status & d->irq_enable) && d->irq_asserted) {
+		d->irq_asserted = 0;
 		INTERRUPT_DEASSERT(d->irq);
+	}
 }
 
 
@@ -521,7 +521,7 @@ DEVINIT(footbridge)
 		char tmpstr[200];
 
 		memset(&interrupt_template, 0, sizeof(interrupt_template));
-		interrupt_template.line = i;
+		interrupt_template.line = 1 << i;
 		snprintf(tmpstr, sizeof(tmpstr), "%s.%i", irq_path, i);
 		interrupt_template.name = tmpstr;
 

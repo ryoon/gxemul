@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.240 2007-02-03 10:00:52 debug Exp $
+$Id: RELEASE,v 1.241 2007-02-03 16:18:56 debug Exp $
 
 Working on what will become 0.4.4.
 
@@ -17,7 +17,7 @@ systems (e.g. NetBSD) run as if they were running on a real machine.
 
 The documentation lists the machines and guest operating systems that can 
 be regarded as "working" in GXemul. The best working guest operating 
-systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
+systems are probably NetBSD/pmax and NetBSD/cats.
 
 
 Changes between release 0.4.3 and 0.4.4 include, among other things:

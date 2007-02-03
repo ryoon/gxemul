@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.24 2007-01-05 17:31:51 debug Exp $
+ *  $Id: dev_kn02.c,v 1.25 2007-02-03 16:18:56 debug Exp $
  *  
  *  KN02 mainbus (TurboChannel interrupt controller).
  *
@@ -54,6 +54,7 @@ struct kn02_data {
 	uint8_t		filler[DEV_KN02_LENGTH - sizeof(uint32_t)];
 
 	struct interrupt irq;
+	int		int_asserted;
 };
 
 
@@ -65,16 +66,20 @@ struct kn02_data {
 void kn02_interrupt_assert(struct interrupt *interrupt)
 {
 	struct kn02_data *d = interrupt->extra;
-	d->csr[0] |= (1 << interrupt->line);
-	if (d->csr[0] & d->csr[2])
+	d->csr[0] |= interrupt->line;
+	if (d->csr[0] & d->csr[2] && !d->int_asserted) {
+		d->int_asserted = 1;
 		INTERRUPT_ASSERT(d->irq);
+	}
 }
 void kn02_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct kn02_data *d = interrupt->extra;
-	d->csr[0] &= ~(1 << interrupt->line);
-	if (!(d->csr[0] & d->csr[2]))
+	d->csr[0] &= ~interrupt->line;
+	if (!(d->csr[0] & d->csr[2]) && d->int_asserted) {
+		d->int_asserted = 0;
 		INTERRUPT_DEASSERT(d->irq);
+	}
 }
 
 
@@ -157,7 +162,7 @@ DEVINIT(kn02)
 		snprintf(tmpstr, sizeof(tmpstr), "%s.kn02.%i",
 		    devinit->interrupt_path, i);
 		memset(&template, 0, sizeof(template));
-		template.line = i;
+		template.line = 1 << i;
 		template.name = tmpstr;
 		template.extra = d;
 		template.interrupt_assert = kn02_interrupt_assert;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.61 2006-12-30 13:30:54 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.62 2007-02-03 16:18:56 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -810,7 +810,7 @@ hz = 100.0;
 				cpu->cd.mips.compare_interrupts_pending --;
 
 			/*  Clear the timer interrupt assertion (bit 7):  */
-			mips_cpu_interrupt_ack(cpu, 7);
+			cp->reg[COP0_CAUSE] &= ~0x8000;
 
 			if (tmp != (uint64_t)(int64_t)(int32_t)tmp)
 				fatal("WARNING: trying to write a 64-bit value"

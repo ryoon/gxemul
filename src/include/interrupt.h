@@ -28,23 +28,29 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.h,v 1.3 2007-01-05 15:20:06 debug Exp $
+ *  $Id: interrupt.h,v 1.4 2007-02-03 16:18:56 debug Exp $
  *
  *  Definitions related to the Interrupt subsystem.
  */
 
+#include "misc.h"
+
 struct interrupt {
 	/*  Functions used to assert and deassert the interrupt.  */
-	void	(*interrupt_assert)(struct interrupt *);
-	void	(*interrupt_deassert)(struct interrupt *);
+	void		(*interrupt_assert)(struct interrupt *);
+	void		(*interrupt_deassert)(struct interrupt *);
 
 	/*
 	 *  The interrupt "line" number, or "pin" number, is an internal number
 	 *  used by interrupt_assert() and interrupt_deassert(). It may
 	 *  correspond to a physical interrupt number, or it may be ignored
 	 *  completely.
+	 *
+	 *  This can either be a small integer corresponding to the interrupt
+	 *  pin number, or an entire interrupt mask (for controllers with at
+	 *  most 32 interrupts).
 	 */
-	int	line;
+	uint32_t	line;
 
 	/*
 	 *  The extra pointer is a pointer to the (conceptual) interrupt
@@ -52,14 +58,14 @@ struct interrupt {
 	 *  e.g. a 8259 interrupt, it is a pointer to the dev_8259 which will
 	 *  handle it.
 	 */
-	void	*extra;
+	void		*extra;
 
 	/*
 	 *  Actual name of the interrupt. This is a complete "path", e.g.
 	 *  "emul[0].machine[0].cpu[1].irq[3].isa[14]". It is used for
 	 *  connecting/disconnecting, and debug output.
 	 */
-	char	*name;
+	char		*name;
 };
 
 

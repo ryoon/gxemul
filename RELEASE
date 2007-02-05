@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.243 2007-02-03 16:50:40 debug Exp $
+$Id: RELEASE,v 1.244 2007-02-05 16:49:21 debug Exp $
 
 Working on what will become 0.4.4.
 
@@ -44,10 +44,10 @@ Changes between release 0.4.3 and 0.4.4 include, among other things:
     o)	SuperH (SH4) emulation is now somewhat more stable, enough to let a
 	NetBSD/dreamcast Live CD be usable.
 
-    o)	The PICA-61 (arc) emulation mode now has the timer fixed at 100 Hz.
-	A hardcoded speed like this is very ugly, but it is at least better
-	than before (when the timer wasn't really running at any specific
-	speed at all).
+    o)	The PICA-61 (arc) and i80321 (evbarm) emulation modes now have their
+	timers fixed at 100 Hz. A hardcoded speed like this is very ugly, but
+	it is at least better than before (when the timer wasn't really
+	running at any specific speed at all).
 
 Please read the HISTORY files for more details.
 

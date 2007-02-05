@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.78 2007-01-20 13:26:20 debug Exp $
+ *  $Id: bus_pci.c,v 1.79 2007-02-05 16:49:21 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -718,9 +718,9 @@ PCIINIT(i31244)
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		char tmpstr[150];
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s.0",
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s.%i",
 		    (long long)(pd->pcibus->pci_actual_io_offset + 0),
-		    pd->pcibus->irq_path_pci);
+		    pd->pcibus->irq_path_pci, irq & 255);
 		device_add(machine, tmpstr);
 	}
 }

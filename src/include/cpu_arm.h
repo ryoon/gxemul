@@ -28,11 +28,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.69 2006-12-30 13:31:00 debug Exp $
+ *  $Id: cpu_arm.h,v 1.70 2007-02-05 16:49:21 debug Exp $
  */
 
 #include "misc.h"
-
+#include "interrupt.h"
 
 struct cpu_family;
 
@@ -195,6 +195,8 @@ struct arm_cpu {
 	uint32_t		i80321_isrc;	/*  current assertions  */
 	uint32_t		tmr0;
 	uint32_t		tmr1;
+	struct interrupt	tmr0_irq;
+	struct interrupt	tmr1_irq;
 	uint32_t		tcr0;
 	uint32_t		tcr1;
 	uint32_t		trr0;

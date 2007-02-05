@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.27 2007-01-28 14:15:30 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.28 2007-02-05 16:49:21 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -375,14 +375,12 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 				/*  Writing clears interrupts:  */
 				cpu->cd.arm.tisr &= ~cpu->cd.arm.r[rd];
 
-// TODO: REWRITE!
-fatal("LEGACY CODE! TODO: Rewrite!\n");
-abort();
-
-//				if (!(cpu->cd.arm.tisr & TISR_TMR0))
-//					cpu_interrupt_ack(cpu, 9);  /* TMR0 */
-//				if (!(cpu->cd.arm.tisr & TISR_TMR1))
-//					cpu_interrupt_ack(cpu, 10); /* TMR1 */
+				if (!(cpu->cd.arm.tisr & TISR_TMR0))
+					INTERRUPT_DEASSERT(
+					    cpu->cd.arm.tmr0_irq);
+				if (!(cpu->cd.arm.tisr & TISR_TMR1))
+					INTERRUPT_DEASSERT(
+					    cpu->cd.arm.tmr1_irq);
 			}
 			break;
 		case 7:	/*  wdtcr:  */

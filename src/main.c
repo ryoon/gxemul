@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.292 2007-02-03 10:00:52 debug Exp $
+ *  $Id: main.c,v 1.293 2007-02-05 16:49:05 debug Exp $
  */
 
 #include <stdio.h>
@@ -311,8 +311,10 @@ static void usage(int longusage)
 #endif
 
 	printf("\nGeneral options:\n");
+#ifdef UNSTABLE_DEVEL
 	printf("  -b        enable native code generation\n");
 	printf("  -B        disable native code generation\n");
+#endif
 	printf("  -c cmd    add cmd as a command to run before starting "
 	    "the simulation\n");
 	printf("  -D        skip the srandom call at startup\n");
@@ -361,7 +363,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "bBC:c:Dd:E:e:G:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
+#ifdef UNSTABLE_DEVEL
+	    "bB"
+#endif
+	    "C:c:Dd:E:e:G:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -373,6 +378,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
+#ifdef UNSTABLE_DEVEL
 		case 'b':
 #ifndef NATIVE_CODE_GENERATION
 			printf("-b is not available on this host arch.\n");
@@ -384,6 +390,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'B':
 			native_code_translation_enabled = 0;
 			break;
+#endif	/*  UNSTABLE_DEVEL  */
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;

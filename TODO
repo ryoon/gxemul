@@ -1,5 +1,14 @@
-$Id: TODO,v 1.433 2007-02-03 10:00:52 debug Exp $
+$Id: TODO,v 1.434 2007-02-05 16:49:04 debug Exp $
 
+===============================================================================
+
+Flytta stable=1 i machine-filerna till initieringen, så att -H-listan
+bara visar de som är stable, i release mode. Använd -HH för att visa
+_alla_ oavsett stableness? Med bara -H i release mode, ge en varning av 
+typen "52 machines were not included because they were not marked as 
+Stable. Use -HH to list all modes."
+
+===============================================================================
 
 Current work package:
 
@@ -25,15 +34,9 @@ Current work package:
 		   fixed/removed.
 		o  SMP!
 
+===============================================================================
 
 Other possible work packages to concentrate on in the future:
-
-  x)  Experiment with more CPU archs; the ones I want to concentrate on
-      next are probably Alpha and SPARC, but possibly also non-fixed-length
-      ISAs such as AVR32 (if there are easily available pre-compiled
-      operating system binaries available for that arch) or AMD64/x86. The
-      ones with variable-length instructions would require more design work
-      on the dyntrans system, though.
 
   x)  Redesign of the networking subsystem, at least the NAT translation
       part. The current way of allowing raw ethernet frames to be
@@ -52,13 +55,10 @@ Other possible work packages to concentrate on in the future:
 And of course, there are _LOTS_ of minor TODOs spread out throughout
 the source code, which must be fixed sooner or later.
 
-
-----------------------------------------------------------------------------
-
+===============================================================================
 
 Some other things, in random order, that I'd like to fix: (Some items in 
 this list are probably out-to-date by now.)
-
 
 Dyntrans:
 	x)  Instruction combination collisions? How to avoid easily...
@@ -312,20 +312,20 @@ ARM:
 	o)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
 	o)  ARM "wait"-like instruction?
-	o)  try to get netbsd/evbarm 3.x running (iq80321)
+	o)  try to get netbsd/evbarm 3.x or 4.x running (iq80321)
 	o)  make the xscale counter registers (ccnt) work
 	o)  make the ata controller usable for FreeBSD!
-	o)  zaurus for openbsd...
-	o)  debian/cats crashes because of unimplemented coproc stuff.
+	o)  Zaurus emulation, for e.g. OpenBSD/zaurus
+	o)  Debian/cats crashes because of unimplemented coproc stuff.
 	    fix this?
 
 Test machines:
-	+ dev_fb block fill and copy
-	+ dev_fb draw characters (from the built-in font)?
-	+ dev_fb input device? mouse pointer coordinates and buttons
+	o)  dev_fb block fill and copy
+	o)  dev_fb draw characters (from the built-in font)?
+	o)  dev_fb input device? mouse pointer coordinates and buttons
 		(allow changes in these to cause interrupts as well?)
-	+ Redefine the halt() function so that it stops "sometimes
-	  soon", i.e. usage in demo code should be:
+	o)  Redefine the halt() function so that it stops "sometimes
+	    soon", i.e. usage in demo code should be:
 		for (;;) {
 			halt();
 		}

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.192 2006-12-30 13:30:50 debug Exp $
+$Id: guestoses.html,v 1.193 2007-02-07 19:50:31 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -2213,33 +2213,32 @@ ramdisk kernel:
 
 <p><i>"QEMU is a FAST! processor emulator"</i> according to <a
 href="http://fabrice.bellard.free.fr/qemu/qemu-doc.html">http://fabrice.bellard.free.fr/qemu/qemu-doc.html</a>.
-Sometimes QEMU is faster than GXemul, sometimes it is the other way
-around. A quick (and quite unfair) test on my laptop (1.8 GHz Turion ML32,
-in AMD64 mode) comparing QEMU 0.8.2 (installed from FreeBSD ports)
-with GXemul gave the following result:
+QEMU translates the emulated machine's instruction set into native
+code on the host, resulting in very fast emulation.
+
+<p>A quick test on my laptop (1.8 GHz Turion ML32, in AMD64 mode) comparing QEMU 0.8.2 and 0.9.0
+(compiled/installed from FreeBSD ports) with GXemul (compiled with GCC 4.2 and no other options)
+gave the following result:
 
 <p><pre>
         <b>while true; do ls -l > /dev/null; echo -n .; done</b>
         (80 x 36 dots)
-        QEMU 0.8.2:       13 min 52 sec
-	GXemul 0.4.2:      4 min 31 sec
+        QEMU 0.8.2:         13 min 52 sec
+        QEMU 0.9.0:          3 min 45 sec
+	GXemul 20070207:     4 min 16 sec
 
 	<b>while true; do /usr/bin/md5sum /usr/bin/* > /dev/null; echo -n .; done</b>
         (80 dots)
-        QEMU 0.8.2:        2 min  8 sec    <super>*</super>
-	GXemul 0.4.2:      5 min 18 sec
+        QEMU 0.8.2:          2 min  8 sec
+        QEMU 0.9.0:          1 min 38 sec
+	GXemul 20070207:     5 min 21 sec
 
         <b>while true; do grep hej lib/libtextwrap.so.1 > /dev/null; echo -n .; done</b>
         (80 dots)
-        QEMU 0.8.2:        9 min 57 sec
-	GXemul 0.4.2:      1 min 36 sec
+        QEMU 0.8.2:          9 min 57 sec
+        QEMU 0.9.0:                37 sec
+	GXemul 20070207:     1 min 32 sec
 </pre>
-
-<p><small><super>*</super> In the md5sum test, QEMU is faster than GXemul by a wide
-margin. I am not sure why, as I don't really know anything about the internals of QEMU.
-One guess, though, could be that this is because of the fact that the md5sum
-core contains relatively long chunks of loop-unrolled code (i.e. code that does not
-have branches).</small>
 
 <p>The commands were run inside the emulators, using the ramdisk kernel
 mentioned above.

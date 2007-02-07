@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.71 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_wdc.c,v 1.72 2007-02-07 19:50:31 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -112,10 +112,7 @@ struct wdc_data {
 #define COMMAND_RESET	0x100
 
 
-/*
- *  dev_wdc_tick():
- */
-void dev_wdc_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(wdc)
 { 
 	struct wdc_data *d = extra;
 	int old_di = d->delayed_interrupt;
@@ -922,10 +919,12 @@ DEVICE_ACCESS(wdc)
 	}
 
 
+#if 0
 	if (cpu->machine->machine_type != MACHINE_HPCMIPS &&
 	    cpu->machine->machine_type != MACHINE_EVBMIPS &&
 	    cpu->machine->machine_type != MACHINE_ALGOR &&
 	    cpu->machine->machine_type != MACHINE_BEBOX)
+#endif
 		dev_wdc_tick(cpu, extra);
 
 ret:
@@ -996,10 +995,11 @@ DEVINIT(wdc)
 	    devinit->addr, DEV_WDC_LENGTH * devinit->addr_mult, dev_wdc_access,
 	    d, DM_DEFAULT, NULL);
 
+/*
 	if (devinit->machine->machine_type != MACHINE_HPCMIPS &&
 	    devinit->machine->machine_type != MACHINE_EVBMIPS)
 		tick_shift += 1;
-
+*/
 	machine_add_tickfunction(devinit->machine, dev_wdc_tick,
 	    d, tick_shift, 0.0);
 

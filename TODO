@@ -1,4 +1,4 @@
-$Id: TODO,v 1.434 2007-02-05 16:49:04 debug Exp $
+$Id: TODO,v 1.435 2007-02-07 19:50:30 debug Exp $
 
 ===============================================================================
 
@@ -7,6 +7,14 @@ bara visar de som är stable, i release mode. Använd -HH för att visa
 _alla_ oavsett stableness? Med bara -H i release mode, ge en varning av 
 typen "52 machines were not included because they were not marked as 
 Stable. Use -HH to list all modes."
+
+Testa att sänka hpcmips "WDC"-delayen, den kanske inte behövs längre?
+	Prova ALGOR! med wdc-fixen.
+
+MIPS32v2 och 64v2:
+	Lägg till CPUer
+	Lägg till machine modes (malta?)
+	Kompilera testprogram för v2 och lägg till saknade instruktioner
 
 ===============================================================================
 

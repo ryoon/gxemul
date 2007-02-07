@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1465 2007-02-05 16:49:21 debug Exp $
+$Id: HISTORY,v 1.1466 2007-02-07 19:50:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3274,3 +3274,8 @@ Changelog for GXemul:
 		Minor cleanup/removal of some more legacy MIPS interrupt code.
 20070204	Making i80321 interrupts work again (for NetBSD/evbarm etc.),
 		and fixing the timer at 100 Hz.
+20070206	Experimenting with removing the wdc interrupt slowness hack.
+20070207	Lowering the number of dyntrans TLB entries for MIPS from
+		192 to 128, resulting in a minor speed improvement.
+		Minor optimization to the code invalidation routine in
+		cpu_dyntrans.c.

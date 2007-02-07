@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.137 2007-02-02 17:44:03 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.138 2007-02-07 19:39:39 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -350,7 +350,7 @@ while (cycles-- > 0)
 		}
 	} else {
 		/*  Execute multiple instructions:  */
-		int n = 0;
+		n_instrs = 0;
 		for (;;) {
 			struct DYNTRANS_IC *ic;
 
@@ -362,13 +362,10 @@ while (cycles-- > 0)
 
 			I; I; I; I; I;   I; I; I; I; I;
 
-			n += 60;
-
-			if (n + cpu->n_translated_instrs >=
-			    N_SAFE_DYNTRANS_LIMIT)
+			cpu->n_translated_instrs += 60;
+			if (cpu->n_translated_instrs >= N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
-		n_instrs = n;
 	}
 
 	n_instrs += cpu->n_translated_instrs;
@@ -1277,8 +1274,10 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 			physpage_ofs = ppp->next_ofs;
 		}
 
+		/*  If there is no translation, there is no need to go
+		    on and try to remove it from the vph_tlb_entry array:  */
 		if (physpage_ofs == 0)
-			ppp = NULL;
+			return;
 
 #if 0
 		/*

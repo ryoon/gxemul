@@ -1,6 +1,17 @@
-$Id: TODO,v 1.435 2007-02-07 19:50:30 debug Exp $
+$Id: TODO,v 1.436 2007-02-08 16:10:07 debug Exp $
 
 ===============================================================================
+
+Håll koll på antalet mappningar av physpages, för att slippa köra
+code invalidation loopen längre än nödvändigt (0=inte alls, 1=tills
+en har invalidiserats, osv).
+	Antal entries i TLBn som pekar på physpagen.
+	Indexet i TLBn till det FÖRSTA/LÄGSTA entryt som pekar
+		på physpagen. (Sätts när antal entries = 1, eller
+		när entries > 1 och indexet är lägre än det som
+		redan står där!)
+
+Kanske städa upp/optimera memory_rw lite?
 
 Flytta stable=1 i machine-filerna till initieringen, så att -H-listan
 bara visar de som är stable, i release mode. Använd -HH för att visa

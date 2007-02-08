@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.193 2007-02-07 19:50:31 debug Exp $
+$Id: guestoses.html,v 1.194 2007-02-08 16:10:08 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -2213,8 +2213,10 @@ ramdisk kernel:
 
 <p><i>"QEMU is a FAST! processor emulator"</i> according to <a
 href="http://fabrice.bellard.free.fr/qemu/qemu-doc.html">http://fabrice.bellard.free.fr/qemu/qemu-doc.html</a>.
-QEMU translates the emulated machine's instruction set into native
-code on the host, resulting in very fast emulation.
+The latest version of QEMU (0.9.0 at the time of writing this) is
+faster than GXemul by quite a margin, most likely because QEMU
+translates the emulated machine's instruction set into native
+code on the host.
 
 <p>A quick test on my laptop (1.8 GHz Turion ML32, in AMD64 mode) comparing QEMU 0.8.2 and 0.9.0
 (compiled/installed from FreeBSD ports) with GXemul (compiled with GCC 4.2 and no other options)

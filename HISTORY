@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1466 2007-02-07 19:50:30 debug Exp $
+$Id: HISTORY,v 1.1467 2007-02-08 19:42:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3279,3 +3279,5 @@ Changelog for GXemul:
 		192 to 128, resulting in a minor speed improvement.
 		Minor optimization to the code invalidation routine in
 		cpu_dyntrans.c.
+20070208	Increasing (experimentally) the nr of dyntrans instructions per
+		loop from 60 to 120.

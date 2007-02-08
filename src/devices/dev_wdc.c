@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.72 2007-02-07 19:50:31 debug Exp $
+ *  $Id: dev_wdc.c,v 1.73 2007-02-08 19:53:00 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -48,18 +48,6 @@
 #define	WDC_MAX_SECTORS		512
 #define	WDC_INBUF_SIZE		(512*(WDC_MAX_SECTORS+1))
 
-/*
- *  INT_DELAY: This is an old hack which only exists because (some versions of)
- *  NetBSD for hpcmips have interrupt problems. These problems are probably not
- *  specific to GXemul, but are also triggered on real hardware.
- *
- *  See the following URL for more info:
- *  http://mail-index.netbsd.org/port-hpcmips/2004/12/30/0003.html
- *
- *  NetBSD/malta also bugs out if wdc interrupts come too quickly. Hm.
- */
-#define	INT_DELAY		1
-
 extern int quiet_mode;
 
 /*  #define debug fatal  */
@@ -80,8 +68,7 @@ struct wdc_data {
 	int		inbuf_head;
 	int		inbuf_tail;
 
-	int		delayed_interrupt;
-	int		int_asserted;
+	int		int_assert;
 
 	int		write_in_progress;
 	int		write_count;
@@ -115,15 +102,9 @@ struct wdc_data {
 DEVICE_TICK(wdc)
 { 
 	struct wdc_data *d = extra;
-	int old_di = d->delayed_interrupt;
 
-	if (d->delayed_interrupt)
-		d->delayed_interrupt --;
-
-	if (old_di == 1 || d->int_asserted) {
+	if (d->int_assert)
 		INTERRUPT_ASSERT(d->irq);
-		d->int_asserted = 1;
-	}
 }
 
 
@@ -326,7 +307,7 @@ void wdc__read(struct cpu *cpu, struct wdc_data *d)
 		count -= to_read;
 	}
 
-	d->delayed_interrupt = INT_DELAY;
+	d->int_assert = 1;
 }
 
 
@@ -434,7 +415,7 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 		debug("[ wdc: command 0x%02x drive %i, but no disk image ]\n",
 		    d->cur_command, d->drive + d->base_drive);
 		d->error |= WDCE_ABRT;
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		return;
 	}
 	if (diskimage_is_a_cdrom(cpu->machine, d->drive + d->base_drive,
@@ -442,7 +423,7 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 		debug("[ wdc: IDENTIFY drive %i, but it is an ATAPI "
 		    "drive ]\n", d->drive + d->base_drive);
 		d->error |= WDCE_ABRT;
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		return;
 	}
 
@@ -470,7 +451,7 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 	case WDCC_IDP:	/*  Initialize drive parameters  */
 		debug("[ wdc: IDP drive %i (TODO) ]\n", d->drive);
 		/*  TODO  */
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		break;
 
 	case SET_FEATURES:
@@ -485,12 +466,12 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 		default:d->error |= WDCE_ABRT;
 		}
 		/*  TODO: always interrupt?  */
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		break;
 
 	case WDCC_RECAL:
 		debug("[ wdc: RECAL drive %i ]\n", d->drive);
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		break;
 
 	case WDCC_IDENTIFY:
@@ -503,31 +484,31 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 			wdc_addtoinbuf(d, d->identify_struct[i+1]);
 			wdc_addtoinbuf(d, d->identify_struct[i+0]);
 		}
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		break;
 
 	case WDCC_IDLE_IMMED:
 		debug("[ wdc: IDLE_IMMED drive %i ]\n", d->drive);
 		/*  TODO: interrupt here?  */
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		break;
 
 	case WDCC_SETMULTI:
 		debug("[ wdc: SETMULTI drive %i ]\n", d->drive);
 		/*  TODO: interrupt here?  */
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		break;
 
 	case ATAPI_SOFT_RESET:
 		debug("[ wdc: ATAPI_SOFT_RESET drive %i ]\n", d->drive);
 		/*  TODO: interrupt here?  */
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		break;
 
 	case ATAPI_PKT_CMD:
 		debug("[ wdc: ATAPI_PKT_CMD drive %i ]\n", d->drive);
 		/*  TODO: interrupt here?  */
-		/*  d->delayed_interrupt = INT_DELAY;  */
+		/*  d->int_assert = 1;  */
 		d->atapi_cmd_in_progress = 1;
 		d->atapi_phase = PHASE_CMDOUT;
 		break;
@@ -535,7 +516,7 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 	case WDCC_DIAGNOSE:
 		debug("[ wdc: WDCC_DIAGNOSE drive %i: TODO ]\n", d->drive);
 		/*  TODO: interrupt here?  */
-		d->delayed_interrupt = INT_DELAY;
+		d->int_assert = 1;
 		d->error = 1;		/*  No error?  */
 		break;
 
@@ -632,7 +613,7 @@ DEVICE_ACCESS(wdc)
 					} else
 						d->atapi_phase =
 						    PHASE_COMPLETED;
-					d->delayed_interrupt = INT_DELAY;
+					d->int_assert = 1;
 				}
 			} else {
 #if 0
@@ -642,7 +623,7 @@ DEVICE_ACCESS(wdc)
 				    ((d->inbuf_tail - d->inbuf_head) % 512)
 				    == 0)
 #endif
-					d->delayed_interrupt = INT_DELAY;
+					d->int_assert = 1;
 			}
 		} else {
 			int inbuf_len;
@@ -757,7 +738,7 @@ DEVICE_ACCESS(wdc)
 					exit(1);
 				}
 
-				d->delayed_interrupt = INT_DELAY;
+				d->int_assert = 1;
 			}
 
 			if (( d->write_in_progress == WDCC_WRITEMULTI &&
@@ -791,7 +772,7 @@ DEVICE_ACCESS(wdc)
 				d->write_count -= count;
 				d->write_offset += 512 * count;
 
-				d->delayed_interrupt = INT_DELAY;
+				d->int_assert = 1;
 
 				if (d->write_count == 0)
 					d->write_in_progress = 0;
@@ -901,8 +882,7 @@ DEVICE_ACCESS(wdc)
 				debug("[ wdc: read from STATUS: 0x%02x ]\n",
 				    (int)odata);
 			INTERRUPT_DEASSERT(d->irq);
-			d->int_asserted = 0;
-			d->delayed_interrupt = 0;
+			d->int_assert = 0;
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n",(int)idata);
 			wdc_command(cpu, d, idata);
@@ -918,14 +898,8 @@ DEVICE_ACCESS(wdc)
 			    (int)relative_addr, (int)idata);
 	}
 
-
-#if 0
-	if (cpu->machine->machine_type != MACHINE_HPCMIPS &&
-	    cpu->machine->machine_type != MACHINE_EVBMIPS &&
-	    cpu->machine->machine_type != MACHINE_ALGOR &&
-	    cpu->machine->machine_type != MACHINE_BEBOX)
-#endif
-		dev_wdc_tick(cpu, extra);
+	/*  Assert interrupt, if necessary:  */
+	dev_wdc_tick(cpu, extra);
 
 ret:
 	if (writeflag == MEM_READ) {
@@ -995,11 +969,6 @@ DEVINIT(wdc)
 	    devinit->addr, DEV_WDC_LENGTH * devinit->addr_mult, dev_wdc_access,
 	    d, DM_DEFAULT, NULL);
 
-/*
-	if (devinit->machine->machine_type != MACHINE_HPCMIPS &&
-	    devinit->machine->machine_type != MACHINE_EVBMIPS)
-		tick_shift += 1;
-*/
 	machine_add_tickfunction(devinit->machine, dev_wdc_tick,
 	    d, tick_shift, 0.0);
 

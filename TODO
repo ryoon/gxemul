@@ -1,28 +1,24 @@
-$Id: TODO,v 1.437 2007-02-08 19:57:36 debug Exp $
+$Id: TODO,v 1.438 2007-02-09 14:07:19 debug Exp $
 
 ===============================================================================
 
-Håll koll på antalet mappningar av physpages, för att slippa köra
-code invalidation loopen längre än nödvändigt (0=inte alls, 1=tills
-en har invalidiserats, osv).
-	Antal entries i TLBn som pekar på physpagen.
-	Indexet i TLBn till det FÖRSTA/LÄGSTA entryt som pekar
-		på physpagen. (Sätts när antal entries = 1, eller
-		när entries > 1 och indexet är lägre än det som
-		redan står där!)
+Prova att sänka dyntransloopen till 30 (!) instruktioner.
+
+Ta reda på om Jornada 680 (NetBSD/hpcsh) är lätt att få att fungera. NEJ! SH3!
+Men en annan NetBSD/hpcsh-maskin är SH4!
+
+NetBSD/hpcarm. Jornada 720. KEYBOARD!
+LÄGG TILL WARNING för avsaknad av -X.
 
 Kanske städa upp/optimera memory_rw lite?
 
-Flytta stable=1 i machine-filerna till initieringen, så att -H-listan
-bara visar de som är stable, i release mode. Använd -HH för att visa
-_alla_ oavsett stableness? Med bara -H i release mode, ge en varning av 
-typen "52 machines were not included because they were not marked as 
-Stable. Use -HH to list all modes."
-
 MIPS32v2 och 64v2:
-	Lägg till CPUer
-	Lägg till machine modes (malta?)
-	Kompilera testprogram för v2 och lägg till saknade instruktioner
+	Lägg till CPUer!
+	Kompilera demos med v2!
+	Lägg till machine modes
+		Testmaskinen för MIPS skall vara v2!
+		Malta!
+	Lägg till saknade instruktioner!
 
 ===============================================================================
 
@@ -38,21 +34,27 @@ Current work package:
       devices must be manually checked/fixed as well. All CPUs and
       interrupt controllers will have to be rewritten.
 
-      TODO:
-		o  PCI interrupt routing:   see dec21143 etc.
+      Things left to fix before a release can be possible:
+
 		o  Configuration file syntax:
-		    x  Allow runtime addition of interrupt controllers!
+		    x  Allow config file addition of interrupt controllers.
 		    x  Allow devices to be connected to those controllers.
 		    x  Allow semi-automagic busses (e.g. the ISA bus)
-		       to connect to these interrupts as well.
+		       to connect to these interrupts as well?
 		o  All newly introduced C++-style comments, //, which have
 		   to do with the legacy interrupt rewrite, should be
 		   fixed/removed.
-		o  SMP!
+		o  Make sure the code compiles again with Compaq's CC, by
+		   removing code which would result in unreachable code.
 
 ===============================================================================
 
 Other possible work packages to concentrate on in the future:
+
+  x)  SMP:
+	Get SMP working again. It is pretty much broken since I started
+	the conversion from the old bintrans system to the new dyntrans system.
+	Add demos for SMP in the test machines.
 
   x)  Redesign of the networking subsystem, at least the NAT translation
       part. The current way of allowing raw ethernet frames to be
@@ -60,6 +62,13 @@ Other possible work packages to concentrate on in the future:
       to allow the frames to be transmitted other ways as well.
       Also adding support for connecting ttys (either to xterms, or to
       pipes/sockets etc, or even to PPP->NAT or SLIP->NAT :-).
+
+  x)  Add native code generation again.
+	Not really necessary, but could give a speed-boost.
+
+  x)  PCI:
+	Pretty much everything related to runtime configuration, device
+	slots, interrupts, whatever. The current code is very hardcoded and ugly.
 
   x)  Debugging: Think more about SMP debugging, etc. Right now, the
       debugger is a mess. Also, a better connection to GDB would be
@@ -454,28 +463,6 @@ Clocks and timers:
 	x)  NetWinder timeofday is incorrect!
 	x)  Cobalt TOD is incorrect!
 	x)  Go through all other machines, one by one, and fix them.
-
-Busses:
-	o)  Redesign the entire "mainbus" concept!
-		x)  Busses should be placed in a hierarchical tree (?)
-		x)  Specific clock/bus speeds, cpu speeds etc.
-	o)  Interrupt routing subsystem:
-		x)  IF POSSIBLE, try to make the new system work with the
-		    current system, but print annoying warning messages
-		    during startup.
-		x)  Add a debugger command to list available interrupts?
-		x)  Must work with everything from native IRQs to
-		    TurboChannel/PCI/ISA/ADB/PCMCIA/...
-		x)  Must work with SMP emulation! I.e. it should be totally
-		    CPU independent.
-		x)  Make it work with device_add(). How does the end user find
-		    out the name of an interrupt controller/line in e.g.
-		    a configuration file? -vvv could print available/registered
-		    interrupts...
-		x)  CONVERT ALL DEVICES and CPUs.
-	o)  Synchronization over network? or at least in dyntrans within
-	    one emulated machine
-	o)  Convert to real busses: TurboChannel, PCMCIA, ADB
 
 Config file parser:
 	o)  Rewrite it from scratch!

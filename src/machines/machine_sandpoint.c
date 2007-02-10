@@ -25,7 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sandpoint.c,v 1.4 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_sandpoint.c,v 1.5 2007-02-10 16:29:20 debug Exp $
+ *
+ *  Currently broken; perhaps a problem with NetBSD/sandpoint itself.
+ *  See e.g. http://mail-index.netbsd.org/port-sandpoint/2006/01/02/0000.html
+ *  It seems that .../arch/sandpoint/sandpoint/machdep.c calls
+ *  consinit() before the BATs are initialized, which causes the consinit
+ *  call to fail.
  */
 
 #include <stdio.h>
@@ -41,12 +47,16 @@
 
 MACHINE_SETUP(sandpoint)
 {
+	char tmpstr[300];
+
 	/*
 	 *  NetBSD/sandpoint (http://www.netbsd.org/Ports/sandpoint/)
 	 */
 	machine->machine_name = "Motorola Sandpoint";
 
-	device_add(machine, "ns16550 irq=36 addr=0x800003f8");
+	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i] "
+	    "addr=0xfe0003f8", machine->path, machine->bootstrap_cpu);
+	device_add(machine, tmpstr);
 
 	/*  r4 should point to first free byte after the loaded kernel:  */
 	cpu->cd.ppc.gpr[4] = 6 * 1048576;

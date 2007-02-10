@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.369 2007-02-10 14:04:50 debug Exp $
+ *  $Id: cpu.c,v 1.370 2007-02-10 14:29:54 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -599,24 +599,8 @@ void cpu_init(void)
 	add_cpu_family(avr_cpu_family_init, ARCH_AVR);
 #endif
 
-#ifdef ENABLE_AVR32
-	add_cpu_family(avr32_cpu_family_init, ARCH_AVR32);
-#endif
-
 #ifdef ENABLE_RCA180X
 	add_cpu_family(rca180x_cpu_family_init, ARCH_RCA180X);
-#endif
-
-#ifdef ENABLE_HPPA
-	add_cpu_family(hppa_cpu_family_init, ARCH_HPPA);
-#endif
-
-#ifdef ENABLE_I960
-	add_cpu_family(i960_cpu_family_init, ARCH_I960);
-#endif
-
-#ifdef ENABLE_IA64
-	add_cpu_family(ia64_cpu_family_init, ARCH_IA64);
 #endif
 
 #ifdef ENABLE_M68K

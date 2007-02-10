@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1472 2007-02-10 14:24:58 debug Exp $
+$Id: HISTORY,v 1.1473 2007-02-10 14:29:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3285,6 +3285,6 @@ Changelog for GXemul:
 		detection in memory_rw.c.
 		Changing the testmips and baremips machines to use a revision 2
 		MIPS64 CPU by default, instead of revision 1.
-		Removing the dummy i960, IA64, x86, and HP PA-RISC files, the
-		PC bios emulation, and the Olivetti M700 (ARC) and db64360
-		emulation modes.
+		Removing the dummy i960, IA64, x86, AVR32, and HP PA-RISC
+		files, the PC bios emulation, and the Olivetti M700 (ARC) and
+		db64360 emulation modes.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.108 2007-02-10 14:04:51 debug Exp $
+ *  $Id: cpu.h,v 1.109 2007-02-10 14:29:54 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -194,7 +194,6 @@
 #include "cpu_alpha.h"
 #include "cpu_arm.h"
 #include "cpu_avr.h"
-#include "cpu_avr32.h"
 #include "cpu_m68k.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
@@ -401,7 +400,6 @@ struct cpu {
 		struct alpha_cpu      alpha;
 		struct arm_cpu        arm;
 		struct avr_cpu        avr;
-		struct avr32_cpu      avr32;
 		struct m68k_cpu       m68k;
 		struct mips_cpu       mips;
 		struct ppc_cpu        ppc;

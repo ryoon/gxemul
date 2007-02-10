@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.25 2007-02-03 16:18:56 debug Exp $
+ *  $Id: dev_kn02.c,v 1.26 2007-02-10 14:20:52 debug Exp $
  *  
  *  KN02 mainbus (TurboChannel interrupt controller).
  *
@@ -116,10 +116,13 @@ DEVICE_ACCESS(kn02)
 			/*  Recalculate interrupt assertions:  */
 			new_assert = (d->csr[0] & d->csr[2])? 1 : 0;
 			if (new_assert != old_assert) {
-				if (new_assert)
+				if (new_assert) {
 					INTERRUPT_ASSERT(d->irq);
-				else
+					d->int_asserted = 1;
+				} else {
 					INTERRUPT_DEASSERT(d->irq);
+					d->int_asserted = 0;
+				}
 			}
 		}
 		break;

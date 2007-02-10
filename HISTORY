@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1468 2007-02-10 08:08:46 debug Exp $
+$Id: HISTORY,v 1.1469 2007-02-10 13:31:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3283,3 +3283,5 @@ Changelog for GXemul:
 		loop from 60 to 120.
 20070210	Commenting out (experimentally) the dyntrans_device_danger
 		detection in memory_rw.c.
+		Changing the testmips and baremips machines to use a revision 2
+		MIPS64 CPU by default, instead of revision 1.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.26 2007-01-28 13:45:46 debug Exp $
+ *  $Id: machine_test.c,v 1.27 2007-02-10 13:31:21 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -486,13 +486,13 @@ MACHINE_SETUP(testmips)
 
 MACHINE_DEFAULT_CPU(baremips)
 {
-	machine->cpu_name = strdup("5Kc");
+	machine->cpu_name = strdup("5KE");
 }
 
 
 MACHINE_DEFAULT_CPU(testmips)
 {
-	machine->cpu_name = strdup("5Kc");
+	machine->cpu_name = strdup("5KE");
 }
 
 

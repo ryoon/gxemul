@@ -1,4 +1,4 @@
-/*  gxemul: $Id: mips_cpuregs.h,v 1.2 2006-06-20 21:29:47 debug Exp $  */
+/*  gxemul: $Id: mips_cpuregs.h,v 1.3 2007-02-10 13:31:21 debug Exp $  */
 /*	$NetBSD: cpuregs.h,v 1.69 2005/12/20 21:06:43 tron Exp $	*/
 
 /*
@@ -767,6 +767,10 @@
 #define	MIPS_4KEc_R2	0x90	/* MIPS 4KEc_R2			ISA 32  Rel 2 */
 #define	MIPS_4KEmp_R2	0x91	/* MIPS 4KEm/4KEp_R2		ISA 32  Rel 2 */
 #define	MIPS_4KSd	0x92	/* MIPS 4KSd			ISA 32  Rel 2 */
+#define	MIPS_24K	0x93	/* MIPS 24K			? */
+#define	MIPS_34K	0x95	/* MIPS 34K			? */
+#define	MIPS_24KE	0x96	/* MIPS 24KE			? */
+#define	MIPS_74K	0x97	/* MIPS 74K			? */
 
 /*
  * Alchemy (company ID 3) use the processor ID field to donote the CPU core

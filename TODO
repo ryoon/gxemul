@@ -1,4 +1,4 @@
-$Id: TODO,v 1.439 2007-02-10 08:08:46 debug Exp $
+$Id: TODO,v 1.440 2007-02-10 13:31:20 debug Exp $
 
 ===============================================================================
 
@@ -9,7 +9,6 @@ NetBSD/hpcarm. Jornada 720. KEYBOARD!
 LÄGG TILL WARNING för avsaknad av -X.
 
 MIPS32v2 och 64v2:
-	Lägg till CPUer!
 	Kompilera demos med v2!
 	Lägg till machine modes
 		Testmaskinen för MIPS skall vara v2!

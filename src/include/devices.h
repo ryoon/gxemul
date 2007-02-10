@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.240 2007-02-03 20:14:24 debug Exp $
+ *  $Id: devices.h,v 1.241 2007-02-10 14:21:10 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -275,14 +275,6 @@ int dev_le_access(struct cpu *cpu, struct memory *mem,
 void dev_le_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end,
 	char *irq_path, int len);
-
-/*  dev_m700_fb.c:  */
-#define	DEV_M700_FB_LENGTH		0x10000		/*  TODO?  */
-int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-void dev_m700_fb_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, uint64_t baseaddr2);
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100

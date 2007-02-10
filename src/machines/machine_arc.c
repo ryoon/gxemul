@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.12 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_arc.c,v 1.13 2007-02-10 14:21:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -322,99 +322,6 @@ Not yet.
 		device_add(machine, "wdc addr=0x900001f0, irq=38");
 #endif
 
-		break;
-
-	case MACHINE_ARC_JAZZ_M700:
-		/*
-		 *  "Microsoft-Jazz", "Olivetti M700"
-		 *
-		 *  Different enough from Pica and Magnum to be
-		 *  separate here.
-		 *
-		 *  http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html
-		 */
-
-		strlcat(machine->machine_name, " (Microsoft Jazz, "
-		    "Olivetti M700)", MACHINE_NAME_MAXBUF);
-
-		device_add(machine, "jazz addr=0x80000000");
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-
-//		dev_mc146818_init(machine, mem,
-//		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
-
-		i = 0;		/*  TODO: Yuck!  */
-#if 0
-		i = dev_pckbc_init(machine, mem, 0x80005000ULL,
-		    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11, 0);
-#endif
-
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=16 addr="
-		    "0x80006000 in_use=%i name2=tty0", machine->use_x11? 0 : 1);
-		j = (size_t)device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=17 addr="
-		    "0x80007000 in_use=%i name2=tty1", 0);
-		device_add(machine, tmpstr);
-
-		if (machine->use_x11)
-			machine->main_console_handle = i;
-		else
-			machine->main_console_handle = j;
-
-		dev_m700_fb_init(machine, mem, 0x180080000ULL, 0x100000000ULL);
-
-		break;
-
-	case MACHINE_ARC_DESKTECH_TYNE:
-		/*
-		 *  "Deskstation Tyne" (?)
-		 *
-		 *  TODO
-		 *  http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html
-		 */
-
-		strlcat(machine->machine_name, " (Deskstation Tyne)",
-		    MACHINE_NAME_MAXBUF);
-
-		/*  TODO: IRQs!  */
-		bus_isa_init(machine, machine->path, 0, 0x900000000ULL,
-		    0x100000000ULL);
-#if 0
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
-		    "0x9000003f8 in_use=%i name2=tty0", machine->use_x11? 0:1);
-		i = (size_t)device_add(machine, tmpstr);
-		device_add(machine, "ns16550 irq=0 addr=0x9000002f8 in_use=0"
-		    " name2=tty1");
-#endif
-		device_add(machine, "ns16550 irq=0 addr=0x9000003e8 "
-		    "in_use=0 name2=tty2");
-		device_add(machine, "ns16550 irq=0 addr=0x9000002e8 "
-		    "in_use=0 name2=tty3");
-#if 0
-		dev_mc146818_init(machine, mem,
-		    0x900000070ULL, 2, MC146818_PC_CMOS, 1);
-		/*  TODO: irq, etc  */
-		device_add(machine, "wdc addr=0x9000001f0, irq=0");
-		device_add(machine, "wdc addr=0x900000170, irq=0");
-
-		/*  PC kbd  */
-		j = dev_pckbc_init(machine, mem, 0x900000060ULL,
-		    PCKBC_8042, 0, 0, machine->use_x11, 0);
-
-		if (machine->use_x11)
-			machine->main_console_handle = j;
-		else
-			machine->main_console_handle = i;
-#endif
-
-		if (machine->use_x11) {
-			dev_vga_init(machine, mem, 0x1000a0000ULL,
-			    0x9000003c0ULL, machine->machine_name);
-			arcbios_console_init(machine,
-			    0x1000b8000ULL, 0x9000003c0ULL);
-		}
 		break;
 
 	default:fatal("Unimplemented ARC machine type %i\n",

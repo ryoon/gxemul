@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.29 2007-02-10 14:29:55 debug Exp $
+ *  $Id: machine_test.c,v 1.30 2007-02-10 14:38:39 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -36,7 +36,6 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -245,8 +244,10 @@ MACHINE_SETUP(baremips)
 MACHINE_SETUP(testmips)
 {
 	/*
-	 *  A MIPS test machine (which happens to work with the
-	 *  code in my master's thesis).  :-)
+	 *  A MIPS test machine. Originally, this was created as a way for
+	 *  me to test my master's thesis code; since then it has both
+	 *  evolved to support new things, and suffered bit rot so that it
+	 *  no longer can run my thesis code. Well, well...
 	 *
 	 *  IRQ map:
 	 *      7       CPU counter
@@ -257,7 +258,7 @@ MACHINE_SETUP(testmips)
 	 *      2       serial console
 	 */
 
-	char tmpstr[1000];
+	char tmpstr[300];
 
 	machine->machine_name = "MIPS test machine";
 	machine->stable = 1;

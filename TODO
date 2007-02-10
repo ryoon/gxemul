@@ -1,35 +1,7 @@
-$Id: TODO,v 1.441 2007-02-10 14:29:54 debug Exp $
+$Id: TODO,v 1.442 2007-02-10 14:41:29 debug Exp $
 
-===============================================================================
 
-Current work package:
-
-  x)  Redesign of the interrupt subsystem.
-      ------------------------------------
-
-      This includes many aspects: prepare to get SMP working (again :-),
-      making it easier to reuse PCI/ISA bus code, possibly also some
-      performance improvements? And of course, cleaner code :)
-      Configuration file syntax must be fixed (?), and all machines and
-      devices must be manually checked/fixed as well. All CPUs and
-      interrupt controllers will have to be rewritten.
-
-      Things left to fix before a release can be possible:
-
-		o  Configuration file syntax:
-		    x  Allow config file addition of interrupt controllers.
-		    x  Allow devices to be connected to those controllers.
-		    x  Allow semi-automagic busses (e.g. the ISA bus)
-		       to connect to these interrupts as well?
-		o  All newly introduced C++-style comments, //, which have
-		   to do with the legacy interrupt rewrite, should be
-		   fixed/removed.
-		o  Make sure the code compiles again with Compaq's CC, by
-		   removing code which would result in unreachable code.
-
-===============================================================================
-
-Other possible work packages to concentrate on in the future:
+Possible work packages to concentrate on in the future:
 
   x)  SMP:
 	Get SMP working again. It is pretty much broken since I started
@@ -42,9 +14,6 @@ Other possible work packages to concentrate on in the future:
       to allow the frames to be transmitted other ways as well.
       Also adding support for connecting ttys (either to xterms, or to
       pipes/sockets etc, or even to PPP->NAT or SLIP->NAT :-).
-
-  x)  Add native code generation again.
-	Not really necessary, but could give a speed-boost.
 
   x)  PCI:
 	Pretty much everything related to runtime configuration, device
@@ -443,6 +412,8 @@ Clocks and timers:
 Config file parser:
 	o)  Rewrite it from scratch!
 	o)  Usage of any expression available through the debugger
+	o)  Allow interrupt controllers to be added! and interrupts
+	    to be used in more ways than before
 	o)  Support for running debugger commands (like the -c
 	    command line option)
 

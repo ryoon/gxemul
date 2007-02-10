@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.140 2007-02-10 07:05:16 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.141 2007-02-10 14:04:51 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -265,10 +265,6 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 			    any instruction for any ISA:  */
 			unsigned char instr[1 <<
 			    DYNTRANS_INSTR_ALIGNMENT_SHIFT];
-#ifdef DYNTRANS_X86
-			cpu->cd.x86.cursegment = X86_S_CS;
-			cpu->cd.x86.seg_override = 0;
-#endif
 			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
 				fatal("XXX_run_instr(): could not read "
@@ -493,7 +489,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 	 */
 	for (x=0; x<n_args_to_print; x++) {
 		int64_t d;
-#if defined(DYNTRANS_X86) || defined(DYNTRANS_TRANSPUTER)
+#if defined(DYNTRANS_TRANSPUTER)
 		d = 0;		/*  TODO  */
 #else
 		/*  Args in registers:  */

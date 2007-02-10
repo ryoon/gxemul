@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.73 2006-12-30 13:30:53 debug Exp $
+ *  $Id: useremul.c,v 1.74 2007-02-10 14:04:51 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -254,11 +254,6 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 
 	case ARCH_SH:
 		debug("useremul__netbsd_setup(): SH: TODO\n");
-		break;
-
-	case ARCH_X86:
-		debug("useremul__netbsd_setup(): X86: TODO\n");
-
 		break;
 
 	default:
@@ -1772,9 +1767,6 @@ void useremul_init(void)
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("NetBSD/arm", ARCH_ARM, "SA1110",
-	    useremul__netbsd, useremul__netbsd_setup);
-
-	add_useremul("NetBSD/amd64", ARCH_X86, "AMD64",
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("NetBSD/alpha", ARCH_ALPHA, "Alpha",

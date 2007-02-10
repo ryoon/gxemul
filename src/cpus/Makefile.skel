@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.28 2007-01-30 19:21:54 debug Exp $
+#  $Id: Makefile.skel,v 1.29 2007-02-10 14:04:51 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -254,18 +254,6 @@ tmp_transputer_head.c: generate_head
 
 tmp_transputer_tail.c: generate_tail
 	./generate_tail transputer Transputer > tmp_transputer_tail.c
-
-
-###############################################################################
-
-cpu_x86.o: cpu_x86.c cpu_x86_instr.c cpu_dyntrans.c ../memory_rw.c \
-	memory_x86.c tmp_x86_head.c tmp_x86_tail.c
-
-tmp_x86_head.c: generate_head
-	./generate_head x86 x86 > tmp_x86_head.c
-
-tmp_x86_tail.c: generate_tail
-	./generate_tail x86 x86 > tmp_x86_tail.c
 
 
 ###############################################################################

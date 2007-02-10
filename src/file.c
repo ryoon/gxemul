@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.138 2006-12-30 13:30:52 debug Exp $
+ *  $Id: file.c,v 1.139 2007-02-10 14:04:50 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1411,7 +1411,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			ok = 1;
 		}
 		break;
-	case ARCH_HPPA:
+	/*  case ARCH_HPPA:
 		switch (emachine) {
 		case EM_PARISC:
 			ok = 1;
@@ -1428,7 +1428,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		case EM_IA_64:
 			ok = 1;
 		}
-		break;
+		break;  */
 	case ARCH_M68K:
 		switch (emachine) {
 		case EM_68K:
@@ -1462,7 +1462,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			ok = 1;
 		}
 		break;
-	case ARCH_X86:
+	/*  case ARCH_X86:
 		switch (emachine) {
 		case EM_386:
 		case EM_486:
@@ -1474,7 +1474,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			ok = 1;
 			break;
 		}
-		break;
+		break;  */
 	default:
 		fatal("file.c: INTERNAL ERROR: Unimplemented arch!\n");
 	}

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.153 2007-01-28 14:53:51 debug Exp $
+ *  $Id: machine.h,v 1.154 2007-02-10 14:04:51 debug Exp $
  */
 
 #include <sys/types.h>
@@ -39,7 +39,6 @@
 
 #include "machine_arc.h"
 #include "machine_pmax.h"
-#include "machine_x86.h"
 
 
 #define	MAX_BREAKPOINTS		8
@@ -200,7 +199,6 @@ struct machine {
 	union {
 		struct machine_arcbios	arc;
 		struct machine_pmax	pmax;
-		struct machine_pc	pc;
 		struct of_data		*of_data;
 	} md;
 
@@ -234,17 +232,13 @@ struct machine {
 #define	ARCH_PPC		2
 #define	ARCH_SPARC		3
 #define	ARCH_ALPHA		4
-#define	ARCH_X86		5
-#define	ARCH_ARM		6
-#define	ARCH_IA64		7
-#define	ARCH_M68K		8
-#define	ARCH_SH			9
-#define	ARCH_HPPA		10
-#define	ARCH_I960		11
-#define	ARCH_AVR		12
-#define	ARCH_TRANSPUTER		13
-#define	ARCH_RCA180X		14
-#define	ARCH_AVR32		15
+#define	ARCH_ARM		5
+#define	ARCH_M68K		6
+#define	ARCH_SH			7
+#define	ARCH_AVR		8
+#define	ARCH_TRANSPUTER		9
+#define	ARCH_RCA180X		10
+#define	ARCH_AVR32		11
 
 /*  MIPS:  */
 #define	MACHINE_BAREMIPS	1000
@@ -284,61 +278,45 @@ struct machine {
 #define	MACHINE_TESTALPHA	4001
 #define	MACHINE_ALPHA		4002
 
-/*  X86:  */
-#define	MACHINE_BAREX86		5000
-#define	MACHINE_X86		5001
-
 /*  ARM:  */
-#define	MACHINE_BAREARM		6000
-#define	MACHINE_TESTARM		6001
-#define	MACHINE_CATS		6002
-#define	MACHINE_HPCARM		6003
-#define	MACHINE_ZAURUS		6004
-#define	MACHINE_NETWINDER	6005
-#define	MACHINE_SHARK		6006
-#define	MACHINE_IQ80321		6007
-#define	MACHINE_IYONIX		6008
-#define	MACHINE_TS7200		6009
-#define	MACHINE_QEMU_ARM	6010
-
-/*  IA64:  */
-#define	MACHINE_BAREIA64	7000
-#define	MACHINE_TESTIA64	7001
+#define	MACHINE_BAREARM		5000
+#define	MACHINE_TESTARM		5001
+#define	MACHINE_CATS		5002
+#define	MACHINE_HPCARM		5003
+#define	MACHINE_ZAURUS		5004
+#define	MACHINE_NETWINDER	5005
+#define	MACHINE_SHARK		5006
+#define	MACHINE_IQ80321		5007
+#define	MACHINE_IYONIX		5008
+#define	MACHINE_TS7200		5009
+#define	MACHINE_QEMU_ARM	5010
 
 /*  M68K:  */
-#define	MACHINE_BAREM68K	8000
-#define	MACHINE_TESTM68K	8001
+#define	MACHINE_BAREM68K	6000
+#define	MACHINE_TESTM68K	6001
 
 /*  SH:  */
-#define	MACHINE_BARESH		9000
-#define	MACHINE_TESTSH		9001
-#define	MACHINE_HPCSH		9002
-#define	MACHINE_DREAMCAST	9003
-#define	MACHINE_LANDISK		9004
-
-/*  HPPA:  */
-#define	MACHINE_BAREHPPA	10000
-#define	MACHINE_TESTHPPA	10001
-
-/*  I960:  */
-#define	MACHINE_BAREI960	11000
-#define	MACHINE_TESTI960	11001
+#define	MACHINE_BARESH		7000
+#define	MACHINE_TESTSH		7001
+#define	MACHINE_HPCSH		7002
+#define	MACHINE_DREAMCAST	7003
+#define	MACHINE_LANDISK		7004
 
 /*  AVR:  */
-#define	MACHINE_BAREAVR		12000
-#define	MACHINE_AVR_PAL		12001
-#define	MACHINE_AVR_MAHPONG	12002
+#define	MACHINE_BAREAVR		8000
+#define	MACHINE_AVR_PAL		8001
+#define	MACHINE_AVR_MAHPONG	8002
 
 /*  TRANSPUTER:  */
-#define	MACHINE_BARETRANSPUTER	13000
+#define	MACHINE_BARETRANSPUTER	9000
 
 /*  ARCH_RCA180X:  */
-#define	MACHINE_BARE180X	14000
-#define	MACHINE_CHIP8		14001
+#define	MACHINE_BARE180X	10000
+#define	MACHINE_CHIP8		10001
 
 /*  AVR32:  */
-#define	MACHINE_BAREAVR32	15000
-#define	MACHINE_TESTAVR32	15001
+#define	MACHINE_BAREAVR32	11000
+#define	MACHINE_TESTAVR32	11001
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0
@@ -419,10 +397,6 @@ struct machine {
 #define	MACHINE_MVMEPPC_1600		1
 #define	MACHINE_MVMEPPC_2100		2
 #define	MACHINE_MVMEPPC_5500		3
-
-/*  X86:  */
-#define	MACHINE_X86_GENERIC		1
-#define	MACHINE_X86_XT			2
 
 
 /*  For the automachine system:  */

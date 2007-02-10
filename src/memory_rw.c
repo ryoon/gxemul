@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.100 2007-02-10 08:08:47 debug Exp $
+ *  $Id: memory_rw.c,v 1.101 2007-02-10 14:04:51 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -81,70 +81,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	no_exceptions = misc_flags & NO_EXCEPTIONS;
 	cache = misc_flags & CACHE_FLAGS_MASK;
 
-#ifdef MEM_X86
-	/*  Real-mode wrap-around:  */
-	if (REAL_MODE && !(misc_flags & PHYSICAL)) {
-		if ((vaddr & 0xffff) + len > 0x10000) {
-			/*  Do one byte at a time:  */
-			int res = 0;
-			size_t i;
-			for (i=0; i<len; i++)
-				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
-				    writeflag, misc_flags);
-			return res;
-		}
-	}
-
-	/*  Crossing a page boundary? Then do one byte at a time:  */
-	if ((vaddr & 0xfff) + len > 0x1000 && !(misc_flags & PHYSICAL)
-	    && cpu->cd.x86.cr[0] & X86_CR0_PG) {
-		/*
-		 *  For WRITES: Read ALL BYTES FIRST and write them back!!!
-		 *  Then do a write of all the new bytes. This is to make sure
-		 *  than both pages around the boundary are writable so that
-		 *  there is no "partial write" performed.
-		 */
-		int res = 0;
-		size_t i;
-		if (writeflag == MEM_WRITE) {
-			unsigned char tmp;
-			for (i=0; i<len; i++) {
-				res = MEMORY_RW(cpu, mem, vaddr+i, &tmp, 1,
-				    MEM_READ, misc_flags);
-				if (!res)
-					return 0;
-				res = MEMORY_RW(cpu, mem, vaddr+i, &tmp, 1,
-				    MEM_WRITE, misc_flags);
-				if (!res)
-					return 0;
-			}
-			for (i=0; i<len; i++) {
-				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
-				    MEM_WRITE, misc_flags);
-				if (!res)
-					return 0;
-			}
-		} else {
-			for (i=0; i<len; i++) {
-				/*  Do one byte at a time:  */
-				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
-				    writeflag, misc_flags);
-				if (!res) {
-					if (cache == CACHE_INSTRUCTION) {
-						fatal("FAILED instruction "
-						    "fetch across page boundar"
-						    "y: todo. vaddr=0x%08x\n",
-						    (int)vaddr);
-						cpu->running = 0;
-					}
-					return 0;
-				}
-			}
-		}
-		return res;
-	}
-#endif	/*  X86  */
-
 
 #ifdef MEM_USERLAND
 #ifdef MEM_ALPHA
@@ -159,9 +95,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		ok = cpu->translate_v2p(cpu, vaddr, &paddr,
 		    (writeflag? FLAG_WRITEFLAG : 0) +
 		    (no_exceptions? FLAG_NOEXCEPTIONS : 0)
-#ifdef MEM_X86
-		    + (misc_flags & NO_SEGMENTATION)
-#endif
 #ifdef MEM_ARM
 		    + (misc_flags & MEMORY_USER_ACCESS)
 #endif
@@ -176,22 +109,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 			return MEMORY_ACCESS_FAILED;
 	}
 
-
-#ifdef MEM_X86
-	/*  DOS debugging :-)  */
-	if (!quiet_mode && !(misc_flags & PHYSICAL)) {
-		if (paddr >= 0x400 && paddr <= 0x4ff)
-			debug("{ PC BIOS DATA AREA: %s 0x%x }\n", writeflag ==
-			    MEM_WRITE? "writing to" : "reading from",
-			    (int)paddr);
-#if 0
-		if (paddr >= 0xf0000 && paddr <= 0xfffff)
-			debug("{ BIOS ACCESS: %s 0x%x }\n",
-			    writeflag == MEM_WRITE? "writing to" :
-			    "reading from", (int)paddr);
-#endif
-	}
-#endif
 #endif	/*  !MEM_USERLAND  */
 
 
@@ -311,7 +228,6 @@ not just the device in question.
 				if (res == 0)
 					res = -1;
 
-#ifndef MEM_X86
 				/*
 				 *  If accessing the memory mapped device
 				 *  failed, then return with a DBE exception.
@@ -327,7 +243,6 @@ not just the device in question.
 #endif
 					return MEMORY_ACCESS_FAILED;
 				}
-#endif
 				goto do_return_ok;
 			}
 
@@ -383,13 +298,8 @@ not just the device in question.
 				    (cpu, mem, writeflag, paddr, data, len);
 
 			if (writeflag == MEM_READ) {
-#ifdef MEM_X86
-				/*  Reading non-existant memory on x86:  */
-				memset(data, 0xff, len);
-#else
 				/*  Return all zeroes? (Or 0xff? TODO)  */
 				memset(data, 0, len);
-#endif
 
 #ifdef MEM_MIPS
 				/*

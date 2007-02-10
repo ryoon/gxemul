@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.368 2007-02-02 17:44:03 debug Exp $
+ *  $Id: cpu.c,v 1.369 2007-02-10 14:04:50 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -641,10 +641,6 @@ void cpu_init(void)
 
 #ifdef ENABLE_TRANSPUTER
 	add_cpu_family(transputer_cpu_family_init, ARCH_TRANSPUTER);
-#endif
-
-#ifdef ENABLE_X86
-	add_cpu_family(x86_cpu_family_init, ARCH_X86);
 #endif
 }
 

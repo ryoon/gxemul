@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.241 2007-02-03 10:00:52 debug Exp $
+#  $Id: configure,v 1.242 2007-02-10 14:04:50 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -74,9 +74,6 @@ else
 	ENABLEARM=YES
 	ENABLEAVR=YES
 	ENABLEAVR32=YES
-	ENABLEHPPA=YES
-	ENABLEI960=YES
-	ENABLEIA64=YES
 	ENABLEM68K=YES
 	ENABLEMIPS=YES
 	ENABLEPPC=YES
@@ -84,7 +81,6 @@ else
 	ENABLESH=YES
 	ENABLESPARC=YES
 	ENABLETRANSPUTER=YES
-	ENABLEX86=YES
 fi
 
 if [ z"$UNSTABLE" = zYES ]; then
@@ -176,18 +172,6 @@ if [ z$ENABLEAVR32 = zYES ]; then
 	printf "#define ENABLE_AVR32\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_avr32.o"
 fi
-if [ z$ENABLEHPPA = zYES ]; then
-	printf "#define ENABLE_HPPA\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_hppa.o"
-fi
-if [ z$ENABLEI960 = zYES ]; then
-	printf "#define ENABLE_I960\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_i960.o"
-fi
-if [ z$ENABLEIA64 = zYES ]; then
-	printf "#define ENABLE_IA64\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_ia64.o"
-fi
 if [ z$ENABLEM68K = zYES ]; then
 	printf "#define ENABLE_M68K\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_m68k.o"
@@ -220,10 +204,6 @@ fi
 if [ z$ENABLETRANSPUTER = zYES ]; then
 	printf "#define ENABLE_TRANSPUTER\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_transputer.o"
-fi
-if [ z$ENABLEX86 = zYES ]; then
-	printf "#define ENABLE_X86\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_x86.o"
 fi
 
 

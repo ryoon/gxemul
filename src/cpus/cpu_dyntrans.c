@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.139 2007-02-08 19:35:25 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.140 2007-02-10 07:05:16 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1265,6 +1265,12 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 		physpage_entryp = &(((uint32_t *)cpu->
 		    translation_cache)[table_index]);
 		physpage_ofs = *physpage_entryp;
+
+		/*  Return immediately if there is no code translation
+		    for this page.  */
+		if (physpage_ofs == 0)
+			return;
+
 		prev_ppp = ppp = NULL;
 
 		/*  Traverse the physical page chain:  */
@@ -1284,7 +1290,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 
 		/*  If there is no translation, there is no need to go
 		    on and try to remove it from the vph_tlb_entry array:  */
-		if (physpage_ofs == 0)
+		if (ppp == NULL)
 			return;
 
 #if 0

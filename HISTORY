@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1467 2007-02-08 19:42:01 debug Exp $
+$Id: HISTORY,v 1.1468 2007-02-10 08:08:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3281,3 +3281,5 @@ Changelog for GXemul:
 		cpu_dyntrans.c.
 20070208	Increasing (experimentally) the nr of dyntrans instructions per
 		loop from 60 to 120.
+20070210	Commenting out (experimentally) the dyntrans_device_danger
+		detection in memory_rw.c.

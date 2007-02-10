@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.194 2007-02-08 16:10:08 debug Exp $
+$Id: guestoses.html,v 1.195 2007-02-10 08:08:46 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -2211,39 +2211,6 @@ ramdisk kernel:
 </pre>
 </ol>
 
-<p><i>"QEMU is a FAST! processor emulator"</i> according to <a
-href="http://fabrice.bellard.free.fr/qemu/qemu-doc.html">http://fabrice.bellard.free.fr/qemu/qemu-doc.html</a>.
-The latest version of QEMU (0.9.0 at the time of writing this) is
-faster than GXemul by quite a margin, most likely because QEMU
-translates the emulated machine's instruction set into native
-code on the host.
-
-<p>A quick test on my laptop (1.8 GHz Turion ML32, in AMD64 mode) comparing QEMU 0.8.2 and 0.9.0
-(compiled/installed from FreeBSD ports) with GXemul (compiled with GCC 4.2 and no other options)
-gave the following result:
-
-<p><pre>
-        <b>while true; do ls -l > /dev/null; echo -n .; done</b>
-        (80 x 36 dots)
-        QEMU 0.8.2:         13 min 52 sec
-        QEMU 0.9.0:          3 min 45 sec
-	GXemul 20070207:     4 min 16 sec
-
-	<b>while true; do /usr/bin/md5sum /usr/bin/* > /dev/null; echo -n .; done</b>
-        (80 dots)
-        QEMU 0.8.2:          2 min  8 sec
-        QEMU 0.9.0:          1 min 38 sec
-	GXemul 20070207:     5 min 21 sec
-
-        <b>while true; do grep hej lib/libtextwrap.so.1 > /dev/null; echo -n .; done</b>
-        (80 dots)
-        QEMU 0.8.2:          9 min 57 sec
-        QEMU 0.9.0:                37 sec
-	GXemul 20070207:     1 min 32 sec
-</pre>
-
-<p>The commands were run inside the emulators, using the ramdisk kernel
-mentioned above.
 
 
 

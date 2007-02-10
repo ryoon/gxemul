@@ -1,16 +1,12 @@
-$Id: TODO,v 1.438 2007-02-09 14:07:19 debug Exp $
+$Id: TODO,v 1.439 2007-02-10 08:08:46 debug Exp $
 
 ===============================================================================
-
-Prova att sänka dyntransloopen till 30 (!) instruktioner.
 
 Ta reda på om Jornada 680 (NetBSD/hpcsh) är lätt att få att fungera. NEJ! SH3!
 Men en annan NetBSD/hpcsh-maskin är SH4!
 
 NetBSD/hpcarm. Jornada 720. KEYBOARD!
 LÄGG TILL WARNING för avsaknad av -X.
-
-Kanske städa upp/optimera memory_rw lite?
 
 MIPS32v2 och 64v2:
 	Lägg till CPUer!

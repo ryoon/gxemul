@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.99 2006-12-30 13:30:52 debug Exp $
+ *  $Id: memory_rw.c,v 1.100 2007-02-10 08:08:47 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -206,6 +206,12 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		uint64_t orig_paddr = paddr;
 		int i, start, end, res;
 
+#if 0
+
+TODO: The correct solution for this is to add RAM devices _around_ the
+dangerous device. The solution below incurs a slowdown for _everything_,
+not just the device in question.
+
 		/*
 		 *  Really really slow, but unfortunately necessary. This is
 		 *  to avoid the folowing scenario:
@@ -227,7 +233,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		 *  TODO: Convert this into a quick (multi-level, 64-bit)
 		 *  address space lookup, to find dangerous pages.
 		 */
-#if 1
 		for (i=0; i<mem->n_mmapped_devices; i++)
 			if (paddr >= (mem->devices[i].baseaddr & ~offset_mask)&&
 			    paddr <= ((mem->devices[i].endaddr-1)|offset_mask)){

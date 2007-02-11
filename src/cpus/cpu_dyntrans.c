@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.141 2007-02-10 14:04:51 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.142 2007-02-11 10:47:31 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -504,18 +504,6 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		    /*  TODO: 24,25 = first register, but then
 			they go downwards, ie. 22,23 and so on  */
 		    r[24
-#endif
-#ifdef DYNTRANS_AVR32
-		    r[0		/*  TODO  */
-#endif
-#ifdef DYNTRANS_HPPA
-		    r[0		/*  TODO  */
-#endif
-#ifdef DYNTRANS_I960
-		    r[0		/*  TODO  */
-#endif
-#ifdef DYNTRANS_IA64
-		    r[0		/*  TODO  */
 #endif
 #ifdef DYNTRANS_M68K
 		    d[0		/*  TODO  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1474 2007-02-11 09:19:27 debug Exp $
+$Id: HISTORY,v 1.1475 2007-02-11 10:03:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3290,3 +3290,4 @@ Changelog for GXemul:
 		db64360 emulation modes.
 20070211	Adding an "mp" demo to the demos directory, which tests the
 		SMP functionality of the testmips machine.
+		Fixing PReP interrupts some more. NetBSD/prep now boots again.

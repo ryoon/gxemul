@@ -1,17 +1,8 @@
-$Id: TODO,v 1.443 2007-02-11 09:52:20 debug Exp $
+$Id: TODO,v 1.444 2007-02-11 10:03:55 debug Exp $
 
 ---------------------------------------
 
 The "mp" demo: Start up APs and send something via IPIs!
-
----------------------------------------
-
-Current work package:
-
-  x)  Interrupt system rewrite/redesign:
-
-	This is mostly done, but some machine modes are still broken.
-	(PReP / BEBOX / mvmeppc)
 
 ---------------------------------------
 

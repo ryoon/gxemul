@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.79 2007-02-05 16:49:21 debug Exp $
+ *  $Id: bus_pci.c,v 1.80 2007-02-11 10:03:55 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -1148,7 +1148,8 @@ PCIINIT(symphony_82c105)
 PCIINIT(dec21143)
 {
 	uint64_t port, memaddr;
-	int pci_int_line = 0x101, irq = 0;
+	int pci_int_line = 0x101, irq = 0, isa = 0;
+	char irqstr[200];
 	char tmpstr[200];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
@@ -1173,12 +1174,13 @@ PCIINIT(dec21143)
 		pci_int_line = 0x407;
 		break;
 	case MACHINE_PREP:
-		irq = 32 + 10;
+		irq = 10;
+		isa = 1;
 		pci_int_line = 0x20a;
 		break;
 	case MACHINE_MVMEPPC:
 		/*  TODO  */
-		irq = 32 + 10;
+		irq = 10;
 		pci_int_line = 0x40a;
 		break;
 	case MACHINE_PMPPC:
@@ -1197,9 +1199,16 @@ PCIINIT(dec21143)
 
 	allocate_device_space(pd, 0x100, 0x100, &port, &memaddr);
 
+	if (isa)
+		snprintf(irqstr, sizeof(irqstr), "%s.isa.%i",
+		    pd->pcibus->irq_path_isa, irq);
+	else
+		snprintf(irqstr, sizeof(irqstr), "%s.%i",
+		    pd->pcibus->irq_path_pci, irq);
+
 	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx addr2=0x%llx "
-	    "irq=%s.%i pci_little_endian=1", (long long)port,
-	    (long long)memaddr, pd->pcibus->irq_path_pci, irq);
+	    "irq=%s pci_little_endian=1", (long long)port,
+	    (long long)memaddr, irqstr);
 
 	device_add(machine, tmpstr);
 }

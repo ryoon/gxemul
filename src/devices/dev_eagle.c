@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.16 2007-02-11 09:52:20 debug Exp $
+ *  $Id: dev_eagle.c,v 1.17 2007-02-11 10:03:55 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -89,6 +89,8 @@ DEVINIT(eagle)
 	uint64_t pci_io_offset, pci_mem_offset;
 	uint64_t isa_portbase = 0, isa_membase = 0;
 	uint64_t pci_portbase = 0, pci_membase = 0;
+	char pci_irq_base[300];
+	char isa_irq_base[300];
 
 	d = malloc(sizeof(struct eagle_data));
 	if (d == NULL) {
@@ -128,11 +130,17 @@ DEVINIT(eagle)
 	isa_portbase   = 0x80000000ULL;
 	isa_membase    = 0xc0000000ULL;
 
+	/*  TODO: Fix these... they should be _per machine type_ !  */
+	snprintf(pci_irq_base, sizeof(pci_irq_base), "%s",
+	    devinit->interrupt_path);
+	snprintf(isa_irq_base, sizeof(isa_irq_base), "%s",
+	    devinit->interrupt_path);
+
 	/*  Create a PCI bus:  */
 	d->pci_data = bus_pci_init(devinit->machine, devinit->interrupt_path,
 	    pci_io_offset, pci_mem_offset,
-	    pci_portbase, pci_membase, "TODO: pci_irqbase",
-	    isa_portbase, isa_membase, "TODO: isa_irqbase");
+	    pci_portbase, pci_membase, pci_irq_base,
+	    isa_portbase, isa_membase, isa_irq_base);
 
 	/*  Add the PCI glue for the controller itself:  */
 	bus_pci_add(devinit->machine, d->pci_data,

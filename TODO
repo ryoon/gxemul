@@ -1,8 +1,12 @@
-$Id: TODO,v 1.445 2007-02-11 10:04:29 debug Exp $
+$Id: TODO,v 1.446 2007-02-11 10:16:35 debug Exp $
 
 ---------------------------------------
 
 The "mp" demo: Start up APs and send something via IPIs!
+
+---------------------------------------
+
+Fix the PReP timer speed!
 
 ---------------------------------------
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.15 2007-01-20 13:26:20 debug Exp $
+ *  $Id: dev_eagle.c,v 1.16 2007-02-11 09:52:20 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -151,8 +151,6 @@ DEVINIT(eagle)
 		    devinit->machine->memory, 0, 11, 0, "i82378zb");
 		break;
 	case MACHINE_PREP:
-		bus_isa_init(devinit->machine, devinit->machine->path,
-		    BUS_ISA_IDE0 | BUS_ISA_VGA, isa_portbase, isa_membase);
 		bus_pci_add(devinit->machine, d->pci_data,
 		    devinit->machine->memory, 0, 11, 0, "ibm_isa");
 		break;

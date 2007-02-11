@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.8 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_prep.c,v 1.9 2007-02-11 09:52:20 debug Exp $
  *
  *  PReP mainbus.
  *
@@ -86,8 +86,8 @@ DEVINIT(prep)
 	    0xbffff000, 0x1000, dev_prep_access, d, DM_DEFAULT, NULL);
 
 	/*  This works for at least the IBM 6050:  */
-	bus_isa_init(devinit->machine, devinit->interrupt_path, BUS_ISA_IDE0 |
-	    BUS_ISA_IDE1, 0x80000000, 0xc0000000);
+	bus_isa_init(devinit->machine, devinit->interrupt_path,
+	    BUS_ISA_VGA | BUS_ISA_IDE0 | BUS_ISA_IDE1, 0x80000000, 0xc0000000);
 
 	return 1;
 }

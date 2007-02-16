@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.21 2007-01-28 14:53:51 debug Exp $
+ *  $Id: of.c,v 1.22 2007-02-16 17:17:51 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -902,6 +902,7 @@ void of_emul_init_uninorth(struct machine *machine)
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		char tmpstr[400];
 		of_add_device(ofd, "ata", "/bandit/gc");
 		of_add_prop_str(machine, ofd, "/bandit/gc/ata", "name", "ata");
 		of_add_prop_str(machine, ofd, "/bandit/gc/ata", "compatible",
@@ -924,8 +925,11 @@ void of_emul_init_uninorth(struct machine *machine)
 		of_store_32bit_in_host(ata_reg + 28, 0);
 		of_add_prop(ofd, "/bandit/gc/ata", "reg", ata_reg,
 		    8*sizeof(uint32_t), 0);
-		device_add(machine, "wdc addr=0xf3020000 irq=21 "
-		    "addr_mult=0x10");
+
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0xf3020000 "
+		    "irq=%s.cpu[%i].gc.lo.21 addr_mult=0x10", machine->path,
+		    machine->bootstrap_cpu);
+		device_add(machine, tmpstr);
 	}
 
 	return;

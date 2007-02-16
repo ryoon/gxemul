@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1476 2007-02-16 16:47:59 debug Exp $
+$Id: HISTORY,v 1.1477 2007-02-16 17:17:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3293,3 +3293,5 @@ Changelog for GXemul:
 		Fixing PReP interrupts some more. NetBSD/prep now boots again.
 20070216	Adding a "nop workaround" for booting Mach/PMAX to the
 		documentation; thanks to Artur Bujdoso for the values.
+		Converting more of the MacPPC interrupt stuff to the new
+		system.

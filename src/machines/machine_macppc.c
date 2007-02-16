@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.9 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_macppc.c,v 1.10 2007-02-16 17:17:51 debug Exp $
  *
  *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
  *        systems. They do not model real PowerMacs, but should be enough to
@@ -47,6 +47,7 @@
 
 MACHINE_SETUP(macppc)
 {
+	char tmpstr[300];
 	struct pci_data *pci_data;
 	struct vfb_data *fb;
 	uint64_t b, a;
@@ -65,22 +66,27 @@ MACHINE_SETUP(macppc)
 	pci_data = dev_uninorth_init(machine, machine->memory, 0xe2000000,
 	    64 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
-	bus_pci_add(machine, pci_data, machine->memory, 0, 12, 0, "dec21143");
+	/*  bus_pci_add(
+	    machine, pci_data, machine->memory, 0, 12, 0, "dec21143");  */
 	bus_pci_add(machine, pci_data, machine->memory, 0, 15, 0, "gc_obio");
 
 	if (machine->use_x11)
 		bus_pci_add(machine, pci_data, machine->memory, 0, 16, 0,
 		    "ati_radeon_9200_2");
 
-	machine->main_console_handle = (size_t)device_add(machine,
-	    "z8530 addr=0xf3013000 irq=23 dma_irq=8 addr_mult=0x10");
+	snprintf(tmpstr, sizeof(tmpstr), "z8530 addr=0xf3013000 irq="
+	    "%s.cpu[%i].gc.lo.23 addr_mult=0x10",
+	    machine->path, machine->bootstrap_cpu);
+	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 	fb = dev_fb_init(machine, machine->memory, 0xf1000000,
 	    VFB_GENERIC | VFB_REVERSE_START, 1024,768, 1024,768, 8, "ofb");
 
 	device_add(machine, "hammerhead addr=0xf2800000");
 
-	device_add(machine, "adb addr=0xf3016000 irq=1");
+	snprintf(tmpstr, sizeof(tmpstr), "adb addr=0xf3016000 irq="
+	    "%s.cpu[%i].gc.lo.1", machine->path, machine->bootstrap_cpu);
+	device_add(machine, tmpstr);
 
 	if (!machine->prom_emulation)
 		return;

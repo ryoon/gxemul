@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.11 2007-01-28 14:40:54 debug Exp $
+ *  $Id: dev_gc.c,v 1.12 2007-02-16 17:17:51 debug Exp $
  *  
  *  Grand Central Interrupt controller (used by MacPPC).
  */
@@ -52,31 +52,35 @@ struct gc_data {
 };
 
 
-#if 0
-void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int 
-assrt)
+void gc_hi_interrupt_assert(struct interrupt *interrupt)
 {
-        uint32_t mask = 1 << (irq_nr & 31);
-        if (irq_nr < 32) {
-                if (assrt)
-                        m->md_int.gc_data->status_lo |= mask;
-                else
-                        m->md_int.gc_data->status_lo &= ~mask;
-        }
-        if (irq_nr >= 32 && irq_nr < 64) {
-                if (assrt)
-                        m->md_int.gc_data->status_hi |= mask;
-                else
-                        m->md_int.gc_data->status_hi &= ~mask;
-        }
-                
-        if (m->md_int.gc_data->status_lo & m->md_int.gc_data->enable_lo ||
-            m->md_int.gc_data->status_hi & m->md_int.gc_data->enable_hi)
-                cpu_interrupt(m->cpus[0], 65);
-        else
-                cpu_interrupt_ack(m->cpus[0], 65);
-}               
-#endif
+	struct gc_data *d = interrupt->extra;
+	d->status_hi |= interrupt->line;
+	if (d->status_lo & d->enable_lo || d->status_hi & d->enable_hi)
+		INTERRUPT_ASSERT(d->cpu_irq);
+}
+void gc_hi_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct gc_data *d = interrupt->extra;
+	d->status_hi &= ~interrupt->line;
+	if (!(d->status_lo & d->enable_lo || d->status_hi & d->enable_hi))
+		INTERRUPT_DEASSERT(d->cpu_irq);
+}
+void gc_lo_interrupt_assert(struct interrupt *interrupt)
+{
+	struct gc_data *d = interrupt->extra;
+	d->status_lo |= interrupt->line;
+	if (d->status_lo & d->enable_lo || d->status_hi & d->enable_hi)
+		INTERRUPT_ASSERT(d->cpu_irq);
+}
+void gc_lo_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct gc_data *d = interrupt->extra;
+	d->status_lo &= ~interrupt->line;
+	if (!(d->status_lo & d->enable_lo || d->status_hi & d->enable_hi))
+		INTERRUPT_DEASSERT(d->cpu_irq);
+}
+
 
 DEVICE_ACCESS(gc)
 {
@@ -205,6 +209,7 @@ DEVICE_ACCESS(gc)
 DEVINIT(gc)
 {
 	struct gc_data *d;
+	int i;
 
 	d = malloc(sizeof(struct gc_data));
 	if (d == NULL) {
@@ -215,6 +220,33 @@ DEVINIT(gc)
 
 	/*  Connect to the CPU:  */
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->cpu_irq);
+
+	/*
+	 *  Register the 64 Grand Central interrupts (32 lo, 32 hi):
+	 */
+	for (i=0; i<32; i++) {
+		struct interrupt template;
+		char n[300];
+		snprintf(n, sizeof(n), "%s.gc.lo.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = 1 << i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = gc_lo_interrupt_assert;
+		template.interrupt_deassert = gc_lo_interrupt_deassert;
+		interrupt_handler_register(&template);
+
+		snprintf(n, sizeof(n), "%s.gc.hi.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = 1 << i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = gc_hi_interrupt_assert;
+		template.interrupt_deassert = gc_hi_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
 
 	memory_device_register(devinit->machine->memory, "gc",
 	    devinit->addr, DEV_GC_LENGTH, dev_gc_access, d, DM_DEFAULT, NULL);

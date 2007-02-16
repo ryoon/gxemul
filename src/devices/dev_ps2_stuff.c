@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.30 2007-01-28 00:41:17 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.31 2007-02-16 16:48:07 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -153,7 +153,6 @@ DEVICE_TICK(ps2)
 			if (d->timer_mode[i] & T_MODE_ZRET)
 				d->timer_count[i] = 0;
 
-printf("yo %i %08x %08x\n", i, d->intr, d->imask);
 			INTERRUPT_ASSERT(d->timer_irq[i]);
 
 			/*  timer 1..3 are "single-shot"? TODO  */

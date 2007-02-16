@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.68 2006-12-30 13:31:00 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.69 2007-02-16 19:57:56 debug Exp $
  */
 
 #include "misc.h"
@@ -67,9 +67,6 @@ struct ppc_cpu_type_def {
 
 /*
  *  TODO: Most of these just bogus
- *
- *  NOTE: PPC603e has the PPC_NO_DEC flag because that makes NetBSD/bebox
- *  work :)  but I am not sure that it is correct.
  */
 
 #define PPC_CPU_TYPE_DEFS	{					\
@@ -77,8 +74,7 @@ struct ppc_cpu_type_def {
 					13,5,2, 13,5,2, 0,5,1, 0 },	\
 	{ "PPC601",	0,          32, PPC_601, 14,5,4, 14,5,4, 0,0,0, 0 },\
 	{ "PPC603",	0x00030302, 32, PPC_603, 14,5,4, 14,5,4, 0,0,0, 0 },\
-	{ "PPC603e",	0x00060104, 32, PPC_603|PPC_NO_DEC,		\
-					14,5,4, 14,5,4, 0,0,0, 0 },	\
+	{ "PPC603e",	0x00060104, 32, PPC_603, 14,5,4, 14,5,4, 0,0,0, 0 },\
 	{ "PPC604",	0x00040304, 32, 0, 15,5,4, 15,5,4, 0,0,0, 0 },	\
 	{ "PPC620",	0x00140000, 64, 0, 15,5,4, 15,5,4, 0,0,0, 0 },	\
 	{ "MPC7400",	0x000c0000, 32, 0, 15,5,2, 15,5,2, 19,5,1, 1 },	\

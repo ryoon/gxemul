@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.10 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_bebox.c,v 1.11 2007-02-16 19:57:56 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/Ports/bebox/ for more info.)
@@ -50,12 +50,16 @@ MACHINE_SETUP(bebox)
 	char tmpstr[300];
 
 	machine->machine_name = "BeBox";
+	if (machine->emulated_hz == 0)
+		machine->emulated_hz = 33000000;
+
+	snprintf(tmpstr, sizeof(tmpstr), "bebox irq=%s.cpu[%i]",
+	    machine->path, machine->bootstrap_cpu);
+	device_add(machine, tmpstr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "eagle irq=%s.cpu[%i]",
 	    machine->path, machine->bootstrap_cpu);
 	device_add(machine, tmpstr);
-
-	device_add(machine, "bebox");
 
 	if (!machine->prom_emulation)
 		return;
@@ -94,7 +98,8 @@ MACHINE_SETUP(bebox)
 
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 32, 0);  /*  next  */
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 36, 2);  /*  clock */
-	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 40, 100);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 40,
+	    (machine->emulated_hz / 4));
 }
 
 

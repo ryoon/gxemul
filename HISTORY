@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1477 2007-02-16 17:17:50 debug Exp $
+$Id: HISTORY,v 1.1478 2007-02-16 19:57:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3295,3 +3295,8 @@ Changelog for GXemul:
 		documentation; thanks to Artur Bujdoso for the values.
 		Converting more of the MacPPC interrupt stuff to the new
 		system.
+		Beginning to convert BeBox interrupts to the new system.
+		PPC603e should NOT have the PPC_NO_DEC flag! Removing it.
+		Correcting BeBox clock speed (it was set to 100 in the NetBSD
+		bootinfo block, but should be 33000000/4), allowing NetBSD
+		to start without using the (incorrect) PPC_NO_DEC hack.

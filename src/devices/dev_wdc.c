@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.73 2007-02-08 19:53:00 debug Exp $
+ *  $Id: dev_wdc.c,v 1.74 2007-02-16 19:57:56 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -362,9 +362,6 @@ static int status_byte(struct wdc_data *d, struct cpu *cpu)
 }
 
 
-/*
- *  dev_wdc_altstatus_access():
- */
 DEVICE_ACCESS(wdc_altstatus)
 {
 	struct wdc_data *d = extra;
@@ -540,9 +537,6 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 }
 
 
-/*
- *  dev_wdc_access():
- */
 DEVICE_ACCESS(wdc)
 {
 	struct wdc_data *d = extra;

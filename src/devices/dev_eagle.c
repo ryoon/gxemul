@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.17 2007-02-11 10:03:55 debug Exp $
+ *  $Id: dev_eagle.c,v 1.18 2007-02-16 19:57:56 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -130,11 +130,19 @@ DEVINIT(eagle)
 	isa_portbase   = 0x80000000ULL;
 	isa_membase    = 0xc0000000ULL;
 
-	/*  TODO: Fix these... they should be _per machine type_ !  */
-	snprintf(pci_irq_base, sizeof(pci_irq_base), "%s",
-	    devinit->interrupt_path);
-	snprintf(isa_irq_base, sizeof(isa_irq_base), "%s",
-	    devinit->interrupt_path);
+	switch (devinit->machine->machine_type) {
+	case MACHINE_BEBOX:
+		snprintf(pci_irq_base, sizeof(pci_irq_base), "%s.bebox",
+		    devinit->interrupt_path);
+		snprintf(isa_irq_base, sizeof(isa_irq_base), "%s.bebox.5",
+		    devinit->interrupt_path);
+		break;
+	default:
+		snprintf(pci_irq_base, sizeof(pci_irq_base), "%s",
+		    devinit->interrupt_path);
+		snprintf(isa_irq_base, sizeof(isa_irq_base), "%s",
+		    devinit->interrupt_path);
+	}
 
 	/*  Create a PCI bus:  */
 	d->pci_data = bus_pci_init(devinit->machine, devinit->interrupt_path,
@@ -153,7 +161,7 @@ DEVINIT(eagle)
 
 	switch (devinit->machine->machine_type) {
 	case MACHINE_BEBOX:
-		bus_isa_init(devinit->machine, devinit->machine->path,
+		bus_isa_init(devinit->machine, isa_irq_base,
 		    BUS_ISA_IDE0 | BUS_ISA_VGA, isa_portbase, isa_membase);
 		bus_pci_add(devinit->machine, d->pci_data,
 		    devinit->machine->memory, 0, 11, 0, "i82378zb");
@@ -163,7 +171,7 @@ DEVINIT(eagle)
 		    devinit->machine->memory, 0, 11, 0, "ibm_isa");
 		break;
 	case MACHINE_MVMEPPC:
-		bus_isa_init(devinit->machine, devinit->machine->path,
+		bus_isa_init(devinit->machine, isa_irq_base,
 		    BUS_ISA_LPTBASE_3BC, isa_portbase, isa_membase);
 		switch (devinit->machine->machine_subtype) {
 		case MACHINE_MVMEPPC_1600:

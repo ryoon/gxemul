@@ -25,12 +25,34 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.12 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_bebox.c,v 1.13 2007-02-16 19:57:56 debug Exp $
  *
  *  Emulation of BeBox motherboard registers (and interrupt controller).
  *  See the following URL for more information:
  *
  *	http://www.bebox.nu/history.php?s=history/benews/benews27
+ *
+ *  These interrupt numbers are from NetBSD's bebox/extint.c:
+ *
+ *	serial3			6
+ *	serial4			7
+ *	midi1			8
+ *	midi2			9
+ *	scsi			10
+ *	pci1			11
+ *	pci2			12
+ *	pci3			13
+ *	sound			14
+ *	8259			26
+ *	irda			27
+ *	a2d			28
+ *	geekport		29
+ *
+ *  Note that these are in IBM order, i.e. reversed. So 8259 interrupts
+ *  go to interrupt 31 - 26 = 5, when using normal numbers.
+ *
+ *  Interrupt routing should work to both CPUs, but I've only ever seen the
+ *  first CPU being used by NetBSD/bebox, so the second CPU is untested :-)
  */
 
 #include <stdio.h>
@@ -39,21 +61,48 @@
 
 #include "cpu.h"
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
 struct bebox_data {
+	struct interrupt	cpu_irq[2];
+
 	/*  The 5 motherboard registers:  */
-	uint32_t	cpu0_int_mask;
-	uint32_t	cpu1_int_mask;
-	uint32_t	int_status;
-	uint32_t	xpi;
-	uint32_t	resets;
+	uint32_t		cpu0_int_mask;
+	uint32_t		cpu1_int_mask;
+	uint32_t		int_status;
+	uint32_t		xpi;
+	uint32_t		resets;
 };
 
-// isa uses native ppc irq 5
+
+static void bebox_interrupt_assert(struct interrupt *interrupt)
+{
+	struct bebox_data *d = interrupt->extra;
+	d->int_status |= interrupt->line;
+
+	/*  printf("STATUS %08x  CPU0 %08x  CPU1 %08x\n",
+	    d->int_status, d->cpu0_int_mask, d->cpu1_int_mask);  */
+
+	if (d->int_status & d->cpu0_int_mask)
+		INTERRUPT_ASSERT(d->cpu_irq[0]);
+	if (d->int_status & d->cpu1_int_mask)
+		INTERRUPT_ASSERT(d->cpu_irq[1]);
+}
+static void bebox_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct bebox_data *d = interrupt->extra;
+	d->int_status &= ~interrupt->line;
+
+	if (!(d->int_status & d->cpu0_int_mask))
+		INTERRUPT_DEASSERT(d->cpu_irq[0]);
+	if (!(d->int_status & d->cpu1_int_mask))
+		INTERRUPT_DEASSERT(d->cpu_irq[1]);
+}
+
 
 /*
  *  check_cpu_masks():
@@ -67,8 +116,7 @@ static void check_cpu_masks(struct cpu *cpu, struct bebox_data *d)
 	d->cpu1_int_mask &= 0x7fffffff;
 	if ((d->cpu0_int_mask | d->cpu1_int_mask) !=
 	    (d->cpu0_int_mask ^ d->cpu1_int_mask))
-		fatal("check_cpu_masks(): BeBox cpu int masks"
-		    " collide!\n");
+		fatal("check_cpu_masks(): BeBox cpu int masks collide!\n");
 }
 
 
@@ -151,6 +199,9 @@ DEVICE_ACCESS(bebox)
 DEVINIT(bebox)
 {
 	struct bebox_data *d;
+	int i;
+	char n[300];
+	struct machine *machine = devinit->machine;
 
 	d = malloc(sizeof(struct bebox_data));
 	if (d == NULL) {
@@ -159,7 +210,39 @@ DEVINIT(bebox)
 	}
 	memset(d, 0, sizeof(struct bebox_data));
 
-	memory_device_register(devinit->machine->memory, devinit->name,
+	/*  Connect to the two BeBox CPUs:  */
+	for (i=0; i<2; i++) {
+		if (i >= machine->ncpus) {
+			fatal("FATAL ERROR: The machine seem to be "
+			    "lacking cpu nr %i (0-based)\n", i);
+			exit(1);
+		}
+
+		snprintf(n, sizeof(n), "%s.cpu[%i]", machine->path, i);
+		INTERRUPT_CONNECT(n, d->cpu_irq[i]);
+	}
+
+	/*
+	 *  Register the 32 BeBox interrupts:
+	 *
+ 	 *  NOTE: They are registered on cpu[0], but the interrupt assert/
+	 *  deassert routines in this file make sure that the interrupts
+	 *  are routed to the correct cpu!
+	 */
+	for (i=0; i<32; i++) {
+		struct interrupt template;
+		snprintf(n, sizeof(n), "%s.bebox.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = 1 << i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = bebox_interrupt_assert;
+		template.interrupt_deassert = bebox_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
+	memory_device_register(machine->memory, devinit->name,
 	    0x7ffff000, 0x500, dev_bebox_access, d, DM_DEFAULT, NULL);
 
 	devinit->return_ptr = d;

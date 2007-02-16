@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1475 2007-02-11 10:03:55 debug Exp $
+$Id: HISTORY,v 1.1476 2007-02-16 16:47:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3291,3 +3291,5 @@ Changelog for GXemul:
 20070211	Adding an "mp" demo to the demos directory, which tests the
 		SMP functionality of the testmips machine.
 		Fixing PReP interrupts some more. NetBSD/prep now boots again.
+20070216	Adding a "nop workaround" for booting Mach/PMAX to the
+		documentation; thanks to Artur Bujdoso for the values.

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.198 2007-02-11 10:52:03 debug Exp $
+$Id: guestoses.html,v 1.199 2007-02-16 16:48:00 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -107,8 +107,11 @@ you might find the following information interesting:
   <li><a href="#netbsdbeboxinstall">NetBSD/bebox 19981119</a>
 </ul>
 
-<p><b>NOTE:</b> Some of these sections may not be relevant to this
-specific release of GXemul.
+<p><b><font color="#ff0000">NOTE:</b>
+Some of these sections may not be relevant to this
+specific release of GXemul,</font> for example some of these
+modes may be legacy modes that worked before but not any longer,
+or are not yet working but could be in the future.
 
 <p>Some operating systems are listed with a version number <i>less</i> 
 than what was available at the time of this GXemul release (e.g. 
@@ -1763,10 +1766,6 @@ for DECstation in the emulator:
 
 <p>
 <ol>
-  <li>Compile gxemul with cache emulation: (<b>NOTE: --enable-caches</b>)<pre>
-	<b>./configure --enable-caches; make</b>
-
-</pre>
   <li>Download the pmax binary distribution for Mach 3.0:<pre>
 	<a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/</a>
 	    <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
@@ -1795,13 +1794,24 @@ for DECstation in the emulator:
 	cd /; sync; umount /mnt</i>)
 	<p>
   <li>Start the emulator with the following command:<pre>
-	<b>gxemul -e 3max -X -d disk.img \
+	<b>gxemul -c 'put w 0x800990e0, 0' -c 'put w 0x80099144, 0' \
+	    -c 'put w 0x8004aae8, 0' -e 3max -X -d disk.img \
 	    pmax_mach/special/mach.boot.MK83.STD+ANY</b>
 
 </pre>
 </ol>
 
+<p>Earlier versions of GXemul had a configure option to enable better 
+R3000 cache emulation, but since Mach was more or less the only thing that 
+used it, I removed it. Today's version of GXemul can thus not boot 
+mach.boot.MK83.STD+ANY straight off, it has to be patched to skip the 
+cache detection.
 
+<p>The -c commands above patch the kernel to get past the cache detection.
+Thanks to Artur Bujdoso for these values.
+
+<p>TODO: Better instructions on how to create the old-style UFS disk 
+image.
 
 
 
@@ -2207,6 +2217,8 @@ and extract its contents (<tt>tar zxvf mips-test-0.1.tar.gz</tt>).
 </pre>
 </ol>
 
+<p>Speedwise, QEMU 0.8.2 was usually slower than GXemul. QEMU 0.9.0, 
+however, is faster.
 
 
 

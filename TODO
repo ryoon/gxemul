@@ -1,4 +1,4 @@
-$Id: TODO,v 1.450 2007-02-17 06:47:28 debug Exp $
+$Id: TODO,v 1.451 2007-02-17 10:06:18 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -244,8 +244,6 @@ Debugger:
 	o)  see src/debugger.c for more
 
 POWER/PowerPC:
-	x)  find and fix the bug which causes NetBSD/macppc to fail after
-	    an install!
 	x)  Fix DECR timer speed, so it matches the host.
 	x)  NetBSD/prep 3.x triggers a possible bug in the emulator:
 	    <wdc_exec_command(0xd005e514,0xd60cdd30,0,8,..)>

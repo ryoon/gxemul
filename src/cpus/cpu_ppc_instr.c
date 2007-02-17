@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.72 2006-12-30 13:30:54 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.73 2007-02-17 10:06:19 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2473,6 +2473,90 @@ X(stfdx)
 
 
 /*
+ *  lvx, stvx:  Vector (16-byte) load/store  (slow implementation)
+ *
+ *  arg[0] = v-register nr of rs
+ *  arg[1] = pointer to ra
+ *  arg[2] = pointer to rb
+ */
+X(lvx)
+{
+	MODE_uint_t addr = reg(ic->arg[1]) + reg(ic->arg[2]);
+	uint8_t data[16];
+	uint64_t hi, lo;
+	int rs = ic->arg[0];
+
+	if (cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA) != MEMORY_ACCESS_OK) {
+		/*  exception  */
+		return;
+	}
+
+	hi = ((uint64_t)data[0] << 56) +
+	     ((uint64_t)data[1] << 48) +
+	     ((uint64_t)data[2] << 40) +
+	     ((uint64_t)data[3] << 32) +
+	     ((uint64_t)data[4] << 24) +
+	     ((uint64_t)data[5] << 16) +
+	     ((uint64_t)data[6] << 8) +
+	     ((uint64_t)data[7]);
+	lo = ((uint64_t)data[8] << 56) +
+	     ((uint64_t)data[9] << 48) +
+	     ((uint64_t)data[10] << 40) +
+	     ((uint64_t)data[11] << 32) +
+	     ((uint64_t)data[12] << 24) +
+	     ((uint64_t)data[13] << 16) +
+	     ((uint64_t)data[14] << 8) +
+	     ((uint64_t)data[15]);
+
+	cpu->cd.ppc.vr_hi[rs] = hi; cpu->cd.ppc.vr_lo[rs] = lo;
+}
+X(stvx)
+{
+	uint8_t data[16];
+	MODE_uint_t addr = reg(ic->arg[1]) + reg(ic->arg[2]);
+	int rs = ic->arg[0];
+	uint64_t hi = cpu->cd.ppc.vr_hi[rs], lo = cpu->cd.ppc.vr_lo[rs];
+
+	data[0] = hi >> 56;
+	data[1] = hi >> 48;
+	data[2] = hi >> 40;
+	data[3] = hi >> 32;
+	data[4] = hi >> 24;
+	data[5] = hi >> 16;
+	data[6] = hi >> 8;
+	data[7] = hi;
+	data[8] = lo >> 56;
+	data[9] = lo >> 48;
+	data[10] = lo >> 40;
+	data[11] = lo >> 32;
+	data[12] = lo >> 24;
+	data[13] = lo >> 16;
+	data[14] = lo >> 8;
+	data[15] = lo;
+
+	cpu->memory_rw(cpu, cpu->mem, addr, data,
+	    sizeof(data), MEM_WRITE, CACHE_DATA);
+}
+
+
+/*
+ *  vxor:  Vector (16-byte) XOR
+ *
+ *  arg[0] = v-register nr of source 1
+ *  arg[1] = v-register nr of source 2
+ *  arg[2] = v-register nr of destination
+ */
+X(vxor)
+{
+	cpu->cd.ppc.vr_hi[ic->arg[2]] =
+	    cpu->cd.ppc.vr_hi[ic->arg[0]] ^ cpu->cd.ppc.vr_hi[ic->arg[1]];
+	cpu->cd.ppc.vr_lo[ic->arg[2]] =
+	    cpu->cd.ppc.vr_lo[ic->arg[0]] ^ cpu->cd.ppc.vr_lo[ic->arg[1]];
+}
+
+
+/*
  *  tlbia:  TLB invalidate all
  */
 X(tlbia)
@@ -2675,8 +2759,17 @@ X(to_be_translated)
 	switch (main_opcode) {
 
 	case 0x04:
-		fatal("[ TODO: ALTIVEC ]\n");
-		ic->f = instr(nop);
+		if (iword == 0x12739cc4) {
+			/*  vxor v19,v19,v19  */
+			ic->f = instr(vxor);
+			ic->arg[0] = 19;
+			ic->arg[1] = 19;
+			ic->arg[2] = 19;
+		} else {
+			fatal("[ TODO: Unimplemented ALTIVEC, iword"
+			    " = 0x%08"PRIx32"x ]\n", iword);
+			goto bad;
+		}
 		break;
 
 	case PPC_HI6_MULLI:
@@ -3627,7 +3720,6 @@ X(to_be_translated)
 		case PPC_31_LVXL:
 		case PPC_31_STVX:
 		case PPC_31_STVXL:
-			fatal("[ TODO: altivec load/store ]\n");
 			load = 0;
 			switch (xo) {
 			case PPC_31_LVX:
@@ -3637,19 +3729,13 @@ X(to_be_translated)
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
-			ic->arg[0] = (size_t)(&cpu->cd.ppc.vr_hi[rs]);
+			ic->arg[0] = rs;
 			if (ra == 0)
 				ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
 			else
 				ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rb]);
-			ic->f =
-#ifdef MODE32
-				    ppc32_loadstore_indexed
-#else
-				    ppc_loadstore_indexed
-#endif
-				    [3 + 4 * load];
+			ic->f = load? instr(lvx) : instr(stvx);
 			break;
 
 		default:goto bad;

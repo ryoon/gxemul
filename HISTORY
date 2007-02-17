@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1478 2007-02-16 19:57:56 debug Exp $
+$Id: HISTORY,v 1.1479 2007-02-17 10:06:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3300,3 +3300,7 @@ Changelog for GXemul:
 		Correcting BeBox clock speed (it was set to 100 in the NetBSD
 		bootinfo block, but should be 33000000/4), allowing NetBSD
 		to start without using the (incorrect) PPC_NO_DEC hack.
+20070217	Implementing (slow) AltiVec vector loads and stores, allowing
+		NetBSD/macppc to finally boot using the GENERIC kernel :-)
+		Updating the documentation with install instructions for
+		NetBSD/macppc.

@@ -1,32 +1,6 @@
-$Id: TODO,v 1.449 2007-02-17 06:32:05 debug Exp $
+$Id: TODO,v 1.450 2007-02-17 06:47:28 debug Exp $
 
----------------------------------------
-
-SMP:
-	The "mp" demo: Start up APs and send something via IPIs!
-	Identify what is causing the current SMP problems! (Perhaps
-	something is per machine, when it should be per cpu, or
-	perhaps the bootstrap CPU is used when another CPU should
-	be used?)
-
-	Send messages between all CPUs. e.g. " [%i,%i]" meaning (to, from).
-	That would result in (n-1)^2 messages, if the CPU does not send
-	to itself. n=8 => 7*7 = 49 messages.
-
-	Try macppc with -n2 as well!
-
-PReP:
-	Clock time! ("Bad battery blah blah")
-	Fix the PReP timer speed!
-
-MacPPC:
-	Interrupts! Make them work again.
-	OpenBSD/macppc?
-	NetBSD/macppc generic kernel boot... investigate.
-
-NetBSD/hpcarm Jornada 720 keyboard... investigate
-
----------------------------------------
+-------------------------------------------------------------------------------
 
 Possible work packages to concentrate on in the future:
 
@@ -57,7 +31,7 @@ Possible work packages to concentrate on in the future:
 And of course, there are _LOTS_ of minor TODOs spread out throughout
 the source code, which must be fixed sooner or later.
 
-===============================================================================
+-------------------------------------------------------------------------------
 
 Some other things, in random order, that I'd like to fix: (Some items in 
 this list are probably out-to-date by now.)
@@ -272,6 +246,7 @@ Debugger:
 POWER/PowerPC:
 	x)  find and fix the bug which causes NetBSD/macppc to fail after
 	    an install!
+	x)  Fix DECR timer speed, so it matches the host.
 	x)  NetBSD/prep 3.x triggers a possible bug in the emulator:
 	    <wdc_exec_command(0xd005e514,0xd60cdd30,0,8,..)>
 	      <ata_get_xfer(0,0xd60cdd30,0,8,..)>
@@ -294,6 +269,9 @@ POWER/PowerPC:
 	x)  make OpenBSD/macppc work (PCI controller stuff)
 	x)  Floating point exception correctness.
 	x)  Alignment exceptions.
+
+PReP:
+	Clock time! ("Bad battery blah blah")
 
 Algor:
 	o)  Other models than the P5064?

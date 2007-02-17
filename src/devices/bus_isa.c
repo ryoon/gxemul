@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.15 2007-01-17 20:11:28 debug Exp $
+ *  $Id: bus_isa.c,v 1.16 2007-02-17 06:32:06 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -59,6 +59,9 @@ void isa_interrupt_common(struct bus_isa_data *d, int old_isa_assert)
 		d->pic1->irr |= 0x04;
 	else
 		d->pic1->irr &= ~0x04;
+
+	/*  printf("ISA: irr=%02x%02x ier=%02x%02x\n",
+	    d->pic2->irr, d->pic1->irr, d->pic2->ier, d->pic1->ier);  */
 
 	new_isa_assert = d->pic1->irr & ~d->pic1->ier;
 

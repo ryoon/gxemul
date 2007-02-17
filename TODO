@@ -1,4 +1,4 @@
-$Id: TODO,v 1.448 2007-02-16 16:48:07 debug Exp $
+$Id: TODO,v 1.449 2007-02-17 06:32:05 debug Exp $
 
 ---------------------------------------
 
@@ -14,9 +14,6 @@ SMP:
 	to itself. n=8 => 7*7 = 49 messages.
 
 	Try macppc with -n2 as well!
-
-BeBox:
-	Interrupts.
 
 PReP:
 	Clock time! ("Bad battery blah blah")
@@ -301,6 +298,11 @@ POWER/PowerPC:
 Algor:
 	o)  Other models than the P5064?
 	o)  PCI interrupts... needed for stuff like the tlp NIC?
+
+BeBox:
+	o)  Interrupts. There seems to be a problem with WDC interrupts
+	    "after a short while", although a few interrupts get through?
+	o)  Perhaps find a copy of BeOS and try it?
 
 HPCmips:
 	x)  Mouse/pad support! :)

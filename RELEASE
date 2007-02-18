@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.245 2007-02-17 10:06:18 debug Exp $
+$Id: RELEASE,v 1.246 2007-02-18 09:19:47 debug Exp $
 
 Working on what will become 0.4.4.
 
@@ -47,7 +47,7 @@ Changes between release 0.4.3 and 0.4.4 include, among other things:
     o)	PowerPC "G4" emulation is now stable enough to let NetBSD/macppc
 	run from a disk image. (Installing actually worked before, but the
 	NetBSD/macppc GENERIC kernel uses AltiVec instructions which were
-	not implemented before.)
+	not implemented correctly.)
 
     o)	The PICA-61 (arc) and i80321 (evbarm) emulation modes now have their
 	timers fixed at 100 Hz. A hardcoded speed like this is very ugly, but

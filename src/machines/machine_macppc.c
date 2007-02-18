@@ -25,11 +25,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.10 2007-02-16 17:17:51 debug Exp $
+ *  $Id: machine_macppc.c,v 1.11 2007-02-18 09:19:47 debug Exp $
  *
- *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
- *        systems. They do not model real PowerMacs, but should be enough to
- *        begin experimenting with NetBSD/macppc and OpenBSD/macppc.
+ *  See also:
+ *
+ *	NetBSD/macppc (http://www.netbsd.org/Ports/macppc/)
+ *	OpenBSD/macppc (http://www.openbsd.org/macppc.html)
+ *
+ *  Currently, these are skeletons for generic PowerMac G3, G4, and G5 systems.
+ *  They do not model real PowerMacs, but should be enough to begin
+ *  experimenting with running NetBSD/macppc and OpenBSD/macppc.
  */
 
 #include <stdio.h>
@@ -53,13 +58,15 @@ MACHINE_SETUP(macppc)
 	uint64_t b, a;
 	int i;
 
-	/*
-	 *  NetBSD/macppc (http://www.netbsd.org/Ports/macppc/)
-	 *  OpenBSD/macppc (http://www.openbsd.org/macppc.html)
-	 */
 	machine->machine_name = "Macintosh (PPC)";
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 40000000;
+
+	/*  NetBSD/macppc works on the "G4" machine type:  */
+	switch (machine->machine_subtype) {
+	case MACHINE_MACPPC_G4:
+		machine->stable = 1;
+	}
 
 	device_add(machine, "gc addr=0xf3000000");
 

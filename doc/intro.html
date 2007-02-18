@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.105 2007-02-17 10:06:19 debug Exp $
+$Id: intro.html,v 1.106 2007-02-18 09:19:47 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -505,9 +505,9 @@ are emulated well enough to run at least one "guest OS":
     <li><b>Acer Pica-61</b> (<a href="guestoses.html#netbsdarcinstall">NetBSD/arc</a>)
     <li><b>NEC MobilePro 770, 780, 800, 880</b> (<a href="guestoses.html#netbsdhpcmipsinstall">NetBSD/hpcmips</a>)
     <li><b>Cobalt</b> (<a href="guestoses.html#netbsdcobaltinstall">NetBSD/cobalt</a>)
-    <li><b>Malta</b> (<a href="guestoses.html#netbsdevbmipsinstall">NetBSD/evbmips</a>)
+    <li><b>Malta</b> (<a href="guestoses.html#netbsdevbmipsinstall">NetBSD/evbmips</a>, Linux/Malta <font color="#0000e0">(<super>*1</super>)</font>)
     <li><b>Algorithmics P5064</b> (<a href="guestoses.html#netbsdalgorinstall">NetBSD/algor</a>)
-    <li><b>SGI O2 (aka IP32)</b> <font color="#0000e0">(<super>*1</super>)</font>
+    <li><b>SGI O2 (aka IP32)</b> <font color="#0000e0">(<super>*2</super>)</font>
 	(<a href="guestoses.html#netbsdsgimips">NetBSD/sgi</a>)
   </ul>
   <p>
@@ -519,17 +519,20 @@ are emulated well enough to run at least one "guest OS":
   <p>
   <li><b><u>SuperH</u></b>
   <ul>
-    <li><b>Sega Dreamcast</b>
-	<font color="#0000e0">(<super>*2</super>)</font>
-	(<a href="dreamcast.html#netbsd_generic_md">NetBSD/dreamcast</a>)
+    <li><b>Sega Dreamcast</b> (<a href="dreamcast.html#netbsd_generic_md">NetBSD/dreamcast</a>)
   </ul>
 </ul>
 
 <p>
 <small><font color="#0000e0">(<super>*1</super>)</font> =
-Enough for root-on-nfs, but not for disk boot.</small>
+Linux/Malta may be run as a guest OS, however I have not yet found any stable
+URL to pre-compiled Linux/Malta kernels. Thus, Linux/Malta emulation is not
+tested for every release of the emulator; sometimes it works, sometimes
+it doesn't.</small>
+
 <br><small><font color="#0000e0">(<super>*2</super>)</font> =
-Only enough to reach ramdisk userland; no root-on-nfs yet.</small>
+SGI O2 emulation is enough for root-on-nfs, but not for disk boot.</small>
+
 
 <p>There is code in GXemul for emulation of many other machine types; the
 degree to which these work range from almost being able to run a complete

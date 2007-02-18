@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.22 2007-01-28 14:40:54 debug Exp $
+ *  $Id: machine_pmax.c,v 1.23 2007-02-18 09:19:48 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -687,7 +687,8 @@ abort();
 		    KN230_CSR_INTR_OPT1, machine->use_x11);  */
 
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].kn230.0x%x",
-		    machine->path, machine->bootstrap_cpu, KN230_CSR_INTR_LANCE);
+		    machine->path, machine->bootstrap_cpu,
+		    KN230_CSR_INTR_LANCE);
 		dev_le_init(machine, mem, KN230_SYS_LANCE,
 		    KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END,
 		    tmpstr, 4*1048576);

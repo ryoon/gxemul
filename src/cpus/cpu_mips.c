@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.74 2007-02-03 16:18:56 debug Exp $
+ *  $Id: cpu_mips.c,v 1.75 2007-02-18 09:19:47 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -88,7 +88,7 @@ void mips32_pc_to_pointers(struct cpu *);
  *  Convert a register number into either 'r0', 'r31' etc, or a symbolic
  *  name, depending on machine->show_symbolic_register_names.
  *
- *  NOTE: _NOT_ reentrant.
+ *  NOTE: This helper function is _NOT_ reentrant.
  */
 static char *regname(struct machine *machine, int r)
 {

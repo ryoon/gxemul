@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.16 2007-01-28 14:40:54 debug Exp $
+ *  $Id: machine_sgi.c,v 1.17 2007-02-18 09:19:48 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -493,12 +493,14 @@ abort();
 
 		dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
 		    "0x1f390000 addr_mult=0x100 in_use=%i name2=tty0",
 		    machine->path, machine->bootstrap_cpu,
 		    MACE_PERIPH_SERIAL, 20, machine->use_x11? 0 : 1);
 		j = (size_t)device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
 		    "0x1f398000 addr_mult=0x100 in_use=%i name2=tty1",
 		    machine->path, machine->bootstrap_cpu,
 		    MACE_PERIPH_SERIAL, 26, 0);

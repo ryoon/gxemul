@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: dreamcast.html,v 1.7 2007-01-28 17:15:47 debug Exp $
+$Id: dreamcast.html,v 1.8 2007-02-18 09:58:43 debug Exp $
 
 Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
 
@@ -95,13 +95,12 @@ interface is emulated yet, so root-on-nfs is not possible.
 <p>(The photo on the right shows NetBSD/dreamcast running both on a real 
 Dreamcast, and in the emulator.)
 
-<p>Download the 3.1 kernel and symbols here:<pre>
+<p>Download the 3.1 kernel here:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz</a>
 </pre>
 
 <p>Start NetBSD/dreamcast using the following command line:<pre>
-	<b>gxemul -XEdreamcast netbsd-GENERIC_MD.*</b>
+	<b>gxemul -XEdreamcast netbsd-GENERIC_MD.gz</b>
 
 </pre>
 
@@ -145,9 +144,12 @@ the ISO9660 filesystem in the image is offset by 11702 sectors, i.e. 2048
 bytes each.)
 
 <p>At the <b><tt>root device:</tt></b> prompt, type 
-<b><tt>gdrom0</tt></b>. For <b><tt>dump device</tt></b> and
-<b><tt>file system</tt></b>, just press Enter.
+<b><tt>gdrom0</tt></b>. For <b><tt>dump device</tt></b>,
+<b><tt>file system</tt></b>, and <b><tt>init path</tt></b>, just press 
+Enter.
 
+<p><font color="#ff0000">NOTE:</font> This is not 100% stable yet;
+sometimes things bug out.
 
 
 

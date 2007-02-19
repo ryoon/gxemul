@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1480 2007-02-19 01:34:42 debug Exp $
+$Id: HISTORY,v 1.1481 2007-02-19 01:39:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3305,3 +3305,6 @@ Changelog for GXemul:
 		Updating the documentation with install instructions for
 		NetBSD/macppc.
 20070218-19	Regression testing for the release.
+
+==============  RELEASE 0.4.4  ==============
+

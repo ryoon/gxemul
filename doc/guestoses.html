@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.201 2007-02-18 09:19:47 debug Exp $
+$Id: guestoses.html,v 1.202 2007-02-19 01:34:42 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -1281,6 +1281,8 @@ chmod +w simpleroot28.fs</b>		&lt;--- make sure
 	  <li>At the # prompt, do the following:<pre>
 	<b>fsck /dev/rz1a</b>        (and mark the filesystem as clean)
 	<b>mount /dev/rz1a /</b>
+	<b>mkdir /kern</b>
+	<b>mkdir /mnt2</b>
 	<b>mount -t kernfs kern kern</b>
 	<b>./install</b>
 

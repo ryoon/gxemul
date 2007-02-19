@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1479 2007-02-17 10:06:18 debug Exp $
+$Id: HISTORY,v 1.1480 2007-02-19 01:34:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3304,3 +3304,4 @@ Changelog for GXemul:
 		NetBSD/macppc to finally boot using the GENERIC kernel :-)
 		Updating the documentation with install instructions for
 		NetBSD/macppc.
+20070218-19	Regression testing for the release.

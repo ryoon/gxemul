@@ -1,9 +1,12 @@
-$Id: TODO,v 1.453 2007-02-19 01:34:42 debug Exp $
+$Id: TODO,v 1.454 2007-02-21 17:05:05 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Fix after the 0.4.4 release:
-	Fix the PowerPC DECR interrupt speed!
+Fix the PowerPC DECR interrupt speed!
+
+Prova att installera GNU Linux/DECstation _UTAN_
+slow_serial_interrupts_hack_for_linux! Det kanske funkar med
+nya interruptsystemet?
 
 -------------------------------------------------------------------------------
 

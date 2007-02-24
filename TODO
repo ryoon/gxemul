@@ -1,8 +1,16 @@
-$Id: TODO,v 1.454 2007-02-21 17:05:05 debug Exp $
+$Id: TODO,v 1.455 2007-02-24 04:38:18 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Fix the PowerPC DECR interrupt speed!
+Add a special function to the testmachine devices, console perhaps?
+which prints a zero-terminated string like "[[ %s ]]\n" when given
+a virtual memory address (or a physical? or perhaps both should be possible).
+	o) NOT to the console, but to the emulator's controlling terminal.
+	   DEBUG output, not console output!
+	o) Very useful for debugging. DOCUMENT it!
+
+
+Fix the PowerPC DECR interrupt speed! (MacPPC and PReP speed, etc.)
 
 Prova att installera GNU Linux/DECstation _UTAN_
 slow_serial_interrupts_hack_for_linux! Det kanske funkar med
@@ -17,6 +25,9 @@ Possible (relatively large) work packages to concentrate on in the future:
 	the conversion from the old bintrans system to the new dyntrans system.
 	Add better Test machine demos for SMP in the demos directory.
 
+  x)  Alpha and SPARC emulation:
+	These are the next two CPU/machine families that I want to emulate.
+
   x)  Network:
 	Redesign of the networking subsystem, at least the NAT translation
 	part. The current way of allowing raw ethernet frames to be
@@ -24,11 +35,20 @@ Possible (relatively large) work packages to concentrate on in the future:
 	to allow the frames to be transmitted other ways as well.
 	Also adding support for connecting ttys (either to xterms, or to
 	pipes/sockets etc, or even to PPP->NAT or SLIP->NAT :-).
+	Documentation updates (!) are very important, making it easier to
+	use the (already existing) network emulation features.
 
   x)  PCI:
 	Pretty much everything related to runtime configuration, device
 	slots, interrupts, whatever. The current code is very hardcoded
 	and ugly.
+	o) Allow cards to be added/removed during runtime more easily.
+	o) Allow cards to be enabled/disabled (i/o ports, etc, like
+	   NetBSD needs for disk controller detection).
+	o) Allow devices to be moved in memory during runtime.
+	o) Interrupts per PCI slot, etc. (A-D).
+	o) PCI interrupt controller logic... very hard to get right,
+	   because these differ a lot from one machine to the next.
 
   x)  Debugging:
 	Think more about SMP debugging, etc. Right now, the

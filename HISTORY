@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1481 2007-02-19 01:39:47 debug Exp $
+$Id: HISTORY,v 1.1482 2007-02-24 04:38:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3308,3 +3308,6 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.4  ==============
 
+20070224	Minor update to the initialization of the ns16550 in
+		machine_walnut.c, to allow that machine type to boot with the
+		new interrupt system (although it is still a dummy machine).

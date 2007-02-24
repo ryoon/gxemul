@@ -25,9 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_walnut.c,v 1.4 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_walnut.c,v 1.5 2007-02-24 04:38:18 debug Exp $
  *
- *  TODO: Other evbppc machines?
+ *  Emulation of a Walnut evaluation board, for experimenting with
+ *  NetBSD/evbppc (http://www.netbsd.org/Ports/evbppc/).
+ *
+ *  NOTE/TODO: This is just a dummy skeleton, it doesn't emulate anything yet.
+ *
+ *  TODO: How about other evbppc machines?
  */
 
 #include <stdio.h>
@@ -45,13 +50,11 @@
 
 MACHINE_SETUP(walnut)
 {
-	/*
-	 *  NetBSD/evbppc (http://www.netbsd.org/Ports/evbppc/)
-	 */
 	machine->machine_name = "Walnut evaluation board";
 
+	/*  TODO: ns16550 irq  */
 	machine->main_console_handle = (size_t)device_add(machine,
-	    "ns16550 irq=0 addr=0xef600300");
+	    "ns16550 addr=0xef600300");
 
 	/*  OpenBIOS board config data:  */
 	dev_ram_init(machine, 0xfffe0b50, 64, DEV_RAM_RAM, 0);

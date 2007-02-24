@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.203 2007-02-21 17:05:05 debug Exp $
+$Id: guestoses.html,v 1.204 2007-02-24 19:13:38 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -105,6 +105,7 @@ you might find the following information interesting:
   <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="#netbsdbeboxinstall">NetBSD/bebox 19981119</a>
+  <li><a href="#netbsdlandiskinstall">NetBSD/landisk</a>
 </ul>
 
 <p><b><font color="#ff0000">NOTE:</b>
@@ -2413,6 +2414,77 @@ errors while uncompressing the tgz files, and the machine crashes when
 trying to run /sbin/init.
 
 
+
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdlandiskinstall"></a>
+<h3>NetBSD/landisk:</h3>
+
+<a href="http://www.netbsd.org/Ports/landisk/">NetBSD/landisk</a> can
+run in GXemul.
+
+<p><b><font color="#ff0000">NOTE:</b></font> This is still highly 
+experimental. Installation is very unsmooth.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20070224-netbsd-landisk.png"><img src="20070224-netbsd-landisk_small.png"></a>
+
+<p>At the time of writing this, there are not yet any formal releases
+of NetBSD/landisk, only daily snapshot builds.
+
+<p>The NetBSD/landisk distribution does not include any INSTALL kernel, 
+so it must be installed using another (emulated) machine.
+
+<p>The following instructions will let you install NetBSD/landisk onto a disk 
+image, using an emulated CATS machine:
+
+<p>
+<ol>
+  <li>Download a NetBSD/cats install kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
+</pre>
+  <p>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD/landisk onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_landisk.img bs=1024 count=1 seek=900000</b>
+
+</pre>
+
+<b>TODO</b>
+download the .iso image
+
+  <p>
+  <li>TODO: Start the emulated CATS machine like this:<pre>
+	<b>gxemul -e 3max -d nbsd_landisk.img -d landisk.iso netbsd.aout-INSTALL.gz</b>
+
+</pre>
+  <li>Exit the installer, then execute the following commands:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>
+disklabel -I -i wd0
+... TODO
+newfs /dev/wd0a
+mount /dev/cd0c /mnt
+mkdir /mnt2; mount /dev/wd0a /mnt2
+cd /mnt2; sh
+for a in /mnt/*/binary/sets/[bcekmt]*.tgz; do echo $a; tar zxfp $a; done
+exit
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES >> rc.conf
+echo "/dev/wd0a / ffs rw 1 1" > fstab
+cd /; umount /mnt; umount /mnt2; halt</b>
+</pre></td></tr></table>
+</ol>
+
+<p>You should now be able to boot NetBSD/landisk using this command:<pre>
+	<b>gxemul -x -E landisk -d nbsd_landisk.img netbsd-GENERIC.gz</b>
+</pre>
 
 
 

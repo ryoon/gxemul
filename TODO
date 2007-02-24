@@ -1,6 +1,10 @@
-$Id: TODO,v 1.455 2007-02-24 04:38:18 debug Exp $
+$Id: TODO,v 1.456 2007-02-24 06:44:32 debug Exp $
 
 -------------------------------------------------------------------------------
+
+Kolla lite mer på NetBSD/landisk:
+	obio och interrupter!
+	WDC_OBIO_AUXREG_OFFSET  0x2c
 
 Add a special function to the testmachine devices, console perhaps?
 which prints a zero-terminated string like "[[ %s ]]\n" when given

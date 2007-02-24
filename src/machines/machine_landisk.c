@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.3 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_landisk.c,v 1.4 2007-02-24 06:44:32 debug Exp $
  *
  *  SH4-based LANDISK.
  */
@@ -44,6 +44,8 @@
 
 MACHINE_SETUP(landisk)
 {
+	char tmpstr[300];
+
 	machine->machine_name = "Landisk";
 
 	if (machine->emulated_hz == 0)
@@ -54,6 +56,11 @@ MACHINE_SETUP(landisk)
 
 	dev_ram_init(machine, 0x0c000000, 64 * 1048576, DEV_RAM_RAM, 0x0);
 
+	/*  TODO: wdc at obio: irq 10!  */
+	snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%s.cpu[%i].irq[0x440]"
+	    " addr_mult=2 addr=0x14000000",
+	    machine->path, machine->bootstrap_cpu);
+	device_add(machine, tmpstr);
 
 	if (!machine->prom_emulation)
 		return;

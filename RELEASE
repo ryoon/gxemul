@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.247 2007-02-19 01:39:47 debug Exp $
+$Id: RELEASE,v 1.248 2007-02-24 19:21:44 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -27,7 +27,8 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 Changes between release 0.4.4 and 0.4.5 include, among other things:
 
-    o)	...
+    o)	Landisk emulation is now working well enough to let NetBSD/landisk
+	run from a disk image.
 
 Please read the HISTORY files for more details.
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.4 2007-02-24 06:44:32 debug Exp $
+ *  $Id: machine_landisk.c,v 1.5 2007-02-24 19:21:44 debug Exp $
  *
  *  SH4-based LANDISK.
  */
@@ -40,6 +40,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "sh4_exception.h"
 
 
 MACHINE_SETUP(landisk)
@@ -57,9 +59,9 @@ MACHINE_SETUP(landisk)
 	dev_ram_init(machine, 0x0c000000, 64 * 1048576, DEV_RAM_RAM, 0x0);
 
 	/*  TODO: wdc at obio: irq 10!  */
-	snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%s.cpu[%i].irq[0x440]"
+	snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%s.cpu[%i].irq[0x%x]"
 	    " addr_mult=2 addr=0x14000000",
-	    machine->path, machine->bootstrap_cpu);
+	    machine->path, machine->bootstrap_cpu, SH4_INTEVT_IRQ10);
 	device_add(machine, tmpstr);
 
 	if (!machine->prom_emulation)
@@ -71,8 +73,8 @@ MACHINE_SETUP(landisk)
 
 MACHINE_DEFAULT_CPU(landisk)
 {
-	/*  Hitachi SH4, 200 MHz  */
-	machine->cpu_name = strdup("SH7750");
+	/*  Hitachi SH4 7751R, 200 MHz  */
+	machine->cpu_name = strdup("SH7751R");
 }
 
 

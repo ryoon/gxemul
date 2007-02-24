@@ -1,11 +1,12 @@
-$Id: TODO,v 1.457 2007-02-24 07:38:15 debug Exp $
+$Id: TODO,v 1.458 2007-02-24 19:21:44 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Kolla lite mer på NetBSD/landisk:
-	obio och interrupter!
-	WDC_OBIO_AUXREG_OFFSET  0x2c
-	Kolla även mer på OpenBSD/landisk.
+Landisk SH4:
+	När NetBSD 4.0 kommit ut, uppdatera installationsinstruktionerna
+	i dokumentationen, flytta upp till supportat OS (guestos & index).
+	Lägg till landisk i emulated machines i intro.html.
+	Sätt machine_landisk stable = 1.
 
 Add a special function to the testmachine devices, console perhaps?
 which prints a zero-terminated string like "[[ %s ]]\n" when given

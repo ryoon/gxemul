@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.29 2007-01-29 18:06:37 debug Exp $
+ *  $Id: dev_sh4.c,v 1.30 2007-02-24 19:21:44 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -78,8 +78,12 @@ struct sh4_data {
 	uint16_t	scif_smr;
 	uint8_t		scif_brr;
 	uint16_t	scif_scr;
+	uint16_t	scif_ssr;
 	uint16_t	scif_fcr;
+	int		scif_delayed_tx;
 	int		scif_console_handle;
+	struct interrupt scif_tx_irq;
+	struct interrupt scif_rx_irq;
 
 	/*  Bus State Controller:  */
 	uint32_t	bsc_bcr1;
@@ -143,6 +147,7 @@ static void sh4_timer_tick(struct timer *t, void *extra)
 		exit(1);
 	}
 
+	/*  Timer interrupts:  */
 	for (i=0; i<N_SH4_TIMERS; i++) {
 		int32_t old = d->tcnt[i];
 
@@ -184,6 +189,30 @@ DEVICE_TICK(sh4)
 	struct sh4_data *d = (struct sh4_data *) extra;
 	int i;
 
+	/*  Serial controller interrupts:  */
+	/*  TODO: Which bits go to which interrupt?  */
+	if (console_charavail(d->scif_console_handle))
+		d->scif_ssr |= SCSSR2_DR;
+	else
+		d->scif_ssr &= SCSSR2_DR;
+	if (d->scif_delayed_tx) {
+		d->scif_ssr |= SCSSR2_TDFE | SCSSR2_TEND;
+		d->scif_delayed_tx = 0;
+	}
+	if (d->scif_scr & SCSCR2_RIE) {
+		if (d->scif_ssr & SCSSR2_DR)
+			INTERRUPT_ASSERT(d->scif_rx_irq);
+	} else {
+		INTERRUPT_DEASSERT(d->scif_rx_irq);
+	}
+	if (d->scif_scr & SCSCR2_TIE) {
+		if (d->scif_ssr & (SCSSR2_TDFE | SCSSR2_TEND))
+			INTERRUPT_ASSERT(d->scif_tx_irq);
+	} else {
+		INTERRUPT_DEASSERT(d->scif_tx_irq);
+	}
+
+	/*  Timer interrupts:  */
 	for (i=0; i<N_SH4_TIMERS; i++)
 		if (d->timer_interrupts_pending[i] > 0) {
 			INTERRUPT_ASSERT(d->timer_irq[i]);
@@ -981,15 +1010,24 @@ DEVICE_ACCESS(sh4)
 		break;
 
 	case SH4_SCIF_BASE + SCIF_FTDR:
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			console_putchar(d->scif_console_handle, idata);
+			d->scif_delayed_tx = 1;
+		}
 		break;
 
 	case SH4_SCIF_BASE + SCIF_SSR:
-		/*  TODO: Implement more of this.  */
-		odata = SCSSR2_TDFE | SCSSR2_TEND;
-		if (console_charavail(d->scif_console_handle))
-			odata |= SCSSR2_DR;
+		if (writeflag == MEM_READ) {
+			odata = d->scif_ssr;
+		} else {
+			d->scif_ssr &= ~idata;
+			/*  TODO: Which bits go to which interrupt?
+			    Should be the same code as in the tick function!  */
+			if (!(d->scif_ssr & SCSSR2_DR))
+				INTERRUPT_DEASSERT(d->scif_rx_irq);
+			if (!(d->scif_ssr & (SCSSR2_TDFE | SCSSR2_TEND)))
+				INTERRUPT_DEASSERT(d->scif_tx_irq);
+		}
 		break;
 
 	case SH4_SCIF_BASE + SCIF_FRDR:
@@ -998,6 +1036,7 @@ DEVICE_ACCESS(sh4)
 			if (x == 13)
 				x = 10;
 			odata = x < 0? 0 : x;
+			d->scif_ssr &= ~SCSSR2_DR;
 		}
 		break;
 
@@ -1084,6 +1123,13 @@ DEVINIT(sh4)
 
 	d->scif_console_handle = console_start_slave(devinit->machine,
 	    "SH4 SCIF", 1);
+
+	snprintf(tmp, sizeof(tmp), "%s.irq[0x%x]",
+	    devinit->interrupt_path, SH4_INTEVT_SCIF_RXI);
+	INTERRUPT_CONNECT(tmp, d->scif_rx_irq);
+	snprintf(tmp, sizeof(tmp), "%s.irq[0x%x]",
+	    devinit->interrupt_path, SH4_INTEVT_SCIF_TXI);
+	INTERRUPT_CONNECT(tmp, d->scif_tx_irq);
 
 	memory_device_register(machine->memory, devinit->name,
 	    SH4_REG_BASE, 0x01000000, dev_sh4_access, d, DM_DEFAULT, NULL);

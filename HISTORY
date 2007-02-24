@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1483 2007-02-24 06:44:32 debug Exp $
+$Id: HISTORY,v 1.1484 2007-02-24 19:21:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3311,4 +3311,7 @@ Changelog for GXemul:
 20070224	Minor update to the initialization of the ns16550 in
 		machine_walnut.c, to allow that machine type to boot with the
 		new interrupt system (although it is still a dummy machine).
-		Adding a dummy wdc at 0x14000000 to machine_landisk.c.
+		Adding a wdc at 0x14000000 to machine_landisk.c, and fixing
+		the SCIF serial controller of the SH4 cpu enough to get
+		NetBSD/landisk booting from a disk image :-)  Adding a
+		preliminary install instruction skeleton to guestoses.html.

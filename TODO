@@ -1,12 +1,16 @@
-$Id: TODO,v 1.458 2007-02-24 19:21:44 debug Exp $
+$Id: TODO,v 1.459 2007-02-25 16:19:11 debug Exp $
 
 -------------------------------------------------------------------------------
 
 Landisk SH4:
+	SH4 RTC, läs värdmaskinens klocka.
 	När NetBSD 4.0 kommit ut, uppdatera installationsinstruktionerna
 	i dokumentationen, flytta upp till supportat OS (guestos & index).
 	Lägg till landisk i emulated machines i intro.html.
 	Sätt machine_landisk stable = 1.
+
+Steg i riktningen att öppna upp utvecklingen av GXemul:
+	o) Fixa någonslags mailinglista.
 
 Add a special function to the testmachine devices, console perhaps?
 which prints a zero-terminated string like "[[ %s ]]\n" when given
@@ -30,6 +34,8 @@ Possible (relatively large) work packages to concentrate on in the future:
 	Get SMP working again. It is pretty much broken since I started
 	the conversion from the old bintrans system to the new dyntrans system.
 	Add better Test machine demos for SMP in the demos directory.
+	Either multiple dev_mp (one per cpu), or the single dev_mp must
+	_really_ keep all per-cpu values separate.
 
   x)  Alpha and SPARC emulation:
 	These are the next two CPU/machine families that I want to emulate.
@@ -164,6 +170,7 @@ MIPS:
 		    register definitions according to http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_263.html#HEADING334
 		    and make sure everything works with R10000.
 		    Then test with OpenBSD/sgi?
+		x)  Entry LO mask (as above).
 		x)  memory space, exceptions, ...
 		x)  use cop0 framemask for tlb lookups
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
@@ -177,7 +184,6 @@ SuperH:
 	    copy individual 32-bit words. (Performance improvement.)
 	x)  SH4 BSC (Bus State Controller)
 	x)  SH4 RTC: Read the host's clock.
-	x)  SH4 SCIF: Serial _interrupts_
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on, to make the output more human readable.
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?

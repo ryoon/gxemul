@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.5 2007-02-24 19:21:44 debug Exp $
+ *  $Id: machine_landisk.c,v 1.6 2007-03-06 18:45:18 debug Exp $
  *
  *  SH4-based LANDISK.
  */
@@ -67,7 +67,18 @@ MACHINE_SETUP(landisk)
 	if (!machine->prom_emulation)
 		return;
 
-	/*  TODO?  */
+	/*
+	 *  Ugly hardcoded register contents:  TODO: Make nicer.
+	 *
+	 *  r4 (arg 0) = boot howto flags
+	 *  r5 (arg 1) = bootinfo pointer for NetBSD (?) and
+	 *               symbol end pointer for OpenBSD (?)
+	 */
+	cpu->cd.sh.r[4] = 0;
+	cpu->cd.sh.r[5] = 0x8c000000 + 8 * 1048576;	/*  Note:
+			Assuming hardcoded 8 MB kernel size!  */
+
+	sh_ipl_g_emul_init(machine);
 }
 
 

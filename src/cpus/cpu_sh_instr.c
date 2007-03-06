@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.49 2007-01-28 16:59:06 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.50 2007-03-06 18:45:18 debug Exp $
  *
  *  SH instructions.
  *
@@ -2632,15 +2632,25 @@ X(tas_b_rn)
 
 
 /*
- *  prom_emul_dreamcast:
+ *  prom_emul:
  */
-X(prom_emul_dreamcast)
+X(prom_emul)
 {
 	uint32_t old_pc;
 	SYNCH_PC;
 	old_pc = cpu->pc;
 
-	dreamcast_emul(cpu);
+	switch (cpu->machine->machine_type) {
+	case MACHINE_DREAMCAST:
+		dreamcast_emul(cpu);
+		break;
+	case MACHINE_LANDISK:
+		sh_ipl_g_emul(cpu);
+		break;
+	default:
+		fatal("SH prom_emul: unimplemented machine type.\n");
+		exit(1);
+	}
 
 	if (!cpu->running) {
 		cpu->n_translated_instrs --;
@@ -2891,8 +2901,8 @@ X(to_be_translated)
 			ic->f = instr(copy_privileged_register);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[(lo8 >> 4) & 7];
 		} else if (iword == SH_INVALID_INSTR) {
-			/*  PROM emulation specifically for Dreamcast  */
-			ic->f = instr(prom_emul_dreamcast);
+			/*  PROM emulation (GXemul specific)  */
+			ic->f = instr(prom_emul);
 		} else {
 			switch (lo8) {
 			case 0x02:	/*  STC SR,Rn  */

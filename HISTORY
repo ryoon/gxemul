@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1484 2007-02-24 19:21:43 debug Exp $
+$Id: HISTORY,v 1.1485 2007-03-06 18:45:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3312,6 +3312,11 @@ Changelog for GXemul:
 		machine_walnut.c, to allow that machine type to boot with the
 		new interrupt system (although it is still a dummy machine).
 		Adding a wdc at 0x14000000 to machine_landisk.c, and fixing
-		the SCIF serial controller of the SH4 cpu enough to get
+		the SCIF serial interrupts of the SH4 cpu enough to get
 		NetBSD/landisk booting from a disk image :-)  Adding a
 		preliminary install instruction skeleton to guestoses.html.
+20070306	Adding SH-IPL+G PROM emulation, and also passing the "end"
+		symbol in r5 on bootup, for Landisk emulation. This is enough
+		to get OpenBSD/landisk to install :)  Adding preliminary
+		install instruction skeleton to the documentation. SuperH
+		emulation is still shaky, though :-/

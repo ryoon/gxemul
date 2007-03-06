@@ -1,13 +1,16 @@
-$Id: TODO,v 1.459 2007-02-25 16:19:11 debug Exp $
+$Id: TODO,v 1.460 2007-03-06 18:45:17 debug Exp $
 
 -------------------------------------------------------------------------------
 
 Landisk SH4:
 	SH4 RTC, läs värdmaskinens klocka.
-	När NetBSD 4.0 kommit ut, uppdatera installationsinstruktionerna
-	i dokumentationen, flytta upp till supportat OS (guestos & index).
+	När NetBSD 4.0 och OpenBSD 4.1 kommit ut, uppdatera
+	installationsinstruktionerna i dokumentationen, flytta upp till
+	supportat OS (guestos & index).
 	Lägg till landisk i emulated machines i intro.html.
 	Sätt machine_landisk stable = 1.
+	HITTA OCH FIXA STABILITETSPROBLEMET! (Detta borde även få
+	Linuxlivecd:n att boota utan workaround.)
 
 Steg i riktningen att öppna upp utvecklingen av GXemul:
 	o) Fixa någonslags mailinglista.
@@ -336,7 +339,10 @@ ARM:
 	o)  try to get netbsd/evbarm 3.x or 4.x running (iq80321)
 	o)  make the xscale counter registers (ccnt) work
 	o)  make the ata controller usable for FreeBSD!
-	o)  Zaurus emulation, for e.g. OpenBSD/zaurus
+	o)  Zaurus emulation:
+		x)  OpenBSD/zaurus
+		x)  NetBSD/zaurus? See the following URL:
+		    http://mail-index.netbsd.org/port-arm/2006/11/19/0000.html
 	o)  Debian/cats crashes because of unimplemented coproc stuff.
 	    fix this?
 

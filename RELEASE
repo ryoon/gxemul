@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.248 2007-02-24 19:21:44 debug Exp $
+$Id: RELEASE,v 1.249 2007-03-06 18:45:17 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -29,6 +29,8 @@ Changes between release 0.4.4 and 0.4.5 include, among other things:
 
     o)	Landisk emulation is now working well enough to let NetBSD/landisk
 	run from a disk image.
+
+    o)  TODO ...
 
 Please read the HISTORY files for more details.
 

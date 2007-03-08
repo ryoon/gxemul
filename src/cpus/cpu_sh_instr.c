@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.50 2007-03-06 18:45:18 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.51 2007-03-08 19:04:09 debug Exp $
  *
  *  SH instructions.
  *
@@ -285,10 +285,10 @@ X(add_imm_rn) { reg(ic->arg[1]) += (int32_t)ic->arg[0]; }
 
 
 /*
- *  mov_b_rm_predec_rn:  mov.b reg,@-Rn
- *  mov_w_rm_predec_rn:  mov.w reg,@-Rn
- *  mov_l_rm_predec_rn:  mov.l reg,@-Rn
- *  stc_l_rm_predec_rn:  mov.l reg,@-Rn, with MD status bit check
+ *  mov_b_rm_predec_rn:     mov.b reg,@-Rn
+ *  mov_w_rm_predec_rn:     mov.w reg,@-Rn
+ *  mov_l_rm_predec_rn:     mov.l reg,@-Rn
+ *  stc_l_rm_predec_rn_md:  mov.l reg,@-Rn, with MD status bit check
  *
  *  arg[0] = ptr to rm  (or other register)
  *  arg[1] = ptr to rn
@@ -362,7 +362,7 @@ X(mov_l_rm_predec_rn)
 		reg(ic->arg[1]) = addr;
 	}
 }
-X(stc_l_rm_predec_rn)
+X(stc_l_rm_predec_rn_md)
 {
 	uint32_t addr = reg(ic->arg[1]) - sizeof(uint32_t);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_store[addr >> 12];
@@ -3112,7 +3112,7 @@ X(to_be_translated)
 			ic->f = instr(shld);
 		} else if ((lo8 & 0x8f) == 0x83) {
 			/*  STC.L Rm_BANK,@-Rn  */
-			ic->f = instr(stc_l_rm_predec_rn);
+			ic->f = instr(stc_l_rm_predec_rn_md);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[
 			    (lo8 >> 4) & 7];	/* m */
 		} else if ((lo8 & 0x8f) == 0x87) {
@@ -3137,7 +3137,7 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.mach;
 				break;
 			case 0x03:	/*  STC.L SR,@-Rn  */
-				ic->f = instr(stc_l_rm_predec_rn);
+				ic->f = instr(stc_l_rm_predec_rn_md);
 				ic->arg[0] = (size_t)&cpu->cd.sh.sr;
 				break;
 			case 0x04:	/*  ROTL Rn  */
@@ -3182,7 +3182,7 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.macl;
 				break;
 			case 0x13:	/*  STC.L GBR,@-Rn  */
-				ic->f = instr(stc_l_rm_predec_rn);
+				ic->f = instr(mov_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.gbr;
 				break;
 			case 0x15:	/*  CMP/PL Rn  */
@@ -3193,7 +3193,7 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.macl;
 				break;
 			case 0x17:	/*  LDC.L @Rm+,GBR  */
-				ic->f = instr(mov_l_arg1_postinc_to_arg0_md);
+				ic->f = instr(mov_l_arg1_postinc_to_arg0);
 				ic->arg[0] = (size_t)&cpu->cd.sh.gbr;
 				break;
 			case 0x18:	/*  SHLL8 Rn  */
@@ -3222,7 +3222,7 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
 				break;
 			case 0x23:	/*  STC.L VBR,@-Rn  */
-				ic->f = instr(stc_l_rm_predec_rn);
+				ic->f = instr(stc_l_rm_predec_rn_md);
 				ic->arg[0] = (size_t)&cpu->cd.sh.vbr;
 				break;
 			case 0x24:	/*  ROTCL Rn  */
@@ -3264,7 +3264,7 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sh.vbr;
 				break;
 			case 0x33:	/*  STC.L SSR,@-Rn  */
-				ic->f = instr(stc_l_rm_predec_rn);
+				ic->f = instr(stc_l_rm_predec_rn_md);
 				ic->arg[0] = (size_t)&cpu->cd.sh.ssr;
 				break;
 			case 0x37:	/*  LDC.L @Rm+,SSR  */
@@ -3277,7 +3277,7 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sh.ssr;
 				break;
 			case 0x43:	/*  STC.L SPC,@-Rn  */
-				ic->f = instr(stc_l_rm_predec_rn);
+				ic->f = instr(stc_l_rm_predec_rn_md);
 				ic->arg[0] = (size_t)&cpu->cd.sh.spc;
 				break;
 			case 0x47:	/*  LDC.L @Rm+,SPC  */

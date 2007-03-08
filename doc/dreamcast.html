@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: dreamcast.html,v 1.10 2007-03-08 12:38:27 debug Exp $
+$Id: dreamcast.html,v 1.11 2007-03-08 19:04:09 debug Exp $
 
 Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
 
@@ -154,8 +154,6 @@ bytes each.)
 <b><tt>file system</tt></b>, and <b><tt>init path</tt></b>, just press 
 Enter.
 
-<p><font color="#ff0000">NOTE:</font> This is not 100% stable yet;
-sometimes things bug out.
 
 
 
@@ -176,14 +174,10 @@ sometimes things bug out.
 </pre>
 
 Once you have downloaded the ISO image, type the following command to 
-attempt to boot directly from the image:<pre>
+boot directly from the image:<pre>
 	<b>gxemul -XEdreamcast -d co23965696:lc2000.iso</b>
 </pre>
 
-<p><font color="#ff0000">2006-11-12: NOTE: This does <b>not</b>
-really work yet.</font> The "Give root password for maintainance"
-prompt appears too early, compared to when running the same ISO image on a 
-real Dreamcast, and it is impossible to get past that point.
 
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.61 2007-03-08 11:43:23 debug Exp $
+ *  $Id: cpu_sh.c,v 1.62 2007-03-08 19:04:09 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -659,14 +659,19 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr)
 		cpu->cd.sh.spc += sizeof(uint16_t);
 		break;
 
-	/*
-	 *  Note: EXPEVT_RES_INST would be best to have commented out,
-	 *  so that invalid instructions are caught. However, guest OSes
-	 *  such as Linux seem to actually use this during normal execution,
-	 *  so it has to be enabled :-/
-	 */
 	case EXPEVT_RES_INST:
+		/*
+		 *  Note: Having this code here makes it possible to catch
+		 *  reserved instructions; during normal instruction execution,
+		 *  these are not very common.
+		 */
+#if 1
+		printf("\nRESERVED SuperH instruction at spc=%08"PRIx32"\n",
+		    cpu->cd.sh.spc);
+		exit(1);
+#else
 		break;
+#endif
 
 	case EXPEVT_FPU_DISABLE:
 		break;

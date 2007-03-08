@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.251 2007-03-08 12:53:14 debug Exp $
+$Id: RELEASE,v 1.252 2007-03-08 19:04:09 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -28,7 +28,7 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 Changes between release 0.4.4 and 0.4.5 include, among other things:
 
     o)  TODO ... NetBSD/landisk and OpenBSD/landisk,
-	perhaps also Linux/dreamcast (?) if I am lucky
+	perhaps also Linux/dreamcast
 
 Please read the HISTORY files for more details.
 

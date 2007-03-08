@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.13 2007-03-08 12:12:43 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.14 2007-03-08 19:04:09 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -41,6 +41,7 @@
  *
  *  TODO:
  *	Unit numbers / IDs for real Maple devices.
+ *	The Controller (up/down/left/right, buttons, etc).
  */
 
 #include <stdio.h>
@@ -140,16 +141,22 @@ static struct maple_device maple_device_mouse = {
 DEVICE_TICK(maple)
 {
 	struct dreamcast_maple_data *d = (struct dreamcast_maple_data *) extra;
-	int control_bits, key = console_readchar(d->console_handle);
+	int key;
 
-	if (key < 0)
-		return;
+	while ((key = console_readchar(d->console_handle)) >= 0) {
+		/*  Add to the keyboard queue:  */
+		d->char_queue[d->char_queue_head] = key;
+		d->char_queue_head = (d->char_queue_head + 1) % MAX_CHARS;
+		if (d->char_queue_head == d->char_queue_tail)
+			fatal("[ dreamcast_maple: KEYBOARD QUEUE OVERRUN! ]\n");
+	}
 
-	/*  Add to the keyboard queue:  */
-	d->char_queue[d->char_queue_head] = key;
-	d->char_queue_head = (d->char_queue_head + 1) % MAX_CHARS;
-	if (d->char_queue_head == d->char_queue_tail)
-		fatal("[ dreamcast_maple: KEYBOARD QUEUE OVERRUN! ]\n");
+#if 0
+	/*
+	 *  NOTE/TODO:
+	 *
+	 *  Implement the controller in a reasonable way!
+	 */
 
 	control_bits = 0;
 	switch (key) {
@@ -207,6 +214,7 @@ DEVICE_TICK(maple)
 			fatal("[ dreamcast_maple: CONTROLLER QUEUE "
 			    "OVERRUN! ]\n");
 	}
+#endif
 }
 
 

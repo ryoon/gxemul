@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.12 2007-03-08 11:41:34 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.13 2007-03-08 12:12:43 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -312,7 +312,7 @@ static void maple_getcond_keyboard_response(struct dreamcast_maple_data *d,
 	key = get_key(d);
 
 	/*
-	 *  buf[0] = shift keys (1 = ctrl, 2 = shift)
+	 *  buf[0] = shift keys (1 = left ctrl, 2 = shift, 0x10 = right ctrl)
 	 *  buf[1] = led state
 	 *  buf[2] = key
 	 */

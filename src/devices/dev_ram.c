@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.23 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_ram.c,v 1.24 2007-03-08 11:43:44 debug Exp $
  *  
  *  A generic RAM (memory) device. Can also be used to mirror/alias another
  *  part of RAM.
@@ -47,6 +47,8 @@
 /*  #define RAM_DEBUG  */
 
 struct ram_data {
+	uint64_t	baseaddress;
+
 	int		mode;
 	uint64_t	otheraddress;
 
@@ -83,10 +85,18 @@ DEVICE_ACCESS(ram)
 		    d->otheraddress + relative_addr, data, len,
 		    writeflag, PHYSICAL);
 	case DEV_RAM_RAM:
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			memcpy(&d->data[relative_addr], data, len);
-		else
+
+			/*  Invalidate any code translations on a write:  */
+			if (cpu->invalidate_code_translation != NULL) {
+				cpu->invalidate_code_translation(
+				    cpu, d->baseaddress + relative_addr,
+				    INVALIDATE_PADDR);
+			}
+		} else {
 			memcpy(data, &d->data[relative_addr], len);
+		}
 		break;
 	default:
 		fatal("dev_ram_access(): unknown mode %i\n", d->mode);
@@ -124,6 +134,7 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	}
 
 	d->mode         = mode;
+	d->baseaddress  = baseaddr;
 	d->otheraddress = otheraddress;
 
 	switch (d->mode) {

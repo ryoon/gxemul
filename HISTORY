@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1487 2007-03-08 10:03:41 debug Exp $
+$Id: HISTORY,v 1.1488 2007-03-08 11:43:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3323,3 +3323,5 @@ Changelog for GXemul:
 20070307	Fixed a strangeness in memory_sh.c (read/write was never
 		returned for any page). (Unknown whether this fixes any actual
 		problems, though.)
+20070308	dev_ram.c fix: invalidate code translations on writes to
+		RAM, emulated as separate devices.

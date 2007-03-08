@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1485 2007-03-06 18:45:17 debug Exp $
+$Id: HISTORY,v 1.1486 2007-03-08 10:02:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3317,6 +3317,6 @@ Changelog for GXemul:
 		preliminary install instruction skeleton to guestoses.html.
 20070306	Adding SH-IPL+G PROM emulation, and also passing the "end"
 		symbol in r5 on bootup, for Landisk emulation. This is enough
-		to get OpenBSD/landisk to install :)  Adding preliminary
+		to get OpenBSD/landisk to install :)  Adding a preliminary
 		install instruction skeleton to the documentation. SuperH
 		emulation is still shaky, though :-/

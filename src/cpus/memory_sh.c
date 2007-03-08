@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.15 2007-01-29 18:06:37 debug Exp $
+ *  $Id: memory_sh.c,v 1.16 2007-03-08 10:02:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -85,7 +85,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 
 		/*  fatal("urc = %i  ==>  ", urc);  */
 		urc ++;
-		if (urc == SH_N_UTLB_ENTRIES || (urb > 0 && urc == urb))
+		if (urc >= SH_N_UTLB_ENTRIES || (urb > 0 && urc == urb))
 			urc = 0;
 		/*  fatal("%i\n", urc);  */
 
@@ -141,8 +141,9 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 	if (i == SH_N_UTLB_ENTRIES)
 		goto tlb_miss;
 
-	/*  Matching address found! Let's see it is readable/writable, etc:  */
-	d = lo & SH4_PTEL_D;
+	/*  Matching address found! Let's see whether it is
+	    readable/writable, etc.:  */
+	d = lo & SH4_PTEL_D? 1 : 0;
 	pr = (lo & SH4_PTEL_PR_MASK) >> SH4_PTEL_PR_SHIFT;
 
 	*return_paddr = (vaddr & ~mask) | (lo & mask & 0x1fffffff);
@@ -189,7 +190,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 		case 1:
 		case 3:	if (wf && !d)
 				goto initial_write_exception;
-			return 1;
+			return 1 + d;
 		}
 	}
 
@@ -202,7 +203,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 		return 1;
 	case 3:	if (wf && !d)
 			goto initial_write_exception;
-		return 1;
+		return 1 + d;
 	}
 
 

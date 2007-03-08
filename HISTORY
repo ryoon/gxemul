@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1488 2007-03-08 11:43:44 debug Exp $
+$Id: HISTORY,v 1.1489 2007-03-08 12:20:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3324,4 +3324,6 @@ Changelog for GXemul:
 		returned for any page). (Unknown whether this fixes any actual
 		problems, though.)
 20070308	dev_ram.c fix: invalidate code translations on writes to
-		RAM, emulated as separate devices.
+		RAM, emulated as separate devices. Linux/dreamcast gets
+		further in the boot process than before, but still bugs out
+		in userland.

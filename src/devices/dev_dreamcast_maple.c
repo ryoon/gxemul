@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.11 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.12 2007-03-08 11:41:34 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -95,6 +95,7 @@ struct dreamcast_maple_data {
  *
  *  TODO: Figure out strings and numbers of _real_ Maple devices.
  */
+#if 0
 static struct maple_device maple_device_controller = {
 	{
 		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_CONTROLLER)),	/*  di_func  */
@@ -107,6 +108,7 @@ static struct maple_device maple_device_controller = {
 		LE16_TO_HOST(100)		/*  di_max_power  */
 	}
 };
+#endif
 static struct maple_device maple_device_keyboard = {
 	{
 		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_KEYBOARD)),/*  di_func  */
@@ -627,7 +629,7 @@ DEVINIT(dreamcast_maple)
 	    0x5f6c00, 0x100, dev_dreamcast_maple_access, d, DM_DEFAULT, NULL);
 
 	/*  Devices connected to port A..D:  */
-	d->device[0] = &maple_device_controller;
+	d->device[0] = NULL;	/*  &maple_device_controller;  */
 	d->device[1] = NULL;
 	d->device[2] = &maple_device_keyboard;
 	d->device[3] = NULL;	/*  TODO:  &maple_device_mouse;  */

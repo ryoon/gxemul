@@ -1,16 +1,16 @@
-$Id: TODO,v 1.460 2007-03-06 18:45:17 debug Exp $
+$Id: TODO,v 1.461 2007-03-08 10:01:50 debug Exp $
 
 -------------------------------------------------------------------------------
 
 Landisk SH4:
+	HITTA OCH FIXA SH4-STABILITETSPROBLEMET! (Detta borde även få
+	Linuxlivecd:n att boota utan workaround.)
 	SH4 RTC, läs värdmaskinens klocka.
 	När NetBSD 4.0 och OpenBSD 4.1 kommit ut, uppdatera
 	installationsinstruktionerna i dokumentationen, flytta upp till
 	supportat OS (guestos & index).
 	Lägg till landisk i emulated machines i intro.html.
 	Sätt machine_landisk stable = 1.
-	HITTA OCH FIXA STABILITETSPROBLEMET! (Detta borde även få
-	Linuxlivecd:n att boota utan workaround.)
 
 Steg i riktningen att öppna upp utvecklingen av GXemul:
 	o) Fixa någonslags mailinglista.

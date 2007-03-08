@@ -25,9 +25,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.6 2007-03-06 18:45:18 debug Exp $
+ *  $Id: machine_landisk.c,v 1.7 2007-03-08 10:01:50 debug Exp $
  *
- *  SH4-based LANDISK.
+ *  I-O DATA LANDISK USL-5P.
+ *
+ *  This machine consists of:
+ *
+ *	o)  An SH4 processor, which includes serial console etc,
+ *	o)  an IDE controller at address 0x14000000,
+ *	o)  and a minimal SH-IPL+G PROM emulation layer (required to make
+ *	    OpenBSD/landisk boot).
  */
 
 #include <stdio.h>
@@ -48,17 +55,18 @@ MACHINE_SETUP(landisk)
 {
 	char tmpstr[300];
 
-	machine->machine_name = "Landisk";
+	machine->machine_name = "Landisk USL-5P";
 
+	/*  200 MHz SH4 CPU clock:  */
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 200000000;
 
 	/*  50 MHz SH4 PCLOCK:  */
-	machine->cpus[0]->cd.sh.pclock = 50000000;
+	machine->cpus[machine->bootstrap_cpu]->cd.sh.pclock = 50000000;
 
 	dev_ram_init(machine, 0x0c000000, 64 * 1048576, DEV_RAM_RAM, 0x0);
 
-	/*  TODO: wdc at obio: irq 10!  */
+	/*  wdc0 at obio0 port 0x14000000-0x1400000f irq 10  */
 	snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%s.cpu[%i].irq[0x%x]"
 	    " addr_mult=2 addr=0x14000000",
 	    machine->path, machine->bootstrap_cpu, SH4_INTEVT_IRQ10);
@@ -68,15 +76,17 @@ MACHINE_SETUP(landisk)
 		return;
 
 	/*
-	 *  Ugly hardcoded register contents:  TODO: Make nicer.
+	 *  Ugly hardcoded register contents at bootup:
 	 *
 	 *  r4 (arg 0) = boot howto flags
 	 *  r5 (arg 1) = bootinfo pointer for NetBSD (?) and
 	 *               symbol end pointer for OpenBSD (?)
+	 *
+	 *  TODO: Make nicer.
 	 */
 	cpu->cd.sh.r[4] = 0;
-	cpu->cd.sh.r[5] = 0x8c000000 + 8 * 1048576;	/*  Note:
-			Assuming hardcoded 8 MB kernel size!  */
+	cpu->cd.sh.r[5] = 0x8c000000 + 8 * 1048576;	/*  Note/TODO:
+				Assuming hardcoded 8 MB kernel size!  */
 
 	sh_ipl_g_emul_init(machine);
 }

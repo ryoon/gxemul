@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1486 2007-03-08 10:02:32 debug Exp $
+$Id: HISTORY,v 1.1487 2007-03-08 10:03:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3320,3 +3320,6 @@ Changelog for GXemul:
 		to get OpenBSD/landisk to install :)  Adding a preliminary
 		install instruction skeleton to the documentation. SuperH
 		emulation is still shaky, though :-/
+20070307	Fixed a strangeness in memory_sh.c (read/write was never
+		returned for any page). (Unknown whether this fixes any actual
+		problems, though.)

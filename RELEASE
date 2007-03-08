@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.249 2007-03-06 18:45:17 debug Exp $
+$Id: RELEASE,v 1.250 2007-03-08 10:02:08 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -27,8 +27,13 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 Changes between release 0.4.4 and 0.4.5 include, among other things:
 
-    o)	Landisk emulation is now working well enough to let NetBSD/landisk
-	run from a disk image.
+    o)	Landisk USL-5P emulation is now working well enough to let:
+
+	  x)  NetBSD/landisk run from a disk image, and
+	  x)  OpenBSD/landisk be installed and run from a disk image.
+
+	(There is no INSTALL kernel for NetBSD/landisk, but it can be
+	installed manually using another (emulated) machine.)
 
     o)  TODO ...
 

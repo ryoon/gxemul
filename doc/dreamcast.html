@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: dreamcast.html,v 1.9 2007-03-08 10:02:08 debug Exp $
+$Id: dreamcast.html,v 1.10 2007-03-08 12:38:27 debug Exp $
 
 Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
 
@@ -166,7 +166,12 @@ sometimes things bug out.
 <a name="linux_live_cd"></a>
 <h3>Linux/dreamcast Live CD:</h3>
 
-A Linux/dreamcast Live CD ISO image can be found here:<pre>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20070308-linux-dreamcast-1.png"><img src="20070308-linux-dreamcast-1_small.png"></a>
+&nbsp;&nbsp;&nbsp;
+<a href="20070308-linux-dreamcast-2.png"><img src="20070308-linux-dreamcast-2_small.png"></a>
+
+<p>A Linux/dreamcast Live CD ISO image can be found here:<pre>
 	<a href="http://ftp.riken.go.jp/pub/misc/Japan/m17n.org/super-h/CD-R/lc2000.iso">http://ftp.riken.go.jp/pub/misc/Japan/m17n.org/super-h/CD-R/lc2000.iso</a>
 </pre>
 
@@ -175,7 +180,10 @@ attempt to boot directly from the image:<pre>
 	<b>gxemul -XEdreamcast -d co23965696:lc2000.iso</b>
 </pre>
 
-<p><font color="#ff0000">2006-11-12: NOTE: This does not work yet.</font>
+<p><font color="#ff0000">2006-11-12: NOTE: This does <b>not</b>
+really work yet.</font> The "Give root password for maintainance"
+prompt appears too early, compared to when running the same ISO image on a 
+real Dreamcast, and it is impossible to get past that point.
 
 
 

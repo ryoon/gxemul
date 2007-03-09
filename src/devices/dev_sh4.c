@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.30 2007-02-24 19:21:44 debug Exp $
+ *  $Id: dev_sh4.c,v 1.31 2007-03-09 10:54:28 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -184,21 +184,8 @@ static void sh4_timer_tick(struct timer *t, void *extra)
 }
 
 
-DEVICE_TICK(sh4)
+static void scif_reassert_interrupts(struct sh4_data *d)
 {
-	struct sh4_data *d = (struct sh4_data *) extra;
-	int i;
-
-	/*  Serial controller interrupts:  */
-	/*  TODO: Which bits go to which interrupt?  */
-	if (console_charavail(d->scif_console_handle))
-		d->scif_ssr |= SCSSR2_DR;
-	else
-		d->scif_ssr &= SCSSR2_DR;
-	if (d->scif_delayed_tx) {
-		d->scif_ssr |= SCSSR2_TDFE | SCSSR2_TEND;
-		d->scif_delayed_tx = 0;
-	}
 	if (d->scif_scr & SCSCR2_RIE) {
 		if (d->scif_ssr & SCSSR2_DR)
 			INTERRUPT_ASSERT(d->scif_rx_irq);
@@ -211,6 +198,26 @@ DEVICE_TICK(sh4)
 	} else {
 		INTERRUPT_DEASSERT(d->scif_tx_irq);
 	}
+}
+
+
+DEVICE_TICK(sh4)
+{
+	struct sh4_data *d = (struct sh4_data *) extra;
+	int i;
+
+	/*  Serial controller interrupts:  */
+	/*  TODO: Which bits go to which interrupt?  */
+	if (console_charavail(d->scif_console_handle))
+		d->scif_ssr |= SCSSR2_DR;
+	else
+		d->scif_ssr &= SCSSR2_DR;
+	if (d->scif_delayed_tx) {
+		if (--d->scif_delayed_tx == 0)
+			d->scif_ssr |= SCSSR2_TDFE | SCSSR2_TEND;
+	}
+
+	scif_reassert_interrupts(d);
 
 	/*  Timer interrupts:  */
 	for (i=0; i<N_SH4_TIMERS; i++)
@@ -1004,6 +1011,7 @@ DEVICE_ACCESS(sh4)
 	case SH4_SCIF_BASE + SCIF_SCR:
 		if (writeflag == MEM_WRITE) {
 			d->scif_scr = idata;
+			scif_reassert_interrupts(d);
 		} else {
 			odata = d->scif_scr;
 		}
@@ -1021,12 +1029,7 @@ DEVICE_ACCESS(sh4)
 			odata = d->scif_ssr;
 		} else {
 			d->scif_ssr &= ~idata;
-			/*  TODO: Which bits go to which interrupt?
-			    Should be the same code as in the tick function!  */
-			if (!(d->scif_ssr & SCSSR2_DR))
-				INTERRUPT_DEASSERT(d->scif_rx_irq);
-			if (!(d->scif_ssr & (SCSSR2_TDFE | SCSSR2_TEND)))
-				INTERRUPT_DEASSERT(d->scif_tx_irq);
+			scif_reassert_interrupts(d);
 		}
 		break;
 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.205 2007-03-06 18:45:17 debug Exp $
+$Id: guestoses.html,v 1.206 2007-03-09 10:54:28 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -2462,7 +2462,7 @@ download the .iso image
 
   <p>
   <li>TODO: Start the emulated CATS machine like this:<pre>
-	<b>gxemul -e 3max -d nbsd_landisk.img -d landisk.iso netbsd.aout-INSTALL.gz</b>
+	<b>gxemul -XEcats -d nbsd_landisk.img -d landisk.iso netbsd.aout-INSTALL.gz</b>
 
 </pre>
   <li>Exit the installer, then execute the following commands:
@@ -2479,6 +2479,7 @@ exit
 cd dev; sh ./MAKEDEV all; cd ../etc
 echo rc_configured=YES >> rc.conf
 echo "/dev/wd0a / ffs rw 1 1" > fstab
+echo "/dev/wd0b none swap sw 0 0" >> fstab
 cd /; umount /mnt; umount /mnt2; halt</b>
 </pre></td></tr></table>
 </ol>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.74 2007-02-10 14:04:51 debug Exp $
+ *  $Id: useremul.c,v 1.75 2007-03-10 13:37:06 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -1769,13 +1769,13 @@ void useremul_init(void)
 	add_useremul("NetBSD/arm", ARCH_ARM, "SA1110",
 	    useremul__netbsd, useremul__netbsd_setup);
 
-	add_useremul("NetBSD/alpha", ARCH_ALPHA, "Alpha",
+	add_useremul("NetBSD/alpha", ARCH_ALPHA, "21364",
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",
 	    useremul__linux, useremul__linux_setup);
 
-	add_useremul("FreeBSD/Alpha", ARCH_ALPHA, "Alpha",
+	add_useremul("FreeBSD/Alpha", ARCH_ALPHA, "21364",
 	    useremul__freebsd, useremul__freebsd_setup);
 }
 

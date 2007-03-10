@@ -1,10 +1,9 @@
-$Id: TODO,v 1.461 2007-03-08 10:01:50 debug Exp $
+$Id: TODO,v 1.462 2007-03-10 13:38:04 debug Exp $
 
 -------------------------------------------------------------------------------
 
 Landisk SH4:
-	HITTA OCH FIXA SH4-STABILITETSPROBLEMET! (Detta borde även få
-	Linuxlivecd:n att boota utan workaround.)
+	HITTA OCH FIXA SH4-STABILITETSPROBLEMEN!
 	SH4 RTC, läs värdmaskinens klocka.
 	När NetBSD 4.0 och OpenBSD 4.1 kommit ut, uppdatera
 	installationsinstruktionerna i dokumentationen, flytta upp till
@@ -73,6 +72,15 @@ Possible (relatively large) work packages to concentrate on in the future:
   x)  Userland emulation:
 	Primary goals would be NetBSD and Linux syscall emulation.
 
+  x)  Variable-length ISA support:
+	The support for emulation of variable length ISAs (such as
+	M68K, AMD64/i386, or AVR32) is not really there yet. It would
+	be very fun to work on this, to get it right.
+
+  x)  Native code generation backends.
+	Not necessary to have the emulator working, but speed is
+	always nice to have.
+
 And of course, there are _LOTS_ of minor TODOs spread out throughout
 the source code, which must be fixed sooner or later.
 
@@ -93,6 +101,8 @@ Dyntrans:
 	    kludgy very fast.)
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
+	x)  Remove the concept of base RAM completely; it would be more
+	    generic to allow RAM devices to be used "anywhere".
 	o)  dev_mp doesn't work well with dyntrans yet
 	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1490 2007-03-08 19:04:08 debug Exp $
+$Id: HISTORY,v 1.1491 2007-03-10 13:42:49 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3330,3 +3330,5 @@ Changelog for GXemul:
 		Fixing bugs in the "stc.l gbr,@-rN" and "ldc.l @rN+,gbr" SuperH 
 		instructions (they should NOT check the MD bit), allowing the
 		Linux/dreamcast Live CD to reach userland correctly :-)
+20070310	Changing the cpu name "Alpha" in src/useremul.c to "21364" to
+		unbreak userland syscall emulation of FreeBSD/Alpha binaries.

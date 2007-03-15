@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1491 2007-03-10 13:42:49 debug Exp $
+$Id: HISTORY,v 1.1492 2007-03-15 15:42:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3332,3 +3332,6 @@ Changelog for GXemul:
 		Linux/dreamcast Live CD to reach userland correctly :-)
 20070310	Changing the cpu name "Alpha" in src/useremul.c to "21364" to
 		unbreak userland syscall emulation of FreeBSD/Alpha binaries.
+20070314	Applying a patch from Michael Yaroslavtsev which fixes the
+		previous Linux lib64 patch to the configure script.
+20070315	Adding a (dummy) sun4v machine type, and SPARC T1 cpu type.

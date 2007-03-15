@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sparc.c,v 1.4 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_sparc.c,v 1.5 2007-03-15 15:42:58 debug Exp $
  *
  *  SPARC machines.
  */
@@ -66,6 +66,11 @@ MACHINE_SETUP(sparc)
 
 		break;
 
+	case MACHINE_SPARC_SUN4V:
+		machine->machine_name = "SUN Generic sun4v";
+
+		break;
+
 	default:fatal("Unimplemented SPARC machine subtype %i\n",
 		    machine->machine_subtype);
 		exit(1);
@@ -95,6 +100,10 @@ MACHINE_DEFAULT_CPU(sparc)
 
 	case MACHINE_SPARC_ULTRA60:
 		machine->cpu_name = strdup("UltraSPARC-II");
+		break;
+
+	case MACHINE_SPARC_SUN4V:
+		machine->cpu_name = strdup("T1");
 		break;
 
 	default:fatal("Unimplemented SPARC machine subtype %i\n",
@@ -127,6 +136,9 @@ MACHINE_REGISTER(sparc)
 
 	machine_entry_add_subtype(me, "SUN Ultra60", MACHINE_SPARC_ULTRA60,
 	    "ultra60", NULL);
+
+	machine_entry_add_subtype(me, "SUN Generic sun4v", MACHINE_SPARC_SUN4V,
+	    "sun4v", NULL);
 
 	me->set_default_ram = machine_default_ram_sparc;
 }

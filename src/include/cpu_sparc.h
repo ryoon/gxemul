@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.43 2006-12-30 13:31:00 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.44 2007-03-15 15:42:58 debug Exp $
  */
 
 #include "misc.h"
@@ -59,15 +59,17 @@ struct sparc_cpu_type_def {
     just bogus.  */
 /*  See http://www.sparc.com/standards/v8v9-numbers.html for
     implementation numbers!  */
+/*  Note/TODO: sun4v is listed as 10  */
 
 #define SPARC_CPU_TYPE_DEFS	{					\
-	{ "TMS390Z50",		8, 32, 8, 14,5,2, 14,5,2,  0,0,0 },	\
-	{ "MB86904",		8, 32, 8, 14,5,2, 13,4,2,  0,0,0 },	\
-	{ "MB86907",		8, 32, 8, 14,5,2, 14,5,2, 19,5,1 },	\
-	{ "UltraSPARC",		9, 64, 8, 14,5,4, 14,5,4, 19,6,1 },	\
-	{ "UltraSPARC-IIi",	9, 64, 8, 15,5,2, 14,5,2, 21,6,1 },	\
-	{ "UltraSPARC-II",	9, 64, 8, 15,5,2, 14,5,2, 22,6,1 },	\
-	{ NULL,			0,  0, 0,  0,0,0,  0,0,0,  0,0,0 }	\
+	{ "TMS390Z50",		 8, 32, 8, 14,5,2, 14,5,2,  0,0,0 },	\
+	{ "MB86904",		 8, 32, 8, 14,5,2, 13,4,2,  0,0,0 },	\
+	{ "MB86907",		 8, 32, 8, 14,5,2, 14,5,2, 19,5,1 },	\
+	{ "UltraSPARC",		 9, 64, 8, 14,5,4, 14,5,4, 19,6,1 },	\
+	{ "UltraSPARC-IIi",	 9, 64, 8, 15,5,2, 14,5,2, 21,6,1 },	\
+	{ "UltraSPARC-II",	 9, 64, 8, 15,5,2, 14,5,2, 22,6,1 },	\
+	{ "T1",			10, 64, 8, 15,5,2, 14,5,2, 22,6,1 },	\
+	{ NULL,			 0,  0, 0,  0,0,0,  0,0,0,  0,0,0 }	\
 	}
 
 

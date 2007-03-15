@@ -1,4 +1,4 @@
-$Id: TODO,v 1.462 2007-03-10 13:38:04 debug Exp $
+$Id: TODO,v 1.463 2007-03-15 15:42:43 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -80,6 +80,13 @@ Possible (relatively large) work packages to concentrate on in the future:
   x)  Native code generation backends.
 	Not necessary to have the emulator working, but speed is
 	always nice to have.
+
+  x)  Remove all "addr mult" device support!
+	Long term goal. Replace the current hacks with address 
+	multiplication _per device_ with layered devices, so that the
+	end device (wdc, ns16550, whatever) only supports one access
+	style, and the layers in between convert to 16/32/64-bit
+	word alignment.
 
 And of course, there are _LOTS_ of minor TODOs spread out throughout
 the source code, which must be fixed sooner or later.

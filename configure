@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.243 2007-02-10 14:29:54 debug Exp $
+#  $Id: configure,v 1.244 2007-03-15 15:15:57 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -348,6 +348,9 @@ if [ z$NOX11 = z ]; then
 
 	#  Special case for some 64-bit Linux/x86_64 systems:
 	if [ z$XOK = z0 ]; then
+		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+		    $XINCLUDE 2> /dev/null
+
 		XLIB="-L/usr/X11R6/lib64 -lX11"
 		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
 

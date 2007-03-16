@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.39 2006-12-30 13:30:55 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.40 2007-03-16 15:43:57 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -142,7 +142,7 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.sparc.ver |= MAXWIN | (MAXTL << SPARC_VER_MAXTL_SHIFT);
 
 	/*  Misc. initial settings suitable for userland emulation:  */
-	cpu->cd.sparc.cansave = cpu->cd.sparc.cpu_type.nwindows - 1;
+	cpu->cd.sparc.cansave = cpu->cd.sparc.cpu_type.nwindows - 2;
 	cpu->cd.sparc.cleanwin = cpu->cd.sparc.cpu_type.nwindows / 2;
 
 	if (cpu->cd.sparc.cpu_type.nwindows >= MAXWIN) {

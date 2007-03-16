@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.26 2006-12-30 13:30:55 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.27 2007-03-16 15:43:58 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -1020,6 +1020,21 @@ X(subcc_imm)
 
 
 /*
+ *  flushw:  Flush Register Windows
+ */
+X(flushw)
+{
+	/*  flushw acts as a nop, if cansave = nwindows - 2:  */
+	if (cpu->cd.sparc.cansave == cpu->cd.sparc.cpu_type.nwindows - 2)
+		return;
+
+	/*  TODO  */
+	fatal("flushw: TODO: cansave = %i\n", cpu->cd.sparc.cansave);
+	exit(1);
+}
+
+
+/*
  *  rd:  Read special register
  *
  *  arg[2] = ptr to rd
@@ -1076,6 +1091,15 @@ X(wrpr_pstate)
 X(wrpr_pstate_imm)
 {
 	sparc_update_pstate(cpu, reg(ic->arg[0]) ^ (int32_t)ic->arg[1]);
+}
+X(wrpr_cleanwin)
+{
+	cpu->cd.sparc.cleanwin = (uint32_t) (reg(ic->arg[0]) ^ reg(ic->arg[1]));
+}
+X(wrpr_cleanwin_imm)
+{
+	cpu->cd.sparc.cleanwin =
+	    (uint32_t) (reg(ic->arg[0]) ^ (int32_t)ic->arg[1]);
 }
 
 
@@ -1463,6 +1487,15 @@ X(to_be_translated)
 			}
 			break;
 
+		case 43:if (iword == 0x81580000) {
+				ic->f = instr(flushw);
+			} else {
+				fatal("Unimplemented iword=0x%08"PRIx32"\n",
+				    iword);
+				goto bad;
+			}
+			break;
+
 		case 48:/*  wr  (Note: works as xor)  */
 			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
 			if (use_imm) {
@@ -1498,6 +1531,7 @@ X(to_be_translated)
 				case 4:	ic->f = instr(wrpr_tick_imm); break;
 				case 6: ic->f = instr(wrpr_pstate_imm); break;
 				case 8: ic->f = instr(wrpr_pil_imm); break;
+				case 12:ic->f = instr(wrpr_cleanwin_imm);break;
 				}
 			} else {
 				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
@@ -1505,6 +1539,7 @@ X(to_be_translated)
 				case 4:	ic->f = instr(wrpr_tick); break;
 				case 6:	ic->f = instr(wrpr_pstate); break;
 				case 8:	ic->f = instr(wrpr_pil); break;
+				case 12:ic->f = instr(wrpr_cleanwin); break;
 				}
 			}
 			if (ic->f == NULL) {

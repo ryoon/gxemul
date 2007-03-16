@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1494 2007-03-16 14:45:30 debug Exp $
+$Id: HISTORY,v 1.1495 2007-03-16 18:49:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3338,3 +3338,4 @@ Changelog for GXemul:
 20070316	Creating a new directory, src/disk, and moving diskimage.c
 		to it. Separating out bootblock loading stuff from emul.c into
 		new files in src/disk.
+		Adding some more SPARC registers.

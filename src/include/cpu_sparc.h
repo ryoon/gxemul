@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.45 2007-03-16 15:43:58 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.46 2007-03-16 18:49:06 debug Exp $
  */
 
 #include "misc.h"
@@ -94,6 +94,7 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 
 
 #define	N_SPARC_REG		32
+#define	N_SPARC_GLOBAL_REG	8
 #define	N_SPARC_INOUT_REG	8
 #define	N_SPARC_LOCAL_REG	8
 #define	SPARC_REG_NAMES	{				\
@@ -181,9 +182,10 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"[56]","[57]","[58]","[59]", "[60]","prefetcha","casxa","[63]" }
 
 
-/*  Max number of Trap Levels and Windows:  */
-#define	MAXTL			4
-#define	MAXWIN			32
+/*  Max number of Trap Levels, Global Levels, and Register Windows:  */
+#define	MAXTL			6
+#define	MAXGL			7
+#define	N_REG_WINDOWS		8
 
 
 struct sparc_cpu {
@@ -192,8 +194,10 @@ struct sparc_cpu {
 	/*  Registers in the Current Window:  */
 	uint64_t	r[N_SPARC_REG];
 
-	uint64_t	r_inout[MAXWIN][N_SPARC_INOUT_REG];
-	uint64_t	r_local[MAXWIN][N_SPARC_LOCAL_REG];
+	uint64_t	r_inout[N_REG_WINDOWS][N_SPARC_INOUT_REG];
+	uint64_t	r_local[N_REG_WINDOWS][N_SPARC_LOCAL_REG];
+
+	uint64_t	r_global[MAXGL+1][N_SPARC_GLOBAL_REG];
 
 	uint64_t	scratch;
 
@@ -221,6 +225,7 @@ struct sparc_cpu {
 	uint8_t		ccr;		/*  Condition Code Register  */
 	uint8_t		asi;		/*  Address Space Identifier  */
 	uint8_t		tl;		/*  Trap Level Register  */
+	uint8_t		gl;		/*  Global Level Register  */
 	uint8_t		pil;		/*  Processor Interrupt Level Reg.  */
 
 	uint64_t	tpc[MAXTL];	/*  Trap Program Counter  */
@@ -229,6 +234,13 @@ struct sparc_cpu {
 	uint32_t	ttype[MAXTL];	/*  Trap Type  */
 
 	uint64_t	tba;		/*  Trap Base Address  */
+
+	uint64_t	hpstate;	/*  Hyper-Privileged State Register  */
+	uint64_t	htstate[MAXTL];	/*  Hyper-Privileged Trap State  */
+	uint64_t	hintp;		/*  Hyper-Privileged InterruptPending */
+	uint64_t	htba;		/*  Hyper-Privileged Trap Base Addr  */
+	uint64_t	hver;		/*  Hyper-Privileged Version Reg.  */
+
 
 	/*
 	 *  Instruction translation cache and Virtual->Physical->Host
@@ -254,6 +266,14 @@ struct sparc_cpu {
 #define	SPARC_PSTATE_PRIV	0x004	/*  Privileged Mode  */
 #define	SPARC_PSTATE_IE		0x002	/*  Interrupt Enable  */
 #define	SPARC_PSTATE_AG		0x001	/*  Alternate Globals  */
+
+
+/*  Hyper-Privileged State Register (HPSTATE) bit definitions:  */
+#define	SPARC_HPSTATE_ID	0x800
+#define	SPARC_HPSTATE_IBE	0x400	/*  Instruction Break Enable  */
+#define	SPARC_HPSTATE_RED	0x020	/*  Reset/Error/Debug state  */
+#define	SPARC_HPSTATE_HPRIV	0x004	/*  Hyper-Privileged mode  */
+#define	SPARC_HPSTATE_TLZ	0x001	/*  Trap Level Zero trap enable  */
 
 
 /*  Condition Code Register bit definitions:  */

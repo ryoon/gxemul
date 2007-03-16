@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: sh_ipl_g.c,v 1.1 2007-03-06 18:45:18 debug Exp $
+ *  $Id: sh_ipl_g.c,v 1.2 2007-03-16 18:47:26 debug Exp $
  *
  *  SH-IPL+G emulation; very basic, only what is needed to get OpenBSD/landisk
  *  booting. (SH-IPL+G stands for SuperH Initial Program Loader + GDB stub.)
@@ -70,10 +70,8 @@ void sh_ipl_g_emul_init(struct machine *machine)
  */
 static int sh_ipl_g_promcall(struct cpu *cpu)
 {
-	uint32_t ofs = (cpu->pc & 0xfff);
-
 	/*
-	 *  SH-IPL+G calls numbers are in R0:
+	 *  SH-IPL+G call numbers are in R0:
 	 *
 	 *  NOTE: r_bank[0], since this is in a trap handler!
 	 */
@@ -89,7 +87,7 @@ static int sh_ipl_g_promcall(struct cpu *cpu)
 	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
 		printf("\n");
 		fatal("[ SH-IPL+G PROM emulation: unimplemented function 0x%"
-		    PRIx32" ]\n", ofs);
+		    PRIx32" ]\n", cpu->cd.sh.r_bank[0]);
 		cpu->running = 0;
 		return 0;
 	}

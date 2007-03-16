@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.31 2007-03-09 10:54:28 debug Exp $
+ *  $Id: dev_sh4.c,v 1.32 2007-03-16 18:47:26 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -1151,10 +1151,10 @@ DEVINIT(sh4)
 	 *
 	 *  TODO: Implement more correct cache behaviour?
 	 */
-	dev_ram_init(machine, SH4_CCIA, SH4_ICACHE_SIZE, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, SH4_CCID, SH4_ICACHE_SIZE, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, SH4_CCDA, SH4_DCACHE_SIZE, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, SH4_CCDD, SH4_DCACHE_SIZE, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, SH4_CCIA, SH4_ICACHE_SIZE * 2, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, SH4_CCID, SH4_ICACHE_SIZE,     DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, SH4_CCDA, SH4_DCACHE_SIZE * 2, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, SH4_CCDD, SH4_DCACHE_SIZE,     DEV_RAM_RAM, 0x0);
 
 	/*  0xf2000000	SH4_ITLB_AA  */
 	memory_device_register(machine->memory, devinit->name, SH4_ITLB_AA,

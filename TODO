@@ -1,4 +1,4 @@
-$Id: TODO,v 1.463 2007-03-15 15:42:43 debug Exp $
+$Id: TODO,v 1.464 2007-03-16 14:13:59 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -9,10 +9,7 @@ Landisk SH4:
 	installationsinstruktionerna i dokumentationen, flytta upp till
 	supportat OS (guestos & index).
 	Lägg till landisk i emulated machines i intro.html.
-	Sätt machine_landisk stable = 1.
-
-Steg i riktningen att öppna upp utvecklingen av GXemul:
-	o) Fixa någonslags mailinglista.
+	Sätt machine_landisk stable = 1, om/när allt funkar.
 
 Add a special function to the testmachine devices, console perhaps?
 which prints a zero-terminated string like "[[ %s ]]\n" when given
@@ -20,7 +17,6 @@ a virtual memory address (or a physical? or perhaps both should be possible).
 	o) NOT to the console, but to the emulator's controlling terminal.
 	   DEBUG output, not console output!
 	o) Very useful for debugging. DOCUMENT it!
-
 
 Fix the PowerPC DECR interrupt speed! (MacPPC and PReP speed, etc.)
 

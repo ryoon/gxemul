@@ -1,0 +1,21 @@
+#
+#  $Id: Makefile.skel,v 1.1 2007-03-16 14:13:59 debug Exp $
+#
+#  Makefile for GXemul src/disk
+#
+
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
+
+OBJS=diskimage.o
+
+all: $(OBJS)
+
+$(OBJS): Makefile
+
+
+clean:
+	rm -f $(OBJS) *core
+
+clean_all: clean
+	rm -f Makefile
+

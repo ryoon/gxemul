@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1492 2007-03-15 15:42:58 debug Exp $
+$Id: HISTORY,v 1.1493 2007-03-16 14:13:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3335,3 +3335,5 @@ Changelog for GXemul:
 20070314	Applying a patch from Michael Yaroslavtsev which fixes the
 		previous Linux lib64 patch to the configure script.
 20070315	Adding a (dummy) sun4v machine type, and SPARC T1 cpu type.
+20070316	Creating a new directory, src/disk, and moving diskimage.c
+		to it.

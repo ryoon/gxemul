@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.116 2006-12-30 13:30:51 debug Exp $
+ *  $Id: diskimage.c,v 1.1 2007-03-16 14:13:59 debug Exp $
  *
  *  Disk image support.
  *

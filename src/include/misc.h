@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.250 2007-03-06 18:45:18 debug Exp $
+ *  $Id: misc.h,v 1.251 2007-03-16 14:45:30 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -160,6 +160,22 @@ struct memory;
 /*  Debug stuff:  */
 #define	DEBUG_BUFSIZE		1024
 #define	DEBUG_INDENTATION	4
+
+
+/*  bootblock.c:  */
+int load_bootblock(struct machine *m, struct cpu *cpu,
+	int *n_loadp, char ***load_namesp);
+
+
+/*  bootblock_apple.c:  */
+int apple_load_bootblock(struct machine *m, struct cpu *cpu,
+	int disk_id, int disk_type, int *n_loadp, char ***load_namesp);
+
+
+/*  bootblock_iso9660.c:  */
+int iso_load_bootblock(struct machine *m, struct cpu *cpu,
+	int disk_id, int disk_type, int iso_type, unsigned char *buf,
+	int *n_loadp, char ***load_namesp);
 
 
 /*  dec_prom.c:  */

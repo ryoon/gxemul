@@ -1,0 +1,361 @@
+/*
+ *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright  
+ *     notice, this list of conditions and the following disclaimer in the 
+ *     documentation and/or other materials provided with the distribution.
+ *  3. The name of the author may not be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE   
+ *  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ *  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ *  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ *  SUCH DAMAGE.
+ *
+ *
+ *  $Id: bootblock_iso9660.c,v 1.1 2007-03-16 14:45:30 debug Exp $
+ *
+ *  ISO9660 CD-ROM "bootblock" handling.
+ *
+ *  There is really no bootblock; instead, the file which is to be booted
+ *  is extracted into a temporary file, and started as if it was given
+ *  as a normal file argument on the command line.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "cpu.h"
+#include "diskimage.h"
+#include "machine.h"
+#include "misc.h"
+
+/*  #define ISO_DEBUG  */
+
+
+/*
+ *  iso_load_bootblock():
+ *
+ *  Try to load a kernel from an ISO 9660 disk image. iso_type is 1 for
+ *  "CD001" (standard), 2 for "CDW01" (ECMA), and 3 for "CDROM" (Sierra).
+ *
+ *  TODO: This function uses too many magic offsets and so on; it should be
+ *  cleaned up some day.
+ *
+ *  Returns 1 on success, 0 on failure.
+ */
+int iso_load_bootblock(struct machine *m, struct cpu *cpu,
+	int disk_id, int disk_type, int iso_type, unsigned char *buf,
+	int *n_loadp, char ***load_namesp)
+{
+	char str[35];
+	int filenr, i, ofs, dirlen, res = 0, res2, iadd = DEBUG_INDENTATION;
+	int found_dir;
+	uint64_t dirofs;
+	uint64_t fileofs, filelen;
+	unsigned char *dirbuf = NULL, *dp;
+	unsigned char *match_entry = NULL;
+	char *p, *filename_orig;
+	char *filename = strdup(cpu->machine->boot_kernel_filename);
+	unsigned char *filebuf = NULL;
+	char *tmpfname = NULL;
+	char **new_array;
+	int tmpfile_handle;
+
+	if (filename == NULL) {
+		fatal("out of memory\n");
+		exit(1);
+	}
+	filename_orig = filename;
+
+	debug("ISO9660 boot:\n");
+	debug_indentation(iadd);
+
+	/*  Volume ID:  */
+	ofs = iso_type == 3? 48 : 40;
+	memcpy(str, buf + ofs, sizeof(str));
+	str[32] = '\0';  i = 31;
+	while (i >= 0 && str[i]==' ')
+		str[i--] = '\0';
+	if (str[0])
+		debug("\"%s\"", str);
+	else {
+		/*  System ID:  */
+		ofs = iso_type == 3? 16 : 8;
+		memcpy(str, buf + ofs, sizeof(str));
+		str[32] = '\0';  i = 31;
+		while (i >= 0 && str[i]==' ')
+			str[i--] = '\0';
+		if (str[0])
+			debug("\"%s\"", str);
+		else
+			debug("(no ID)");
+	}
+
+	debug(":%s\n", filename);
+
+
+	/*
+	 *  Traverse the directory structure to find the kernel.
+	 */
+
+	dirlen = buf[0x84] + 256*buf[0x85] + 65536*buf[0x86];
+	if (dirlen != buf[0x8b] + 256*buf[0x8a] + 65536*buf[0x89])
+		fatal("WARNING: Root directory length mismatch?\n");
+
+	dirofs = (int64_t)(buf[0x8c] + (buf[0x8d] << 8) + (buf[0x8e] << 16) +
+	    ((uint64_t)buf[0x8f] << 24)) * 2048;
+
+#ifdef ISO_DEBUG
+	debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);
+#endif
+
+	dirbuf = malloc(dirlen);
+	if (dirbuf == NULL) {
+		fatal("out of memory in iso_load_bootblock()\n");
+		exit(1);
+	}
+
+	res2 = diskimage_access(m, disk_id, disk_type, 0, dirofs, dirbuf,
+	    dirlen);
+	if (!res2) {
+		fatal("Couldn't read the disk image. Aborting.\n");
+		goto ret;
+	}
+
+	found_dir = 1;	/*  Assume root dir  */
+	dp = dirbuf; filenr = 1;
+	p = NULL;
+	while (dp < dirbuf + dirlen) {
+		size_t i, nlen = dp[0];
+		int x = dp[2] + (dp[3] << 8) + (dp[4] << 16) +
+		    ((uint64_t)dp[5] << 24);
+		int y = dp[6] + (dp[7] << 8);
+		char direntry[65];
+
+		dp += 8;
+
+		/*
+		 *  As long as there is an \ or / in the filename, then we
+		 *  have not yet found the directory.
+		 */
+		p = strchr(filename, '/');
+		if (p == NULL)
+			p = strchr(filename, '\\');
+
+#ifdef ISO_DEBUG
+		debug("%i%s: %i, %i, \"", filenr, filenr == found_dir?
+		    " [CURRENT]" : "", x, y);
+#endif
+		for (i=0; i<nlen && i<sizeof(direntry)-1; i++)
+			if (dp[i]) {
+				direntry[i] = dp[i];
+#ifdef ISO_DEBUG
+				debug("%c", dp[i]);
+#endif
+			} else
+				break;
+#ifdef ISO_DEBUG
+		debug("\"\n");
+#endif
+		direntry[i] = '\0';
+
+		/*  A directory name match?  */
+		if ((p != NULL && strncasecmp(filename, direntry, nlen) == 0
+		    && nlen == (size_t)p - (size_t)filename && found_dir == y)
+		    || (p == NULL && direntry[0] == '\0') ) {
+			found_dir = filenr;
+			if (p != NULL)
+				filename = p+1;
+			dirofs = 2048 * (int64_t)x;
+		}
+
+		dp += nlen;
+
+		/*  16-bit aligned lenght:  */
+		if (nlen & 1)
+			dp ++;
+
+		filenr ++;
+	}
+
+	p = strchr(filename, '/');
+	if (p == NULL)
+		p = strchr(filename, '\\');
+
+	if (p != NULL) {
+		char *blah = filename_orig;
+
+		fatal("could not find '%s' in /", filename);
+
+		/*  Print the first part of the filename:  */
+		while (blah != filename)
+			fatal("%c", *blah++);
+		
+		fatal("\n");
+		goto ret;
+	}
+
+	/*  debug("dirofs = 0x%llx\n", (long long)dirofs);  */
+
+	/*  Free the old dirbuf, and allocate a new one:  */
+	free(dirbuf);
+	dirbuf = malloc(512);
+	if (dirbuf == NULL) {
+		fatal("out of memory in iso_load_bootblock()\n");
+		exit(1);
+	}
+
+	for (;;) {
+		size_t len, i;
+
+		/*  Too close to another sector? Then realign.  */
+		if ((dirofs & 2047) + 70 > 2047) {
+			dirofs = (dirofs | 2047) + 1;
+			/*  debug("realign dirofs = 0x%llx\n", dirofs);  */
+		}
+
+		res2 = diskimage_access(m, disk_id, disk_type, 0, dirofs,
+		    dirbuf, 256);
+		if (!res2) {
+			fatal("Couldn't read the disk image. Aborting.\n");
+			goto ret;
+		}
+
+		dp = dirbuf;
+		len = dp[0];
+		if (len < 2)
+			break;
+
+		/*
+		 *  TODO: Actually parse the directory entry!
+		 *
+		 *  Haha, this must be rewritten.
+		 */
+		for (i=32; i<len; i++) {
+			if (i < len - strlen(filename))
+				if (strncasecmp(filename, (char *)dp + i,
+				    strlen(filename)) == 0) {
+					/*  The filename was found somewhere
+					    in the directory entry.  */
+					if (match_entry != NULL) {
+						fatal("TODO: I'm too lazy to"
+						    " implement a correct "
+						    "directory parser right "
+						    "now... (BUG)\n");
+						exit(1);
+					}
+					match_entry = malloc(512);
+					if (match_entry == NULL) {
+						fatal("out of memory\n");
+						exit(1);
+					}
+					memcpy(match_entry, dp, 512);
+					break;
+				}
+		}
+
+		dirofs += len;
+	}
+
+	if (match_entry == NULL) {
+		char *blah = filename_orig;
+
+		fatal("could not find '%s' in /", filename);
+
+		/*  Print the first part of the filename:  */
+		while (blah != filename)
+			fatal("%c", *blah++);
+		
+		fatal("\n");
+		goto ret;
+	}
+
+	fileofs = match_entry[2] + (match_entry[3] << 8) +
+	    (match_entry[4] << 16) + ((uint64_t)match_entry[5] << 24);
+	filelen = match_entry[10] + (match_entry[11] << 8) +
+	    (match_entry[12] << 16) + ((uint64_t)match_entry[13] << 24);
+	fileofs *= 2048;
+
+	/*  debug("filelen=%llx fileofs=%llx\n", (long long)filelen,
+	    (long long)fileofs);  */
+
+	filebuf = malloc(filelen);
+	if (filebuf == NULL) {
+		fatal("could not allocate %lli bytes to read the file"
+		    " from the disk image!\n", (long long)filelen);
+		goto ret;
+	}
+
+	tmpfname = strdup("/tmp/gxemul.XXXXXXXXXXXX");
+
+	res2 = diskimage_access(m, disk_id, disk_type, 0, fileofs, filebuf,
+	    filelen);
+	if (!res2) {
+		fatal("could not read the file from the disk image!\n");
+		goto ret;
+	}
+
+	tmpfile_handle = mkstemp(tmpfname);
+	if (tmpfile_handle < 0) {
+		fatal("could not create %s\n", tmpfname);
+		exit(1);
+	}
+	write(tmpfile_handle, filebuf, filelen);
+	close(tmpfile_handle);
+
+	debug("extracted %lli bytes into %s\n", (long long)filelen, tmpfname);
+
+	/*  Add the temporary filename to the load_namesp array:  */
+	(*n_loadp)++;
+	new_array = malloc(sizeof(char *) * (*n_loadp));
+	if (new_array == NULL) {
+		fatal("out of memory\n");
+		exit(1);
+	}
+	memcpy(new_array, *load_namesp, sizeof(char *) * (*n_loadp));
+	*load_namesp = new_array;
+
+	/*  This adds a Backspace char in front of the filename; this
+	    is a special hack which causes the file to be removed once
+	    it has been loaded.  */
+	tmpfname = realloc(tmpfname, strlen(tmpfname) + 2);
+	memmove(tmpfname + 1, tmpfname, strlen(tmpfname) + 1);
+	tmpfname[0] = 8;
+
+	(*load_namesp)[*n_loadp - 1] = tmpfname;
+
+	res = 1;
+
+ret:
+	if (dirbuf != NULL)
+		free(dirbuf);
+
+	if (filebuf != NULL)
+		free(filebuf);
+
+	if (match_entry != NULL)
+		free(match_entry);
+
+	free(filename_orig);
+
+	debug_indentation(-iadd);
+	return res;
+}
+
+

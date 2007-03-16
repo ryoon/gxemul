@@ -25,13 +25,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bootblock_iso9660.c,v 1.1 2007-03-16 14:45:30 debug Exp $
+ *  $Id: bootblock_iso9660.c,v 1.2 2007-03-16 15:17:55 debug Exp $
  *
  *  ISO9660 CD-ROM "bootblock" handling.
  *
  *  There is really no bootblock; instead, the file which is to be booted
  *  is extracted into a temporary file, and started as if it was given
  *  as a normal file argument on the command line.
+ *
+ *  TODO: This is really ugly. It's a quick hack. All the magic constants
+ *        need to be replaced with real code!
  */
 
 #include <stdio.h>
@@ -46,6 +49,37 @@
 #include "misc.h"
 
 /*  #define ISO_DEBUG  */
+
+
+static void debug_print_volume_id_and_filename(int iso_type,
+	unsigned char *buf, char *filename)
+{
+	/*  Volume ID:  */
+	char str[35];
+	int i, ofs = iso_type == 3? 48 : 40;
+
+	memcpy(str, buf + ofs, sizeof(str));
+	str[32] = '\0';  i = 31;
+
+	while (i >= 0 && str[i]==' ')
+		str[i--] = '\0';
+	if (str[0])
+		debug("\"%s\"", str);
+	else {
+		/*  System ID:  */
+		ofs = iso_type == 3? 16 : 8;
+		memcpy(str, buf + ofs, sizeof(str));
+		str[32] = '\0';  i = 31;
+		while (i >= 0 && str[i]==' ')
+			str[i--] = '\0';
+		if (str[0])
+			debug("\"%s\"", str);
+		else
+			debug("(no ID)");
+	}
+
+	debug(":%s\n", filename);
+}
 
 
 /*
@@ -63,8 +97,7 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	int disk_id, int disk_type, int iso_type, unsigned char *buf,
 	int *n_loadp, char ***load_namesp)
 {
-	char str[35];
-	int filenr, i, ofs, dirlen, res = 0, res2, iadd = DEBUG_INDENTATION;
+	int filenr, dirlen, res = 0, res2, iadd = DEBUG_INDENTATION;
 	int found_dir;
 	uint64_t dirofs;
 	uint64_t fileofs, filelen;
@@ -86,28 +119,7 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	debug("ISO9660 boot:\n");
 	debug_indentation(iadd);
 
-	/*  Volume ID:  */
-	ofs = iso_type == 3? 48 : 40;
-	memcpy(str, buf + ofs, sizeof(str));
-	str[32] = '\0';  i = 31;
-	while (i >= 0 && str[i]==' ')
-		str[i--] = '\0';
-	if (str[0])
-		debug("\"%s\"", str);
-	else {
-		/*  System ID:  */
-		ofs = iso_type == 3? 16 : 8;
-		memcpy(str, buf + ofs, sizeof(str));
-		str[32] = '\0';  i = 31;
-		while (i >= 0 && str[i]==' ')
-			str[i--] = '\0';
-		if (str[0])
-			debug("\"%s\"", str);
-		else
-			debug("(no ID)");
-	}
-
-	debug(":%s\n", filename);
+	debug_print_volume_id_and_filename(iso_type, buf, filename);
 
 
 	/*
@@ -247,9 +259,21 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		 *
 		 *  Haha, this must be rewritten.
 		 */
+
+#if 0
+/*  hahahaha  */
+printf("filename = '%s'\n", filename);
+{
+int j;
+for (j=32; j<len; j++)
+	printf("%c", dp[j] >= ' ' && dp[j] < 128? dp[j] : '.');
+printf("\n");
+}
+#endif
+
 		for (i=32; i<len; i++) {
 			if (i < len - strlen(filename))
-				if (strncasecmp(filename, (char *)dp + i,
+				if (strncmp(filename, (char *)dp + i,
 				    strlen(filename)) == 0) {
 					/*  The filename was found somewhere
 					    in the directory entry.  */
@@ -269,6 +293,9 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 					break;
 				}
 		}
+
+		if (match_entry != NULL)
+			break;
 
 		dirofs += len;
 	}
@@ -357,5 +384,4 @@ ret:
 	debug_indentation(-iadd);
 	return res;
 }
-
 

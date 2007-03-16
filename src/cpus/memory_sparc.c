@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sparc.c,v 1.2 2006-12-30 13:30:56 debug Exp $
+ *  $Id: memory_sparc.c,v 1.3 2007-03-16 15:17:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -51,6 +51,10 @@ int sparc_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	/*  Kernel direct-mapped space for SPARC prior to v9:  */
 	if ((vaddr & 0xf0000000) == 0xf0000000)
 		*return_paddr = vaddr & 0x07ffffff;
+
+/*  FreeBSD/sun4v test hack:  */
+if ((vaddr & 0xf0000000) == 0xc0000000)
+	*return_paddr = vaddr & 0x0fffffff;
 
 	return 2;
 }

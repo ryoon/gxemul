@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.252 2007-03-08 19:04:09 debug Exp $
+$Id: RELEASE,v 1.253 2007-03-18 02:54:59 debug Exp $
 
-Working on what will become 0.4.5.
+Working on what will become 0.4.4.1.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.5
-================================================================
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.4.1
+==================================================================
 
 Copyright (C) 2003-2007  Anders Gavare.
 
@@ -25,10 +25,36 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax and NetBSD/cats.
 
 
-Changes between release 0.4.4 and 0.4.5 include, among other things:
+Changes between release 0.4.3 and 0.4.4.1 include, among other things:
 
-    o)  TODO ... NetBSD/landisk and OpenBSD/landisk,
-	perhaps also Linux/dreamcast
+    o)	The interrupt subsystem has been redesigned. This means two things:
+
+	  x)  Internal code cleanup, which makes the whole emulator more
+	      maintainable. Instead of using magically encoded integers
+	      for interrupts, strings are now used. These strings are in
+	      the form of "paths", so that devices and busses can more
+	      easily be connected to other busses, devices, or CPUs.
+
+	  x)  Some machine types which happened to work in release 0.4.3,
+	      but were not listed in the documentation as working, may
+	      have stopped working now. As always, the documentation should
+	      indicate the combinations of machine modes and guest OSes that
+	      are supposed to work.
+
+    o)	SuperH (SH4) emulation is now somewhat more stable.
+
+	  x)  GXemul 0.4.4:    A NetBSD/dreamcast Live CD works.
+	  x)  GXemul 0.4.4.1:  A Linux/dreamcast Live CD also works.
+
+    o)	PowerPC "G4" emulation is now stable enough to let NetBSD/macppc
+	run from a disk image. (Installing actually worked before, but the
+	NetBSD/macppc GENERIC kernel uses AltiVec instructions which were
+	not implemented correctly.)
+
+    o)	The PICA-61 (arc) and i80321 (evbarm) emulation modes now have their
+	timers fixed at 100 Hz. A hardcoded speed like this is very ugly, but
+	it is at least better than before (when the timer wasn't really
+	running at any specific speed at all).
 
 Please read the HISTORY files for more details.
 

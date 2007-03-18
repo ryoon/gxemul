@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1495 2007-03-16 18:49:05 debug Exp $
+$Id: HISTORY,v 1.1496 2007-03-18 02:56:33 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3339,3 +3339,4 @@ Changelog for GXemul:
 		to it. Separating out bootblock loading stuff from emul.c into
 		new files in src/disk.
 		Adding some more SPARC registers.
+20070318	Preparing/testing for a minirelease, 0.4.4.1.

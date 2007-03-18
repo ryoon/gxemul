@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.41 2007-03-16 18:49:06 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.42 2007-03-18 02:54:59 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -146,6 +146,13 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.sparc.canrestore = 0;
 	cpu->cd.sparc.cleanwin = 1;
 	cpu->cd.sparc.otherwin = 0;
+
+	if (cpu->cd.sparc.cansave + cpu->cd.sparc.canrestore
+	    + cpu->cd.sparc.otherwin != cpu->cd.sparc.cpu_type.nwindows - 2) {
+		fatal("Fatal internal error: inconsistent windowing "
+		    "parameters!\n");
+		exit(1);
+	}
 
 	if (cpu->cd.sparc.cpu_type.nwindows > N_REG_WINDOWS) {
 		fatal("Fatal internal error: nwindows = %1 is more than %i\n",

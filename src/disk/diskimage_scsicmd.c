@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage_scsicmd.c,v 1.1 2007-03-24 03:12:17 debug Exp $
+ *  $Id: diskimage_scsicmd.c,v 1.2 2007-03-24 04:05:34 debug Exp $
  *
  *  Disk image support: SCSI command emulation.
+ *
+ *  TODO:  There are LOTS of ugly magic values in this module. These should
+ *         be replaced by proper defines.
  *
  *  TODO:  There's probably a bug in the tape support:
  *         Let's say there are 10240 bytes left in a file, and 10240
@@ -985,29 +988,82 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		break;
 
 	case SCSICDROM_READ_DISCINFO:
-		debug("(SCSICDROM_READ_DISCINFO: ");
-		debug("TODO");
-		retlen = 0;
-
-		/*  Return data:  */
+		/*  (Patch from Håvard Eidnes.)  */
+		debug("CDROM_READ_DISCINFO, cmd[1]=0x%02x", xferp->cmd[1]);
+		retlen = 34;
 		scsi_transfer_allocbuf(&xferp->data_in_len,
 		    &xferp->data_in, retlen, 1);
 
-		/*  TODO  */
+		/*  TODO: Make this more generic!  */
+		xferp->data_in[0] = retlen-2;	/*  length of info, excl len  */
+		xferp->data_in[1] = 0;	 /*  length of info-(len field), msb  */
+		xferp->data_in[2] = 0xE; /*  11=complete ses., 10=fin disc  */
+		xferp->data_in[3] = 0;   /*  First track on disc  */
+		xferp->data_in[4] = 1;   /*  Number of sessions, lsb  */
+		xferp->data_in[5] = 0;   /*  first_track_last_session_lsb  */
+		xferp->data_in[6] = 0;   /*  last_track_last_session_lsb  */
+		xferp->data_in[7] = 0x20;/*  various flags  */
+		xferp->data_in[8] = 0;   /*  CD-ROM disc  */
+		xferp->data_in[9] = 1;   /*  num sessions, msb  */
+		xferp->data_in[10] = 0;  /*  first_track_last_session_msb  */
+		xferp->data_in[11] = 0;  /*  last_track_last_session_msb  */
+		{
+			int i;
+			/*  Lead-in data, for completed cd-rom:  */
+			for (i=16; i<=23; i++)
+				xferp->data_in[i] = 0xff;
+		}
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICDROM_READ_TRACKINFO:
-		debug("(SCSICDROM_READ_TRACKINFO: ");
-		debug("TODO");
-		retlen = 0;
-
-		/*  Return data:  */
+		/*  (Patch from Håvard Eidnes.)  */
+		debug("CDROM_READ_TRACKINFO");
+		retlen = 36;
 		scsi_transfer_allocbuf(&xferp->data_in_len,
 		    &xferp->data_in, retlen, 1);
 
-		/*  TODO  */
+		diskimage_recalc_size(d);
+
+		size = d->total_size / d->logical_block_size;
+		if (d->total_size & (d->logical_block_size-1))
+			size ++;
+
+		/*  TODO: Make more generic?  */
+		/*  TODO: Don't use magic values.  */
+		xferp->data_in[0] = retlen-2; /*  length of info, excl len  */
+		xferp->data_in[1] = 0;	      /*  length of info, msb  */
+		xferp->data_in[2] = 1;	      /*  track#, lsb  */
+		xferp->data_in[3] = 1;	      /*  session#, lsb  */
+		xferp->data_in[4] = 0;	      /*  reserved  */
+		xferp->data_in[5] = 0x6;      /*  trk mode: unintr. data,
+						  copyable  */
+		xferp->data_in[6] = 0x81;     /*  trk info: RT + trk mode  */
+		xferp->data_in[7] = 0x2;      /*  last rec=valid, next w=not
+						  valid */
+		{
+			/*
+			 *  track start, next writable, free blcks,
+			 *  blocking factor
+			 */
+			int i;
+			for(i=8; i<=23; i++)
+				xferp->data_in[i] = 0;
+		}
+
+		/*  Track size:  */
+		xferp->data_in[24] = (size >> 24) & 0xff;
+		xferp->data_in[25] = (size >> 16) & 0xff;
+		xferp->data_in[26] = (size >> 8) & 0xff;
+		xferp->data_in[27] = size & 0xff;
+
+		/*  Last recorded address, only for dvd; zero out the rest:  */
+		{
+			int i;
+			for (i=28; i<=35; i++)
+				xferp->data_in[i] = 0;
+		}
 
 		diskimage__return_default_status_and_message(xferp);
 		break;

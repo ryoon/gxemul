@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1499 2007-03-24 03:12:17 debug Exp $
+$Id: HISTORY,v 1.1500 2007-03-24 04:05:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3347,3 +3347,5 @@ Changelog for GXemul:
 		optimizations in unstable development builds.
 		Moving out SCSI-specific stuff from diskimage.c into a new
 		diskimage_scsicmd.c.
+		Applying Håvard Eidnes patch for SCSICDROM_READ_DISKINFO and
+		SCSICDROM_READ_TRACKINFO.

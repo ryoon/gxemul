@@ -1,32 +1,39 @@
-$Id: TODO,v 1.464 2007-03-16 14:13:59 debug Exp $
+$Id: TODO,v 1.465 2007-03-24 02:52:17 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Landisk SH4:
-	HITTA OCH FIXA SH4-STABILITETSPROBLEMEN!
-	SH4 RTC, läs värdmaskinens klocka.
-	När NetBSD 4.0 och OpenBSD 4.1 kommit ut, uppdatera
-	installationsinstruktionerna i dokumentationen, flytta upp till
-	supportat OS (guestos & index).
-	Lägg till landisk i emulated machines i intro.html.
-	Sätt machine_landisk stable = 1, om/när allt funkar.
+Apply and test Håvard Eidnes' patch.
 
-Add a special function to the testmachine devices, console perhaps?
-which prints a zero-terminated string like "[[ %s ]]\n" when given
-a virtual memory address (or a physical? or perhaps both should be possible).
-	o) NOT to the console, but to the emulator's controlling terminal.
-	   DEBUG output, not console output!
-	o) Very useful for debugging. DOCUMENT it!
-
-Fix the PowerPC DECR interrupt speed! (MacPPC and PReP speed, etc.)
-
-Prova att installera GNU Linux/DECstation _UTAN_
-slow_serial_interrupts_hack_for_linux! Det kanske funkar med
-nya interruptsystemet?
+Lägg till -release och -devel switches i configurescriptet!
+Lägg till -debug, som gör att -O3 etc inte används!
+Dokumentera dessa (i --help)
 
 -------------------------------------------------------------------------------
 
-Possible (relatively large) work packages to concentrate on in the future:
+Possible work packages to concentrate on in the future, in random order:
+
+  x)  Disk handling:
+	Rework how disk images are handled. Add/remove during runtime should
+	be made possible, "overlays" (to simplify roll-back), more support for
+	"floppies" (for the machines that may support them, i.e. actually
+	implement a floppy controller).
+
+  x)  SPARC emulation:
+	ASIs, more instructions, virtual memory, traps/exceptions/interrupts,
+	register window handling for all ISA variants (pre-v9, v9, sun4v?),
+	machine modes + devices etc. Lots of stuff.
+
+  x)  Alpha emulation:
+	Lots of work left before the Alpha emulation mode is meaningful:
+	everything about exceptions, virtual memory, interrupts, probably a
+	lot more PALcode stuff etc. Lots of machine specific details.
+
+  x)  Userland emulation:
+	Primary goals would be NetBSD and Linux syscall emulation.
+	Main areas to work on:  Initial register values, stack contents,
+	argument and environment passing, return values from main,
+	errno mapping (host vs emulation), mmap emulation layer,
+	translation of other structs (time, directory stuff, etc).
 
   x)  SMP:
 	Get SMP working again. It is pretty much broken since I started
@@ -34,9 +41,6 @@ Possible (relatively large) work packages to concentrate on in the future:
 	Add better Test machine demos for SMP in the demos directory.
 	Either multiple dev_mp (one per cpu), or the single dev_mp must
 	_really_ keep all per-cpu values separate.
-
-  x)  Alpha and SPARC emulation:
-	These are the next two CPU/machine families that I want to emulate.
 
   x)  Network:
 	Redesign of the networking subsystem, at least the NAT translation
@@ -60,22 +64,26 @@ Possible (relatively large) work packages to concentrate on in the future:
 	o) PCI interrupt controller logic... very hard to get right,
 	   because these differ a lot from one machine to the next.
 
+  x)  Native code generation backends.
+	Not necessary in order to have a working emulator, but speed is
+	always nice to have.
+	Todo: Native code generation, in order to work with the dyntrans
+	subsystem, must abide by the host's ABI. The configure script should
+	not only check for the correct architecture, but also the ABI!
+
+  x)  Documentation:
+	Rewrite all the documentation in a more suitable format, suitable
+	for auto-generation from source code comments.
+
   x)  Debugging:
 	Think more about SMP debugging, etc. Right now, the
 	debugger is a mess. Also, a better connection to GDB would be
 	very nice to have.
 
-  x)  Userland emulation:
-	Primary goals would be NetBSD and Linux syscall emulation.
-
   x)  Variable-length ISA support:
 	The support for emulation of variable length ISAs (such as
 	M68K, AMD64/i386, or AVR32) is not really there yet. It would
-	be very fun to work on this, to get it right.
-
-  x)  Native code generation backends.
-	Not necessary to have the emulator working, but speed is
-	always nice to have.
+	be very fun to work on this, to get it right. Low priority for now.
 
   x)  Remove all "addr mult" device support!
 	Long term goal. Replace the current hacks with address 
@@ -208,6 +216,11 @@ SuperH:
 	x)  Floating point speed!
 	x)  Floating point exception correctness.
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
+
+Landisk SH4:
+	x)  When NetBSD/landisk 4.0 and OpenBSD/landisk 4.1 have been
+	    released, test to see if they work. (Update documentation,
+	    guestos&index, and set stable=1 in machine_landisk.c.)
 
 Dreamcast:
 	x)  G2 DMA
@@ -473,6 +486,7 @@ PCI:
 	x)  generalize the interrupt routing stuff (lines etc)
 
 Clocks and timers:
+	x)  Fix the PowerPC DECR interrupt speed! (MacPPC and PReP speed, etc.)
 	x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 	x)  Test the 8253? Right now it doesn't seem to be used?
 	x)  NetWinder timeofday is incorrect!
@@ -529,6 +543,20 @@ Caches / memory hierarchies: (this is mostly MIPS-specific)
 File/disk/symbol handling:
 	o)  Make sure that disks can be added/removed during runtime!
 	    (Perhaps this needs a reasonably large re-write.)
+	o)  "Overlay" disk images? I.e. writes go to a separate file,
+	    allowing simple roll-back. Best implementation could be to
+	    simply use unix' default filesystem behaviour (having an equally
+	    large overlay as the original), plus a map file indicating which
+	    portions of the overlay have been written to (?).
+		filename  and  filename.map
+	    If the filename.map file is not present, the emulator should
+	    not accept filename as an overlay! This is in order to not
+	    accidentally start and overwrite any existing filename.map.
+	    filename.map only needs to be touched, it will grow/be written
+	    to as needed.
+	    Note: Multiple overlays should be allowed for a single disk.
+	    "Chained."
+	    Fixed ratio, 1 bit per 512 bytes of disk? Feels ok.
 	o)  Remove some of the complexity in file format guessing, for
 		Ultrix kernels that are actually disk images?
 	o)  Better handling of tape files	

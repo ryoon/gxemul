@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.245 2007-03-16 14:13:59 debug Exp $
+#  $Id: configure,v 1.246 2007-03-24 02:53:08 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -61,15 +61,42 @@
 #  Figure out if this is a stable version (0.x.x).
 X=`basename \`pwd\`|cut -d \- -f 2-|cut -c1-2`
 if [ z"$X" = z0. ]; then
-	#  Stable:
-	ENABLEALPHA=YES
-	ENABLEARM=YES
-	ENABLEMIPS=YES
-	ENABLEPPC=YES
-	ENABLESH=YES
+	#  Stable.
 else
-	#  Development:
+	#  Development.
 	UNSTABLE=YES
+fi
+
+if [ z"$*" != z ]; then
+	#  Parse command line options:
+	for a in $*; do
+		if [ z$a = z--disable-x ]; then
+			NOX11=YES
+		else if [ z$a = z--debug ]; then
+			DEBUG=YES
+		else if [ z$a = z--help ]; then
+			printf "usage: $0 [options]\n\n"
+			echo "  --disable-x         don't include X11 support,"\
+			    "even if the host supports it"
+			if [ z"$UNSTABLE" = zYES ]; then
+				echo "  --debug             configure" \
+					"for a debug build"
+			fi
+			echo
+			exit
+		else
+			echo "Invalid option: $a"
+			echo "Run  $0 --help  to get a list of" \
+			    "available options."
+			exit
+		fi; fi; fi
+	done
+fi
+
+
+if [ z"$UNSTABLE" = zYES ]; then
+	#  Development:
+	printf "###\n###  DEVELOPMENT (UNSTABLE)\n###\n\n"
 	ENABLEALPHA=YES
 	ENABLEARM=YES
 	ENABLEAVR=YES
@@ -80,30 +107,12 @@ else
 	ENABLESH=YES
 	ENABLESPARC=YES
 	ENABLETRANSPUTER=YES
-fi
-
-if [ z"$UNSTABLE" = zYES ]; then
-	printf "###\n###  DEVELOPMENT (UNSTABLE)\n###\n\n"
-fi
-
-if [ z"$*" != z ]; then
-	#  Parse command line options:
-	for a in $*; do
-		if [ z$a = z--disable-x ]; then
-			NOX11=YES
-		else if [ z$a = z--help ]; then
-			printf "usage: $0 [options]\n\n"
-			echo "  --disable-x         don't include X11 support,"\
-			    "even if the host supports it"
-			echo
-			exit
-		else
-			echo "Invalid option: $a"
-			echo "Run  $0 --help  to get a list of" \
-			    "available options."
-			exit
-		fi; fi
-	done
+else
+	#  Stable:
+	ENABLEARM=YES
+	ENABLEMIPS=YES
+	ENABLEPPC=YES
+	ENABLESH=YES
 fi
 
 
@@ -572,25 +581,32 @@ rm -f _testprog
 
 if [ z"$COMPAQCC" = zYES ]; then
 	#  -O4 is possible, but sometimes -O3 is better?
-	CFLAGS="-O4 $CFLAGS"
+	if [ ! z"$DEBUG" = zYES ]; then
+		CFLAGS="-O4 $CFLAGS"
+	fi
 else
 	if [ z"`uname`" = zSunOS ]; then
 		#  "cc", the system's default compiler:
-		if [ z"$SUNCC" = zYES ]; then
-			CFLAGS="-xO5 -xdepend $CFLAGS"
+		if [ ! z"$DEBUG" = zYES ]; then
+			if [ z"$SUNCC" = zYES ]; then
+				CFLAGS="-xO5 -xdepend $CFLAGS"
+			fi
 		fi
 		printf "#define SOLARIS\n" >> config.h
 		OTHERLIBS="-lsocket $OTHERLIBS"
 	else
 		#  gcc or something else:
-		$CC $CFLAGS _testprog.c -o _testprog -O 2> /dev/null
-		if [ -x _testprog ]; then
-			rm -f _testprog
-			$CC $CFLAGS _testprog.c -o _testprog -O3 2> /dev/null
+		if [ ! z"$DEBUG" = zYES ]; then
+			$CC $CFLAGS _testprog.c -o _testprog -O 2> /dev/null
 			if [ -x _testprog ]; then
-				CFLAGS="-O3 $CFLAGS"
-			else
-				CFLAGS="-O $CFLAGS"
+				rm -f _testprog
+				$CC $CFLAGS _testprog.c -o _testprog	\
+					-O3 2> /dev/null
+				if [ -x _testprog ]; then
+					CFLAGS="-O3 $CFLAGS"
+				else
+					CFLAGS="-O $CFLAGS"
+				fi
 			fi
 		fi
 	fi
@@ -600,7 +616,8 @@ rm -f _testprog
 
 #  -fschedule-insns causes bugs on i386 with gcc,
 #  but works OK on my alpha with ccc (compaq's cc).
-if [ z"$COMPAQCC" = zYES ]; then
+if [ ! z"$DEBUG" = zYES ]; then
+    if [ z"$COMPAQCC" = zYES ]; then
 	printf "checking whether -fschedule-insns2 can be used... "
 	$CC $CFLAGS _testprog.c -o _testprog -fschedule-insns2 2> /dev/null
 	if [ -x _testprog ]; then
@@ -638,42 +655,46 @@ if [ z"$COMPAQCC" = zYES ]; then
 		printf "no\n"
 	fi
 	rm -f _testprog
-fi
+fi; fi
 
 
 #  -fpeephole
-printf "checking whether -fpeephole can be used... "
-$CC $CFLAGS -fpeephole _testprog.c -o _testprog > _testprog.stdout 2>&1
-cat _testprog.stdout >> _testprog.error
-if grep peephole _testprog.error > /dev/null 2>&1; then
-	printf "no\n"
-else
-	if [ -x _testprog ]; then
-		CFLAGS="-fpeephole $CFLAGS"
-		printf "yes\n"
-	else
+if [ ! z"$DEBUG" = zYES ]; then
+	printf "checking whether -fpeephole can be used... "
+	$CC $CFLAGS -fpeephole _testprog.c -o _testprog > _testprog.stdout 2>&1
+	cat _testprog.stdout >> _testprog.error
+	if grep peephole _testprog.error > /dev/null 2>&1; then
 		printf "no\n"
+	else
+		if [ -x _testprog ]; then
+			CFLAGS="-fpeephole $CFLAGS"
+			printf "yes\n"
+		else
+			printf "no\n"
+		fi
 	fi
+	rm -f _testprog _testprog.error _testprog.stdout
 fi
-rm -f _testprog _testprog.error _testprog.stdout
 
 
 #  -fomit-frame-pointer
-printf "checking whether -fomit-frame-pointer can be used... "
-$CC $CFLAGS -fomit-frame-pointer _testprog.c -o \
-    _testprog 1> _testprog.stdout 2>&1
-cat _testprog.stdout >> _testprog.error
-if grep frame _testprog.error > /dev/null 2>&1; then
-	printf "no\n"
-else
-	if [ -x _testprog ]; then
-		CFLAGS="-fomit-frame-pointer $CFLAGS"
-		printf "yes\n"
-	else
+if [ ! z"$DEBUG" = zYES ]; then
+	printf "checking whether -fomit-frame-pointer can be used... "
+	$CC $CFLAGS -fomit-frame-pointer _testprog.c -o \
+	    _testprog 1> _testprog.stdout 2>&1
+	cat _testprog.stdout >> _testprog.error
+	if grep frame _testprog.error > /dev/null 2>&1; then
 		printf "no\n"
+	else
+		if [ -x _testprog ]; then
+			CFLAGS="-fomit-frame-pointer $CFLAGS"
+			printf "yes\n"
+		else
+			printf "no\n"
+		fi
 	fi
+	rm -f _testprog _testprog.error _testprog.stdout
 fi
-rm -f _testprog _testprog.error _testprog.stdout
 
 
 #  -g, for development builds

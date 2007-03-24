@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1497 2007-03-18 03:41:36 debug Exp $
+$Id: HISTORY,v 1.1498 2007-03-24 02:53:08 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3343,3 +3343,5 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.4.1  ==============
 
+20070324	Adding a "--debug" option to the configure script, to disable
+		optimizations in unstable development builds.

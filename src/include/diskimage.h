@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.35 2007-03-24 03:12:17 debug Exp $
+ *  $Id: diskimage.h,v 1.36 2007-03-24 06:39:29 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -45,13 +45,28 @@
 
 #define	DISKIMAGE_TYPES		{ "(NONE)", "SCSI", "IDE", "FLOPPY" }
 
+
+/*  512 bytes per overlay block. Don't change this.  */
+#define	OVERLAY_BLOCK_SIZE	512
+
+struct diskimage_overlay {
+	char		*overlay_basename;
+	FILE		*f_data;
+	FILE		*f_bitmap;
+};
+
 struct diskimage {
 	struct diskimage *next;
 	int		type;		/*  DISKIMAGE_SCSI, etc  */
 	int		id;		/*  SCSI id  */
 
+	/*  Filename in host's file system:  */
 	char		*fname;
 	FILE		*f;
+
+	/*  Overlays:  */
+	int		nr_of_overlays;
+	struct diskimage_overlay *overlays;
 
 	int		chs_override;
 	int		cylinders;
@@ -123,6 +138,7 @@ int diskimage__internal_access(struct diskimage *d, int writeflag,
 	off_t offset, unsigned char *buf, size_t len);
 int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 	off_t offset, unsigned char *buf, size_t len);
+void diskimage_add_overlay(struct diskimage *d, char *overlay_basename);
 void diskimage_recalc_size(struct diskimage *d);
 int diskimage_exist(struct machine *machine, int id, int type);
 int diskimage_bootdev(struct machine *machine, int *typep);

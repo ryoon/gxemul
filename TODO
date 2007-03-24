@@ -1,12 +1,8 @@
-$Id: TODO,v 1.465 2007-03-24 02:52:17 debug Exp $
+$Id: TODO,v 1.466 2007-03-24 06:39:28 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Apply and test Håvard Eidnes' patch.
-
-Lägg till -release och -devel switches i configurescriptet!
-Lägg till -debug, som gör att -O3 etc inte används!
-Dokumentera dessa (i --help)
+Fix the overlay stuff for e.g. pmax boot! (Non-aligned read/writes.)
 
 -------------------------------------------------------------------------------
 

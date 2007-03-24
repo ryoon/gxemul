@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.293 2007-02-05 16:49:05 debug Exp $
+ *  $Id: main.c,v 1.294 2007-03-24 06:39:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -244,6 +244,7 @@ static void usage(int longusage)
 	    " file)\n");
 	printf("                s      SCSI\n");
 	printf("                t      tape\n");
+	printf("                V      add an overlay\n");
 	printf("                0-7    force a specific ID\n");
 	printf("  -G port   listen to gdb remote connections on this port\n");
 	printf("  -I hz     set the main cpu frequency to hz (not used by "

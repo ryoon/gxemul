@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.66 2006-12-30 13:30:51 debug Exp $
+$Id: misc.html,v 1.67 2007-03-24 06:39:29 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -51,6 +51,8 @@ SUCH DAMAGE.
 	developing firmware, using GXemul</a>
   <li><a href="#compilercontruct">Using GXemul in compiler contruction courses</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
+  <li><a href="#tape_images">How to start the emulator with tape images</a>
+  <li><a href="#disk_overlays">How to use disk image overlays</a>
   <li><a href="#filexfer">Transfering files to/from the guest OS</a>
   <li><a href="#largeimages">How to extract large gzipped disk images</a>
   <li><a href="#userland">Running userland binaries</a>
@@ -197,7 +199,16 @@ use it as a CD-ROM directly accessible from within the emulator:
 </pre>
 It is probably possible to use harddisks as well this way, but I would not
 recommend it.
-<p>
+
+
+
+
+
+
+<p><br>
+<a name="tape_images"></a>
+<h3>How to start the emulator with tape images:</h3>
+
 Using emulated tape drives is a bit more complicated than disks, because a
 tape can be made up of several "files" with space in between. The solution
 I have choosen is to have one file in the host's file system space for each
@@ -247,6 +258,71 @@ every time a tape is rewound, it is reopened using the filename given
 on the command line. By changing what the symbolic name points to,
 you can "switch tapes" without quiting and restarting the emulator.
 
+<p>
+<font color="#ff0000">Note: Tape support is most likely very buggy, 
+because it has not been tested much, and has probably also suffered 
+from bit-rot by now.</font>
+
+
+
+
+
+
+<p><br>
+<a name="disk_overlays"></a>
+<h3>How to use disk image overlays:</h3>
+
+This is most likely best understood by an example:
+
+<p><ul>
+  <li>Install e.g. <a href="guestoses.html#netbsdcatsinstall">NetBSD/cats</a>.
+	You will end up with a disk image called
+	<tt>nbsd_cats.img</tt>.
+  <p>
+  <li>Running the following command will boot straight from the disk
+	image, with no overlay images:<pre>
+	<b>gxemul -XEcats -d nbsd_cats.img netbsd.aout-GENERIC.gz</b>
+
+</pre>
+  <li>You may now create an overlay file, a corresponding map file,
+	and start the emulator with the overlay image connected to
+	the same (explicit) ID as the base disk image:<pre>
+	<b>touch overlay.img overlay.img.map
+	gxemul -XEcats -d 0:nbsd_cats.img -d V0:overlay.img netbsd.aout-GENERIC.gz</b>
+
+</pre>
+  <li>Any changes to the filesystem you perform when using the overlay
+	will only be written to that overlay. For example, to perform
+	a "roll back", you can do the following:<pre>
+	<b>rm -f overlay.img overlay.img.map
+	touch overlay.img overlay.img.map</b>
+
+</pre>
+	and then simply start the emulator again, with the newly created
+	overlay image.
+</ul>
+
+<p>It is also possible to add multiple overlays. In that case, writes 
+always go the the <i>last</i> added overlay.
+
+<p>GXemul uses Unix' way of supporting files with "holes",
+so even if <tt>ls -l overlay.img</tt> says that the overlay is several 
+gigabytes large, <tt>du overlay.img</tt> should reveal that only the
+blocks that have actually been written to have been stored in the
+overlay, e.g.:<pre>
+	<b>$ ls -l
+	..
+	-rw-r--r--  1 debug  wheel  3072319488 Mar 24 11:59 nbsd_cats.img
+	-rw-r--r--  1 debug  wheel     2465354 Mar 24 11:44 netbsd.aout-GENERIC.gz
+	-rw-r--r--  1 debug  wheel  2930841600 Mar 24 14:02 overlay.img
+	-rw-r--r--  1 debug  wheel      715538 Mar 24 14:02 overlay.img.map
+	$ du overlay.img
+	864     overlay.img
+</b>
+</pre>
+
+<p>The .map file is simply a raw bitmap telling which blocks of the 
+overlay file that are in use.
 
 
 

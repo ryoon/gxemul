@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.254 2007-03-18 03:45:49 debug Exp $
+$Id: RELEASE,v 1.255 2007-03-24 06:39:28 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -26,6 +26,10 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 
 Changes between release 0.4.4.1 and 0.4.5 include, among other things:
+
+    o)	Initial support for "disk overlays" have been implemented. This
+	enables e.g. simple roll-back of emulated disk contents to a
+	previous state.
 
     o)	TODO ...
 

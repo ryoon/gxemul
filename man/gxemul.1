@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.85 2007-02-05 16:49:21 debug Exp $
+.\" $Id: gxemul.1,v 1.86 2007-03-24 06:39:29 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -29,7 +29,7 @@
 .\" This is a minimal man page for GXemul. Process this file with
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd FEBRUARY 2007
+.Dd MARCH 2007
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -174,6 +174,10 @@ Read-only (don't allow changes to be written to the file).
 SCSI.
 .It t
 Tape.
+.It V
+Add an overlay filename to an already defined disk image.
+(A ID number must also be specified when this flag is used. See the 
+documentation for an example of how to use overlays.)
 .It 0-7
 Force a specific ID number.
 .El

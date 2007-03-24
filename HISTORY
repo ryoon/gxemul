@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1500 2007-03-24 04:05:34 debug Exp $
+$Id: HISTORY,v 1.1501 2007-03-24 06:39:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3349,3 +3349,6 @@ Changelog for GXemul:
 		diskimage_scsicmd.c.
 		Applying Håvard Eidnes patch for SCSICDROM_READ_DISKINFO and
 		SCSICDROM_READ_TRACKINFO.
+		Implementing disk image "overlays" (to allow simple roll-back
+		to previous disk state). Adding a 'V' disk flag for this, and
+		updating the man page and misc.html.

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1498 2007-03-24 02:53:08 debug Exp $
+$Id: HISTORY,v 1.1499 2007-03-24 03:12:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3345,3 +3345,5 @@ Changelog for GXemul:
 
 20070324	Adding a "--debug" option to the configure script, to disable
 		optimizations in unstable development builds.
+		Moving out SCSI-specific stuff from diskimage.c into a new
+		diskimage_scsicmd.c.

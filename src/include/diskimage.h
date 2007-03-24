@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.34 2006-12-30 13:31:00 debug Exp $
+ *  $Id: diskimage.h,v 1.35 2007-03-24 03:12:17 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -104,20 +104,26 @@ struct scsi_transfer {
 
 struct machine;
 
+
+/*  diskimage_scsicmd.c:  */
 struct scsi_transfer *scsi_transfer_alloc(void);
 void scsi_transfer_free(struct scsi_transfer *);
 void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp,
 	size_t want_len, int clearflag);
+int diskimage_scsicommand(struct cpu *cpu, int id, int type,
+	struct scsi_transfer *);
 
 
+/*  diskimage.c:  */
 int64_t diskimage_getsize(struct machine *machine, int id, int type);
 int64_t diskimage_get_baseoffset(struct machine *machine, int id, int type);
 void diskimage_getchs(struct machine *machine, int id, int type,
 	int *c, int *h, int *s);
-int diskimage_scsicommand(struct cpu *cpu, int id, int type,
-	struct scsi_transfer *);
+int diskimage__internal_access(struct diskimage *d, int writeflag,
+	off_t offset, unsigned char *buf, size_t len);
 int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 	off_t offset, unsigned char *buf, size_t len);
+void diskimage_recalc_size(struct diskimage *d);
 int diskimage_exist(struct machine *machine, int id, int type);
 int diskimage_bootdev(struct machine *machine, int *typep);
 int diskimage_add(struct machine *machine, char *fname);
@@ -126,6 +132,7 @@ int diskimage_getname(struct machine *machine, int id, int type,
 int diskimage_is_a_cdrom(struct machine *machine, int id, int type);
 int diskimage_is_a_tape(struct machine *machine, int id, int type);
 void diskimage_dump_info(struct machine *machine);
+
 
 /*
  *  SCSI commands: 

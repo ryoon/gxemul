@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.7 2006-12-30 13:31:02 debug Exp $
+ *  $Id: net.c,v 1.8 2007-03-24 06:40:16 debug Exp $
  *
  *  Emulated network.
  *
@@ -101,6 +101,9 @@ struct ethernet_packet_link *net_allocate_ethernet_packet_link(
 fail:
 	fprintf(stderr, "net_allocate_ethernet_packet_link(): out of memory\n");
 	exit(1);
+
+	/*  Gets rid of a compiler warning:  */
+	return NULL;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.13 2007-02-10 14:21:10 debug Exp $
+ *  $Id: machine_arc.c,v 1.14 2007-03-24 06:40:15 debug Exp $
  */
 
 #include <stdio.h>
@@ -109,6 +109,7 @@ fatal("TODO: legacy rewrite\n");
 abort();
 //		i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042,
 //		    0, 0, machine->use_x11, 0);
+i = 0;
 
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "ns16550 irq=3 addr=0x80006000 in_use=%i name2=tty0",

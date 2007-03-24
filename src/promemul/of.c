@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.22 2007-02-16 17:17:51 debug Exp $
+ *  $Id: of.c,v 1.23 2007-03-24 06:40:16 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -497,6 +497,8 @@ static struct of_device *of_add_device(struct of_data *of_data, char *name,
 bad:
 	fatal("of_add_device(): out of memory\n");
 	exit(1);
+
+	return NULL;	/*  Silences a compiler warning  */
 }
 
 
@@ -1067,6 +1069,8 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 bad:
 	fatal("of_emul_init(): out of memory\n");
 	exit(1);
+
+	return NULL;	/*  Silences a compiler warning  */
 }
 
 

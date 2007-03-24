@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.17 2007-02-18 09:19:48 debug Exp $
+ *  $Id: machine_sgi.c,v 1.18 2007-03-24 06:40:16 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -277,6 +277,7 @@ fatal("TODO: legacy rewrite\n");
 abort();
 //		j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
 //		    0, 0, machine->use_x11, 0);  /*  TODO: irq numbers  */
+j = 0;
 
 		if (machine->use_x11)
 			machine->main_console_handle = j;

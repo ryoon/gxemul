@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.43 2007-03-26 02:01:36 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.44 2007-03-26 02:18:44 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -377,26 +377,6 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void sparc_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-}
-
-
-/*
- *  sparc_cpu_interrupt():
- */
-int sparc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
-{
-	fatal("sparc_cpu_interrupt(): TODO\n");
-	return 0;
-}
-
-
-/*
- *  sparc_cpu_interrupt_ack():
- */
-int sparc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
-{
-	/*  fatal("sparc_cpu_interrupt_ack(): TODO\n");  */
-	return 0;
 }
 
 

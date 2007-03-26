@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.17 2007-03-26 02:01:35 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.18 2007-03-26 02:16:09 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -190,26 +190,6 @@ void m68k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void m68k_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-}
-
-
-/*
- *  m68k_cpu_interrupt():
- */
-int m68k_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
-{
-	fatal("m68k_cpu_interrupt(): TODO\n");
-	return 0;
-}
-
-
-/*
- *  m68k_cpu_interrupt_ack():
- */
-int m68k_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
-{
-	/*  fatal("m68k_cpu_interrupt_ack(): TODO\n");  */
-	return 0;
 }
 
 

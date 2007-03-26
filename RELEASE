@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.256 2007-03-26 01:28:59 debug Exp $
+$Id: RELEASE,v 1.257 2007-03-26 02:18:44 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -25,7 +25,11 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax and NetBSD/cats.
 
 
-Changes between release 0.4.4.1 and 0.4.5 include, among other things:
+Release 0.4.5 is mostly a cleanup and bugfix release. There are still 
+something like 1400 TODOs in the source code, but hopefully some 
+important bugs are being fixed with this release.
+
+The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 
     o)	Initial support for "disk overlays" has been implemented. This
 	enables e.g. simple roll-back of emulated disk contents to a
@@ -35,6 +39,9 @@ Changes between release 0.4.4.1 and 0.4.5 include, among other things:
 	were offset a mulitple of 128 MB from each other could either
 	cause weird bugs, or translation leaks (leading to unnecessary
 	dyntrans cache overflows).
+
+    o)	The GDB debugging stub support has been removed. (It was not very
+	well implemented to begin with.)
 
 Please read the HISTORY file for more details.
 

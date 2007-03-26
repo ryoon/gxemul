@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.294 2007-03-24 06:39:29 debug Exp $
+ *  $Id: main.c,v 1.295 2007-03-26 02:01:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -246,7 +246,6 @@ static void usage(int longusage)
 	printf("                t      tape\n");
 	printf("                V      add an overlay\n");
 	printf("                0-7    force a specific ID\n");
-	printf("  -G port   listen to gdb remote connections on this port\n");
 	printf("  -I hz     set the main cpu frequency to hz (not used by "
 	    "all combinations\n            of machines and guest OSes)\n");
 	printf("  -i        display each instruction as it is executed\n");
@@ -367,7 +366,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 #ifdef UNSTABLE_DEVEL
 	    "bB"
 #endif
-	    "C:c:Dd:E:e:G:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
+	    "C:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -437,17 +436,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 				exit(1);
 			}
 			subtype = optarg;
-			msopts = 1;
-			break;
-		case 'G':
-			m->gdb.port = atoi(optarg);
-			if (m->gdb.port < 1 || m->gdb.port > 65535) {
-				fprintf(stderr, "Invalid debugger port %i.\n",
-				    m->gdb.port);
-				exit(1);
-			}
-			/*  Note: implicit -V  */
-			single_step = ENTER_SINGLE_STEPPING;
 			msopts = 1;
 			break;
 		case 'H':

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.22 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_avr.c,v 1.23 2007-03-26 02:01:35 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -195,39 +195,6 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void avr_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-}
-
-
-/*
- *  avr_cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Returns a newly allocated response string
- *  on success, NULL on failure.
- */
-char *avr_cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	fatal("avr_cpu_gdb_stub(): TODO\n");
-	return NULL;
-}
-
-
-/*
- *  avr_cpu_interrupt():
- */
-int avr_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
-{
-	fatal("avr_cpu_interrupt(): TODO\n");
-	return 0;
-}
-
-
-/*
- *  avr_cpu_interrupt_ack():
- */
-int avr_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
-{
-	/*  fatal("avr_cpu_interrupt_ack(): TODO\n");  */
-	return 0;
 }
 
 

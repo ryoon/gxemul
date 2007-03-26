@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.75 2007-02-18 09:19:47 debug Exp $
+ *  $Id: cpu_mips.c,v 1.76 2007-03-26 02:01:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1697,126 +1697,6 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		printf("cpu%i: Read-Modify-Write in progress, address "
 		    "0x%016"PRIx64"\n", cpu->cpu_id, cpu->cd.mips.rmw_addr);
 	}
-}
-
-
-static void add_response_word(struct cpu *cpu, char *r, uint64_t value,
-	size_t maxlen, int len)
-{
-	char *format = (len == 4)? "%08"PRIx64 : "%016"PRIx64;
-	if (len == 4)
-		value &= 0xffffffffULL;
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-		if (len == 4) {
-			value = ((value & 0xff) << 24) +
-				((value & 0xff00) << 8) +
-				((value & 0xff0000) >> 8) +
-				((value & 0xff000000) >> 24);
-		} else {
-			value = ((value & 0xff) << 56) +
-				((value & 0xff00) << 40) +
-				((value & 0xff0000) << 24) +
-				((value & 0xff000000ULL) << 8) +
-				((value & 0xff00000000ULL) >> 8) +
-				((value & 0xff0000000000ULL) >> 24) +
-				((value & 0xff000000000000ULL) >> 40) +
-				((value & 0xff00000000000000ULL) >> 56);
-		}
-	}
-	snprintf(r + strlen(r), maxlen - strlen(r), format, (uint64_t)value);
-}
-
-
-/*
- *  mips_cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
- */
-char *mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	if (strcmp(cmd, "g") == 0) {
-		/*  76 registers:  gprs, sr, lo, hi, badvaddr, cause, pc,
-		    fprs, fsr, fir, fp.  */
-		int i;
-		char *r;
-		size_t wlen = cpu->is_32bit?
-		    sizeof(uint32_t) : sizeof(uint64_t);
-		size_t len = 1 + 76 * wlen;
-		r = malloc(len);
-		if (r == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		r[0] = '\0';
-		for (i=0; i<32; i++)
-			add_response_word(cpu, r, cpu->cd.mips.gpr[i],
-			    len, wlen);
-		add_response_word(cpu, r,
-		    cpu->cd.mips.coproc[0]->reg[COP0_STATUS], len, wlen);
-		add_response_word(cpu, r, cpu->cd.mips.lo, len, wlen);
-		add_response_word(cpu, r, cpu->cd.mips.hi, len, wlen);
-		add_response_word(cpu, r,
-		    cpu->cd.mips.coproc[0]->reg[COP0_BADVADDR], len, wlen);
-		add_response_word(cpu, r,
-		    cpu->cd.mips.coproc[0]->reg[COP0_CAUSE], len, wlen);
-		add_response_word(cpu, r, cpu->pc, len, wlen);
-		for (i=0; i<32; i++)
-			add_response_word(cpu, r,
-			    cpu->cd.mips.coproc[1]->reg[i], len, wlen);
-		add_response_word(cpu, r,
-		    cpu->cd.mips.coproc[1]->reg[31] /* fcsr */, len, wlen);
-		add_response_word(cpu, r,
-		    cpu->cd.mips.coproc[1]->reg[0] /* fcir */, len, wlen);
-
-		/*  TODO: fp = gpr 30?  */
-		add_response_word(cpu, r, cpu->cd.mips.gpr[30], len, wlen);
-
-		return r;
-	}
-
-	if (cmd[0] == 'p') {
-		int regnr = strtol(cmd + 1, NULL, 16);
-		size_t wlen = cpu->is_32bit? sizeof(uint32_t):sizeof(uint64_t);
-		size_t len = 2 * wlen + 1;
-		char *r = malloc(len);
-		r[0] = '\0';
-		if (regnr >= 0 && regnr <= 31) {
-			add_response_word(cpu, r,
-			    cpu->cd.mips.gpr[regnr], len, wlen);
-		} else if (regnr == 0x20) {
-			add_response_word(cpu, r, cpu->cd.mips.coproc[0]->
-			    reg[COP0_STATUS], len, wlen);
-		} else if (regnr == 0x21) {
-			add_response_word(cpu, r, cpu->cd.mips.lo, len, wlen);
-		} else if (regnr == 0x22) {
-			add_response_word(cpu, r, cpu->cd.mips.hi, len, wlen);
-		} else if (regnr == 0x23) {
-			add_response_word(cpu, r, cpu->cd.mips.coproc[0]->
-			    reg[COP0_BADVADDR], len, wlen);
-		} else if (regnr == 0x24) {
-			add_response_word(cpu, r, cpu->cd.mips.coproc[0]->
-			    reg[COP0_CAUSE], len, wlen);
-		} else if (regnr == 0x25) {
-			add_response_word(cpu, r, cpu->pc, len, wlen);
-		} else if (regnr >= 0x26 && regnr <= 0x45 &&
-		    cpu->cd.mips.coproc[1] != NULL) {
-			add_response_word(cpu, r, cpu->cd.mips.coproc[1]->
-			    reg[regnr - 0x26], len, wlen);
-		} else if (regnr == 0x46) {
-			add_response_word(cpu, r, cpu->cd.mips.coproc[1]->
-			    fcr[MIPS_FPU_FCSR], len, wlen);
-		} else if (regnr == 0x47) {
-			add_response_word(cpu, r, cpu->cd.mips.coproc[1]->
-			    fcr[MIPS_FPU_FCIR], len, wlen);
-		} else {
-			/*  Unimplemented:  */
-			add_response_word(cpu, r, 0xcc000 + regnr, len, wlen);
-		}
-		return r;
-	}
-
-	fatal("mips_cpu_gdb_stub(): cmd='%s' TODO\n", cmd);
-	return NULL;
 }
 
 

@@ -28,13 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.157 2007-03-15 15:42:58 debug Exp $
+ *  $Id: machine.h,v 1.158 2007-03-26 02:01:36 debug Exp $
  */
 
 #include <sys/types.h>
 #include <sys/time.h>
 
-#include "debugger_gdb.h"
 #include "symbol.h"
 
 #include "machine_arc.h"
@@ -154,8 +153,6 @@ struct machine {
 	int	bootdev_id;
 	char	*bootstr;
 	char	*bootarg;
-
-	struct debugger_gdb gdb;
 
 	/*  Breakpoints:  */
 	int	n_breakpoints;

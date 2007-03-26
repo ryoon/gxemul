@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1502 2007-03-26 01:28:58 debug Exp $
+$Id: HISTORY,v 1.1503 2007-03-26 02:01:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3362,3 +3362,5 @@ Changelog for GXemul:
 		weren't _added_ to the set of translated pages, they _replaced_
 		all previous pages. It's amazing that this bug has been able
 		to live for this long. (Triggered when emulating >128MB RAM.)
+20070326	Removing the GDB debugging stub support; it was too hackish
+		and ugly.

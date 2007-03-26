@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.370 2007-02-10 14:29:54 debug Exp $
+ *  $Id: cpu.c,v 1.371 2007-03-26 02:01:35 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -218,24 +218,6 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
 		fatal("cpu_register_dump(): NULL\n");
 	else
 		m->cpu_family->register_dump(cpu, gprs, coprocs);
-}
-
-
-/*
- *  cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Return value is a pointer to a newly
- *  allocated response string, if the command was successfully executed. If
- *  there was an error, NULL is returned.
- */
-char *cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	if (cpu->machine->cpu_family == NULL ||
-	    cpu->machine->cpu_family->gdb_stub == NULL) {
-		fatal("cpu_gdb_stub(): NULL\n");
-		return NULL;
-	} else
-		return cpu->machine->cpu_family->gdb_stub(cpu, cmd);
 }
 
 

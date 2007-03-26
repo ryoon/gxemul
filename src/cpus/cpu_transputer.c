@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.c,v 1.6 2006-12-30 13:30:55 debug Exp $
+ *  $Id: cpu_transputer.c,v 1.7 2007-03-26 02:01:36 debug Exp $
  *
  *  INMOS transputer CPU emulation.
  */
@@ -183,39 +183,6 @@ void transputer_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void transputer_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-}
-
-
-/*
- *  transputer_cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Returns a newly allocated response string
- *  on success, NULL on failure.
- */
-char *transputer_cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	fatal("transputer_cpu_gdb_stub(): TODO\n");
-	return NULL;
-}
-
-
-/*
- *  transputer_cpu_interrupt():
- */
-int transputer_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
-{
-	fatal("transputer_cpu_interrupt(): TODO\n");
-	return 0;
-}
-
-
-/*
- *  transputer_cpu_interrupt_ack():
- */
-int transputer_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
-{
-	/*  fatal("transputer_cpu_interrupt_ack(): TODO\n");  */
-	return 0;
 }
 
 

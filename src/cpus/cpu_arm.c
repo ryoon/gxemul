@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.67 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_arm.c,v 1.68 2007-03-26 02:01:35 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -726,91 +726,15 @@ void arm_cpu_tlbdump(struct machine *m, int x, int rawflag)
 }
 
 
-static void add_response_word(struct cpu *cpu, char *r, uint32_t value,
-	size_t maxlen)
-{
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-		value = ((value & 0xff) << 24) +
-			((value & 0xff00) << 8) +
-			((value & 0xff0000) >> 8) +
-			((value & 0xff000000) >> 24);
-	}
-	snprintf(r + strlen(r), maxlen - strlen(r), "%08"PRIx32, value);
-}
-
-
-/*
- *  arm_cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Returns a newly allocated response string
- *  on success, NULL on failure.
- */
-char *arm_cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	if (strcmp(cmd, "g") == 0) {
-		/*  15 gprs, pc, 8 fprs, fps, cpsr.  */
-		int i;
-		char *r;
-		size_t len = 1 + 18 * sizeof(uint32_t);
-		r = malloc(len);
-		if (r == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		r[0] = '\0';
-		for (i=0; i<15; i++)
-			add_response_word(cpu, r, cpu->cd.arm.r[i], len);
-		add_response_word(cpu, r, cpu->pc, len);
-		/*  TODO: fprs:  */
-		for (i=0; i<8; i++)
-			add_response_word(cpu, r, 0, len);
-		/*  TODO: fps  */
-		add_response_word(cpu, r, 0, len);
-		add_response_word(cpu, r, cpu->cd.arm.cpsr, len);
-		return r;
-	}
-
-	if (cmd[0] == 'p') {
-		int regnr = strtol(cmd + 1, NULL, 16);
-		size_t len = 2 * sizeof(uint32_t) + 1;
-		char *r = malloc(len);
-		r[0] = '\0';
-		if (regnr == ARM_PC) {
-			add_response_word(cpu, r, cpu->pc, len);
-		} else if (regnr >= 0 && regnr < ARM_PC) {
-			add_response_word(cpu, r, cpu->cd.arm.r[regnr], len);
-		} else if (regnr >= 0x10 && regnr <= 0x17) {
-			/*  TODO: fprs  */
-			add_response_word(cpu, r, 0, len);
-			add_response_word(cpu, r, 0, len);
-			add_response_word(cpu, r, 0, len);
-		} else if (regnr == 0x18) {
-			/*  TODO: fps  */
-			add_response_word(cpu, r, 0, len);
-		} else if (regnr == 0x19) {
-			add_response_word(cpu, r, cpu->cd.arm.cpsr, len);
-		}
-		return r;
-	}
-
-	fatal("arm_cpu_gdb_stub(): TODO\n");
-	return NULL;
-}
-
-
 /*
  *  arm_irq_interrupt_assert():
+ *  arm_irq_interrupt_deassert():
  */
 void arm_irq_interrupt_assert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = (struct cpu *) interrupt->extra;
 	cpu->cd.arm.irq_asserted = 1;
 }
-
-
-/*
- *  arm_irq_interrupt_deassert():
- */
 void arm_irq_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = (struct cpu *) interrupt->extra;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.110 2007-03-26 01:28:59 debug Exp $
+ *  $Id: cpu.h,v 1.111 2007-03-26 02:01:36 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -257,9 +257,6 @@ struct cpu_family {
 	    (This is called for each function call, if running with -t.)  */
 	void			(*functioncall_trace)(struct cpu *,
 				    uint64_t f, int n_args);
-
-	/*  GDB command handler.  */
-	char			*(*gdb_stub)(struct cpu *, char *cmd);
 };
 
 
@@ -421,7 +418,6 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs);
 int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr);
-char *cpu_gdb_stub(struct cpu *cpu, char *cmd);
 
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);
 void cpu_functioncall_trace_return(struct cpu *cpu);
@@ -473,7 +469,6 @@ void cpu_init(void);
 	fp->register_dump = n ## _cpu_register_dump;			\
 	fp->dumpinfo = n ## _cpu_dumpinfo;				\
 	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
-	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	fp->tlbdump = n ## _cpu_tlbdump;				\
 	fp->init_tables = n ## _cpu_init_tables;			\
 	return 1;							\

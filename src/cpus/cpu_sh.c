@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.62 2007-03-08 19:04:09 debug Exp $
+ *  $Id: cpu_sh.c,v 1.63 2007-03-26 02:01:36 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -504,19 +504,6 @@ void sh_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			    (uint32_t) cpu->cd.sh.utlb_hi[i], i,
 			    (uint32_t) cpu->cd.sh.utlb_lo[i]);
 	}
-}
-
-
-/*
- *  sh_cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Returns a newly allocated response string
- *  on success, NULL on failure.
- */
-char *sh_cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	fatal("sh_cpu_gdb_stub(): TODO\n");
-	return NULL;
 }
 
 

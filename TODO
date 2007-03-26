@@ -1,4 +1,4 @@
-$Id: TODO,v 1.467 2007-03-26 01:28:59 debug Exp $
+$Id: TODO,v 1.468 2007-03-26 02:01:35 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -63,8 +63,8 @@ Possible work packages to concentrate on in the future, in random order:
 
   x)  Debugging:
 	Think more about SMP debugging, etc. Right now, the
-	debugger is a mess. Also, a better connection to GDB would be
-	very nice to have.
+	debugger is a mess. Also, a new connection to GDB would be
+	very nice to have, since I've removed the old one.
 
   x)  Disk handling:
 	Rework how disk images are handled. Add/remove during runtime should
@@ -283,7 +283,6 @@ SPARC:
 	o)  Exception/trap handling.
 	o)  Disassemly of some more instructions?
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
-	o)  Finish the GDB register stuff.
 	x)  Floating point exception correctness.
 	o)  SPARC v8, v7 etc?
 

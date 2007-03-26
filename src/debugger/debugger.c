@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.21 2006-12-30 13:30:56 debug Exp $
+ *  $Id: debugger.c,v 1.22 2007-03-26 02:01:36 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -57,7 +57,6 @@
 #include "cpu.h"
 #include "device.h"
 #include "debugger.h"
-#include "debugger_gdb.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
@@ -127,27 +126,11 @@ static uint64_t last_unasm_addr = MAGIC_UNTOUCHED;
  */
 char debugger_readchar(void)
 {
-	int ch, i, j;
+	int ch;
 
 	while ((ch = console_readchar(MAIN_CONSOLE)) < 0 && !exit_debugger) {
 		/*  Check for X11 events:  */
 		x11_check_event(debugger_emuls, debugger_n_emuls);
-
-		/*  Check for incoming GDB packets:  */
-		for (i=0; i<debugger_n_emuls; i++) {
-			struct emul *e = debugger_emuls[i];
-			if (e == NULL)
-				continue;
-
-			for (j=0; j<e->n_machines; j++) {
-				if (e->machines[j]->gdb.port > 0)
-					debugger_gdb_check_incoming(
-					    e->machines[j]);
-			}
-		}
-
-		/*  TODO: The X11 and GDB checks above should probably
-			be factored out...  */
 
 		/*  Give up some CPU time:  */
 		usleep(10000);
@@ -673,26 +656,6 @@ void debugger(void)
 			    debugger_machine->cpus[i], 0, INVALIDATE_ALL);
 		}
 
-	/*
-	 *  Ugly GDB hack: After single stepping, we need to send back
-	 *  status to GDB:
-	 */
-	if (exit_debugger == -1) {
-		int i, j;
-		for (i=0; i<debugger_n_emuls; i++) {
-			struct emul *e = debugger_emuls[i];
-			if (e == NULL)
-				continue;
-
-			for (j=0; j<e->n_machines; j++) {
-				if (e->machines[j]->gdb.port > 0)
-					debugger_gdb_after_singlestep(
-					    e->machines[j]);
-			}
-		}
-	}
-
-
 	/*  Stop timers while interacting with the user:  */
 	timer_stop();
 
@@ -701,10 +664,6 @@ void debugger(void)
 	while (!exit_debugger) {
 		/*  Read a line from the terminal:  */
 		cmd = debugger_readline();
-
-		/*  Special hack for the "step" _GDB_ command:  */
-		if (exit_debugger == -1)
-			return;
 
 		cmd_len = strlen(cmd);
 
@@ -772,7 +731,7 @@ void debugger_reset(void)
  */
 void debugger_init(struct emul **emuls, int n_emuls)
 {
-	int i, j;
+	int i;
 
 	debugger_n_emuls = n_emuls;
 	debugger_emuls = emuls;
@@ -788,10 +747,6 @@ void debugger_init(struct emul **emuls, int n_emuls)
 		    "cannot handle this situation yet.\n\n");
 		exit(1);
 	}
-
-	for (i=0; i<n_emuls; i++)
-		for (j=0; j<emuls[i]->n_machines; j++)
-			debugger_gdb_init(emuls[i]->machines[j]);
 
 	debugger_machine = emuls[0]->machines[0];
 

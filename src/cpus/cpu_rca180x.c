@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_rca180x.c,v 1.4 2006-12-30 13:30:55 debug Exp $
+ *  $Id: cpu_rca180x.c,v 1.5 2007-03-26 02:01:36 debug Exp $
  *
  *  RCA180X CPU emulation.
  *
@@ -243,19 +243,6 @@ void rca180x_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void rca180x_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-}
-
-
-/*
- *  rca180x_cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Returns a newly allocated response string
- *  on success, NULL on failure.
- */
-char *rca180x_cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	fatal("rca180x_cpu_gdb_stub(): TODO\n");
-	return NULL;
 }
 
 

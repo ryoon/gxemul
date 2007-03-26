@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.42 2007-03-18 02:54:59 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.43 2007-03-26 02:01:36 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -377,93 +377,6 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void sparc_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-}
-
-
-static void add_response_word(struct cpu *cpu, char *r, uint64_t value,
-	size_t maxlen, int len)
-{
-	char *format = (len == 4)? "%08"PRIx64 : "%016"PRIx64;
-	if (len == 4)
-		value &= 0xffffffffULL;
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-		if (len == 4) {
-			value = ((value & 0xff) << 24) +
-				((value & 0xff00) << 8) +
-				((value & 0xff0000) >> 8) +
-				((value & 0xff000000) >> 24);
-		} else {
-			value = ((value & 0xff) << 56) +
-				((value & 0xff00) << 40) +
-				((value & 0xff0000) << 24) +
-				((value & 0xff000000ULL) << 8) +
-				((value & 0xff00000000ULL) >> 8) +
-				((value & 0xff0000000000ULL) >> 24) +
-				((value & 0xff000000000000ULL) >> 40) +
-				((value & 0xff00000000000000ULL) >> 56);
-		}
-	}
-	snprintf(r + strlen(r), maxlen - strlen(r), format, (uint64_t)value);
-}
-
-
-/*
- *  sparc_cpu_gdb_stub():
- *
- *  Execute a "remote GDB" command. Returns a newly allocated response string
- *  on success, NULL on failure.
- */
-char *sparc_cpu_gdb_stub(struct cpu *cpu, char *cmd)
-{
-	if (strcmp(cmd, "g") == 0) {
-		int i;
-		char *r;
-		size_t wlen = cpu->is_32bit?
-		    sizeof(uint32_t) : sizeof(uint64_t);
-		size_t len = 1 + 76 * wlen;
-		r = malloc(len);
-		if (r == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		r[0] = '\0';
-		/*  TODO  */
-		for (i=0; i<128; i++)
-			add_response_word(cpu, r, i, len, wlen);
-		return r;
-	}
-
-	if (cmd[0] == 'p') {
-		int regnr = strtol(cmd + 1, NULL, 16);
-		size_t wlen = sizeof(uint32_t);
-		/*  TODO: cpu->is_32bit? sizeof(uint32_t) : sizeof(uint64_t); */
-		size_t len = 2 * wlen + 1;
-		char *r = malloc(len);
-		r[0] = '\0';
-		if (regnr >= 0 && regnr < N_SPARC_REG) {
-			add_response_word(cpu, r,
-			    cpu->cd.sparc.r[regnr], len, wlen);
-		} else if (regnr == 0x44) {
-			add_response_word(cpu, r, cpu->pc, len, wlen);
-/* TODO:
-20..3f = f0..f31
-40 = y
-41 = psr
-42 = wim
-43 = tbr
-45 = npc
-46 = fsr
-47 = csr
-*/
-		} else {
-			/*  Unimplemented:  */
-			add_response_word(cpu, r, 0xcc000 + regnr, len, wlen);
-		}
-		return r;
-	}
-
-	fatal("sparc_cpu_gdb_stub(): TODO\n");
-	return NULL;
 }
 
 

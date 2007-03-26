@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_zaurus.c,v 1.6 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_zaurus.c,v 1.7 2007-03-26 22:53:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,15 +48,14 @@ MACHINE_SETUP(zaurus)
 
 	/*  TODO: replace this with the correct device  */
 	dev_ram_init(machine, 0x40d00000, 0x1000, DEV_RAM_RAM, 0);
-
+/*
 	device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
 	device_add(machine, "ns16550 irq=0 addr=0xfd400000 addr_mult=4");
-
+*/
 
 dev_fb_init(machine, machine->memory, 0x44000000,
     VFB_GENERIC, 640,240, 640,240, 16, "PXA2X0 LCD");
-         
-        
+
 	if (!machine->prom_emulation)
 		return;
 

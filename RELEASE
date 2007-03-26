@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.257 2007-03-26 02:18:44 debug Exp $
+$Id: RELEASE,v 1.258 2007-03-26 22:53:12 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -36,7 +36,7 @@ The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 	previous state.
 
     o)	Dyntrans bug fixes; code translations on physical addresses that
-	were offset a mulitple of 128 MB from each other could either
+	were offset a multiple of 128 MB from each other could either
 	cause weird bugs, or translation leaks (leading to unnecessary
 	dyntrans cache overflows).
 

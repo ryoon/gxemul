@@ -1,8 +1,8 @@
-$Id: TODO,v 1.469 2007-03-26 02:08:48 debug Exp $
+$Id: TODO,v 1.470 2007-03-26 22:53:12 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Some other things, in totally random order, that I'd like to fix:
+Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)
 
 Dyntrans:
@@ -116,7 +116,8 @@ SuperH:
 	x)  SH4 RTC: Read the host's clock.
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on, to make the output more human readable.
-	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
+	x)  SH3-specific devices: Pretty much everything!
+	x)  NetBSD/evbsh3, mmeye, hpcsh! Linux?
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
 	x)  Floating point speed!
@@ -125,14 +126,14 @@ SuperH:
 
 Landisk SH4:
 	x)  When NetBSD/landisk 4.0 and OpenBSD/landisk 4.1 have been
-	    released, test to see if they work. (Update documentation,
-	    guestos&index, and set stable=1 in machine_landisk.c.)
+	    released, test to see if they work. (If so, update documentation,
+	    guestos + index, and set stable=1 in machine_landisk.c.)
 
 Dreamcast:
 	x)  G2 DMA
 	x)  LAN adapter (dev_mb8696x.c).  NetBSD root-on-nfs.
 	x)  PVR:  Lots of stuff. See dev_pvr.c.
-	x)  GDROM
+	x)  Better GDROM support
 	x)  Modem
 	x)  PCI bridge/bus?
 	x)  Maple bus:
@@ -142,7 +143,6 @@ Dreamcast:
 		x)  GD-ROM emulation: Use the GDROM device.
 		x)  Use the VGA font as a fake ROM font. (Better than
 		    nothing.)
-	x)  Linux/dreamcast? (The gentoo kernel currently crashes.)
 	x)  Make as many as possible of the KOS examples run!
 	x)  More homebrew demos/games.
 	x)  SPU: Sound emulation (ARM cpu).
@@ -246,7 +246,7 @@ POWER/PowerPC:
 	x)  Alignment exceptions.
 
 PReP:
-	Clock time! ("Bad battery blah blah")
+	x)  Clock time! ("Bad battery blah blah")
 
 Algor:
 	o)  Other models than the P5064?

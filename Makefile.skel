@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.47 2007-03-16 14:13:59 debug Exp $
+#  $Id: Makefile.skel,v 1.48 2007-03-26 01:28:59 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -24,7 +24,7 @@ install: build
 	@echo
 
 clean:
-	rm -f $(BIN) *core core.* *.gmon _* *.exe
+	rm -f $(BIN) *core core.* *.gmon _* *.exe ktrace.out
 	cd src; $(MAKE) clean; cd ..
 
 #  experiments and demos are not cleaned on a normal clean, only on a clean_all.

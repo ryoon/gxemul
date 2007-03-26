@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.3 2007-03-24 06:39:29 debug Exp $
+ *  $Id: diskimage.c,v 1.4 2007-03-26 01:28:59 debug Exp $
  *
  *  Disk image support.
  *
@@ -410,12 +410,12 @@ static size_t fwrite_helper(off_t offset, unsigned char *buf,
 		fatal("TODO: overlay access (write), len not multiple of "
 		    "overlay block size. not yet implemented.\n");
 		fatal("len = %lli\n", (long long) len);
-		exit(1);
+		abort();
 	}
 	if ((offset & (OVERLAY_BLOCK_SIZE-1)) != 0) {
 		fatal("TODO: unaligned overlay access\n");
 		fatal("offset = %lli\n", (long long) offset);
-		exit(1);
+		abort();
 	}
 
 	/*  Split the write into OVERLAY_BLOCK_SIZE writes:  */
@@ -454,6 +454,7 @@ static size_t fread_helper(off_t offset, unsigned char *buf,
 	size_t len, struct diskimage *d)
 {
 	off_t curofs;
+	size_t totallenread = 0;
 
 	/*  Fast return-path for the case when no overlays are used:  */
 	if (d->nr_of_overlays == 0) {
@@ -467,28 +468,19 @@ static size_t fread_helper(off_t offset, unsigned char *buf,
 		return fread(buf, 1, len, d->f);
 	}
 
-	if ((len & (OVERLAY_BLOCK_SIZE-1)) != 0) {
-		fatal("TODO: overlay access (read), len not multiple of "
-		    "overlay block size. not yet implemented.\n");
-		fatal("len = %lli\n", (long long) len);
-		exit(1);
-	}
-	if ((offset & (OVERLAY_BLOCK_SIZE-1)) != 0) {
-		fatal("TODO: unaligned overlay access\n");
-		fatal("offset = %lli\n", (long long) offset);
-		exit(1);
-	}
-
 	/*  Split the read into OVERLAY_BLOCK_SIZE reads:  */
-	for (curofs=offset; curofs<offset+len; curofs+=OVERLAY_BLOCK_SIZE) {
+	for (curofs=offset; len > 0;
+	    curofs = (curofs | (OVERLAY_BLOCK_SIZE-1)) + 1) {
 		/*  Find the overlay, if any, that has this block:  */
-		off_t lenread;
+		off_t lenread, lentoread;
 		int overlay_nr;
 		for (overlay_nr = d->nr_of_overlays-1;
 		    overlay_nr >= 0; overlay_nr --) {
 			if (overlay_has_block(d, overlay_nr, curofs))
 				break;
 		}
+
+		lentoread = len > OVERLAY_BLOCK_SIZE? OVERLAY_BLOCK_SIZE : len;
 
 		if (overlay_nr >= 0) {
 			/*  Read from overlay:  */
@@ -499,7 +491,7 @@ static size_t fread_helper(off_t offset, unsigned char *buf,
 				    " failed on disk id %i \n", d->id);
 				return 0;
 			}
-			lenread = fread(buf, 1, OVERLAY_BLOCK_SIZE,
+			lenread = fread(buf, 1, lentoread,
 			    d->overlays[overlay_nr].f_data);
 		} else {
 			/*  Read from the base disk image:  */
@@ -509,18 +501,20 @@ static size_t fread_helper(off_t offset, unsigned char *buf,
 				    " failed on disk id %i \n", d->id);
 				return 0;
 			}
-			lenread = fread(buf, 1, OVERLAY_BLOCK_SIZE, d->f);
+			lenread = fread(buf, 1, lentoread, d->f);
 		}
 
-		if (lenread != OVERLAY_BLOCK_SIZE) {
+		if (lenread != lentoread) {
 			fatal("[ INCOMPLETE READ from disk id %i, offset"
 			    " %lli ]\n", d->id, (long long)curofs);
 		}
 
+		len -= lentoread;
+		totallenread += lenread;
 		buf += OVERLAY_BLOCK_SIZE;
 	}
 
-	return len;
+	return totallenread;
 }
 
 

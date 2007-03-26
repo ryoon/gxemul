@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.255 2007-03-24 06:39:28 debug Exp $
+$Id: RELEASE,v 1.256 2007-03-26 01:28:59 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -27,13 +27,16 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 Changes between release 0.4.4.1 and 0.4.5 include, among other things:
 
-    o)	Initial support for "disk overlays" have been implemented. This
+    o)	Initial support for "disk overlays" has been implemented. This
 	enables e.g. simple roll-back of emulated disk contents to a
 	previous state.
 
-    o)	TODO ...
+    o)	Dyntrans bug fixes; code translations on physical addresses that
+	were offset a mulitple of 128 MB from each other could either
+	cause weird bugs, or translation leaks (leading to unnecessary
+	dyntrans cache overflows).
 
-Please read the HISTORY files for more details.
+Please read the HISTORY file for more details.
 
 
 Files included in this release are:
@@ -150,5 +153,5 @@ or reuse code.
 
 
 If you have found GXemul useful in some way, or feel like sending me comments
-or feedback in general, then mail me at anders(at)gavare.se.
+or feedback in general, then mail me at anders(At)gavare.se.
 

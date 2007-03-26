@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.142 2007-02-11 10:47:31 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.143 2007-03-26 01:28:59 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -752,14 +752,22 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		physpage_ofs = ppp->next_ofs;
 	}
 
-	/*  If the offset is 0 (or ppp is NULL), then we need to create a
-	    new "default" empty translation page.  */
+	/*
+	 *  If the offset is 0, then no translation exists yet for this
+	 *  physical address. Let's create a new page, and add it first in
+	 *  the chain.
+	 */
+	if (physpage_ofs == 0) {
+		uint32_t previous_first_page_in_chain;
 
-	if (ppp == NULL) {
 		/*  fatal("CREATING page %lli (physaddr 0x%"PRIx64"), table "
 		    "index %i\n", (long long)pagenr, (uint64_t)physaddr,
 		    (int)table_index);  */
 		native_commit(cpu);
+
+		previous_first_page_in_chain = *physpage_entryp;
+
+		/*  Insert the new page first in the chain:  */
 		*physpage_entryp = physpage_ofs =
 		    cpu->translation_cache_cur_ofs;
 
@@ -768,7 +776,12 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 
 		ppp = (struct DYNTRANS_TC_PHYSPAGE *)(cpu->translation_cache
 		    + physpage_ofs);
+
+		/*  Point to the other pages in the same chain:  */
+		ppp->next_ofs = previous_first_page_in_chain;
 	}
+
+	/*  Here, ppp points to a valid physical page struct.  */
 
 #ifdef MODE32
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL)
@@ -1274,7 +1287,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 
 		/*  If there is no translation, there is no need to go
 		    on and try to remove it from the vph_tlb_entry array:  */
-		if (ppp == NULL)
+		if (physpage_ofs == 0)
 			return;
 
 #if 0

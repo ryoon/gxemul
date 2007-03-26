@@ -1,18 +1,8 @@
-$Id: TODO,v 1.466 2007-03-24 06:39:28 debug Exp $
-
--------------------------------------------------------------------------------
-
-Fix the overlay stuff for e.g. pmax boot! (Non-aligned read/writes.)
+$Id: TODO,v 1.467 2007-03-26 01:28:59 debug Exp $
 
 -------------------------------------------------------------------------------
 
 Possible work packages to concentrate on in the future, in random order:
-
-  x)  Disk handling:
-	Rework how disk images are handled. Add/remove during runtime should
-	be made possible, "overlays" (to simplify roll-back), more support for
-	"floppies" (for the machines that may support them, i.e. actually
-	implement a floppy controller).
 
   x)  SPARC emulation:
 	ASIs, more instructions, virtual memory, traps/exceptions/interrupts,
@@ -75,6 +65,10 @@ Possible work packages to concentrate on in the future, in random order:
 	Think more about SMP debugging, etc. Right now, the
 	debugger is a mess. Also, a better connection to GDB would be
 	very nice to have.
+
+  x)  Disk handling:
+	Rework how disk images are handled. Add/remove during runtime should
+	be made possible, more support for floppies, etc.
 
   x)  Variable-length ISA support:
 	The support for emulation of variable length ISAs (such as

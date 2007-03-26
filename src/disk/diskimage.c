@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.4 2007-03-26 01:28:59 debug Exp $
+ *  $Id: diskimage.c,v 1.5 2007-03-26 03:01:09 debug Exp $
  *
  *  Disk image support.
  *
@@ -469,7 +469,7 @@ static size_t fread_helper(off_t offset, unsigned char *buf,
 	}
 
 	/*  Split the read into OVERLAY_BLOCK_SIZE reads:  */
-	for (curofs=offset; len > 0;
+	for (curofs=offset; len != 0;
 	    curofs = (curofs | (OVERLAY_BLOCK_SIZE-1)) + 1) {
 		/*  Find the overlay, if any, that has this block:  */
 		off_t lenread, lentoread;

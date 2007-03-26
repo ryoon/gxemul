@@ -1,94 +1,9 @@
-$Id: TODO,v 1.468 2007-03-26 02:01:35 debug Exp $
+$Id: TODO,v 1.469 2007-03-26 02:08:48 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Possible work packages to concentrate on in the future, in random order:
-
-  x)  SPARC emulation:
-	ASIs, more instructions, virtual memory, traps/exceptions/interrupts,
-	register window handling for all ISA variants (pre-v9, v9, sun4v?),
-	machine modes + devices etc. Lots of stuff.
-
-  x)  Alpha emulation:
-	Lots of work left before the Alpha emulation mode is meaningful:
-	everything about exceptions, virtual memory, interrupts, probably a
-	lot more PALcode stuff etc. Lots of machine specific details.
-
-  x)  Userland emulation:
-	Primary goals would be NetBSD and Linux syscall emulation.
-	Main areas to work on:  Initial register values, stack contents,
-	argument and environment passing, return values from main,
-	errno mapping (host vs emulation), mmap emulation layer,
-	translation of other structs (time, directory stuff, etc).
-
-  x)  SMP:
-	Get SMP working again. It is pretty much broken since I started
-	the conversion from the old bintrans system to the new dyntrans system.
-	Add better Test machine demos for SMP in the demos directory.
-	Either multiple dev_mp (one per cpu), or the single dev_mp must
-	_really_ keep all per-cpu values separate.
-
-  x)  Network:
-	Redesign of the networking subsystem, at least the NAT translation
-	part. The current way of allowing raw ethernet frames to be
-	transfered to/from the emulator via UDP should probably be extended
-	to allow the frames to be transmitted other ways as well.
-	Also adding support for connecting ttys (either to xterms, or to
-	pipes/sockets etc, or even to PPP->NAT or SLIP->NAT :-).
-	Documentation updates (!) are very important, making it easier to
-	use the (already existing) network emulation features.
-
-  x)  PCI:
-	Pretty much everything related to runtime configuration, device
-	slots, interrupts, whatever. The current code is very hardcoded
-	and ugly.
-	o) Allow cards to be added/removed during runtime more easily.
-	o) Allow cards to be enabled/disabled (i/o ports, etc, like
-	   NetBSD needs for disk controller detection).
-	o) Allow devices to be moved in memory during runtime.
-	o) Interrupts per PCI slot, etc. (A-D).
-	o) PCI interrupt controller logic... very hard to get right,
-	   because these differ a lot from one machine to the next.
-
-  x)  Native code generation backends.
-	Not necessary in order to have a working emulator, but speed is
-	always nice to have.
-	Todo: Native code generation, in order to work with the dyntrans
-	subsystem, must abide by the host's ABI. The configure script should
-	not only check for the correct architecture, but also the ABI!
-
-  x)  Documentation:
-	Rewrite all the documentation in a more suitable format, suitable
-	for auto-generation from source code comments.
-
-  x)  Debugging:
-	Think more about SMP debugging, etc. Right now, the
-	debugger is a mess. Also, a new connection to GDB would be
-	very nice to have, since I've removed the old one.
-
-  x)  Disk handling:
-	Rework how disk images are handled. Add/remove during runtime should
-	be made possible, more support for floppies, etc.
-
-  x)  Variable-length ISA support:
-	The support for emulation of variable length ISAs (such as
-	M68K, AMD64/i386, or AVR32) is not really there yet. It would
-	be very fun to work on this, to get it right. Low priority for now.
-
-  x)  Remove all "addr mult" device support!
-	Long term goal. Replace the current hacks with address 
-	multiplication _per device_ with layered devices, so that the
-	end device (wdc, ns16550, whatever) only supports one access
-	style, and the layers in between convert to 16/32/64-bit
-	word alignment.
-
-And of course, there are _LOTS_ of minor TODOs spread out throughout
-the source code, which must be fixed sooner or later.
-
--------------------------------------------------------------------------------
-
-Some other things, in random order, that I'd like to fix: (Some items in 
-this list are probably out-to-date by now.)
+Some other things, in totally random order, that I'd like to fix:
+(Some items in this list are probably out-to-date by now.)
 
 Dyntrans:
 	x)  Instruction combination collisions? How to avoid easily...
@@ -129,6 +44,7 @@ Dyntrans:
 		o)  convert into native code only after an entire
 			block has been translated? probably best.
 		o)  x86/amd64 code generator can be very similar... perhaps
+		o)  NOTE that generation is per _ABI_, not per host arch!
 		o)  branches to already translated code blocks can
 			link the blocks together
 		o)  load/store are the most important.
@@ -275,16 +191,17 @@ Alpha:
 	x)  More Alpha machine types, so it could work with
 	    OpenBSD, FreeBSD, and Linux too?
 
-SPARC:
+SPARC (both the ISA and the machines):
 	o)  Implement Adress space identifiers; load/stores etc.
+	o)  Exception/trap/interrupt handling.
 	o)  Save/restore register windows etc! Both v9 and pre-v9!
 	o)  Finish the subcc and addcc flag computation code.
 	o)  Add more registers (floating point, control regs etc)
-	o)  Exception/trap handling.
 	o)  Disassemly of some more instructions?
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
-	x)  Floating point exception correctness.
+	o)  Floating point exception correctness.
 	o)  SPARC v8, v7 etc?
+	o)  More machine modes and devices.
 
 Debugger:
 	o)  How does SMP debugging work? Does it simply use "threads"?
@@ -381,6 +298,15 @@ Better CD Image file support:
 	    possibly other live-CD formats.)
 
 Networking:
+	x)  Redesign of the networking subsystem, at least the NAT translation
+		part. The current way of allowing raw ethernet frames to be
+		transfered to/from the emulator via UDP should probably be
+		extended to allow the frames to be transmitted other ways as
+		well.
+	x)  Also adding support for connecting ttys (either to xterms, or to
+		pipes/sockets etc, or even to PPP->NAT or SLIP->NAT :-).
+	x)  Documentation updates (!) are very important, making it easier to
+		use the (already existing) network emulation features.
 	x)  Fix performance problems caused by only allowing a
 	    single TCP packet to be unacked.
 	x)  Don't hardcode offsets into packets!
@@ -468,6 +394,16 @@ The Device subsystem:
 	x)  refactor various clocks/nvram/cmos into one device?
 
 PCI:
+	x)  Pretty much everything related to runtime configuration, device
+	    slots, interrupts, etc must be redesigned/cleaned up. The current
+	    code is very hardcoded and ugly.
+	o)  Allow cards to be added/removed during runtime more easily.
+	o)  Allow cards to be enabled/disabled (i/o ports, etc, like
+	    NetBSD needs for disk controller detection).
+	o)  Allow devices to be moved in memory during runtime.
+	o)  Interrupts per PCI slot, etc. (A-D).
+	o)  PCI interrupt controller logic... very hard to get right,
+	    because these differ a lot from one machine to the next.
 	x)  last write was ffffffff ==> fix this, it should be used
 	    together with a mask to get the correct bits. also, not ALL
 	    bits are size bits! (lowest 4 vs lowest 2?)
@@ -497,8 +433,13 @@ Floating point layer:
 	o)  non-IEEE modes (i.e. x86)?
 
 Userland emulation:
-	x)  Lots of stuff; freebsd and netbsd (and linux?) syscalls.
-	x)  Dynamic linking? Hm.
+	x)  Dynamic linking!
+	x)  Lots of stuff; freebsd, netbsd, linux, ... syscalls.
+	x)  Initial register/stack contents (environment, command line args).
+	x)  Return value (from main).
+	x)  mmap emulation layer
+	x)  errno emulation layer
+	x)  struct conversions for may syscalls
 
 Sound:
 	x)  generic sound framework
@@ -532,20 +473,6 @@ Caches / memory hierarchies: (this is mostly MIPS-specific)
 File/disk/symbol handling:
 	o)  Make sure that disks can be added/removed during runtime!
 	    (Perhaps this needs a reasonably large re-write.)
-	o)  "Overlay" disk images? I.e. writes go to a separate file,
-	    allowing simple roll-back. Best implementation could be to
-	    simply use unix' default filesystem behaviour (having an equally
-	    large overlay as the original), plus a map file indicating which
-	    portions of the overlay have been written to (?).
-		filename  and  filename.map
-	    If the filename.map file is not present, the emulator should
-	    not accept filename as an overlay! This is in order to not
-	    accidentally start and overwrite any existing filename.map.
-	    filename.map only needs to be touched, it will grow/be written
-	    to as needed.
-	    Note: Multiple overlays should be allowed for a single disk.
-	    "Chained."
-	    Fixed ratio, 1 bit per 512 bytes of disk? Feels ok.
 	o)  Remove some of the complexity in file format guessing, for
 		Ultrix kernels that are actually disk images?
 	o)  Better handling of tape files	

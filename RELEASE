@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.258 2007-03-26 22:53:12 debug Exp $
+$Id: RELEASE,v 1.259 2007-03-27 00:35:49 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -24,10 +24,6 @@ The documentation lists the machines and guest operating systems that can
 be regarded as "working" in GXemul. The best working guest operating 
 systems are probably NetBSD/pmax and NetBSD/cats.
 
-
-Release 0.4.5 is mostly a cleanup and bugfix release. There are still 
-something like 1400 TODOs in the source code, but hopefully some 
-important bugs are being fixed with this release.
 
 The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 

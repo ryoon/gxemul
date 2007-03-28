@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.125 2007-03-28 09:02:52 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.126 2007-03-28 18:33:36 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3369,6 +3369,9 @@ void COMBINE(b_daddiu)(struct cpu *cpu, struct mips_instr_call *ic,
  */
 X(to_be_translated)
 {
+#ifdef NATIVE_CODE_GENERATION
+	int native = 0;
+#endif
 	uint64_t addr, low_pc;
 	uint32_t iword, imm;
 	unsigned char *page;
@@ -4557,6 +4560,15 @@ X(to_be_translated)
 			    "pc=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc);
 		has_warned = 1;
 		ic->f = instr(reserved);
+	}
+#endif
+
+
+#ifdef NATIVE_CODE_GENERATION
+	if (native == 0 || (addr & 0xffc) == 0xffc ||
+	    ic[1].f != instr(to_be_translated)) {
+		/*  TODO  */
+		/*  flush etc.  */
 	}
 #endif
 

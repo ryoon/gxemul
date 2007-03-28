@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.112 2007-03-28 09:02:52 debug Exp $
+ *  $Id: cpu.h,v 1.113 2007-03-28 18:33:36 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -283,6 +283,15 @@ struct cpu_family {
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 
 
+#ifdef NATIVE_CODE_GENERATION
+/*
+ *  Intermediate Native Representation (INR).
+ *  Used for native code generation.
+ */
+#include "inr.h"
+#endif
+
+
 /*
  *  The generic CPU struct:
  */
@@ -366,28 +375,23 @@ struct cpu {
 	 *  Note that it can also be adjusted negatively, that is, the way
 	 *  to "get out" of a dyntrans loop is to set the current instruction
 	 *  call pointer to the "nothing" instruction. This instruction
-	 *  _decreases_ n_translated_instrs. That way, once the dyntrans loop
-	 *  exits, only real instructions will be counted, and not the
+	 *  _decreases_ n_translated_instrs by 1. That way, once the dyntrans
+	 *  loop exits, only real instructions will be counted, and not the
 	 *  "nothing" instructions.
 	 *
 	 *  The translation cache is a relative large chunk of memory (say,
 	 *  32 MB) which is used for translations. When it has been used up,
 	 *  everything restarts from scratch.
 	 *
-	 *  When translating to native code, currently_translating_to_native
-	 *  is non-zero, and native_code_function_pointer points to the
-	 *  "ic->f" which will be modified (once the translation has finished)
- 	 *  to point to the newly translated code.
+	 *  The INR struct contains the Intermediate Native Representation,
+	 *  used during native code generation.
 	 */
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
 
-#if 0
-	int		currently_translating_to_native;
-	int		nr_of_instructions_translated_to_native;
-	unsigned char	*native_cur_output_ptr;
-	void		**native_code_function_pointer;
+#ifdef NATIVE_CODE_GENERATION
+	struct inr	inr;
 #endif
 
 	/*

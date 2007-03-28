@@ -28,21 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native.h,v 1.1 2007-02-03 10:02:30 debug Exp $
+ *  $Id: native.h,v 1.2 2007-03-28 09:02:52 debug Exp $
+ *
+ *  See src/native/ for more details.
  */
 
 #include "misc.h"
 
-/*  native_common.c:  */
-void native_start(struct cpu *cpu);
-void native_commit(struct cpu *cpu);
-
-/*  These are defined in the host-specific backend implementation:  */
-void native_output_function_prelude(struct cpu *cpu);
-void native_output_next_ic_increment(struct cpu *cpu);
-void native_output_function_postlude(struct cpu *cpu);
-
-int native_nop(struct cpu *cpu);
-int native_set_u32_p32(struct cpu *cpu, uint32_t v, uint32_t *p1);
+/*  native.c:  */
+/*  TODO  */
 
 #endif	/*  NATIVE_H  */

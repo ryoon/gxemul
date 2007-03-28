@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.371 2007-03-26 02:01:35 debug Exp $
+ *  $Id: cpu.c,v 1.372 2007-03-28 09:02:52 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -304,8 +304,6 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 		}
 #endif
 	}
-
-	cpu->currently_translating_to_native = 0;
 
 	/*  Create an empty table at the beginning of the translation cache:  */
 	memset(cpu->translation_cache, 0, sizeof(uint32_t)

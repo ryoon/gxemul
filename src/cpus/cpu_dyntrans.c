@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.143 2007-03-26 01:28:59 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.144 2007-03-28 09:02:52 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -565,8 +565,6 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 { 
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
-	native_commit(cpu);
-
 	ppp = (struct DYNTRANS_TC_PHYSPAGE *)(cpu->translation_cache
 	    + cpu->translation_cache_cur_ofs);
 
@@ -763,7 +761,6 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		/*  fatal("CREATING page %lli (physaddr 0x%"PRIx64"), table "
 		    "index %i\n", (long long)pagenr, (uint64_t)physaddr,
 		    (int)table_index);  */
-		native_commit(cpu);
 
 		previous_first_page_in_chain = *physpage_entryp;
 

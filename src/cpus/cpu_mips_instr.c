@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.124 2007-02-03 10:00:52 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.125 2007-03-28 09:02:52 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3377,12 +3377,6 @@ X(to_be_translated)
 	int in_crosspage_delayslot = 0;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 	int store, signedness, size;
-#ifdef NATIVE_CODE_GENERATION
-	int native = 0;
-
-	if (!cpu->currently_translating_to_native)
-		cpu->native_code_function_pointer = (void *) &ic->f;
-#endif
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
@@ -3532,13 +3526,6 @@ X(to_be_translated)
 				default:goto bad;
 				}
 			}
-
-#ifdef NATIVE_CODE_GENERATION
-		if (native_code_translation_enabled &&
-		    !cpu->delay_slot && ic->f == instr(nop))
-			native = native_nop(cpu);
-#endif
-
 			break;
 
 		case SPECIAL_ADD:
@@ -3865,14 +3852,6 @@ X(to_be_translated)
 		    instruction combinations, to do lui + addiu, etc.  */
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
-#ifdef NATIVE_CODE_GENERATION
-#ifdef MODE32
-		if (native_code_translation_enabled && !cpu->delay_slot
-		    && (addr & 0xffc) >= 4)
-			native = native_set_u32_p32(cpu,
-			    ic->arg[1], &reg(&cpu->cd.mips.gpr[rt]));
-#endif
-#endif
 		break;
 
 	case HI6_J:
@@ -4578,18 +4557,6 @@ X(to_be_translated)
 			    "pc=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc);
 		has_warned = 1;
 		ic->f = instr(reserved);
-	}
-#endif
-
-#ifdef NATIVE_CODE_GENERATION
-	/*
-	 *  End the native code generation when an instruction is translated
-	 *  (or found in the following slow) which is not translatable.
-	 */
-	if (cpu->currently_translating_to_native && (!native ||
-	    (addr & 0xffc) == 0xffc ||
-	    cpu->cd.mips.next_ic->f != instr(to_be_translated))) {
-		native_commit(cpu);
 	}
 #endif
 

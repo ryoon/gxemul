@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1503 2007-03-26 02:01:34 debug Exp $
+$Id: HISTORY,v 1.1504 2007-03-28 09:02:51 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3364,3 +3364,4 @@ Changelog for GXemul:
 		to live for this long. (Triggered when emulating >128MB RAM.)
 20070326	Removing the GDB debugging stub support; it was too hackish
 		and ugly.
+20070328	Moving around some native code generation skeleton code.

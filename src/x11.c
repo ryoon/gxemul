@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.63 2006-12-30 13:30:53 debug Exp $
+ *  $Id: x11.c,v 1.64 2007-03-29 06:52:19 debug Exp $
  *
  *  X11-related functions.
  */
@@ -680,7 +680,7 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 				KeySym key;
 				XKeyPressedEvent *ke = &event.xkey;
 
-				memset(text, sizeof(text), 0);
+				memset(text, 0, sizeof(text));
 
 				if (XLookupString(&event.xkey, text,
 				    sizeof(text), &key, 0) == 1) {

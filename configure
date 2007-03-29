@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.247 2007-03-28 08:29:59 debug Exp $
+#  $Id: configure,v 1.248 2007-03-29 06:52:19 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -769,7 +769,7 @@ rm -f _testr.[co] _testr
 #  -lm?
 printf "checking for math libs..."
 printf "#include <math.h>\nint main(int argc, char *argv[]) { " > _testr.c
-printf "double x = sqrt((double)argc); return (int)x; }\n" >> _testr.c
+printf "double x = sqrt(sin((double)argc)); return (int)x; }\n" >> _testr.c
 $CC $CFLAGS _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
 	$CC $CFLAGS _testr.c -lm -o _testr 2> /dev/null

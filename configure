@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.248 2007-03-29 06:52:19 debug Exp $
+#  $Id: configure,v 1.249 2007-03-30 08:04:11 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -62,6 +62,7 @@
 X=`basename \`pwd\`|cut -d \- -f 2-|cut -c1-2`
 if [ z"$X" = z0. ]; then
 	#  Stable.
+	:
 else
 	#  Development.
 	UNSTABLE=YES

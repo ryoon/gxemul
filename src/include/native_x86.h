@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native_x86.h,v 1.1 2007-03-31 15:11:26 debug Exp $
+ *  $Id: native_x86.h,v 1.2 2007-03-31 15:52:44 debug Exp $
  *
  *  AMD64/i386 native code generation; pseudo opcodes.
  *
@@ -62,8 +62,8 @@ struct native_op {
 #define	NATIVE_X86_OPCODE_STORE_CR64_R64	102
 
 /*  Arithmetic, logic, etc.:  */
-#define	NATIVE_X86_OPCODE_XOR_R64_R64		201
-#define	NATIVE_X86_OPCODE_OR_R64_R64		202
+#define	NATIVE_X86_OPCODE_XOR_R64_I32		201
+#define	NATIVE_X86_OPCODE_OR_R64_I32		202
 
 
 

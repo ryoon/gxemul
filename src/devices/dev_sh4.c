@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.32 2007-03-16 18:47:26 debug Exp $
+ *  $Id: dev_sh4.c,v 1.33 2007-03-31 13:52:30 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -368,9 +368,11 @@ DEVICE_ACCESS(sh4_utlb_aa)
 					continue;
 
 				if (i < 0) {
-					cpu->cd.sh.itlb_lo[i] &= ~SH4_PTEL_V;
+					cpu->cd.sh.itlb_lo[i +
+					    SH_N_ITLB_ENTRIES] &= ~SH4_PTEL_V;
 					if (idata & SH4_UTLB_AA_V)
-						cpu->cd.sh.itlb_lo[i] |=
+						cpu->cd.sh.itlb_lo[
+						    i+SH_N_ITLB_ENTRIES] |=
 						    SH4_PTEL_V;
 				} else {
 					cpu->cd.sh.utlb_lo[i] &=

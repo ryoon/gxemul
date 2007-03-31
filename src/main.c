@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.295 2007-03-26 02:01:35 debug Exp $
+ *  $Id: main.c,v 1.296 2007-03-31 15:11:26 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,6 +45,10 @@
 #include "misc.h"
 #include "settings.h"
 #include "timer.h"
+
+#ifdef TEST_NATIVE_X86
+#include "native_x86.h"
+#endif
 
 
 extern volatile int single_step;
@@ -736,6 +740,10 @@ int main(int argc, char *argv[])
 	int i;
 
 
+/*
+ *  Experimental profil() code, which works on my laptop.
+ *  Don't use it for anything else.
+ */
 #ifdef USE_PROFIL
 	uint16_t samples[0x100000];
 	memset(samples, 0, sizeof(samples));
@@ -745,6 +753,13 @@ int main(int argc, char *argv[])
 #ifndef NATIVE_CODE_GENERATION
 	native_code_translation_enabled = 0;
 #endif
+
+
+/*  Experimental test code:  */
+#ifdef TEST_NATIVE_X86
+	test_native_x86();
+#endif
+
 
 
 	progname = argv[0];

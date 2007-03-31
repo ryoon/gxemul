@@ -1,5 +1,5 @@
-#ifndef	INR_H
-#define	INR_H
+#ifndef	NATIVE_X86_H
+#define	NATIVE_X86_H
 
 /*
  *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
@@ -28,68 +28,48 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: inr.h,v 1.2 2007-03-31 15:11:26 debug Exp $
+ *  $Id: native_x86.h,v 1.1 2007-03-31 15:11:26 debug Exp $
  *
- *  Intermediate Native Representation
+ *  AMD64/i386 native code generation; pseudo opcodes.
  *
- *  Data structures etc. used during native code generation.
+ *  NOTE/TODO 1: There is no working native code generation in GXemul 0.4.x.
+ *               This is just a skeleton.
+ *
+ *  NOTE/TODO 2: The translation actually doesn't exist for i386 hosts,
+ *               only AMD64 hosts, so far.
  */
 
-#ifndef NATIVE_CODE_GENERATION
-#error Huh? inr.h should not be included.
+/*
+ *  native_op:
+ *
+ *  One native_op struct corresponds to exactly 1 actual AMD64/x86 instruction.
+ */
+struct native_op {
+	struct native_op	*prev, *next;
+
+	int			opcode;
+
+	uint64_t		arg1;
+	uint64_t		arg2;
+	uint64_t		arg3;
+};
+
+/*  Misc.:  */
+#define	NATIVE_X86_OPCODE_UNKNOWN		0
+
+/*  Load/store:  */
+#define	NATIVE_X86_OPCODE_LOAD_CR64_R64		101
+#define	NATIVE_X86_OPCODE_STORE_CR64_R64	102
+
+/*  Arithmetic, logic, etc.:  */
+#define	NATIVE_X86_OPCODE_XOR_R64_R64		201
+#define	NATIVE_X86_OPCODE_OR_R64_R64		202
+
+
+
+#ifdef TEST_NATIVE_X86
+void test_native_x86(void);
 #endif
 
 
-struct inr_entry {
-	int		opcode;
-	size_t		arg1;
-	size_t		arg2;
-	size_t		arg3;
-};
-
-/*
- *  The way these defines are named works as follows:
- *
- *  INR_OPCODE_opcodename[_args[..]]
- *
- *  where args usually is something like this:
- *
- *	xCR32	32-bit register offset, struct cpu relative
- *	xCR64	64-bit register offset, struct cpu relative
- *	IS16	immediate signed 16-bit
- *	IS32	immediate signed 32-bit
- *	IU16	immediate unsigned 16-bit
- *	IU32	immediate unsigned 32-bit
- *
- *  Prefixes are:
- *
- *	S	source
- *	D	destination
- */
-
-#define	INR_OPCODE_UNKNOWN			0
-
-/*  Misc.:  */
-#define	INR_OPCODE_NOP				1
-
-/*  Arithmetic:  */
-#define	INR_OPCODE_XOR_DCR32_SCR32_IS16		2
-#define	INR_OPCODE_OR_DCR32_SCR32_IS16		3
-
-
-/*
- *  Max nr of intermediate opcodes in the inr_entries array. The most common
- *  case is that one "basic block" of the emulated machine code is translated,
- *  so this should be large enough to hold a large basic block plus margin.
- */
-#define	INR_MAX_ENTRIES		128
-
-struct inr {
-	struct inr_entry	*inr_entries;
-	int			nr_inr_entries_used;
-
-	uint64_t		paddr;
-};
-
-
-#endif	/*  INR_H  */
+#endif	/*  NATIVE_X86_H  */

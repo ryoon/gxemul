@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.38 2007-02-24 19:21:44 debug Exp $
+ *  $Id: cpu_sh.h,v 1.39 2007-04-04 19:59:24 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -141,9 +141,18 @@ struct sh_cpu {
 	uint16_t	intc_iprb;
 	uint16_t	intc_iprc;
 	uint16_t	intc_iprd;
+	uint32_t	intc_intpri00;
+	uint32_t	intc_intpri04;
+	uint32_t	intc_intpri08;
+	uint32_t	intc_intpri0c;
+	uint32_t	intc_intreq00;
+	uint32_t	intc_intreq04;
+	uint32_t	intc_intmsk00;
+	uint32_t	intc_intmsk04;
+	/*  Cached and calculated values:  */
+	uint8_t		int_prio_and_pending[0x1000 / 0x20];
 	int16_t		int_to_assert;	/*  Calculated int to assert  */
 	int		int_level;	/*  Calculated int level  */
-	uint32_t	int_pending[0x1000 / 0x20 / (sizeof(uint32_t)*8)];
 
 	/*  Timer/clock functionality:  */
 	int		pclock;
@@ -203,6 +212,10 @@ struct sh_cpu {
 #define	SH_FPSCR_FR		0x00200000	/*  Register Bank Select  */
 
 
+/*  int_prio_and_pending bits:  */
+#define	SH_INT_ASSERTED		0x10
+#define	SH_INT_PRIO_MASK	0x0f
+
 /*  cpu_sh.c:  */
 void sh_cpu_interrupt_assert(struct interrupt *interrupt);
 void sh_cpu_interrupt_deassert(struct interrupt *interrupt);
@@ -222,6 +235,7 @@ int sh_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int sh_cpu_family_init(struct cpu_family *);
 
+void sh_update_interrupt_priorities(struct cpu *cpu);
 void sh_update_sr(struct cpu *cpu, uint32_t new_sr);
 void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr);
 

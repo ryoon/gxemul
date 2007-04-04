@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.33 2007-03-31 13:52:30 debug Exp $
+ *  $Id: dev_sh4.c,v 1.34 2007-04-04 19:59:24 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
- *  TODO: Lots and lots of stuff.
+ *  TODO: Among other things:
+ *
+ *	x)  Interrupt masks (msk register stuff).
  */
 
 #include <stdio.h>
@@ -61,6 +63,8 @@
 #define	SH4_TICK_SHIFT		14
 #define	N_SH4_TIMERS		3
 
+#define	SCIF_TX_FIFO_SIZE	16
+
 /*  General-purpose I/O stuff:  */
 #define	SH4_PCTRA		0xff80002c
 #define	SH4_PDTRA		0xff800030
@@ -82,6 +86,8 @@ struct sh4_data {
 	uint16_t	scif_fcr;
 	int		scif_delayed_tx;
 	int		scif_console_handle;
+	uint8_t		scif_tx_fifo[SCIF_TX_FIFO_SIZE + 1];
+	int		scif_tx_fifo_cursize;
 	struct interrupt scif_tx_irq;
 	struct interrupt scif_rx_irq;
 
@@ -186,18 +192,15 @@ static void sh4_timer_tick(struct timer *t, void *extra)
 
 static void scif_reassert_interrupts(struct sh4_data *d)
 {
-	if (d->scif_scr & SCSCR2_RIE) {
-		if (d->scif_ssr & SCSSR2_DR)
-			INTERRUPT_ASSERT(d->scif_rx_irq);
-	} else {
+	if (d->scif_scr & SCSCR2_RIE && d->scif_ssr & SCSSR2_DR)
+		INTERRUPT_ASSERT(d->scif_rx_irq);
+	else
 		INTERRUPT_DEASSERT(d->scif_rx_irq);
-	}
-	if (d->scif_scr & SCSCR2_TIE) {
-		if (d->scif_ssr & (SCSSR2_TDFE | SCSSR2_TEND))
-			INTERRUPT_ASSERT(d->scif_tx_irq);
-	} else {
+
+	if (d->scif_scr & SCSCR2_TIE && d->scif_ssr & (SCSSR2_TDFE|SCSSR2_TEND))
+		INTERRUPT_ASSERT(d->scif_tx_irq);
+	else
 		INTERRUPT_DEASSERT(d->scif_tx_irq);
-	}
 }
 
 
@@ -206,15 +209,30 @@ DEVICE_TICK(sh4)
 	struct sh4_data *d = (struct sh4_data *) extra;
 	int i;
 
-	/*  Serial controller interrupts:  */
-	/*  TODO: Which bits go to which interrupt?  */
+	/*
+	 *  Serial controller interrupts:
+	 *
+	 *  RX: Cause interrupt if any char is available.
+	 *  TX: Send entire TX FIFO contents, and interrupt.
+	 */
 	if (console_charavail(d->scif_console_handle))
 		d->scif_ssr |= SCSSR2_DR;
 	else
-		d->scif_ssr &= SCSSR2_DR;
+		d->scif_ssr &= ~SCSSR2_DR;
+
 	if (d->scif_delayed_tx) {
-		if (--d->scif_delayed_tx == 0)
+		if (--d->scif_delayed_tx == 0) {
+			/*  Send TX FIFO contents:  */
+			for (i=0; i<d->scif_tx_fifo_cursize; i++)
+				console_putchar(d->scif_console_handle,
+				    d->scif_tx_fifo[i]);
+
+			/*  Clear FIFO:  */
+			d->scif_tx_fifo_cursize = 0;
+
+			/*  Done sending; cause a transmit end interrupt:  */
 			d->scif_ssr |= SCSSR2_TDFE | SCSSR2_TEND;
+		}
 	}
 
 	scif_reassert_interrupts(d);
@@ -965,29 +983,101 @@ DEVICE_ACCESS(sh4)
 	case SH4_IPRA:
 		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.intc_ipra;
-		else
+		else {
 			cpu->cd.sh.intc_ipra = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
 		break;
 
 	case SH4_IPRB:
 		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.intc_iprb;
-		else
+		else {
 			cpu->cd.sh.intc_iprb = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
 		break;
 
 	case SH4_IPRC:
 		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.intc_iprc;
-		else
+		else {
 			cpu->cd.sh.intc_iprc = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
 		break;
 
 	case SH4_IPRD:
 		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.intc_iprd;
-		else
+		else {
 			cpu->cd.sh.intc_iprd = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
+		break;
+
+	case SH4_INTPRI00:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_intpri00;
+		else {
+			cpu->cd.sh.intc_intpri00 = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
+		break;
+
+	case SH4_INTPRI00 + 4:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_intpri04;
+		else {
+			cpu->cd.sh.intc_intpri04 = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
+		break;
+
+	case SH4_INTPRI00 + 8:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_intpri08;
+		else {
+			cpu->cd.sh.intc_intpri08 = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
+		break;
+
+	case SH4_INTPRI00 + 0xc:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_intpri0c;
+		else {
+			cpu->cd.sh.intc_intpri0c = idata;
+			sh_update_interrupt_priorities(cpu);
+		}
+		break;
+
+	case SH4_INTMSK00:
+		/*  Note: Writes can only set bits, not clear them.  */
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_intmsk00;
+		else
+			cpu->cd.sh.intc_intmsk00 |= idata;
+		break;
+
+	case SH4_INTMSK00 + 4:
+		/*  Note: Writes can only set bits, not clear them.  */
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_intmsk04;
+		else
+			cpu->cd.sh.intc_intmsk04 |= idata;
+		break;
+
+	case SH4_INTMSKCLR00:
+		/*  Note: Writes can only clear bits, not set them.  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.sh.intc_intmsk00 &= ~idata;
+		break;
+
+	case SH4_INTMSKCLR00 + 4:
+		/*  Note: Writes can only clear bits, not set them.  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.sh.intc_intmsk04 &= ~idata;
 		break;
 
 
@@ -1021,8 +1111,15 @@ DEVICE_ACCESS(sh4)
 
 	case SH4_SCIF_BASE + SCIF_FTDR:
 		if (writeflag == MEM_WRITE) {
-			console_putchar(d->scif_console_handle, idata);
-			d->scif_delayed_tx = 1;
+			/*  Add to TX fifo:  */
+			if (d->scif_tx_fifo_cursize >= sizeof(
+			    d->scif_tx_fifo)) {
+				fatal("[ SCIF TX fifo overrun! ]\n");
+				d->scif_tx_fifo_cursize = 0;
+			}
+
+			d->scif_tx_fifo[d->scif_tx_fifo_cursize++] = idata;
+			d->scif_delayed_tx = 2;
 		}
 		break;
 
@@ -1030,7 +1127,7 @@ DEVICE_ACCESS(sh4)
 		if (writeflag == MEM_READ) {
 			odata = d->scif_ssr;
 		} else {
-			d->scif_ssr &= ~idata;
+			d->scif_ssr = idata;
 			scif_reassert_interrupts(d);
 		}
 		break;
@@ -1041,7 +1138,11 @@ DEVICE_ACCESS(sh4)
 			if (x == 13)
 				x = 10;
 			odata = x < 0? 0 : x;
-			d->scif_ssr &= ~SCSSR2_DR;
+			if (console_charavail(d->scif_console_handle))
+				d->scif_ssr |= SCSSR2_DR;
+			else
+				d->scif_ssr &= ~SCSSR2_DR;
+			scif_reassert_interrupts(d);
 		}
 		break;
 
@@ -1054,7 +1155,8 @@ DEVICE_ACCESS(sh4)
 		break;
 
 	case SH4_SCIF_BASE + SCIF_FDR:
-		odata = console_charavail(d->scif_console_handle);
+		odata = (console_charavail(d->scif_console_handle)? 1 : 0)
+		    + (d->scif_tx_fifo_cursize << 8);
 		break;
 
 
@@ -1202,7 +1304,10 @@ DEVINIT(sh4)
 		exit(1);
 	}
 
-	/*  Bus State Controller initial values:  */
+	/*
+	 *  Bus State Controller initial values, according to the
+	 *  SH7760 manual:
+	 */
 	d->bsc_bcr2 = 0x3ffc;
 	d->bsc_wcr1 = 0x77777777;
 	d->bsc_wcr2 = 0xfffeefff;

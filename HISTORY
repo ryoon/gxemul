@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1507 2007-03-31 15:11:25 debug Exp $
+$Id: HISTORY,v 1.1508 2007-04-04 19:59:23 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3367,7 +3367,9 @@ Changelog for GXemul:
 20070328	Moving around some native code generation skeleton code.
 20070329	The -lm check in the configure script now also checks for sin()
 		in addition to sqrt(). (Thanks to Nigel Horne for noticing that
-		sqrt was not enough on Fedora Core 6.)
+		sqrt was not enough on Fedora Core 6.) (Not verified yet.)
 20070330	Fixing an indexing bug in dev_sh4.c, found by using gcc version
 		4.3.0 20070323.
 20070331	Some more experimentation with native code generation.
+20070404	Attempting to fix some more SH4 SCIF interrupt bugs; rewriting
+		the SH interrupt assertion/deassertion code somewhat.

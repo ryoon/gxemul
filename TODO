@@ -1,4 +1,9 @@
-$Id: TODO,v 1.471 2007-03-28 08:29:58 debug Exp $
+$Id: TODO,v 1.472 2007-04-04 19:59:24 debug Exp $
+
+maskning av interrupter (?)
+
+oops, sh_update_interrupt_priorities() ska inte nollställa Assertion-biten
+i varje element! den måste bevaras
 
 -------------------------------------------------------------------------------
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.76 2007-03-26 02:01:36 debug Exp $
+ *  $Id: cpu_mips.c,v 1.77 2007-04-10 17:52:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -533,6 +533,9 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 	/*  Raw output:  */
 	if (rawflag) {
 		for (i=0; i<m->ncpus; i++) {
+			struct mips_coproc *cop0 =
+			    m->cpus[i]->cd.mips.coproc[0];
+
 			if (x >= 0 && i != x)
 				continue;
 
@@ -540,20 +543,18 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			printf("cpu%i: (", i);
 
 			if (m->cpus[i]->is_32bit)
-				printf("index=0x%08x random=0x%08x", (int)m->
-				    cpus[i]->cd.mips.coproc[0]->reg[COP0_INDEX],
-				    (int)m->cpus[i]->cd.mips.coproc[0]->reg
-				    [COP0_RANDOM]);
+				printf("index=0x%08x random=0x%08x",
+				    (int) cop0->reg[COP0_INDEX],
+				    (int) cop0->reg[COP0_RANDOM]);
 			else
 				printf("index=0x%016"PRIx64
 				    " random=0x%016"PRIx64,
-				    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->
-				    reg[COP0_INDEX], (uint64_t)m->cpus[i]->
-				    cd.mips.coproc[0]->reg[COP0_RANDOM]);
+				    (uint64_t) cop0->reg[COP0_INDEX],
+				    (uint64_t) cop0->reg[COP0_RANDOM]);
 
 			if (m->cpus[i]->cd.mips.cpu_type.isa_level >= 3)
-				printf(" wired=0x%"PRIx64, (uint64_t) m->cpus
-				    [i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
+				printf(" wired=0x%"PRIx64,
+				    (uint64_t) cop0->reg[COP0_WIRED]);
 
 			printf(")\n");
 
@@ -561,31 +562,36 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			    nr_of_tlb_entries; j++) {
 				if (m->cpus[i]->cd.mips.cpu_type.mmu_model ==
 				    MMU3K)
-					printf("%3i: hi=0x%08x lo=0x%08x\n", j,
-					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
-					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0);
+					printf("%3i: hi=0x%08"PRIx32" lo=0x%08"
+					    PRIx32"\n", j,
+					    (uint32_t) cop0->tlbs[j].hi,
+					    (uint32_t) cop0->tlbs[j].lo0);
 				else if (m->cpus[i]->is_32bit)
-					printf("%3i: hi=0x%08x mask=0x%08x "
-					    "lo0=0x%08x lo1=0x%08x\n", j,
-					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
-					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
-					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
-					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
+					printf("%3i: hi=0x%08"PRIx32" mask=0x"
+					    "%08"PRIx32" lo0=0x%08"PRIx32
+					    " lo1=0x%08"PRIx32"\n", j,
+					    (uint32_t) cop0->tlbs[j].hi,
+					    (uint32_t) cop0->tlbs[j].mask,
+					    (uint32_t) cop0->tlbs[j].lo0,
+					    (uint32_t) cop0->tlbs[j].lo1);
 				else
-					printf("%3i: hi=0x%016"PRIx64" mask=0x%016"PRIx64" "
-					    "lo0=0x%016"PRIx64" lo1=0x%016"PRIx64"\n", j,
-					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
-					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
-					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
-					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
+					printf("%3i: hi=0x%016"PRIx64" mask="
+					    "0x%016"PRIx64" lo0=0x%016"PRIx64
+					    " lo1=0x%016"PRIx64"\n", j,
+					    (uint64_t) cop0->tlbs[j].hi,
+					    (uint64_t) cop0->tlbs[j].mask,
+					    (uint64_t) cop0->tlbs[j].lo0,
+					    (uint64_t) cop0->tlbs[j].lo1);
 			}
 		}
+
 		return;
 	}
 
 	/*  Nicely formatted output:  */
 	for (i=0; i<m->ncpus; i++) {
 		int pageshift = 12;
+		struct mips_coproc *cop0 = m->cpus[i]->cd.mips.coproc[0];
 
 		if (x >= 0 && i != x)
 			continue;
@@ -598,31 +604,26 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 		switch (m->cpus[i]->cd.mips.cpu_type.isa_level) {
 		case 1:
 		case 2:	printf("index=0x%x random=0x%x",
-			    (int) ((m->cpus[i]->cd.mips.coproc[0]->
-			    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
+			    (int) ((cop0->reg[COP0_INDEX] & R2K3K_INDEX_MASK)
 			    >> R2K3K_INDEX_SHIFT),
-			    (int) ((m->cpus[i]->cd.mips.coproc[0]->
-			    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
+			    (int) ((cop0->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
 			    >> R2K3K_RANDOM_SHIFT));
 			break;
 		default:printf("index=0x%x random=0x%x",
-			    (int) (m->cpus[i]->cd.mips.coproc[0]->
-			    reg[COP0_INDEX] & INDEX_MASK),
-			    (int) (m->cpus[i]->cd.mips.coproc[0]->
-			    reg[COP0_RANDOM] & RANDOM_MASK));
-			printf(" wired=0x%"PRIx64, (uint64_t)
-			    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
+			    (int) (cop0->reg[COP0_INDEX] & INDEX_MASK),
+			    (int) (cop0->reg[COP0_RANDOM] & RANDOM_MASK));
+			printf(" wired=0x%"PRIx64,
+			    (uint64_t) cop0->reg[COP0_WIRED]);
 		}
 
 		printf(")\n");
 
 		for (j=0; j<m->cpus[i]->cd.mips.cpu_type.
 		    nr_of_tlb_entries; j++) {
-			uint64_t hi,lo0,lo1,mask;
-			hi = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi;
-			lo0 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0;
-			lo1 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1;
-			mask = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask;
+			uint64_t hi = cop0->tlbs[j].hi;
+			uint64_t lo0 = cop0->tlbs[j].lo0;
+			uint64_t lo1 = cop0->tlbs[j].lo1;
+			uint64_t mask = cop0->tlbs[j].mask;
 
 			printf("%3i: ", j);
 			switch (m->cpus[i]->cd.mips.cpu_type.mmu_model) {
@@ -1294,7 +1295,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		if (cache_op==2)	debug("index store tag"), showtag=1;
 		if (cache_op==3)	debug("create dirty exclusive");
 		if (cache_op==4)	debug("hit invalidate");
-		if (cache_op==5)	debug("fill OR hit writeback invalidate");
+		if (cache_op==5)     debug("fill OR hit writeback invalidate");
 		if (cache_op==6)	debug("hit writeback");
 		if (cache_op==7)	debug("hit set virtual");
 		if (running)
@@ -1575,8 +1576,8 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					    "          ");
 				else
 					debug(" %3s=%016"PRIx64"%016"PRIx64,
-					    regname(cpu->machine, r),
-					    (uint64_t)cpu->cd.mips.gpr_quadhi[r],
+					    regname(cpu->machine, r), (uint64_t)
+					    cpu->cd.mips.gpr_quadhi[r],
 					    (uint64_t)cpu->cd.mips.gpr[r]);
 				if ((i & 1) == 1)
 					debug("\n");
@@ -1640,15 +1641,19 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				debug(" c%i,%02i", coprocnr, i);
 
 			if (bits32)
-				debug("=%08x", (int)cpu->cd.mips.coproc[coprocnr]->reg[i]);
+				debug("=%08x", (int)cpu->cd.mips.
+				    coproc[coprocnr]->reg[i]);
 			else {
 				if (coprocnr == 0 && (i == COP0_COUNT
 				    || i == COP0_COMPARE || i == COP0_INDEX
 				    || i == COP0_RANDOM || i == COP0_WIRED))
-					debug(" =         0x%08x", (int)cpu->cd.mips.coproc[coprocnr]->reg[i]);
+					debug(" =         0x%08x",
+					    (int) cpu->cd.mips.coproc[
+					    coprocnr]->reg[i]);
 				else
 					debug(" = 0x%016"PRIx64, (uint64_t)
-					    cpu->cd.mips.coproc[coprocnr]->reg[i]);
+					    cpu->cd.mips.coproc[
+					    coprocnr]->reg[i]);
 			}
 
 			if ((i & nm1) == nm1)

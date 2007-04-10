@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.113 2007-03-28 18:33:36 debug Exp $
+ *  $Id: cpu.h,v 1.114 2007-04-10 17:26:20 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -197,10 +197,8 @@
 #include "cpu_m68k.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
-#include "cpu_rca180x.h"
 #include "cpu_sh.h"
 #include "cpu_sparc.h"
-#include "cpu_transputer.h"
 
 struct cpu;
 struct emul;
@@ -407,10 +405,8 @@ struct cpu {
 		struct m68k_cpu       m68k;
 		struct mips_cpu       mips;
 		struct ppc_cpu        ppc;
-		struct rca180x_cpu    rca180x;
 		struct sh_cpu         sh;
 		struct sparc_cpu      sparc;
-		struct transputer_cpu transputer;
 	} cd;
 };
 

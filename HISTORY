@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1510 2007-04-10 16:51:34 debug Exp $
+$Id: HISTORY,v 1.1511 2007-04-10 17:26:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3376,3 +3376,6 @@ Changelog for GXemul:
 20070410	Splitting src/file.c into separate files in src/file/.
 		Cleanup: Removing the dummy TS7200, Walnut, PB1000, and
 		Meshcube emulation modes, and dev_epcom and dev_au1x00.
+		Removing the experimental CHIP8/RCA180x code; it wasn't really
+		working much lately, anyway. It was fun while it lasted.
+		Also removing the experimental Transputer CPU support.

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.250 2007-04-10 16:33:44 debug Exp $
+#  $Id: configure,v 1.251 2007-04-10 17:26:19 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -104,10 +104,8 @@ if [ z"$UNSTABLE" = zYES ]; then
 	ENABLEM68K=YES
 	ENABLEMIPS=YES
 	ENABLEPPC=YES
-	ENABLERCA180X=YES
 	ENABLESH=YES
 	ENABLESPARC=YES
-	ENABLETRANSPUTER=YES
 else
 	#  Stable:
 	ENABLEARM=YES
@@ -193,10 +191,6 @@ if [ z$ENABLEPPC = zYES ]; then
 	CPU_ARCHS="$CPU_ARCHS cpu_ppc.o"
 	CPU_TOOLS="$CPU_TOOLS generate_ppc_loadstore"
 fi
-if [ z$ENABLERCA180X = zYES ]; then
-	printf "#define ENABLE_RCA180X\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_rca180x.o"
-fi
 if [ z$ENABLESH = zYES ]; then
 	printf "#define ENABLE_SH\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_sh.o memory_sh.o"
@@ -205,10 +199,6 @@ if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_sparc.o memory_sparc.o"
 	CPU_TOOLS="$CPU_TOOLS generate_sparc_loadstore"
-fi
-if [ z$ENABLETRANSPUTER = zYES ]; then
-	printf "#define ENABLE_TRANSPUTER\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_transputer.o"
 fi
 
 

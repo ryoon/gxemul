@@ -1,4 +1,4 @@
-$Id: TODO,v 1.473 2007-04-10 15:36:59 debug Exp $
+$Id: TODO,v 1.474 2007-04-10 17:26:19 debug Exp $
 
 maskning av interrupter (?)
 
@@ -170,37 +170,6 @@ Dreamcast:
 	    Wikipedia, LC86K87 according to Comstedt's page. See
 	    http://www.maushammer.com/vmu.html for a good description of
 	    the differences between LC86104C and the one used in the VME.
-
-Transputer:
-	x)  Implement support for Helios binaries.
-	x)  Stack and register contents at startup?
-	x)  Figure out how to boot an entire Helios distribution.
-	x)  Implement all instructions. :)
-
-RCA1802/RCA1805, CHIP8:
-	x)  CHIP8 -> RCA180x conversion
-		x)  Think about how to do dual-mode, variable-instr-length
-		    ISAs, and switch between modes.
-		x)  1805 "extended" opcode -> trigger CHIP8 emulation?
-			That is, all calls 0NNN could point to 0x68 opcodes,
-			which, if running on a 1802 in CHIP8-emulation-mode,
-			would be manually interpreted.
-		x)  Better solution:
-			CHIP8 calls to 00xx => handle at high level,
-			      calls to 0xxx in general = call 180X machine code
-				(0000 = reboot?)
-	x)  1802 info: http://www.nyx.net/~lturner/public_html/Cosmac.html
-	    and:  http://www.elf-emulation.com/1802.html
-	x)  1805 extended opcodes: Implement at least disassembly support!
-	x)  Keyboard input.
-	x)  Sound (beep only).
-	x)  Slow-down to correct speed? Wikipedia: "it was usually operated
-	    at 3.58 MHz/2 to suit the requirements of the 1861 chip which
-	    gave a speed of a little over 100,000 instructions per second"
-	    (Note that _CHIP8_ emulation would then be even slower.)
-	x)  SCHIP48 (Super) emulation:
-		Some more opcodes, 128x64 framebuffer, larger
-		sprites and fonts.
 
 Alpha:
 	x)  OSF1 PALcode, Virtual memory support.

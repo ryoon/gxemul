@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.30 2007-02-10 14:38:39 debug Exp $
+ *  $Id: machine_test.c,v 1.31 2007-04-10 17:26:20 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -464,25 +464,4 @@ MACHINE_REGISTER(testsparc)
 	machine_entry_add_alias(me, "testsparc");
 }
 
-
-MACHINE_SETUP(baretransputer)
-{
-	machine->machine_name = "Generic \"bare\" Transputer machine";
-	machine->stable = 1;
-}
-
-
-MACHINE_DEFAULT_CPU(baretransputer)
-{
-	machine->cpu_name = strdup("T800");
-}
-
-
-MACHINE_REGISTER(baretransputer)
-{
-	MR_DEFAULT(baretransputer, "Generic \"bare\" Transputer machine",
-	    ARCH_TRANSPUTER, MACHINE_BARETRANSPUTER);
-
-	machine_entry_add_alias(me, "baretransputer");
-}
 

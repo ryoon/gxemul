@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.144 2007-03-28 09:02:52 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.145 2007-04-10 17:26:20 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -488,12 +488,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 	 *  than were passed in register.
 	 */
 	for (x=0; x<n_args_to_print; x++) {
-		int64_t d;
-#if defined(DYNTRANS_TRANSPUTER)
-		d = 0;		/*  TODO  */
-#else
-		/*  Args in registers:  */
-		d = cpu->cd.DYNTRANS_ARCH.
+		int64_t d = cpu->cd.DYNTRANS_ARCH.
 #ifdef DYNTRANS_ALPHA
 		    r[ALPHA_A0
 #endif
@@ -514,9 +509,6 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 #ifdef DYNTRANS_PPC
 		    gpr[3
 #endif
-#ifdef DYNTRANS_RCA180X
-		    r[0		/*  TODO  */
-#endif
 #ifdef DYNTRANS_SH
 		    r[4		/*  NetBSD seems to use 4? But 2 seems
 					to be used by other code? TODO  */
@@ -525,7 +517,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		    r[8		/*  o0..o5  */
 #endif
 		    + x];
-#endif
+
 		symbol = get_symbol_name(&cpu->machine->symbol_context, d, &ot);
 
 		if (d > -256 && d < 256)

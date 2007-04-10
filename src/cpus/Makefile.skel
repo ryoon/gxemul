@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.30 2007-02-11 10:47:30 debug Exp $
+#  $Id: Makefile.skel,v 1.31 2007-04-10 17:26:20 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -111,18 +111,6 @@ tmp_avr_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_rca180x.o: cpu_rca180x.c cpu_rca180x_instr.c cpu_dyntrans.c ../memory_rw.c \
-	tmp_rca180x_head.c tmp_rca180x_tail.c
-
-tmp_rca180x_head.c: generate_head
-	./generate_head rca180x RCA180X > tmp_rca180x_head.c
-
-tmp_rca180x_tail.c: generate_tail
-	./generate_tail rca180x RCA180X > tmp_rca180x_tail.c
-
-
-###############################################################################
-
 cpu_m68k.o: cpu_m68k.c cpu_m68k_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_m68k_head.c tmp_m68k_tail.c
 
@@ -194,18 +182,6 @@ tmp_sparc_head.c: generate_head
 
 tmp_sparc_tail.c: generate_tail
 	./generate_tail sparc SPARC > tmp_sparc_tail.c
-
-
-###############################################################################
-
-cpu_transputer.o: cpu_transputer.c cpu_transputer_instr.c cpu_dyntrans.c \
-	../memory_rw.c tmp_transputer_head.c tmp_transputer_tail.c
-
-tmp_transputer_head.c: generate_head
-	./generate_head transputer Transputer > tmp_transputer_head.c
-
-tmp_transputer_tail.c: generate_tail
-	./generate_tail transputer Transputer > tmp_transputer_tail.c
 
 
 ###############################################################################

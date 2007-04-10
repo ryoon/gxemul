@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.260 2007-04-10 16:51:34 debug Exp $
+$Id: RELEASE,v 1.261 2007-04-10 17:26:19 debug Exp $
 
 Working on what will become 0.4.5.
 
@@ -36,9 +36,10 @@ The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 	cause weird bugs, or translation leaks (leading to unnecessary
 	dyntrans cache overflows).
 
-    o)	Some cleanup: The GDB debugging stub support and some dummy
-	machine modes (TS7200, Walnut, PB1000, and Meshcube) have been
-	removed.
+    o)	Some cleanup: The GDB debugging stub support, some dummy machine
+	modes (TS7200, Walnut, PB1000, and Meshcube) and some dummy or
+	experimental CPUs (RCA180x and Transputer) have been removed, to
+	make the emulator slightly more maintainable.
 
 Please read the HISTORY file for more details.
 

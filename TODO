@@ -1,9 +1,14 @@
-$Id: TODO,v 1.472 2007-04-04 19:59:24 debug Exp $
+$Id: TODO,v 1.473 2007-04-10 15:36:59 debug Exp $
 
 maskning av interrupter (?)
 
 oops, sh_update_interrupt_priorities() ska inte nollställa Assertion-biten
 i varje element! den måste bevaras
+
+amd64-nativekod-saker:
+	först av allt:
+	generering av kod i minnet, från en lista av pseudo-amd64-opcodes.
+	testa att köra denna, och verifiera resultat på något sätt.
 
 -------------------------------------------------------------------------------
 

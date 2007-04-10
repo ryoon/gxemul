@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.32 2007-02-10 14:24:58 debug Exp $
+#  $Id: Makefile.skel,v 1.33 2007-04-10 16:51:35 debug Exp $
 #
 #  Makefile for GXemul machines
 #
@@ -13,8 +13,7 @@ OBJS=	machine_algor.o machine_alpha.o machine_arc.o machine_avr.o \
 	machine_netwinder.o machine_playstation2.o machine_pmax.o \
 	machine_pmppc.o machine_prep.o machine_psp.o machine_qemu.o \
 	machine_sandpoint.o machine_sgi.o machine_shark.o machine_sonynews.o \
-	machine_sparc.o machine_test.o machine_ts7200.o machine_walnut.o \
-	machine_zaurus.o
+	machine_sparc.o machine_test.o machine_zaurus.o
 
 all:
 	$(MAKE) objs

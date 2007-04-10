@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.158 2007-03-26 02:01:36 debug Exp $
+ *  $Id: machine.h,v 1.159 2007-04-10 16:51:35 debug Exp $
  */
 
 #include <sys/types.h>
@@ -255,13 +255,12 @@ struct machine {
 /*  PPC:  */
 #define	MACHINE_BAREPPC		2000
 #define	MACHINE_TESTPPC		2001
-#define	MACHINE_WALNUT		2002
-#define	MACHINE_PMPPC		2003
-#define	MACHINE_SANDPOINT	2004
-#define	MACHINE_BEBOX		2005
-#define	MACHINE_PREP		2006
-#define	MACHINE_MACPPC		2007
-#define	MACHINE_MVMEPPC		2008
+#define	MACHINE_PMPPC		2002
+#define	MACHINE_SANDPOINT	2003
+#define	MACHINE_BEBOX		2004
+#define	MACHINE_PREP		2005
+#define	MACHINE_MACPPC		2006
+#define	MACHINE_MVMEPPC		2007
 
 /*  SPARC:  */
 #define	MACHINE_BARESPARC	3000
@@ -283,8 +282,7 @@ struct machine {
 #define	MACHINE_SHARK		5006
 #define	MACHINE_IQ80321		5007
 #define	MACHINE_IYONIX		5008
-#define	MACHINE_TS7200		5009
-#define	MACHINE_QEMU_ARM	5010
+#define	MACHINE_QEMU_ARM	5009
 
 /*  M68K:  */
 #define	MACHINE_BAREM68K	6000
@@ -366,8 +364,6 @@ struct machine {
 /*  EVBMIPS:  */
 #define	MACHINE_EVBMIPS_MALTA		1
 #define	MACHINE_EVBMIPS_MALTA_BE	2
-#define	MACHINE_EVBMIPS_MESHCUBE	3
-#define	MACHINE_EVBMIPS_PB1000		4
 
 /*  PReP:  */
 #define	MACHINE_PREP_IBM6050		1

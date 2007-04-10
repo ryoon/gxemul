@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.19 2007-01-28 00:41:17 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.20 2007-04-10 16:51:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -106,49 +106,6 @@ MACHINE_SETUP(evbmips)
 		device_add(machine, "malta_lcd addr=0x1f000400");
 		break;
 
-	case MACHINE_EVBMIPS_MESHCUBE:
-		machine->machine_name = "Meshcube";
-
-		/*  See: http://mail-index.netbsd.org/port-evbmips/2006/
-		    02/23/0000.html  */
-
-		if (machine->physical_ram_in_mb != 64)
-			fprintf(stderr, "WARNING! MeshCubes are supposed to "
-			    "have exactly 64 MB RAM. Continuing anyway.\n");
-		if (machine->use_x11)
-			fprintf(stderr, "WARNING! MeshCube with -X is "
-			    "meaningless. Continuing anyway.\n");
-
-		/*  First of all, the MeshCube has an Au1500 in it:  */
-		device_add(machine, "au1x00");
-
-		/*
-		 *  TODO:  Which non-Au1500 devices, and at what addresses?
-		 *
-		 *  "4G Systems MTX-1 Board" at ?
-		 *	1017fffc, 14005004, 11700000, 11700008, 11900014,
-		 *	1190002c, 11900100, 11900108, 1190010c,
-		 *	10400040 - 10400074,
-		 *	14001000 (possibly LCD?)
-		 *	11100028 (possibly ttySx?)
-		 *
-		 *  "usb_ohci=base:0x10100000,len:0x100000,irq:26"
-		 */
-
-		/*  Linux reads this during startup...  */
-		device_add(machine, "random addr=0x1017fffc len=4");
-
-		break;
-
-	case MACHINE_EVBMIPS_PB1000:
-		machine->machine_name = "PB1000 (evbmips)";
-		cpu->byte_order = EMUL_BIG_ENDIAN;
-
-		device_add(machine, "au1x00");
-
-		/*  TODO  */
-		break;
-
 	default:fatal("Unimplemented EVBMIPS model.\n");
 		exit(1);
 	}
@@ -207,16 +164,12 @@ MACHINE_SETUP(evbmips)
 MACHINE_DEFAULT_CPU(evbmips)
 {
 	switch (machine->machine_subtype) {
+
 	case MACHINE_EVBMIPS_MALTA:
 	case MACHINE_EVBMIPS_MALTA_BE:
 		machine->cpu_name = strdup("5Kc");
 		break;
-	case MACHINE_EVBMIPS_MESHCUBE:
-		machine->cpu_name = strdup("AU1500");
-		break;
-	case MACHINE_EVBMIPS_PB1000:
-		machine->cpu_name = strdup("AU1000");
-		break;
+
 	default:fatal("Unimplemented evbmips subtype.\n");
 		exit(1);
 	}
@@ -243,12 +196,6 @@ MACHINE_REGISTER(evbmips)
 
 	machine_entry_add_subtype(me, "Malta (Big-Endian)",
 	    MACHINE_EVBMIPS_MALTA_BE, "maltabe", NULL);
-
-	machine_entry_add_subtype(me, "MeshCube", MACHINE_EVBMIPS_MESHCUBE,
-	    "meshcube", NULL);
-
-	machine_entry_add_subtype(me, "PB1000", MACHINE_EVBMIPS_PB1000,
-	    "pb1000", NULL);
 
 	me->set_default_ram = machine_default_ram_evbmips;
 }

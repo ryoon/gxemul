@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1509 2007-04-10 16:33:43 debug Exp $
+$Id: HISTORY,v 1.1510 2007-04-10 16:51:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3374,3 +3374,5 @@ Changelog for GXemul:
 20070404	Attempting to fix some more SH4 SCIF interrupt bugs; rewriting
 		the SH interrupt assertion/deassertion code somewhat.
 20070410	Splitting src/file.c into separate files in src/file/.
+		Cleanup: Removing the dummy TS7200, Walnut, PB1000, and
+		Meshcube emulation modes, and dev_epcom and dev_au1x00.

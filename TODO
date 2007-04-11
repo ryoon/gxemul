@@ -1,16 +1,4 @@
-$Id: TODO,v 1.474 2007-04-10 17:26:19 debug Exp $
-
-maskning av interrupter (?)
-
-oops, sh_update_interrupt_priorities() ska inte nollställa Assertion-biten
-i varje element! den måste bevaras
-
-amd64-nativekod-saker:
-	först av allt:
-	generering av kod i minnet, från en lista av pseudo-amd64-opcodes.
-	testa att köra denna, och verifiera resultat på något sätt.
-
--------------------------------------------------------------------------------
+$Id: TODO,v 1.475 2007-04-11 15:15:31 debug Exp $
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)
@@ -127,7 +115,7 @@ MIPS:
 
 SuperH:
 	x)  SH4 interrupt controller:
-		x)  Implement correct priorities of interrupts
+		x)  MASKING should be possible!
 	x)  SH4 DMA (0xffa00000)
 	x)  SH4 UBC (0xff200000)
 	x)  Store queues can copy 32 bytes at a time, there's no need to

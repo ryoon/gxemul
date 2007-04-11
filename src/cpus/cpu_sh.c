@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.64 2007-04-04 19:59:24 debug Exp $
+ *  $Id: cpu_sh.c,v 1.65 2007-04-11 15:15:32 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -234,25 +234,37 @@ void sh_update_interrupt_priorities(struct cpu *cpu)
 {
 	int i;
 
-	memset(cpu->cd.sh.int_prio_and_pending, 0,
-	    sizeof(cpu->cd.sh.int_prio_and_pending));
+	/*
+	 *  Set priorities of known interrupts, without affecting the
+	 *  SH_INT_ASSERTED bit:
+	 */
 
-	/*  Set priorities of known interrupts:  */
+	for (i=SH4_INTEVT_IRQ0; i<=SH4_INTEVT_IRQ14; i+=0x20) {
+		cpu->cd.sh.int_prio_and_pending[i/0x20] &= ~SH_INT_PRIO_MASK;
+		cpu->cd.sh.int_prio_and_pending[i/0x20] |= (15 - ((i - 
+		    SH4_INTEVT_IRQ0) / 0x20));
+	}
 
-	for (i=SH4_INTEVT_IRQ0; i<=SH4_INTEVT_IRQ14; i+=0x20)
-		cpu->cd.sh.int_prio_and_pending[i/0x20] =
-		    15 - ((i - SH4_INTEVT_IRQ0) / 0x20);
-
-	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU0_TUNI0 / 0x20] =
+	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU0_TUNI0 / 0x20] &=
+	    ~SH_INT_PRIO_MASK;
+	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU0_TUNI0 / 0x20] |=
 	    (cpu->cd.sh.intc_ipra >> 12) & 0xf;
-	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU1_TUNI1 / 0x20] =
+
+	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU1_TUNI1 / 0x20] &=
+	    ~SH_INT_PRIO_MASK;
+	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU1_TUNI1 / 0x20] |=
 	    (cpu->cd.sh.intc_ipra >> 8) & 0xf;
-	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU2_TUNI2 / 0x20] =
+
+	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU2_TUNI2 / 0x20] &=
+	    ~SH_INT_PRIO_MASK;
+	cpu->cd.sh.int_prio_and_pending[SH_INTEVT_TMU2_TUNI2 / 0x20] |=
 	    (cpu->cd.sh.intc_ipra >> 4) & 0xf;
 
-	for (i=SH4_INTEVT_SCIF_ERI; i<=SH4_INTEVT_SCIF_TXI; i+=0x20)
-		cpu->cd.sh.int_prio_and_pending[i/0x20] =
-		    (cpu->cd.sh.intc_intpri08 >> 16) & 0xf;
+	for (i=SH4_INTEVT_SCIF_ERI; i<=SH4_INTEVT_SCIF_TXI; i+=0x20) {
+		cpu->cd.sh.int_prio_and_pending[i/0x20] &= SH_INT_PRIO_MASK;
+		cpu->cd.sh.int_prio_and_pending[i/0x20] |=
+		    ((cpu->cd.sh.intc_intpri08 >> 16) & 0xf);
+	}
 }
 
 

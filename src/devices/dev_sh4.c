@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.34 2007-04-04 19:59:24 debug Exp $
+ *  $Id: dev_sh4.c,v 1.35 2007-04-11 15:15:32 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -84,6 +84,7 @@ struct sh4_data {
 	uint16_t	scif_scr;
 	uint16_t	scif_ssr;
 	uint16_t	scif_fcr;
+	uint16_t	scif_lsr;
 	int		scif_delayed_tx;
 	int		scif_console_handle;
 	uint8_t		scif_tx_fifo[SCIF_TX_FIFO_SIZE + 1];
@@ -1152,6 +1153,11 @@ DEVICE_ACCESS(sh4)
 		} else {
 			odata = d->scif_fcr;
 		}
+		break;
+
+	case SH4_SCIF_BASE + SCIF_LSR:
+		/*  TODO: Implement all bits.  */
+		odata = 0;
 		break;
 
 	case SH4_SCIF_BASE + SCIF_FDR:

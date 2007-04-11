@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.281 2007-04-10 17:26:20 debug Exp $
+ *  $Id: emul.c,v 1.282 2007-04-11 15:15:31 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -793,43 +793,43 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 	case ARCH_ARM:
 		/*  ARM cpus aren't 64-bit:  */
-		debug("0x%08x", (int)entrypoint);
+		debug("0x%08"PRIx32, (uint32_t) entrypoint);
 		break;
 
 	case ARCH_AVR:
 		/*  Atmel AVR uses a 16-bit or 22-bit program counter:  */
-		debug("0x%04x", (int)entrypoint);
+		debug("0x%04x", (int) entrypoint);
 		break;
 
 	case ARCH_MIPS:
 		if (cpu->is_32bit) {
-			debug("0x%08x", (int)m->cpus[
-			    m->bootstrap_cpu]->pc);
+			debug("0x%08"PRIx32, (uint32_t)
+			    m->cpus[m->bootstrap_cpu]->pc);
 			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
-				debug(" (gp=0x%08x)", (int)m->cpus[
-				    m->bootstrap_cpu]->cd.mips.gpr[
+				debug(" (gp=0x%08"PRIx32")", (uint32_t)
+				    m->cpus[m->bootstrap_cpu]->cd.mips.gpr[
 				    MIPS_GPR_GP]);
 		} else {
-			debug("0x%016llx", (long long)m->cpus[
-			    m->bootstrap_cpu]->pc);
+			debug("0x%016"PRIx64, (uint64_t)
+			    m->cpus[m->bootstrap_cpu]->pc);
 			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
-				debug(" (gp=0x%016llx)", (long long)
+				debug(" (gp=0x%016"PRIx64")", (uint64_t)
 				    cpu->cd.mips.gpr[MIPS_GPR_GP]);
 		}
 		break;
 
 	case ARCH_PPC:
 		if (cpu->cd.ppc.bits == 32)
-			debug("0x%08x", (int)entrypoint);
+			debug("0x%08"PRIx32, (uint32_t) entrypoint);
 		else
-			debug("0x%016llx", (long long)entrypoint);
+			debug("0x%016"PRIx64, (uint64_t) entrypoint);
 		break;
 
 	default:
 		if (cpu->is_32bit)
-			debug("0x%08x", (int)cpu->pc);
+			debug("0x%08"PRIx32, (uint32_t) cpu->pc);
 		else
-			debug("0x%016llx", (long long)cpu->pc);
+			debug("0x%016"PRIx64, (uint64_t) cpu->pc);
 	}
 	debug("\n");
 

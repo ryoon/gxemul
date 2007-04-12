@@ -25,13 +25,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.35 2007-04-11 15:15:32 debug Exp $
+ *  $Id: dev_sh4.c,v 1.36 2007-04-12 17:03:46 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
  *  TODO: Among other things:
  *
  *	x)  Interrupt masks (msk register stuff).
+ *	x)  BSC (Bus state controller).
+ *	x)  DMA
+ *	x)  UBC
+ *	x)  ...
  */
 
 #include <stdio.h>
@@ -56,6 +60,7 @@
 #include "sh4_mmu.h"
 #include "sh4_rtcreg.h"
 #include "sh4_scifreg.h"
+#include "sh4_scireg.h"
 #include "sh4_tmureg.h"
 
 
@@ -107,6 +112,9 @@ struct sh4_data {
 	uint32_t	pdtra;		/*  Port Data Register A  */
 	uint32_t	pctrb;		/*  Port Control Register B  */
 	uint32_t	pdtrb;		/*  Port Data Register B  */
+
+	/*  SCI (serial interface):  */
+	/*  TODO  */
 
 	/*  SD-RAM:  */
 	uint16_t	sdmr2;
@@ -244,6 +252,23 @@ DEVICE_TICK(sh4)
 			INTERRUPT_ASSERT(d->timer_irq[i]);
 			d->tcr[i] |= TCR_UNF;
 		}
+}
+
+
+/*
+ *  sh_sci_access():
+ *
+ *  Reads or writes a bit via the SH4's serial interface. If writeflag is
+ *  non-zero, input is used. If writeflag is zero, a bit is outputed as
+ *  the return value from this function.
+ */
+static uint8_t sh_sci_access(int writeflag, uint8_t input)
+{
+	printf("w=%i", writeflag);
+	if (writeflag)
+		printf(" i=0x%02x", input);
+	printf("\n");
+	return 0;
 }
 
 
@@ -965,6 +990,14 @@ DEVICE_ACCESS(sh4)
 			debug("[ sh4: pdtrb: read: TODO ]\n");
 			odata = d->pdtrb;
 		}
+		break;
+
+
+	/****************************/
+	/*  SCI:  Serial Interface  */
+
+	case SHREG_SCSPTR:
+		odata = sh_sci_access(writeflag == MEM_WRITE? 1 : 0, idata);
 		break;
 
 

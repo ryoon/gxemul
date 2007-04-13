@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.38 2007-04-13 16:07:26 debug Exp $
+ *  $Id: dev_sh4.c,v 1.39 2007-04-13 16:12:39 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -315,7 +315,7 @@ static void sh_sci_cmd(struct sh4_data *d, struct cpu *cpu)
 		cpu->memory_rw(cpu, cpu->mem, SCI_DEVICE_BASE + d->sci_cur_addr,
 		    &data_byte, 1, MEM_READ, PHYSICAL);
 
-		fatal("[ SCI: read addr=%x data=%x ]\n",
+		debug("[ SCI: read addr=%x data=%x ]\n",
 		    d->sci_cur_addr, data_byte);
 
 		d->sci_curbyte = data_byte;
@@ -330,7 +330,7 @@ static void sh_sci_cmd(struct sh4_data *d, struct cpu *cpu)
 		/*  Write the 4 data bits to the current address:  */
 		uint8_t data_byte = cmd & 0x0f;
 
-		fatal("[ SCI: write addr=%x data=%x ]\n",
+		debug("[ SCI: write addr=%x data=%x ]\n",
 		    d->sci_cur_addr, data_byte);
 
 		cpu->memory_rw(cpu, cpu->mem, SCI_DEVICE_BASE + d->sci_cur_addr,

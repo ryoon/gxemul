@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.36 2007-04-12 17:03:46 debug Exp $
+ *  $Id: dev_sh4.c,v 1.37 2007-04-13 07:06:32 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -96,6 +96,8 @@ struct sh4_data {
 	int		scif_tx_fifo_cursize;
 	struct interrupt scif_tx_irq;
 	struct interrupt scif_rx_irq;
+	int		scif_tx_irq_asserted;
+	int		scif_rx_irq_asserted;
 
 	/*  Bus State Controller:  */
 	uint32_t	bsc_bcr1;
@@ -137,7 +139,7 @@ struct sh4_data {
 };
 
 
-#define	SH4_PSEUDO_TIMER_HZ	100.0
+#define	SH4_PSEUDO_TIMER_HZ	110.0
 
 
 /*
@@ -201,14 +203,24 @@ static void sh4_timer_tick(struct timer *t, void *extra)
 
 static void scif_reassert_interrupts(struct sh4_data *d)
 {
-	if (d->scif_scr & SCSCR2_RIE && d->scif_ssr & SCSSR2_DR)
+	int old_tx_asserted = d->scif_tx_irq_asserted;
+	int old_rx_asserted = d->scif_rx_irq_asserted;
+
+	d->scif_rx_irq_asserted =
+	    d->scif_scr & SCSCR2_RIE && d->scif_ssr & SCSSR2_DR;
+
+	if (d->scif_rx_irq_asserted && !old_rx_asserted)
 		INTERRUPT_ASSERT(d->scif_rx_irq);
-	else
+	else if (!d->scif_rx_irq_asserted && old_rx_asserted)
 		INTERRUPT_DEASSERT(d->scif_rx_irq);
 
-	if (d->scif_scr & SCSCR2_TIE && d->scif_ssr & (SCSSR2_TDFE|SCSSR2_TEND))
+	d->scif_tx_irq_asserted =
+	    d->scif_scr & SCSCR2_TIE &&
+	    d->scif_ssr & (SCSSR2_TDFE | SCSSR2_TEND);
+
+	if (d->scif_tx_irq_asserted && !old_tx_asserted)
 		INTERRUPT_ASSERT(d->scif_tx_irq);
-	else
+	else if (!d->scif_tx_irq_asserted && old_tx_asserted)
 		INTERRUPT_DEASSERT(d->scif_tx_irq);
 }
 
@@ -785,8 +797,9 @@ DEVICE_ACCESS(sh4)
 				exit(1);
 			}
 
+			INTERRUPT_DEASSERT(d->timer_irq[timer_nr]);
+
 			if (d->tcr[timer_nr] & TCR_UNF && !(idata & TCR_UNF)) {
-				INTERRUPT_DEASSERT(d->timer_irq[timer_nr]);
 				if (d->timer_interrupts_pending[timer_nr] > 0)
 					d->timer_interrupts_pending[timer_nr]--;
 			}

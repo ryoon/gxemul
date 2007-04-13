@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.17 2007-03-24 06:40:15 debug Exp $
+ *  $Id: memory_sh.c,v 1.18 2007-04-13 07:06:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -113,6 +113,8 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 		mask = 0xfff00000;
 
 		v = lo & SH4_PTEL_V;
+		if (!v)
+			continue;
 
 		switch (lo & SH4_PTEL_SZ_MASK) {
 		case SH4_PTEL_SZ_1K:  mask = 0xfffffc00; break;
@@ -121,7 +123,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 		/*  case SH4_PTEL_SZ_1M:  mask = 0xfff00000; break;  */
 		}
 
-		if (!v || (hi & mask) != (vaddr & mask))
+		if ((hi & mask) != (vaddr & mask))
 			continue;
 
 		sh = lo & SH4_PTEL_SH;

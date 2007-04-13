@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.65 2007-04-11 15:15:32 debug Exp $
+ *  $Id: cpu_sh.c,v 1.66 2007-04-13 07:06:31 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -261,7 +261,7 @@ void sh_update_interrupt_priorities(struct cpu *cpu)
 	    (cpu->cd.sh.intc_ipra >> 4) & 0xf;
 
 	for (i=SH4_INTEVT_SCIF_ERI; i<=SH4_INTEVT_SCIF_TXI; i+=0x20) {
-		cpu->cd.sh.int_prio_and_pending[i/0x20] &= SH_INT_PRIO_MASK;
+		cpu->cd.sh.int_prio_and_pending[i/0x20] &= ~SH_INT_PRIO_MASK;
 		cpu->cd.sh.int_prio_and_pending[i/0x20] |=
 		    ((cpu->cd.sh.intc_intpri08 >> 16) & 0xf);
 	}
@@ -610,7 +610,7 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr)
 	}
 
 	if (cpu->cd.sh.sr & SH_SR_BL) {
-		fatal("sh_exception(): BL bit already set. TODO\n");
+		fatal("[ sh_exception(): BL bit already set. ]\n");
 
 		/*  This is actually OK in two cases: a User Break,
 		    or on NMI interrupts if a special flag is set?  */

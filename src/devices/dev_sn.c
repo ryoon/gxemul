@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.16 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sn.c,v 1.17 2007-04-13 16:06:53 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -57,9 +57,6 @@ struct sn_data {
 };
 
 
-/*
- *  dev_sn_access():
- */
 DEVICE_ACCESS(sn)
 {
 	struct sn_data *d = (struct sn_data *) extra;

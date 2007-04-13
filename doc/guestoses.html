@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.210 2007-03-26 02:43:49 debug Exp $
+$Id: guestoses.html,v 1.211 2007-04-13 19:11:43 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -2460,21 +2460,23 @@ image, using an emulated CATS machine:
 	<b>dd if=/dev/zero of=nbsd_landisk.img bs=1024 count=1 seek=900000</b>
 
 </pre>
-
-<b>TODO</b>
-download the .iso image
+  <p>
+  <li>Download the latest netbsd-4 (pre-release) snapshot, and make an iso image
+	of it: (replace 200704110002Z with whatever is the latest one)<pre>
+	<b>wget -np -l 0 -r ftp://ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/200704110002Z/landisk
+	mkisofs -U -o landisk.iso ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/*</b>
+</pre>
 
   <p>
-  <li>TODO: Start the emulated CATS machine like this:<pre>
+  <li>Start the emulated CATS machine like this:<pre>
 	<b>gxemul -XEcats -d nbsd_landisk.img -d landisk.iso netbsd.aout-INSTALL.gz</b>
 
 </pre>
   <li>Exit the installer, then execute the following commands:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>
-disklabel -I -i wd0
-... TODO
-newfs /dev/wd0a
+<b>disklabel -i -I wd0</b>    (for example 'a', '4.2BSD', '1c',
+    '700M', 'b', 'swap', '701M', '$', 'P', 'W', 'y', and 'Q')
+<b>newfs /dev/wd0a
 mount /dev/cd0c /mnt
 mkdir /mnt2; mount /dev/wd0a /mnt2
 cd /mnt2; sh

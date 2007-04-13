@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1513 2007-04-13 07:06:31 debug Exp $
+$Id: HISTORY,v 1.1514 2007-04-13 16:07:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3383,3 +3383,5 @@ Changelog for GXemul:
 		works from intro.html to a separate translation.html file.
 		Minor SH fixes; attempting to get OpenBSD/landisk to run
 		without randomly bugging out, but no success yet.
+20070413	SH SCI (serial bit interface) should now work together with a
+		(new) RS5C313 clock device (for Landisk emulation).

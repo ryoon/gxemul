@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.7 2007-03-08 10:01:50 debug Exp $
+ *  $Id: machine_landisk.c,v 1.8 2007-04-13 16:07:26 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -49,6 +49,7 @@
 #include "misc.h"
 
 #include "sh4_exception.h"
+#include "sh4_scireg.h"
 
 
 MACHINE_SETUP(landisk)
@@ -70,6 +71,11 @@ MACHINE_SETUP(landisk)
 	snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%s.cpu[%i].irq[0x%x]"
 	    " addr_mult=2 addr=0x14000000",
 	    machine->path, machine->bootstrap_cpu, SH4_INTEVT_IRQ10);
+	device_add(machine, tmpstr);
+
+	/*  rsclock0 at shb0: RS5C313 real time clock  */
+	snprintf(tmpstr, sizeof(tmpstr), "rs5c313 addr=0x%"PRIx64,
+	    (uint64_t) SCI_DEVICE_BASE);
 	device_add(machine, tmpstr);
 
 	if (!machine->prom_emulation)

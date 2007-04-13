@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.37 2007-04-13 07:06:32 debug Exp $
+ *  $Id: dev_sh4.c,v 1.38 2007-04-13 16:07:26 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -116,7 +116,11 @@ struct sh4_data {
 	uint32_t	pdtrb;		/*  Port Data Register B  */
 
 	/*  SCI (serial interface):  */
-	/*  TODO  */
+	int		sci_bits_outputed;
+	int		sci_bits_read;
+	uint8_t		sci_scsptr;
+	uint8_t		sci_curbyte;
+	uint8_t		sci_cur_addr;
 
 	/*  SD-RAM:  */
 	uint16_t	sdmr2;
@@ -268,19 +272,132 @@ DEVICE_TICK(sh4)
 
 
 /*
+ *  sh_sci_cmd():
+ *
+ *  Handle a SCI command byte.
+ *
+ *  Bit:   Meaning:
+ *   7      Ignored (usually 1?)
+ *   6      0=Write, 1=Read
+ *   5      AD: Address transfer
+ *   4      DT: Data transfer
+ *   3..0   Data or address bits
+ */
+static void sh_sci_cmd(struct sh4_data *d, struct cpu *cpu)
+{
+	uint8_t cmd = d->sci_curbyte;
+	int writeflag = cmd & 0x40? 0 : 1;
+	int address_transfer;
+
+	/*  fatal("[ CMD BYTE %02x ]\n", cmd);  */
+
+	if (!(cmd & 0x80)) {
+		fatal("SCI cmd bit 7 not set? TODO\n");
+		exit(1);
+	}
+
+	if ((cmd & 0x30) == 0x20)
+		address_transfer = 1;
+	else if ((cmd & 0x30) == 0x10)
+		address_transfer = 0;
+	else {
+		fatal("SCI: Neither data nor address transfer? TODO\n");
+		exit(1);
+	}
+
+	if (address_transfer)
+		d->sci_cur_addr = cmd & 0x0f;
+
+	if (!writeflag) {
+		/*  Read data from the current address:  */
+		uint8_t data_byte;
+
+		cpu->memory_rw(cpu, cpu->mem, SCI_DEVICE_BASE + d->sci_cur_addr,
+		    &data_byte, 1, MEM_READ, PHYSICAL);
+
+		fatal("[ SCI: read addr=%x data=%x ]\n",
+		    d->sci_cur_addr, data_byte);
+
+		d->sci_curbyte = data_byte;
+
+		/*  Set bit 7 right away:  */
+		d->sci_scsptr &= ~SCSPTR_SPB1DT;
+		if (data_byte & 0x80)
+			d->sci_scsptr |= SCSPTR_SPB1DT;
+	}
+
+	if (writeflag && !address_transfer) {
+		/*  Write the 4 data bits to the current address:  */
+		uint8_t data_byte = cmd & 0x0f;
+
+		fatal("[ SCI: write addr=%x data=%x ]\n",
+		    d->sci_cur_addr, data_byte);
+
+		cpu->memory_rw(cpu, cpu->mem, SCI_DEVICE_BASE + d->sci_cur_addr,
+		    &data_byte, 1, MEM_WRITE, PHYSICAL);
+	}
+}
+
+
+/*
  *  sh_sci_access():
  *
  *  Reads or writes a bit via the SH4's serial interface. If writeflag is
  *  non-zero, input is used. If writeflag is zero, a bit is outputed as
  *  the return value from this function.
  */
-static uint8_t sh_sci_access(int writeflag, uint8_t input)
+static uint8_t sh_sci_access(struct sh4_data *d, struct cpu *cpu,
+	int writeflag, uint8_t input)
 {
-	printf("w=%i", writeflag);
-	if (writeflag)
-		printf(" i=0x%02x", input);
-	printf("\n");
-	return 0;
+	if (writeflag) {
+		/*  WRITE:  */
+		int clockpulse;
+		uint8_t old = d->sci_scsptr;
+		d->sci_scsptr = input;
+
+		/*
+		 *  Clock pulse (SCSPTR_SPB0DT going from 0 to 1,
+		 *  when SCSPTR_SPB0IO was already set):
+		 */
+		clockpulse = old & SCSPTR_SPB0IO &&
+		    d->sci_scsptr & SCSPTR_SPB0DT &&
+		    !(old & SCSPTR_SPB0DT);
+
+		if (!clockpulse)
+			return 0;
+
+		/*  Are we in output or input mode?  */
+		if (d->sci_scsptr & SCSPTR_SPB1IO) {
+			/*  Output:  */
+			int bit = d->sci_scsptr & SCSPTR_SPB1DT? 1 : 0;
+			d->sci_curbyte <<= 1;
+			d->sci_curbyte |= bit;
+			d->sci_bits_outputed ++;
+			if (d->sci_bits_outputed == 8) {
+				/*  4 control bits and 4 address/data bits have
+				    been written.  */
+				sh_sci_cmd(d, cpu);
+				d->sci_bits_outputed = 0;
+			}
+		} else {
+			/*  Input:  */
+			int bit;
+			d->sci_bits_read ++;
+			d->sci_bits_read &= 7;
+
+			bit = d->sci_curbyte & (0x80 >> d->sci_bits_read);
+
+			d->sci_scsptr &= ~SCSPTR_SPB1DT;
+			if (bit)
+				d->sci_scsptr |= SCSPTR_SPB1DT;
+		}
+
+		/*  Return (value doesn't matter).  */
+		return 0;
+	} else {
+		/*  READ:  */
+		return d->sci_scsptr;
+	}
 }
 
 
@@ -1010,7 +1127,8 @@ DEVICE_ACCESS(sh4)
 	/*  SCI:  Serial Interface  */
 
 	case SHREG_SCSPTR:
-		odata = sh_sci_access(writeflag == MEM_WRITE? 1 : 0, idata);
+		odata = sh_sci_access(d, cpu,
+		    writeflag == MEM_WRITE? 1 : 0, idata);
 		break;
 
 

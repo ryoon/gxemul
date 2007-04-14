@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1514 2007-04-13 16:07:25 debug Exp $
+$Id: HISTORY,v 1.1515 2007-04-14 05:39:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3385,3 +3385,9 @@ Changelog for GXemul:
 		without randomly bugging out, but no success yet.
 20070413	SH SCI (serial bit interface) should now work together with a
 		(new) RS5C313 clock device (for Landisk emulation).
+20070414	Moving Redhat/MIPS down from supported to experimental, in
+		guestoses.html.
+		Preparing for a new release; doing some regression testing etc.
+
+==============  RELEASE 0.4.5  ==============
+

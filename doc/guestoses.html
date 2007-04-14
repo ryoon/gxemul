@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.211 2007-04-13 19:11:43 debug Exp $
+$Id: guestoses.html,v 1.212 2007-04-14 05:38:00 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -67,7 +67,6 @@ SUCH DAMAGE.
   <li><a href="#ultrixinstall">Ultrix/RISC 4.5</a>
   <li><a href="#sprite">Sprite for DECstation</a>
   <li><a href="#declinux">Debian GNU/Linux for DECstation</a>
-  <li><a href="#declinuxredhat">Redhat Linux for DECstation</a>
 </ul>
 
 
@@ -99,6 +98,7 @@ you might find the following information interesting:
 
 <ul>
   <li><a href="#mach">Mach/PMAX</a>
+  <li><a href="#declinuxredhat">Redhat Linux for DECstation</a>
   <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
   <li><a href="#openbsdarcinstall">OpenBSD/arc 2.3</a>
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
@@ -1651,6 +1651,11 @@ DECstation onto a harddisk image in the emulator:
 	<a href="http://cdimage.debian.org/debian-cd/3.1_r0a/mipsel/iso-cd/debian-31r0a-mipsel-netinst.iso">http://cdimage.debian.org/debian-cd/3.1_r0a/mipsel/iso-cd/debian-31r0a-mipsel-netinst.iso</a>
 
 </pre>
+	<font color="#ff0000">NOTE 2007-04-14: It seems that the ISO image
+	has been removed from the cdimage site. You may need to search
+	for it elsewhere. :-/ Alternatively, you can follow
+	Michel Lespinasse's instructions at
+	<a href="http://people.zoy.org/~walken/gxemul-etch/HOWTO.html">http://people.zoy.org/~walken/gxemul-etch/HOWTO.html</a>.</font>
   <p>
   <li>Start the installation like this:<pre>
 	<b>gxemul -X -e3max -d debian_pmax.img -d debian-31r0a-mipsel-netinst.iso vmlinux-2.4.31</b>
@@ -1729,72 +1734,6 @@ Use this command to boot from the installed disk image:<pre>
 	<b>gxemul -X -e3max -o 'root=/dev/sda1' -d debian_pmax.img vmlinux-2.4.31</b>
 
 </pre>
-
-
-
-
-
-
-
-<p><br>
-<a name="declinuxredhat"></a>
-<h3>Redhat Linux for DECstation:</h3>
-
-
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a>
-
-<p>
-The following steps should let you run Redhat Linux for DECstation in GXemul:
-
-<p>
-<ol>
-  <li>Download a kernel. David Muse' Debian-install kernel works fine:<pre>
-	<a href="http://www.firstworks.com/mips-linux-2.4.31/vmlinux-2.4.31">http://www.firstworks.com/mips-linux-2.4.31/vmlinux-2.4.31</a>
-
-</pre>
-  <li>Download a root filesystem tree:<pre>
-	<a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz</a>
-	19486676 bytes, md5 = 5bcb725c90209479cd7ead8ad0c4a414
-
-</pre>
-  <li>Create a disk image which will contain the Redhat filesystem:<pre>
-	<b>dd if=/dev/zero of=redhat_mips.img bs=1024 count=1 seek=2000000</b>
-
-</pre>
-  <li>This is the tricky part: on redhat_mips.img, you need to create an MS-DOS
-	(!) partition table, and then an ext2 partition. This is what Linux
-	will then see as /dev/sda1.
-	<p>I recommend you run fdisk and mke2fs and untar the archive from within
-	Debian/DECstation or <a href="#debiancats">Debian/CATS</a> running
-	inside the emulator. (Alternatively, if you are on a Linux host,
-	you could use a loopback mount, or similar. This might require
-	root access. See e.g.
-	<a href="http://www.mega-tokyo.com/osfaq2/index.php/Disk%20Images%20Under%20Linux">http://www.mega-tokyo.com/osfaq2/index.php/Disk%20Images%20Under%20Linux</a>.)
-	<p>
-	In order to actually boot the system you need to modify /etc/fstab.
-	Change<pre>
-	/dev/root               /               nfs     defaults        1 1
-	#/dev/sdc1              /               ext2    defaults        1 1
-	none                    /proc           proc    defaults        0 0
-	none                    /dev/pts        devpts  mode=0622       0 0
-
-</pre>to<pre>
-	#/dev/root              /               nfs     defaults        1 1
-	/dev/sda1               /               ext2    defaults        1 1
-	none                    /proc           proc    defaults        0 0
-	none                    /dev/pts        devpts  mode=0622       0 0
-
-</pre>(Note sda1 instead of sdc1.)
-</ol>
-
-<p>To boot Redhat linux from the disk image, use the following command line:<pre>
-	<b>gxemul -X -e3max -o "root=/dev/sda1 ro" -d redhat_mips.img vmlinux-2.4.31</b>
-
-</pre>
-If you need to boot into single user mode, change options to
-<tt><b>-o "root=/dev/sda1 rw init=/bin/sh"</b></tt>.
 
 
 
@@ -1882,6 +1821,77 @@ Thanks to Artur Bujdoso for these values.
 
 <p>TODO: Better instructions on how to create the old-style UFS disk 
 image.
+
+
+
+
+
+
+
+<p><br>
+<a name="declinuxredhat"></a>
+<h3>Redhat Linux for DECstation:</h3>
+
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a>
+
+<p>
+The following steps should let you run Redhat Linux for DECstation in GXemul:
+
+<p>
+<ol>
+  <li>Download a kernel. David Muse' Debian-install kernel works fine:<pre>
+	<a href="http://www.firstworks.com/mips-linux-2.4.31/vmlinux-2.4.31">http://www.firstworks.com/mips-linux-2.4.31/vmlinux-2.4.31</a>
+
+</pre>
+  <li>Download a root filesystem tree:<pre>
+	<a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz</a>
+	19486676 bytes, md5 = 5bcb725c90209479cd7ead8ad0c4a414
+
+</pre>
+  <li>Create a disk image which will contain the Redhat filesystem:<pre>
+	<b>dd if=/dev/zero of=redhat_mips.img bs=1024 count=1 seek=2000000</b>
+
+</pre>
+  <li>This is the tricky part: on redhat_mips.img, you need to create an MS-DOS
+	(!) partition table, and then an ext2 partition. This is what Linux
+	will then see as /dev/sda1.
+	<p>I recommend you run fdisk and mke2fs and untar the archive from within
+	Debian/DECstation or <a href="#debiancats">Debian/CATS</a> running
+	inside the emulator. (Alternatively, if you are on a Linux host,
+	you could use a loopback mount, or similar. This might require
+	root access. See e.g.
+	<a href="http://www.mega-tokyo.com/osfaq2/index.php/Disk%20Images%20Under%20Linux">http://www.mega-tokyo.com/osfaq2/index.php/Disk%20Images%20Under%20Linux</a>.)
+	<p>
+	In order to actually boot the system you need to modify /etc/fstab.
+	Change<pre>
+	/dev/root               /               nfs     defaults        1 1
+	#/dev/sdc1              /               ext2    defaults        1 1
+	none                    /proc           proc    defaults        0 0
+	none                    /dev/pts        devpts  mode=0622       0 0
+
+</pre>to<pre>
+	#/dev/root              /               nfs     defaults        1 1
+	/dev/sda1               /               ext2    defaults        1 1
+	none                    /proc           proc    defaults        0 0
+	none                    /dev/pts        devpts  mode=0622       0 0
+
+</pre>(Note sda1 instead of sdc1.)
+</ol>
+
+<p>To boot Redhat linux from the disk image, use the following command line:<pre>
+	<b>gxemul -X -e3max -o "root=/dev/sda1 ro" -d redhat_mips.img vmlinux-2.4.31</b>
+
+</pre>
+If you need to boot into single user mode, change options to
+<tt><b>-o "root=/dev/sda1 rw init=/bin/sh"</b></tt>.
+
+
+
+
+
 
 
 

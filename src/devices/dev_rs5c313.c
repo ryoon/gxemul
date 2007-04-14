@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rs5c313.c,v 1.1 2007-04-13 16:07:26 debug Exp $
+ *  $Id: dev_rs5c313.c,v 1.2 2007-04-14 12:54:27 debug Exp $
  *
  *  RICOH RS5C313 Real Time Clock
  *
@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "cpu.h"
 #include "device.h"

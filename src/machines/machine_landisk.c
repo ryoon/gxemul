@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.9 2007-04-15 06:52:47 debug Exp $
+ *  $Id: machine_landisk.c,v 1.10 2007-04-15 15:43:28 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -91,8 +91,8 @@ MACHINE_SETUP(landisk)
 	 *  TODO: Make nicer.
 	 */
 	cpu->cd.sh.r[4] = 0;
-	cpu->cd.sh.r[5] = 0x8c000000 + 8 * 1048576;	/*  Note/TODO:
-				Assuming hardcoded 8 MB kernel size!  */
+	cpu->cd.sh.r[5] = 0x8c000000 + 10 * 1048576;	/*  Note/TODO:
+				Assuming hardcoded 10 MB kernel size!  */
 
 	sh_ipl_g_emul_init(machine);
 }

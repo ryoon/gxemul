@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1516 2007-04-15 06:52:46 debug Exp $
+$Id: HISTORY,v 1.1517 2007-04-15 13:21:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3395,5 +3395,8 @@ Changelog for GXemul:
 		the clock run at correct speed.)
 		FINALLY found and fixed the bug which caused OpenBSD/landisk
 		to randomly bug out: an &-sign was missing in the special case
-		handling of FPSCR in mov_l_arg1_postinc_to_arg0_fp.
-		Implementing the 'FCNVSD FPUL,DRn' SuperH instruction.
+		handling of FPSCR in the 'LDS.L @Rm+,FPSCR' instruction.
+		Adding similar special case handling for 'LDC.L @Rm+,SR'
+		(calling sh_update_sr() instead of just loading).
+		Implementing the 'FCNVSD FPUL,DRn' and 'FCNVDS DRm,FPUL'
+		SuperH instructions.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.52 2007-04-15 06:52:47 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.53 2007-04-15 13:21:51 debug Exp $
  *
  *  SH instructions.
  *
@@ -818,7 +818,12 @@ X(mov_l_arg1_postinc_to_arg0_md)
 	else
 		data = BE32_TO_HOST(data);
 	reg(ic->arg[1]) = addr + sizeof(data);
-	reg(ic->arg[0]) = data;
+
+	/*  Special case when loading into the SR register:  */
+	if (ic->arg[0] == (size_t)&cpu->cd.sh.sr)
+		sh_update_sr(cpu, data);
+	else
+		reg(ic->arg[0]) = data;
 }
 X(mov_l_arg1_postinc_to_arg0_fp)
 {
@@ -2194,8 +2199,9 @@ X(ftrc_frm_fpul)
 
 /*
  *  fcnvsd_fpul_drn:  Convert single-precision to double-precision.
+ *  fcnvds_drm_fpul:  Convert double-precision to single-precision.
  *
- *  arg[0] = ptr to destination double-precision float (register pair)
+ *  arg[0] = ptr to destination (double- or single-precision float)
  */
 X(fcnvsd_fpul_drn)
 {
@@ -2211,6 +2217,19 @@ X(fcnvsd_fpul_drn)
 	ieee = ieee_store_float_value(op1.f, IEEE_FMT_D, 0);
 	reg(ic->arg[0]) = (uint32_t) (ieee >> 32);
 	reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) ieee;
+}
+X(fcnvds_drm_fpul)
+{
+	struct ieee_float_value op1;
+	int64_t r1;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	r1 = reg(ic->arg[0] + sizeof(uint32_t)) +
+	    ((uint64_t)reg(ic->arg[0]) << 32);
+	ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
+
+	cpu->cd.sh.fpul = ieee_store_float_value(op1.f, IEEE_FMT_S, 0);
 }
 
 
@@ -3683,6 +3702,10 @@ X(to_be_translated)
 		} else if ((iword & 0x01ff) == 0x00ad) {
 			/*  FCNVSD FPUL,DRn  */
 			ic->f = instr(fcnvsd_fpul_drn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if ((iword & 0x01ff) == 0x00bd) {
+			/*  FCNVDS DRm,FPUL  */
+			ic->f = instr(fcnvds_drm_fpul);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if ((iword & 0x01ff) == 0x00fd) {
 			/*  FSCA FPUL,DRn  */

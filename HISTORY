@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1517 2007-04-15 13:21:50 debug Exp $
+$Id: HISTORY,v 1.1518 2007-04-15 15:45:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3400,3 +3400,5 @@ Changelog for GXemul:
 		(calling sh_update_sr() instead of just loading).
 		Implementing the 'FCNVSD FPUL,DRn' and 'FCNVDS DRm,FPUL'
 		SuperH instructions.
+		The 'LDC Rm,SR' instruction now immediately breaks out of the
+		dyntrans loop if an interrupt is to be triggered.

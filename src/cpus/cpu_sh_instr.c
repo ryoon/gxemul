@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.53 2007-04-15 13:21:51 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.54 2007-04-15 15:45:49 debug Exp $
  *
  *  SH instructions.
  *
@@ -2074,6 +2074,14 @@ X(ldc_rm_sr)
 {
 	RES_INST_IF_NOT_MD;
 	sh_update_sr(cpu, reg(ic->arg[1]));
+
+	if (!(cpu->cd.sh.sr & SH_SR_BL) && cpu->cd.sh.int_to_assert > 0 &&
+	    ( (cpu->cd.sh.sr & SH_SR_IMASK) >> SH_SR_IMASK_SHIFT)
+	    < cpu->cd.sh.int_level) {
+		/*  Cause interrupt immediately, by dropping out of the
+		    main dyntrans loop:  */
+		cpu->cd.sh.next_ic = &nothing_call;
+	}
 }
 
 

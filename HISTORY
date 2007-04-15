@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1515 2007-04-14 05:39:46 debug Exp $
+$Id: HISTORY,v 1.1516 2007-04-15 06:52:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3391,3 +3391,9 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.5  ==============
 
+20070415	Landisk PCLOCK should be 33.33 MHz, not 50 MHz. (This makes
+		the clock run at correct speed.)
+		FINALLY found and fixed the bug which caused OpenBSD/landisk
+		to randomly bug out: an &-sign was missing in the special case
+		handling of FPSCR in mov_l_arg1_postinc_to_arg0_fp.
+		Implementing the 'FCNVSD FPUL,DRn' SuperH instruction.

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.476 2007-04-14 05:39:47 debug Exp $
+$Id: TODO,v 1.477 2007-04-15 06:52:47 debug Exp $
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)
@@ -118,7 +118,6 @@ SuperH:
 		x)  MASKING should be possible!
 	x)  SH4 DMA (0xffa00000)
 	x)  SH4 UBC (0xff200000)
-	x)  SH4 timers are going too fast!
 	x)  Store queues can copy 32 bytes at a time, there's no need to
 	    copy individual 32-bit words. (Performance improvement.)
 	x)  SH4 BSC (Bus State Controller)

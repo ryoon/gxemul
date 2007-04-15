@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.51 2007-03-08 19:04:09 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.52 2007-04-15 06:52:47 debug Exp $
  *
  *  SH instructions.
  *
@@ -845,7 +845,8 @@ X(mov_l_arg1_postinc_to_arg0_fp)
 		data = BE32_TO_HOST(data);
 	reg(ic->arg[1]) = addr + sizeof(data);
 
-	if (ic->arg[0] == (size_t)cpu->cd.sh.fpscr)
+	/*  Ugly special case for FPSCR:  */
+	if (ic->arg[0] == (size_t)&cpu->cd.sh.fpscr)
 		sh_update_fpscr(cpu, data);
 	else
 		reg(ic->arg[0]) = data;
@@ -2192,6 +2193,28 @@ X(ftrc_frm_fpul)
 
 
 /*
+ *  fcnvsd_fpul_drn:  Convert single-precision to double-precision.
+ *
+ *  arg[0] = ptr to destination double-precision float (register pair)
+ */
+X(fcnvsd_fpul_drn)
+{
+	struct ieee_float_value op1;
+	int64_t ieee;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	ieee_interpret_float_value(cpu->cd.sh.fpul, &op1, IEEE_FMT_S);
+	cpu->cd.sh.fpul = (int32_t) op1.f;
+
+	/*  Store double-precision result:  */
+	ieee = ieee_store_float_value(op1.f, IEEE_FMT_D, 0);
+	reg(ic->arg[0]) = (uint32_t) (ieee >> 32);
+	reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) ieee;
+}
+
+
+/*
  *  fsca_fpul_drn:  Sinus/cosinus approximation.
  *
  *  Note: This is an interesting instruction. It is not included in the SH4
@@ -3309,6 +3332,8 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
 				break;
 			case 0x66:	/*  LDS.L @Rm+,FPSCR  */
+				/*  Note: Loading into FPSCR is a specia
+				    case (need to call sh_update_fpsrc()).  */
 				ic->f = instr(mov_l_arg1_postinc_to_arg0_fp);
 				ic->arg[0] = (size_t)&cpu->cd.sh.fpscr;
 				break;
@@ -3655,6 +3680,10 @@ X(to_be_translated)
 			ic->f = instr(fldi_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 			ic->arg[1] = 0x3f800000;
+		} else if ((iword & 0x01ff) == 0x00ad) {
+			/*  FCNVSD FPUL,DRn  */
+			ic->f = instr(fcnvsd_fpul_drn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if ((iword & 0x01ff) == 0x00fd) {
 			/*  FSCA FPUL,DRn  */
 			ic->f = instr(fsca_fpul_drn);

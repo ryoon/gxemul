@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.8 2007-04-13 16:07:26 debug Exp $
+ *  $Id: machine_landisk.c,v 1.9 2007-04-15 06:52:47 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -62,8 +62,8 @@ MACHINE_SETUP(landisk)
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 200000000;
 
-	/*  50 MHz SH4 PCLOCK:  */
-	machine->cpus[machine->bootstrap_cpu]->cd.sh.pclock = 50000000;
+	/*  33.33 MHz SH4 PCLOCK:  */
+	machine->cpus[machine->bootstrap_cpu]->cd.sh.pclock = 33333333;
 
 	dev_ram_init(machine, 0x0c000000, 64 * 1048576, DEV_RAM_RAM, 0x0);
 

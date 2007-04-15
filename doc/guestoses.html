@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.212 2007-04-14 05:38:00 debug Exp $
+$Id: guestoses.html,v 1.213 2007-04-15 06:52:47 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -2518,9 +2518,10 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 
 It is possible to install and run
 <a href="http://www.openbsd.org/landisk.html">OpenBSD/landisk</a>
-in GXemul. There is at the time of writing this no stable release
-yet of OpenBSD/landisk, but there are snapshots available on the
-OpenBSD ftp site.
+in GXemul. There is at the time of writing this (2007-04-15) no
+stable release of OpenBSD/landisk, but there are snapshots available
+on the OpenBSD ftp site. Hopefully these instructions will work for
+OpenBSD 4.1 as well, when it has been released.
 
 <p><font color="#ff0000">NOTE: This is still too
 unstable to be considered really working!</font>
@@ -2542,7 +2543,8 @@ follow these instructions:
 
 </pre>
 	(Replace ftp.se.openbsd.org with a server closer to you, for
-	increased download speed.)
+	increased download speed. Also, when OpenBSD 4.1 has been released,
+	changing 'snapshots' to '4.1' should hopefully work.)
   <p>
   <li>You now need to make an ISO image of the entire directory you downloaded.
 	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
@@ -2553,7 +2555,7 @@ follow these instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -x -Elandisk -d obsd_landisk.img -d d:openbsd_landisk_snapshot.iso bsd.rd</b>
+	<b>gxemul -x -E landisk -d obsd_landisk.img -d d:openbsd_landisk_snapshot.iso bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD

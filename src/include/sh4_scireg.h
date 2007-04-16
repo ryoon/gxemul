@@ -1,4 +1,4 @@
-/*  GXemul: $Id: sh4_scireg.h,v 1.2 2007-04-13 16:07:26 debug Exp $  */
+/*  GXemul: $Id: sh4_scireg.h,v 1.3 2007-04-16 15:11:01 debug Exp $  */
 /*	$OpenBSD: scireg.h,v 1.1.1.1 2006/10/06 21:02:55 miod Exp $	*/
 /* $NetBSD: scireg.h,v 1.8 2003/07/01 11:49:37 uwe Exp $ */
 
@@ -6,7 +6,7 @@
 #define SH4_SCIREG_H
 
 /*  GXemul base address for SCI-connected devices:  */
-#define	SCI_DEVICE_BASE		0x81000000ULL
+#define	SCI_DEVICE_BASE		0x110000000ULL
 
 
 /*-

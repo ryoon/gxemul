@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1519 2007-04-16 15:13:44 debug Exp $
+$Id: HISTORY,v 1.1520 2007-04-16 15:13:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3405,3 +3405,4 @@ Changelog for GXemul:
 20070416	In memory_rw.c, if mapping a page as writable, make sure to
 		invalidate code translations even if the data access was a
 		read.
+		Minor SuperH updates.

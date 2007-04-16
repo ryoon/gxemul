@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.39 2007-04-13 16:12:39 debug Exp $
+ *  $Id: dev_sh4.c,v 1.40 2007-04-16 15:11:14 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -751,7 +751,7 @@ DEVICE_ACCESS(sh4)
 				cpu->invalidate_translation_caches(cpu,
 				    0, INVALIDATE_ALL);
 
-				/*  Should always read back as 0.  */
+				/*  The TI bit should always read as 0.  */
 				idata &= ~SH4_MMUCR_TI;
 			}
 
@@ -1325,6 +1325,7 @@ DEVICE_ACCESS(sh4)
 		break;
 
 	case SH4_SCIF_BASE + SCIF_FDR:
+		/*  Nr of bytes in the TX and RX fifos, respectively:  */
 		odata = (console_charavail(d->scif_console_handle)? 1 : 0)
 		    + (d->scif_tx_fifo_cursize << 8);
 		break;
@@ -1376,7 +1377,7 @@ DEVICE_ACCESS(sh4)
 			    (int)relative_addr, (int)idata);
 		}
 #ifdef SH4_DEGUG
-//		exit(1);
+		/*  exit(1);  */
 #endif
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.18 2007-04-13 07:06:31 debug Exp $
+ *  $Id: memory_sh.c,v 1.19 2007-04-16 15:11:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -157,7 +157,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 		 *  If a matching entry wasn't found in the ITLB, but in the
 		 *  UTLB, then copy it to a random place in the ITLB.
 		 */
-		if (i >= 0) {
+		if (i >= 0 && !(flags & FLAG_NOEXCEPTIONS)) {
 			int r = random() % SH_N_ITLB_ENTRIES;
 
 			/*  NOTE: Make sure that the old mapping for
@@ -243,12 +243,11 @@ exception:
  *		available as read-only.
  *	2	Same as 1, but the page is available as read/write.
  */
-int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr, uint64_t *return_paddr,
+int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr64, uint64_t *return_paddr,
 	int flags)
 {
 	int user = cpu->cd.sh.sr & SH_SR_MD? 0 : 1;
-
-	vaddr = (uint32_t)vaddr;
+	uint32_t vaddr = vaddr64;
 
 	/*  U0/P0: Userspace addresses, or P3: Kernel virtual memory.  */
 	if (!(vaddr & 0x80000000) ||

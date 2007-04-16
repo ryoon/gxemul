@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1518 2007-04-15 15:45:48 debug Exp $
+$Id: HISTORY,v 1.1519 2007-04-16 15:13:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3402,3 +3402,6 @@ Changelog for GXemul:
 		SuperH instructions.
 		The 'LDC Rm,SR' instruction now immediately breaks out of the
 		dyntrans loop if an interrupt is to be triggered.
+20070416	In memory_rw.c, if mapping a page as writable, make sure to
+		invalidate code translations even if the data access was a
+		read.

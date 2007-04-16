@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.101 2007-02-10 14:04:51 debug Exp $
+ *  $Id: memory_rw.c,v 1.102 2007-04-16 15:13:44 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -373,10 +373,14 @@ not just the device in question.
 		    paddr & ~offset_mask);
 
 	/*
-	 *  If writing, then invalidate code translations for the (physical)
-	 *  page address:
+	 *  If writing, or if mapping a page where writing is ok later on,
+	 *  then invalidate code translations for the (physical) page address:
 	 */
-	if (writeflag == MEM_WRITE && cpu->invalidate_code_translation != NULL)
+	if ((writeflag == MEM_WRITE
+#if !defined(MEM_USERLAND)
+	    || ok == 2
+#endif
+	    ) && cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);
 
 	if ((paddr&((1<<BITS_PER_MEMBLOCK)-1)) + len > (1<<BITS_PER_MEMBLOCK)) {
@@ -384,26 +388,11 @@ not just the device in question.
 		exit(1);
 	}
 
-	if (writeflag == MEM_WRITE) {
-		/*  Ugly optimization, but it works:  */
-		if (len == sizeof(uint32_t) && (offset & 3)==0
-		    && ((size_t)data&3)==0)
-			*(uint32_t *)(memblock + offset) = *(uint32_t *)data;
-		else if (len == sizeof(uint8_t))
-			*(uint8_t *)(memblock + offset) = *(uint8_t *)data;
-		else
-			memcpy(memblock + offset, data, len);
-	} else {
-		/*  Ugly optimization, but it works:  */
-		if (len == sizeof(uint32_t) && (offset & 3)==0
-		    && ((size_t)data&3)==0)
-			*(uint32_t *)data = *(uint32_t *)(memblock + offset);
-		else if (len == sizeof(uint8_t))
-			*(uint8_t *)data = *(uint8_t *)(memblock + offset);
-		else
-			memcpy(data, memblock + offset, len);
-	}
-
+	/*  And finally, read or write the data:  */
+	if (writeflag == MEM_WRITE)
+		memcpy(memblock + offset, data, len);
+	else
+		memcpy(data, memblock + offset, len);
 
 do_return_ok:
 	return MEMORY_ACCESS_OK;

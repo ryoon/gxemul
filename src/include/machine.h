@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.160 2007-04-10 17:26:20 debug Exp $
+ *  $Id: machine.h,v 1.161 2007-04-18 14:08:36 debug Exp $
  */
 
 #include <sys/types.h>
@@ -230,9 +230,8 @@ struct machine {
 #define	ARCH_SPARC		3
 #define	ARCH_ALPHA		4
 #define	ARCH_ARM		5
-#define	ARCH_M68K		6
-#define	ARCH_SH			7
-#define	ARCH_AVR		8
+#define	ARCH_SH			6
+#define	ARCH_AVR		7
 
 /*  MIPS:  */
 #define	MACHINE_BAREMIPS	1000
@@ -282,21 +281,17 @@ struct machine {
 #define	MACHINE_IYONIX		5008
 #define	MACHINE_QEMU_ARM	5009
 
-/*  M68K:  */
-#define	MACHINE_BAREM68K	6000
-#define	MACHINE_TESTM68K	6001
-
 /*  SH:  */
-#define	MACHINE_BARESH		7000
-#define	MACHINE_TESTSH		7001
-#define	MACHINE_HPCSH		7002
-#define	MACHINE_DREAMCAST	7003
-#define	MACHINE_LANDISK		7004
+#define	MACHINE_BARESH		6000
+#define	MACHINE_TESTSH		6001
+#define	MACHINE_HPCSH		6002
+#define	MACHINE_DREAMCAST	6003
+#define	MACHINE_LANDISK		6004
 
 /*  AVR:  */
-#define	MACHINE_BAREAVR		8000
-#define	MACHINE_AVR_PAL		8001
-#define	MACHINE_AVR_MAHPONG	8002
+#define	MACHINE_BAREAVR		7000
+#define	MACHINE_AVR_PAL		7001
+#define	MACHINE_AVR_MAHPONG	7002
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.31 2007-04-10 17:26:20 debug Exp $
+#  $Id: Makefile.skel,v 1.32 2007-04-18 14:08:35 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -107,18 +107,6 @@ tmp_avr_head.c: generate_head
 
 tmp_avr_tail.c: generate_tail
 	./generate_tail avr AVR > tmp_avr_tail.c
-
-
-###############################################################################
-
-cpu_m68k.o: cpu_m68k.c cpu_m68k_instr.c cpu_dyntrans.c ../memory_rw.c \
-	tmp_m68k_head.c tmp_m68k_tail.c
-
-tmp_m68k_head.c: generate_head
-	./generate_head m68k M68K > tmp_m68k_head.c
-
-tmp_m68k_tail.c: generate_tail
-	./generate_tail m68k M68K > tmp_m68k_tail.c
 
 
 ###############################################################################

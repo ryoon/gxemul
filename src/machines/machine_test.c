@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.31 2007-04-10 17:26:20 debug Exp $
+ *  $Id: machine_test.c,v 1.32 2007-04-18 14:08:36 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -183,54 +183,6 @@ MACHINE_REGISTER(testarm)
 	machine_entry_add_alias(me, "testarm");
 }
 
-
-
-MACHINE_SETUP(barem68k)
-{
-	machine->machine_name = "Generic \"bare\" M68K machine";
-	machine->stable = 1;
-}
-
-
-MACHINE_SETUP(testm68k)
-{
-	machine->machine_name = "M68K test machine";
-	machine->stable = 1;
-
-	/*  TODO: interrupt for M68K?  */
-
-	default_test(machine, cpu);
-}
-
-
-MACHINE_DEFAULT_CPU(barem68k)
-{
-	machine->cpu_name = strdup("68020");
-}
-
-
-MACHINE_DEFAULT_CPU(testm68k)
-{
-	machine->cpu_name = strdup("68020");
-}
-
-
-MACHINE_REGISTER(barem68k)
-{
-	MR_DEFAULT(barem68k, "Generic \"bare\" M68K machine",
-	    ARCH_M68K, MACHINE_BAREM68K);
-
-	machine_entry_add_alias(me, "barem68k");
-}
-
-
-MACHINE_REGISTER(testm68k)
-{
-	MR_DEFAULT(testm68k, "Test-machine for M68K",
-	    ARCH_M68K, MACHINE_TESTM68K);
-
-	machine_entry_add_alias(me, "testm68k");
-}
 
 
 MACHINE_SETUP(baremips)

@@ -1,6 +1,14 @@
-$Id: RELEASE,v 1.263 2007-04-15 13:20:46 debug Exp $
+$Id: RELEASE,v 1.264 2007-04-18 14:08:35 debug Exp $
 
-Working on what will become 0.4.6.
+20070418: Currently working on what will become either 0.4.5.1 or 0.4.6.
+
+If I get Landisk emulation stable enough to run OpenBSD/landisk 4.1
+cleanly (once OpenBSD 4.1 has been released), then I guess the release
+will be called 0.4.5.1. It would then basically only contain SuperH
+updates compared to 0.4.5.
+
+If I have time to add more substatial stuff, the next release will be 0.4.6.
+
 
 ------------------------------------------------------------------------------
 

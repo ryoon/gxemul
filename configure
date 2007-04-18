@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.252 2007-04-10 17:52:27 debug Exp $
+#  $Id: configure,v 1.253 2007-04-18 14:08:35 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -107,7 +107,6 @@ if [ z"$UNSTABLE" = zYES ]; then
 	printf "(Enabling some archs that are not working yet.)\n###\n\n"
 	ENABLEALPHA=YES
 	ENABLEAVR=YES
-	ENABLEM68K=YES
 	ENABLESPARC=YES
 fi
 
@@ -171,10 +170,6 @@ fi
 if [ z$ENABLEAVR = zYES ]; then
 	printf "#define ENABLE_AVR\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_avr.o"
-fi
-if [ z$ENABLEM68K = zYES ]; then
-	printf "#define ENABLE_M68K\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_m68k.o"
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h

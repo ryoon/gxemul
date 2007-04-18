@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_elf.c,v 1.1 2007-04-10 16:33:44 debug Exp $
+ *  $Id: file_elf.c,v 1.2 2007-04-18 14:08:35 debug Exp $
  *
  *  ELF file support.
  */
@@ -245,12 +245,12 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			ok = 1;
 		}
 		break;  */
-	case ARCH_M68K:
+	/*  case ARCH_M68K:
 		switch (emachine) {
 		case EM_68K:
 			ok = 1;
 		}
-		break;
+		break;  */
 	case ARCH_MIPS:
 		switch (emachine) {
 		case EM_MIPS:

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1521 2007-04-18 14:08:34 debug Exp $
+$Id: HISTORY,v 1.1522 2007-04-18 16:05:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3407,3 +3407,5 @@ Changelog for GXemul:
 		read.
 		Minor SuperH updates.
 20070418	Removing the dummy M68K emulation mode.
+		Minor SH update (turning unnecessary sts_mach_rn, sts_macl_rn,
+		and sts_pr_rn instruction handlers into mov_rm_rn).

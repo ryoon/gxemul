@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.54 2007-04-15 15:45:49 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.55 2007-04-18 16:05:17 debug Exp $
  *
  *  SH instructions.
  *
@@ -1990,18 +1990,6 @@ X(rts_trace)
 
 
 /*
- *  sts_mach_rn: Store MACH into Rn
- *  sts_macl_rn: Store MACL into Rn
- *  sts_pr_rn:   Store PR into Rn
- *
- *  arg[1] = ptr to rn
- */
-X(sts_mach_rn) { reg(ic->arg[1]) = cpu->cd.sh.mach; }
-X(sts_macl_rn) { reg(ic->arg[1]) = cpu->cd.sh.macl; }
-X(sts_pr_rn)   { reg(ic->arg[1]) = cpu->cd.sh.pr; }
-
-
-/*
  *  rte:  Return from exception.
  */
 X(rte)
@@ -2046,7 +2034,7 @@ X(ldtlb)
 			    old_hi & 0xfffff000, INVALIDATE_VADDR);
 		else
 			cpu->invalidate_translation_caches(cpu,
-			    old_hi & 0xfffff000, INVALIDATE_ALL);
+			    0, INVALIDATE_ALL);
 	}
 }
 
@@ -2974,14 +2962,16 @@ X(to_be_translated)
 				}
 				break;
 			case 0x0a:	/*  STS MACH,Rn  */
-				ic->f = instr(sts_mach_rn);
+				ic->f = instr(mov_rm_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.mach;
 				break;
 			case 0x12:	/*  STC GBR,Rn  */
 				ic->f = instr(mov_rm_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.gbr;
 				break;
 			case 0x1a:	/*  STS MACL,Rn  */
-				ic->f = instr(sts_macl_rn);
+				ic->f = instr(mov_rm_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.macl;
 				break;
 			case 0x22:	/*  STC VBR,Rn  */
 				ic->f = instr(copy_privileged_register);
@@ -2998,7 +2988,8 @@ X(to_be_translated)
 				ic->f = instr(movt_rn);
 				break;
 			case 0x2a:	/*  STS PR,Rn  */
-				ic->f = instr(sts_pr_rn);
+				ic->f = instr(mov_rm_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.pr;
 				break;
 			case 0x32:	/*  STC SSR,Rn  */
 				ic->f = instr(copy_privileged_register);

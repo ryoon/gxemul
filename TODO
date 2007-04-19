@@ -1,4 +1,4 @@
-$Id: TODO,v 1.478 2007-04-19 15:18:15 debug Exp $
+$Id: TODO,v 1.479 2007-04-19 16:54:04 debug Exp $
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)
@@ -129,6 +129,8 @@ SuperH:
 	    same page. (Similar to the same optimization for ARM.)
 	x)  Floating point speed!
 	x)  Floating point exception correctness.
+	x)  Exceptions for unaligned load/stores. OpenBSD/landisk uses
+	    this mechanism for its reboot code (machine_reset).
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Landisk SH4:

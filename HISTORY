@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1524 2007-04-19 15:49:38 debug Exp $
+$Id: HISTORY,v 1.1525 2007-04-19 16:54:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3414,3 +3414,7 @@ Changelog for GXemul:
 		of a few simple 88K instructions.
 		Commenting out the 'LDC Rm,SR' fix from a few days ago, because
 		it made Linux/dreamcast bug out.
+		Adding a hack to dev_sh4.c (an extra translation cache
+		invalidation), which allows OpenBSD/landisk to boot ok after
+		an install. Upgrading the Landisk machine mode to stable,
+		updating documentation, etc.

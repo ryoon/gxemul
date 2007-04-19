@@ -25,16 +25,21 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.10 2007-04-15 15:43:28 debug Exp $
+ *  $Id: machine_landisk.c,v 1.11 2007-04-19 16:54:04 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
  *  This machine consists of:
  *
  *	o)  An SH4 processor, which includes serial console etc,
+ *	o)  64 MB RAM (at 0x0c000000),
  *	o)  an IDE controller at address 0x14000000,
+ *	o)  a RS5C313 real time clock, connected to the SH4 SCI port,
  *	o)  and a minimal SH-IPL+G PROM emulation layer (required to make
  *	    OpenBSD/landisk boot).
+ *
+ *  TODO:
+ *	PCI bus, Realtek NIC, USB stuff, etc.
  */
 
 #include <stdio.h>
@@ -57,14 +62,16 @@ MACHINE_SETUP(landisk)
 	char tmpstr[300];
 
 	machine->machine_name = "Landisk USL-5P";
+	machine->stable = 1;
 
-	/*  200 MHz SH4 CPU clock:  */
+	/*  266.66 MHz SH4 CPU clock:  */
 	if (machine->emulated_hz == 0)
-		machine->emulated_hz = 200000000;
+		machine->emulated_hz = 266666666;
 
 	/*  33.33 MHz SH4 PCLOCK:  */
 	machine->cpus[machine->bootstrap_cpu]->cd.sh.pclock = 33333333;
 
+	/*  Note: 64 MB RAM at 0x0c000000, not at 0x00000000.  */
 	dev_ram_init(machine, 0x0c000000, 64 * 1048576, DEV_RAM_RAM, 0x0);
 
 	/*  wdc0 at obio0 port 0x14000000-0x1400000f irq 10  */

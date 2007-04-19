@@ -1,19 +1,12 @@
-$Id: RELEASE,v 1.264 2007-04-18 14:08:35 debug Exp $
+$Id: RELEASE,v 1.265 2007-04-19 16:54:04 debug Exp $
 
-20070418: Currently working on what will become either 0.4.5.1 or 0.4.6.
-
-If I get Landisk emulation stable enough to run OpenBSD/landisk 4.1
-cleanly (once OpenBSD 4.1 has been released), then I guess the release
-will be called 0.4.5.1. It would then basically only contain SuperH
-updates compared to 0.4.5.
-
-If I have time to add more substatial stuff, the next release will be 0.4.6.
-
+Currently working on what will become 0.4.5.1, which is 0.4.5 + some
+SuperH updates to allow OpenBSD/landisk to run).
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.6
-================================================================
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.5.1
+==================================================================
 
 Copyright (C) 2003-2007  Anders Gavare.
 
@@ -33,9 +26,29 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax and NetBSD/cats.
 
 
-The changes between release 0.4.5 and 0.4.6 include, among other things:
+The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 
-    o)	TODO... OpenBSD/landisk?
+    o)	Initial support for "disk overlays" has been implemented. This
+	enables e.g. simple roll-back of emulated disk contents to a
+	previous state.
+
+    o)	Dyntrans bug fixes; code translations on physical addresses that
+	were offset a multiple of 128 MB from each other could either
+	cause weird bugs, or translation leaks (leading to unnecessary
+	dyntrans cache overflows).
+
+    o)	Some cleanup: The GDB debugging stub support, some dummy machine
+	modes (TS7200, Walnut, PB1000, and Meshcube), and some dummy or
+	experimental CPUs (RCA180x and Transputer) have been removed, to
+	make the emulator slightly more maintainable.
+
+The change between release 0.4.5 and 0.4.5.1 is:
+
+    o)	OpenBSD/landisk 4.1 can be installed and run from a disk image.
+
+	(This is the result of some SuperH emulation fixes, and a temporary
+	workaround/hack to allow OpenBSD/landisk to boot. The hack needs
+	to be removed once the real bug has been found.)
 
 Please read the HISTORY file for more details.
 

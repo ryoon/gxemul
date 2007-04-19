@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.40 2007-04-16 15:11:14 debug Exp $
+ *  $Id: dev_sh4.c,v 1.41 2007-04-19 16:54:04 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -1129,6 +1129,16 @@ DEVICE_ACCESS(sh4)
 	case SHREG_SCSPTR:
 		odata = sh_sci_access(d, cpu,
 		    writeflag == MEM_WRITE? 1 : 0, idata);
+
+		/*
+		 *  TODO
+		 *
+		 *  Find out the REAL way to make OpenBSD/landisk run
+		 *  in a stable manner! This is a SUPER-UGLY HACK which
+		 *  just side-steps the real bug.
+		 */
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
 		break;
 
 

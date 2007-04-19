@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.146 2007-04-18 14:08:35 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.147 2007-04-19 15:18:16 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -463,8 +463,8 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 #if defined(DYNTRANS_ALPHA) || defined(DYNTRANS_SPARC)
 	    6
 #else
-#ifdef DYNTRANS_SH
-	    8	/*  Both for 32-bit and 64-bit SuperH  */
+#if defined(DYNTRANS_SH) || defined(DYNTRANS_M88K)
+	    8	/*  Both for 32-bit and 64-bit SuperH, and M88K  */
 #else
 	    4	/*  Default value for most archs  */
 #endif
@@ -502,6 +502,9 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 #endif
 #ifdef DYNTRANS_MIPS
 		    gpr[MIPS_GPR_A0
+#endif
+#ifdef DYNTRANS_M88K
+		    r[2		/*  r2..r9  */
 #endif
 #ifdef DYNTRANS_PPC
 		    gpr[3

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1522 2007-04-18 16:05:16 debug Exp $
+$Id: HISTORY,v 1.1523 2007-04-19 15:18:14 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3409,3 +3409,6 @@ Changelog for GXemul:
 20070418	Removing the dummy M68K emulation mode.
 		Minor SH update (turning unnecessary sts_mach_rn, sts_macl_rn,
 		and sts_pr_rn instruction handlers into mov_rm_rn).
+20070419	Beginning to add a skeleton for an M88K mode: Adding a hack to
+		allow OpenBSD/m88k a.out binaries to be loaded, and disassembly
+		of a few simple 88K instructions.

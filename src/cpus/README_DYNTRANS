@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.14 2007-04-10 17:26:20 debug Exp $
+$Id: README_DYNTRANS,v 1.15 2007-04-19 15:18:16 debug Exp $
 
 This README is old. Hm.
 
@@ -21,7 +21,7 @@ Dyntrans TODO:
 	i960		32-bit + variable		32		?
 	IA64		128-bit				64		no
 	M68K		16-bit + variable		32		no
-	M88K		32-bit (+var?)			32		?
+	M88K		32-bit				32		yes
 	MIPS		32-bit, 16-bit (MIPS16)		64/32		yes
 	OpenRISC	?				?		?
 	PC532		?				32 (?)		?
@@ -33,5 +33,5 @@ Dyntrans TODO:
 	x86		8-bit + variable		64/32/16	no
 	VAX		8-bit + variable		32		no
 
-	(*) Delay slot in SHcompact?
+	(*) Delay slot in SHcompact/32-bit-mode
 

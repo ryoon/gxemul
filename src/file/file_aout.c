@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_aout.c,v 1.1 2007-04-10 16:33:44 debug Exp $
+ *  $Id: file_aout.c,v 1.2 2007-04-19 15:18:16 debug Exp $
  *
  *  a.out file support.
  */
@@ -153,8 +153,9 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 			if (flags & AOUT_FLAG_DECOSF1)
 				break;
 			else {
-				fprintf(stderr, "could not read from %s\n",
-				    filename);
+				fprintf(stderr, "could not read from %s,"
+				    " wanted to read %i bytes\n", filename,
+				    (int) total_len);
 				exit(1);
 			}
 		}

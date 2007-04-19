@@ -1,4 +1,4 @@
-$Id: TODO,v 1.477 2007-04-15 06:52:47 debug Exp $
+$Id: TODO,v 1.478 2007-04-19 15:18:15 debug Exp $
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)
@@ -236,6 +236,9 @@ BeBox:
 HPCmips:
 	x)  Mouse/pad support! :)
 	x)  A NIC? (As a PCMCIA device?)
+
+M88K:
+	o)  Everything.
 
 AVR:
 	o)  Everything.

@@ -25,12 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.1 2007-04-10 16:33:44 debug Exp $
+ *  $Id: file.c,v 1.2 2007-04-19 15:18:16 debug Exp $
  *
  *  This module contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
  *
- *	a.out		old format used by OpenBSD 2.x pmax kernels
+ *	a.out		traditional old-style Unix binary format
  *	Mach-O		MacOS X format, etc.
  *	ecoff		old format used by Ultrix, Windows NT, etc
  *	srec		Motorola SREC format
@@ -194,6 +194,12 @@ void file_load(struct machine *machine, struct memory *mem,
 		/*  M68K a.out  */
 		file_load_aout(machine, mem, filename,
 		    AOUT_FLAG_VADDR_ZERO_HACK  /*  for OpenBSD/mac68k  */,
+		    entrypointp, arch, byte_orderp);
+		goto ret;
+	}
+	if (buf[0]==0x00 && buf[1]==0x99 && buf[2]==0x01 && buf[3]==0x0b) {
+		/*  OpenBSD/M88K a.out  */
+		file_load_aout(machine, mem, filename, AOUT_FLAG_FROM_BEGINNING,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.283 2007-04-18 14:08:35 debug Exp $
+ *  $Id: emul.c,v 1.284 2007-04-19 15:18:15 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -694,6 +694,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				fatal("AVR: lowest bit of pc set: TODO\n");
 				exit(1);
 			}
+			break;
+
+		case ARCH_M88K:
 			break;
 
 		case ARCH_MIPS:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.1 2007-04-19 15:18:16 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.2 2007-04-19 17:01:24 debug Exp $
  *
  *  M88K instructions.
  *
@@ -191,10 +191,12 @@ X(to_be_translated)
 
 	main_opcode = iword >> 26;
 
+/*
 	switch (main_opcode) {
 
 	default:goto bad;
 	}
+*/
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

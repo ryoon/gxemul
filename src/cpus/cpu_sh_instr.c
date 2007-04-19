@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.55 2007-04-18 16:05:17 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.56 2007-04-19 15:49:39 debug Exp $
  *
  *  SH instructions.
  *
@@ -2063,6 +2063,10 @@ X(ldc_rm_sr)
 	RES_INST_IF_NOT_MD;
 	sh_update_sr(cpu, reg(ic->arg[1]));
 
+#if 0
+/*  NOTE: This code causes NetBSD/landisk to get past a point where it
+    otherwise hangs, but it causes Linux/Dreamcast to bug out instead. :/  */
+
 	if (!(cpu->cd.sh.sr & SH_SR_BL) && cpu->cd.sh.int_to_assert > 0 &&
 	    ( (cpu->cd.sh.sr & SH_SR_IMASK) >> SH_SR_IMASK_SHIFT)
 	    < cpu->cd.sh.int_level) {
@@ -2070,6 +2074,7 @@ X(ldc_rm_sr)
 		    main dyntrans loop:  */
 		cpu->cd.sh.next_ic = &nothing_call;
 	}
+#endif
 }
 
 

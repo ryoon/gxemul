@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1523 2007-04-19 15:18:14 debug Exp $
+$Id: HISTORY,v 1.1524 2007-04-19 15:49:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3412,3 +3412,5 @@ Changelog for GXemul:
 20070419	Beginning to add a skeleton for an M88K mode: Adding a hack to
 		allow OpenBSD/m88k a.out binaries to be loaded, and disassembly
 		of a few simple 88K instructions.
+		Commenting out the 'LDC Rm,SR' fix from a few days ago, because
+		it made Linux/dreamcast bug out.

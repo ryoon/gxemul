@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.42 2007-04-20 06:22:28 debug Exp $
+ *  $Id: dev_sh4.c,v 1.43 2007-04-20 06:55:14 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -35,7 +35,6 @@
  *	x)  BSC (Bus state controller).
  *	x)  DMA
  *	x)  UBC
- *	x)  PCIC (PCI controller)
  *	x)  ...
  */
 
@@ -80,6 +79,7 @@
 #define	PCI_PRODUCT_HITACHI_SH7751R	0x350e   
 
 #define	SCIF_TX_FIFO_SIZE	16
+#define	SCIF_DELAYED_TX_VALUE	1	/*  2 to be safe, 1 = faster  */
 
 /*  General-purpose I/O stuff:  */
 #define	SH4_PCTRA		0xff80002c
@@ -1480,7 +1480,7 @@ DEVICE_ACCESS(sh4)
 			}
 
 			d->scif_tx_fifo[d->scif_tx_fifo_cursize++] = idata;
-			d->scif_delayed_tx = 2;
+			d->scif_delayed_tx = SCIF_DELAYED_TX_VALUE;
 		}
 		break;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.39 2007-04-04 19:59:24 debug Exp $
+ *  $Id: cpu_sh.h,v 1.40 2007-04-20 06:22:28 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -162,6 +162,9 @@ struct sh_cpu {
 	uint32_t	dmac_dar[4];
 	uint32_t	dmac_tcr[4];
 	uint32_t	dmac_chcr[4];
+
+	/*  PCI controller:  */
+	struct pci_data	*pcic_pcibus;
 
 
 	/*

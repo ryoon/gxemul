@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.11 2007-04-19 16:54:04 debug Exp $
+ *  $Id: machine_landisk.c,v 1.12 2007-04-20 06:22:28 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -33,13 +33,14 @@
  *
  *	o)  An SH4 processor, which includes serial console etc,
  *	o)  64 MB RAM (at 0x0c000000),
- *	o)  an IDE controller at address 0x14000000,
+ *	o)  an IDE controller at address 0x14000000 (irq 10),
  *	o)  a RS5C313 real time clock, connected to the SH4 SCI port,
+ *	o)  a PCI controller (PCIC),
  *	o)  and a minimal SH-IPL+G PROM emulation layer (required to make
  *	    OpenBSD/landisk boot).
  *
  *  TODO:
- *	PCI bus, Realtek NIC, USB stuff, etc.
+ *	Realtek NIC (irq 5), PCIIDE (irq 6), USB controllers, etc.
  */
 
 #include <stdio.h>
@@ -59,12 +60,14 @@
 
 MACHINE_SETUP(landisk)
 {
+	struct pci_data *pcibus =
+	    machine->cpus[machine->bootstrap_cpu]->cd.sh.pcic_pcibus;
 	char tmpstr[300];
 
 	machine->machine_name = "Landisk USL-5P";
 	machine->stable = 1;
 
-	/*  266.66 MHz SH4 CPU clock:  */
+	/*  266.67 MHz SH4 CPU clock:  */
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 266666666;
 
@@ -84,6 +87,9 @@ MACHINE_SETUP(landisk)
 	snprintf(tmpstr, sizeof(tmpstr), "rs5c313 addr=0x%"PRIx64,
 	    (uint64_t) SCI_DEVICE_BASE);
 	device_add(machine, tmpstr);
+
+	/*  Realtek PCI NIC:  */
+	bus_pci_add(machine, pcibus, machine->memory, 0, 0, 0, "rtl8139c");
 
 	if (!machine->prom_emulation)
 		return;
@@ -107,7 +113,7 @@ MACHINE_SETUP(landisk)
 
 MACHINE_DEFAULT_CPU(landisk)
 {
-	/*  Hitachi SH4 7751R, 200 MHz  */
+	/*  Hitachi SH4 7751R, 266.67 MHz  */
 	machine->cpu_name = strdup("SH7751R");
 }
 
@@ -124,6 +130,8 @@ MACHINE_REGISTER(landisk)
 {
 	MR_DEFAULT(landisk, "Landisk", ARCH_SH, MACHINE_LANDISK);
 	me->set_default_ram = machine_default_ram_landisk;
+
 	machine_entry_add_alias(me, "landisk");
+	machine_entry_add_alias(me, "usl-5p");
 }
 

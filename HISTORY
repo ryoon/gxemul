@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1525 2007-04-19 16:54:03 debug Exp $
+$Id: HISTORY,v 1.1526 2007-04-20 06:22:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3418,3 +3418,5 @@ Changelog for GXemul:
 		invalidation), which allows OpenBSD/landisk to boot ok after
 		an install. Upgrading the Landisk machine mode to stable,
 		updating documentation, etc.
+20070420	Experimenting with adding a PCI controller (pcic) to dev_sh4.
+		Adding a dummy Realtek 8139C+ skeleton device (dev_rtl8139c).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.80 2007-02-11 10:03:55 debug Exp $
+ *  $Id: bus_pci.c,v 1.81 2007-04-20 06:22:28 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -381,9 +381,14 @@ struct pci_data *bus_pci_init(struct machine *machine, char *irq_path,
 	d->isa_portbase          = isa_portbase;
 	d->isa_membase           = isa_membase;
 
+	d->cur_pci_portbase = d->pci_portbase;
+	d->cur_pci_membase  = d->pci_membase;
+
 	/*  Assume that the first 64KB could be used by legacy ISA devices:  */
-	d->cur_pci_portbase = d->pci_portbase + 0x10000;
-	d->cur_pci_membase  = d->pci_membase + 0x10000;
+	if (d->isa_portbase != 0 || d->isa_membase != 0) {
+		d->cur_pci_portbase += 0x10000;
+		d->cur_pci_membase  += 0x10000;
+	}
 
 	return d;
 }
@@ -1134,6 +1139,48 @@ PCIINIT(symphony_82c105)
 	}
 
 	pd->cfg_reg_write = symphony_82c105_cfg_reg_write;
+}
+
+
+
+/*
+ *  Realtek 8139C+ PCI ethernet.
+ */
+
+#define PCI_VENDOR_REALTEK		0x10ec
+#define	PCI_PRODUCT_REALTEK_RT8139	0x8139
+
+PCIINIT(rtl8139c)
+{
+	uint64_t port, memaddr;
+	int pci_int_line = 0x101, irq = 0;
+	char irqstr[200];
+	char tmpstr[200];
+
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_REALTEK,
+	    PCI_PRODUCT_REALTEK_RT8139));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_NETWORK,
+	    PCI_SUBCLASS_NETWORK_ETHERNET, 0x00) + 0x20);
+
+	switch (machine->machine_type) {
+	case MACHINE_LANDISK:
+		irq = 5;
+		pci_int_line = 0x005;
+		break;
+	}
+
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140000 | pci_int_line);
+
+	allocate_device_space(pd, 0x100, 0, &port, &memaddr);
+
+	snprintf(irqstr, sizeof(irqstr), "%s.%i",
+	    pd->pcibus->irq_path_pci, irq);
+
+	snprintf(tmpstr, sizeof(tmpstr), "rtl8139c addr=0x%llx "
+	    "irq=%s pci_little_endian=1", (long long)port, irqstr);
+
+	device_add(machine, tmpstr);
 }
 
 

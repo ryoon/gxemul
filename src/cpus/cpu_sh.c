@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.68 2007-04-16 15:12:06 debug Exp $
+ *  $Id: cpu_sh.c,v 1.69 2007-04-20 06:22:28 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -186,7 +186,7 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
 	if (cpu->cd.sh.cpu_type.arch == 4) {
-		device_add(machine, "sh4");
+		cpu->cd.sh.pcic_pcibus = device_add(machine, "sh4");
 
 		/*
 		 *  Interrupt Controller initial values, according to the

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.41 2007-04-19 16:54:04 debug Exp $
+ *  $Id: dev_sh4.c,v 1.42 2007-04-20 06:22:28 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -35,6 +35,7 @@
  *	x)  BSC (Bus state controller).
  *	x)  DMA
  *	x)  UBC
+ *	x)  PCIC (PCI controller)
  *	x)  ...
  */
 
@@ -42,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_pci.h"
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
@@ -58,6 +60,7 @@
 #include "sh4_exception.h"
 #include "sh4_intcreg.h"
 #include "sh4_mmu.h"
+#include "sh4_pcicreg.h"
 #include "sh4_rtcreg.h"
 #include "sh4_scifreg.h"
 #include "sh4_scireg.h"
@@ -67,6 +70,14 @@
 #define	SH4_REG_BASE		0xff000000
 #define	SH4_TICK_SHIFT		14
 #define	N_SH4_TIMERS		3
+
+/*  PCI stuff:  */
+#define	N_PCIC_REGS			(0x224 / sizeof(uint32_t))
+#define	N_PCIC_IRQS			16
+#define	PCIC_REG(addr)			((addr - SH4_PCIC) / sizeof(uint32_t))
+#define	PCI_VENDOR_HITACHI		0x1054
+#define	PCI_PRODUCT_HITACHI_SH7751	0x3505
+#define	PCI_PRODUCT_HITACHI_SH7751R	0x350e   
 
 #define	SCIF_TX_FIFO_SIZE	16
 
@@ -114,6 +125,11 @@ struct sh4_data {
 	uint32_t	pdtra;		/*  Port Data Register A  */
 	uint32_t	pctrb;		/*  Port Control Register B  */
 	uint32_t	pdtrb;		/*  Port Data Register B  */
+
+	/*  PCIC (PCI controller):  */
+	struct pci_data	*pci_data;
+	struct interrupt cpu_pcic_interrupt[N_PCIC_IRQS];
+	uint32_t	pcic_reg[N_PCIC_REGS];
 
 	/*  SCI (serial interface):  */
 	int		sci_bits_outputed;
@@ -202,6 +218,18 @@ static void sh4_timer_tick(struct timer *t, void *extra)
 				d->tcnt[i] = 0;
 		}
 	}
+}
+
+
+static void sh4_pcic_interrupt_assert(struct interrupt *interrupt)
+{
+	struct sh4_data *d = interrupt->extra;
+	INTERRUPT_ASSERT(d->cpu_pcic_interrupt[interrupt->line]);
+}
+static void sh4_pcic_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct sh4_data *d = interrupt->extra;
+	INTERRUPT_DEASSERT(d->cpu_pcic_interrupt[interrupt->line]);
 }
 
 
@@ -644,6 +672,164 @@ DEVICE_ACCESS(sh4_utlb_da1)
 		odata = cpu->cd.sh.utlb_lo[e] & mask;
 		memory_writemax64(cpu, data, len, odata);
 	}
+
+	return 1;
+}
+
+
+DEVICE_ACCESS(sh4_pcic)
+{
+	struct sh4_data *d = (struct sh4_data *) extra;
+	uint64_t idata = 0, odata = 0;
+
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
+	relative_addr += SH4_PCIC;
+
+	/*  Register read/write:  */
+	if (writeflag == MEM_WRITE)
+		d->pcic_reg[PCIC_REG(relative_addr)] = idata;
+	else
+		odata = d->pcic_reg[PCIC_REG(relative_addr)];
+
+	/*  Special cases:  */
+
+	switch (relative_addr) {
+
+	case SH4_PCICONF0:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ sh4_pcic: TODO: Write to SH4_PCICONF0? ]\n");
+			exit(1);
+		} else {
+			if (strcmp(cpu->cd.sh.cpu_type.name, "SH7751") == 0) {
+				odata = PCI_ID_CODE(PCI_VENDOR_HITACHI,
+				    PCI_PRODUCT_HITACHI_SH7751);
+			} else if (strcmp(cpu->cd.sh.cpu_type.name,
+			    "SH7751R") == 0) {
+				odata = PCI_ID_CODE(PCI_VENDOR_HITACHI,
+				    PCI_PRODUCT_HITACHI_SH7751R);
+			} else {
+				fatal("sh4_pcic: TODO: PCICONF0 read for"
+				    " unimplemented CPU type?\n");
+				exit(1);
+			}
+		}
+		break;
+
+	case SH4_PCICONF1:
+	case SH4_PCICONF2:
+	case SH4_PCICR:
+	case SH4_PCIBCR1:
+	case SH4_PCIBCR2:
+	case SH4_PCIBCR3:
+	case SH4_PCIWCR1:
+	case SH4_PCIWCR2:
+	case SH4_PCIWCR3:
+	case SH4_PCIMCR:
+		break;
+
+	case SH4_PCICONF5:
+		/*  Hardcoded to what OpenBSD/landisk uses:  */
+		if (writeflag == MEM_WRITE && idata != 0xac000000) {
+			fatal("sh4_pcic: SH4_PCICONF5 unknown value"
+			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCICONF6:
+		/*  Hardcoded to what OpenBSD/landisk uses:  */
+		if (writeflag == MEM_WRITE && idata != 0x8c000000) {
+			fatal("sh4_pcic: SH4_PCICONF6 unknown value"
+			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCILSR0:
+		/*  Hardcoded to what OpenBSD/landisk uses:  */
+		if (writeflag == MEM_WRITE && idata != ((64 - 1) << 20)) {
+			fatal("sh4_pcic: SH4_PCILSR0 unknown value"
+			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCILAR0:
+		/*  Hardcoded to what OpenBSD/landisk uses:  */
+		if (writeflag == MEM_WRITE && idata != 0xac000000) {
+			fatal("sh4_pcic: SH4_PCILAR0 unknown value"
+			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCILSR1:
+		/*  Hardcoded to what OpenBSD/landisk uses:  */
+		if (writeflag == MEM_WRITE && idata != ((64 - 1) << 20)) {
+			fatal("sh4_pcic: SH4_PCILSR1 unknown value"
+			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCILAR1:
+		/*  Hardcoded to what OpenBSD/landisk uses:  */
+		if (writeflag == MEM_WRITE && idata != 0xac000000) {
+			fatal("sh4_pcic: SH4_PCILAR1 unknown value"
+			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCIMBR:
+		if (writeflag == MEM_WRITE && idata != SH4_PCIC_MEM) {
+			fatal("sh4_pcic: PCIMBR set to 0x%"PRIx32", not"
+			    " 0x%"PRIx32"? TODO\n", (uint32_t) idata,
+			    (uint32_t) SH4_PCIC_MEM);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCIIOBR:
+		if (writeflag == MEM_WRITE && idata != SH4_PCIC_IO) {
+			fatal("sh4_pcic: PCIIOBR set to 0x%"PRIx32", not"
+			    " 0x%"PRIx32"? TODO\n", (uint32_t) idata,
+			    (uint32_t) SH4_PCIC_IO);
+			exit(1);
+		}
+		break;
+
+	case SH4_PCIPAR:
+		/*  PCI bus access Address Register:  */
+		{
+			int bus  = (idata >> 16) & 0xff;
+			int dev  = (idata >> 11) & 0x1f;
+			int func = (idata >>  8) &    7;
+			int reg  =  idata        & 0xff;
+			bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
+		}
+		break;
+
+	case SH4_PCIPDR:
+		/*  PCI bus access Data Register:  */
+		bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
+		    &odata : &idata, len, writeflag);
+		break;
+
+	default:if (writeflag == MEM_READ) {
+			fatal("[ sh4_pcic: read from addr 0x%x ]\n",
+			    (int)relative_addr);
+		} else {
+			fatal("[ sh4_pcic: write to addr 0x%x: 0x%x ]\n",
+			    (int)relative_addr, (int)idata);
+		}
+		exit(1);
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }
@@ -1400,14 +1586,35 @@ DEVICE_ACCESS(sh4)
 
 DEVINIT(sh4)
 {
-	char tmp[200];
+	char tmp[200], n[200];
+	int i;
 	struct machine *machine = devinit->machine;
 	struct sh4_data *d = malloc(sizeof(struct sh4_data));
+
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct sh4_data));
+
+
+	/*
+	 *  Main SH4 device, and misc memory stuff:
+	 */
+
+	memory_device_register(machine->memory, devinit->name,
+	    SH4_REG_BASE, 0x01000000, dev_sh4_access, d, DM_DEFAULT, NULL);
+
+	/*  On-chip RAM/cache:  */
+	dev_ram_init(machine, 0x1e000000, 0x8000, DEV_RAM_RAM, 0x0);
+
+	/*  0xe0000000: Store queues:  */
+	dev_ram_init(machine, 0xe0000000, 32 * 2, DEV_RAM_RAM, 0x0);
+
+
+	/*
+	 *  SCIF (Serial console):
+	 */
 
 	d->scif_console_handle = console_start_slave(devinit->machine,
 	    "SH4 SCIF", 1);
@@ -1419,16 +1626,10 @@ DEVINIT(sh4)
 	    devinit->interrupt_path, SH4_INTEVT_SCIF_TXI);
 	INTERRUPT_CONNECT(tmp, d->scif_tx_irq);
 
-	memory_device_register(machine->memory, devinit->name,
-	    SH4_REG_BASE, 0x01000000, dev_sh4_access, d, DM_DEFAULT, NULL);
-
-	/*  On-chip RAM/cache:  */
-	dev_ram_init(machine, 0x1e000000, 0x8000, DEV_RAM_RAM, 0x0);
-
-	/*  0xe0000000: Store queues:  */
-	dev_ram_init(machine, 0xe0000000, 32 * 2, DEV_RAM_RAM, 0x0);
 
 	/*
+	 *  Caches (fake):
+ 	 *
 	 *  0xf0000000	SH4_CCIA	I-Cache address array
 	 *  0xf1000000	SH4_CCID	I-Cache data array
 	 *  0xf4000000	SH4_CCDA	D-Cache address array
@@ -1436,6 +1637,7 @@ DEVINIT(sh4)
 	 *
 	 *  TODO: Implement more correct cache behaviour?
 	 */
+
 	dev_ram_init(machine, SH4_CCIA, SH4_ICACHE_SIZE * 2, DEV_RAM_RAM, 0x0);
 	dev_ram_init(machine, SH4_CCID, SH4_ICACHE_SIZE,     DEV_RAM_RAM, 0x0);
 	dev_ram_init(machine, SH4_CCDA, SH4_DCACHE_SIZE * 2, DEV_RAM_RAM, 0x0);
@@ -1456,6 +1658,61 @@ DEVINIT(sh4)
 	/*  0xf7000000	SH4_UTLB_DA1  */
 	memory_device_register(machine->memory, devinit->name, SH4_UTLB_DA1,
 	    0x01000000, dev_sh4_utlb_da1_access, d, DM_DEFAULT, NULL);
+
+
+	/*
+	 *  PCIC (PCI controller) at 0xfe200000:
+	 */
+
+	memory_device_register(machine->memory, "sh4_pcic", SH4_PCIC,
+	    N_PCIC_REGS * sizeof(uint32_t), dev_sh4_pcic_access, d,
+	    DM_DEFAULT, NULL);
+
+	/*  Initial PCI control register contents:  */
+	d->bsc_bcr2 = BCR2_PORTEN;
+	d->pcic_reg[PCIC_REG(SH4_PCICONF2)] = PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_HOST, 0);
+
+	/*  Register 16 PCIC interrupts:  */
+	for (i=0; i<N_PCIC_IRQS; i++) {
+		struct interrupt template;
+		snprintf(n, sizeof(n), "%s.pcic.%i",
+		    devinit->interrupt_path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = n;
+		template.extra = d;
+		template.interrupt_assert = sh4_pcic_interrupt_assert;
+		template.interrupt_deassert = sh4_pcic_interrupt_deassert;
+		interrupt_handler_register(&template);
+
+		snprintf(tmp, sizeof(tmp), "%s.irq[0x%x]",
+		    devinit->interrupt_path, SH4_INTEVT_IRQ0 + 0x20 * i);
+		INTERRUPT_CONNECT(tmp, d->cpu_pcic_interrupt[i]);
+	}
+
+	/*  Register the PCI bus:  */
+	snprintf(tmp, sizeof(tmp), "%s.pcic", devinit->interrupt_path);
+	d->pci_data = bus_pci_init(
+	    devinit->machine,
+	    tmp,			/*  pciirq  */
+	    0,				/*  pci device io offset  */
+	    0,				/*  pci device mem offset  */
+	    SH4_PCIC_IO,		/*  PCI portbase  */
+	    SH4_PCIC_MEM,		/*  PCI membase  */
+	    tmp,			/*  PCI irqbase  */
+	    0x00000000,			/*  ISA portbase  */
+	    0x00000000,			/*  ISA membase  */
+	    "TODOisaIrqBase");		/*  ISA irqbase  */
+
+	/*  Return PCI bus pointer, to allow per-machine devices
+	    to be added later:  */
+	devinit->return_ptr = d->pci_data;
+
+
+	/*
+	 *  Timer:
+	 */
 
 	d->sh4_timer = timer_add(SH4_PSEUDO_TIMER_HZ, sh4_timer_tick, d);
 	machine_add_tickfunction(devinit->machine, dev_sh4_tick, d,
@@ -1485,13 +1742,16 @@ DEVINIT(sh4)
 		exit(1);
 	}
 
+
 	/*
 	 *  Bus State Controller initial values, according to the
 	 *  SH7760 manual:
 	 */
+
 	d->bsc_bcr2 = 0x3ffc;
 	d->bsc_wcr1 = 0x77777777;
 	d->bsc_wcr2 = 0xfffeefff;
+
 
 	return 1;
 }

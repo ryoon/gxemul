@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.70 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.71 2007-04-20 13:47:53 debug Exp $
  *
  *  ARM instructions.
  *
@@ -235,7 +235,7 @@ X(nop)
 /*
  *  b:  Branch (to a different translated page)
  *
- *  arg[0] = relative offset
+ *  arg[0] = relative offset from start of page
  */
 X(b)
 {

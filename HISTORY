@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1526 2007-04-20 06:22:27 debug Exp $
+$Id: HISTORY,v 1.1527 2007-04-20 16:32:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3420,3 +3420,5 @@ Changelog for GXemul:
 		updating documentation, etc.
 20070420	Experimenting with adding a PCI controller (pcic) to dev_sh4.
 		Adding a dummy Realtek 8139C+ skeleton device (dev_rtl8139c).
+		Implementing the first M88K instructions (br, or[.u] imm), and
+		adding disassembly of some more instructions.

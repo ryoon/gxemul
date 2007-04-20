@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.1 2007-04-19 15:18:16 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.2 2007-04-20 16:32:05 debug Exp $
  */
 
 #include "misc.h"
@@ -64,6 +64,9 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 
 #define	M88K_MAX_VPH_TLB_ENTRIES		128
 
+
+/*  Register r0 is always zero.  */
+#define	M88K_ZERO_REG		0
 
 struct m88k_cpu {
 	struct m88k_cpu_type_def cpu_type;

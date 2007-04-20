@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.1 2007-04-19 15:18:16 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.2 2007-04-20 16:32:05 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -181,7 +181,7 @@ void m88k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				debug("                  ");
 			else
 				debug("  r%-2i = 0x%08x", i,
-				    (int)cpu->cd.arm.r[i]);
+				    (int)cpu->cd.m88k.r[i]);
 			if ((i % 4) == 3)
 				debug("\n");
 		}
@@ -277,11 +277,43 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x09:	/*  st    */
 	case 0x0a:	/*  st.h  */
 	case 0x0b:	/*  st.b  */
-		debug("%s%s\tr%i,r%i,%i\n",
+		debug("%s%s\tr%i,r%i,%i",
 		    op26 >= 0x08? "st" : "ld",
 		    memop[op26 & 3], d, s1, simm16);
+		if (running) {
+			uint32_t tmpaddr = cpu->cd.m88k.r[s1] + simm16;
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    tmpaddr, &offset);
+			if (symbol != NULL)
+				debug("\t; [<%s>]", symbol);
+			else
+				debug("\t; [0x%08"PRIx32"]", tmpaddr);
+			if (op26 >= 0x08) {
+				/*  Store:  */
+				debug(" = ");
+				switch (op26 & 3) {
+				case 0:	debug("0x%016"PRIx64, (uint64_t)
+					    ((((uint64_t) cpu->cd.m88k.r[d])
+					    << 32) + ((uint64_t)
+					    cpu->cd.m88k.r[d+1])) );
+					break;
+				case 1:	debug("0x%08"PRIx32,
+					    (uint32_t) cpu->cd.m88k.r[d]);
+					break;
+				case 2:	debug("0x%08"PRIx16,
+					    (uint16_t) cpu->cd.m88k.r[d]);
+					break;
+				case 3:	debug("0x%08"PRIx8,
+					    (uint8_t) cpu->cd.m88k.r[d]);
+					break;
+				}
+			}
+		}
+		debug("\n");
 		break;
 
+	case 0x10:	/*  and     */
+	case 0x11:	/*  and.u   */
 	case 0x12:	/*  mask    */
 	case 0x13:	/*  mask.u  */
 	case 0x14:	/*  xor     */
@@ -289,6 +321,8 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x16:	/*  or      */
 	case 0x17:	/*  or.u    */
 		switch (op26) {
+		case 0x10:
+		case 0x11:	mnem = "and"; break;
 		case 0x12:
 		case 0x13:	mnem = "mask"; break;
 		case 0x14:
@@ -316,10 +350,12 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x1c:	/*  add    */
 	case 0x1d:	/*  sub    */
 	case 0x1e:	/*  div    */
+	case 0x1f:	/*  cmp    */
 		switch (op26) {
 		case 0x1c:	mnem = "add"; break;
 		case 0x1d:	mnem = "sub"; break;
 		case 0x1e:	mnem = "div"; break;
+		case 0x1f:	mnem = "cmp"; break;
 		}
 		debug("%s\tr%i,r%i,%i\n", mnem, d, s1, simm16);
 		break;
@@ -329,9 +365,29 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x32:
 	case 0x33:
 		debug("b%sr%s\t",
-		    op26 >= 0x33? "s" : "",
+		    op26 >= 0x32? "s" : "",
 		    op26 & 1? ".n" : "");
-		debug("0x%"PRIx32"\n", dumpaddr + d26);
+		debug("0x%08"PRIx32, (uint32_t) (dumpaddr + d26));
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    dumpaddr + d26, &offset);
+		if (symbol != NULL)
+			debug("\t; <%s>", symbol);
+		debug("\n");
+		break;
+
+	case 0x34:	/*  bb0    */
+	case 0x35:	/*  bb0.n  */
+	case 0x36:	/*  bb1    */
+	case 0x37:	/*  bb1.n  */
+		debug("bb%s%s\t",
+		    op26 >= 0x36? "1" : "0",
+		    op26 & 1? ".n" : "");
+		debug("%i,r%i,0x%08"PRIx32, d, s1, (uint32_t) (dumpaddr + d16));
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    dumpaddr + d16, &offset);
+		if (symbol != NULL)
+			debug("\t; <%s>", symbol);
+		debug("\n");
 		break;
 
 	case 0x3d:
@@ -340,6 +396,16 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			    op11 & 1? "jsr" : "jmp",
 			    iw & 0x400? ".n" : "",
 			    s2);
+			if (running) {
+				uint32_t tmpaddr = cpu->cd.m88k.r[s2];
+				symbol = get_symbol_name(&cpu->machine->
+				    symbol_context, tmpaddr, &offset);
+				debug("\t; ");
+				if (symbol != NULL)
+					debug("<%s>", symbol);
+				else
+					debug("0x%08"PRIx32, tmpaddr);
+			}
 		} else if ((iw & 0x0000ffe0) == 0x00000000) {
 			debug("xmem\tr%i,r%i,r%i\n", d, s1, s2);
 		} else {

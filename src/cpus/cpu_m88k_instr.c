@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.2 2007-04-19 17:01:24 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.3 2007-04-20 16:32:05 debug Exp $
  *
  *  M88K instructions.
  *
@@ -41,6 +41,49 @@
  */
 X(nop)
 {
+}
+
+
+/*
+ *  br_samepage:  Branch (to within the same translated page)
+ *
+ *  arg[0] = pointer to new instr_call
+ */
+X(br_samepage)
+{
+	cpu->cd.m88k.next_ic = (struct m88k_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  br:  Branch (to a different translated page)
+ *
+ *  arg[0] = relative offset from start of page
+ */
+X(br)
+{
+	cpu->pc = (uint32_t)((cpu->pc & 0xfffff000) + (int32_t)ic->arg[0]);
+
+	/*  Find the new physical page and update the translation pointers:  */
+	quick_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  or_imm:     d = s1 | imm
+ *  or_r0_imm:  d = imm		(optimized case when s1 = r0)
+ *
+ *  arg[0] = pointer to register d
+ *  arg[1] = pointer to register s1
+ *  arg[2] = imm
+ */
+X(or_imm)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2];
+}
+X(or_r0_imm)
+{
+	reg(ic->arg[0]) = ic->arg[2];
 }
 
 
@@ -134,10 +177,10 @@ X(to_be_translated)
 	uint32_t addr, low_pc, iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode;
+	int32_t op26, op10, op11, d, s1, s2, w5, d16, d26, imm16, simm16;
+	int offset, shift;
 	int in_crosspage_delayslot = 0;
-	/*  void (*samepage_function)(struct cpu *,
-	    struct m88k_instr_call *);  */
+	void (*samepage_function)(struct cpu *, struct m88k_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.m88k.cur_ic_page)
@@ -189,14 +232,58 @@ X(to_be_translated)
 	 *  scratch register instead).
 	 */
 
-	main_opcode = iword >> 26;
+	op26   = (iword >> 26) & 0x3f;
+	op11   = (iword >> 11) & 0x1f;
+	op10   = (iword >> 10) & 0x3f;
+	d      = (iword >> 21) & 0x1f;
+	s1     = (iword >> 16) & 0x1f;
+	s2     =  iword        & 0x1f;
+	imm16  =  iword        & 0xffff;
+	simm16 = (int16_t) (iword & 0xffff);
+	w5     = (iword >>  5) & 0x1f;
+	d16    = ((int16_t) (iword & 0xffff)) * 4;
+	d26    = ((int32_t)((iword & 0x03ffffff) << 6)) >> 4;
 
-/*
-	switch (main_opcode) {
+	switch (op26) {
+
+	case 0x16:	/*  or   imm  */
+	case 0x17:	/*  or.u imm  */
+		shift = 0;
+		switch (op26) {
+		case 0x16: ic->f = instr(or_imm); break;
+		case 0x17: ic->f = instr(or_imm); shift = 16; break;
+		}
+
+		ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+		ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+		ic->arg[2] = imm16 << shift;
+
+		/*  Optimization for  or d,r0,imm  */
+		if (s1 == M88K_ZERO_REG && ic->f == instr(or_imm))
+			ic->f = instr(or_r0_imm);
+
+		if (d == M88K_ZERO_REG)
+			ic->f = instr(nop);
+		break;
+
+	case 0x30:	/*  br  */
+		ic->f = instr(br);
+		samepage_function = instr(br_samepage);
+
+		offset = (addr & 0xffc) + d26;
+		if (offset >= 0 && offset <= 0xffc) {
+			/*  Same page:  */
+			ic->arg[0] = (size_t) ( cpu->cd.m88k.cur_ic_page +
+			    (offset >> M88K_INSTR_ALIGNMENT_SHIFT) );
+			ic->f = samepage_function;
+		} else {
+			/*  Different page:  */
+			ic->arg[0] = offset;
+		}
+		break;
 
 	default:goto bad;
 	}
-*/
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

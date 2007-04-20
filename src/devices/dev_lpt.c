@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.10 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_lpt.c,v 1.11 2007-04-20 11:17:24 debug Exp $
  *
  *  LPT (parallel printer) controller.
  */
@@ -59,10 +59,7 @@ struct lpt_data {
 };
 
 
-/*
- *  dev_lpt_tick():
- */
-void dev_lpt_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(lpt)
 {
 	/*  struct lpt_data *d = extra;  */
 
@@ -70,9 +67,6 @@ void dev_lpt_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_lpt_access():
- */
 DEVICE_ACCESS(lpt)
 {
 	uint64_t idata = 0, odata=0;

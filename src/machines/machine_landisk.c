@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.12 2007-04-20 06:22:28 debug Exp $
+ *  $Id: machine_landisk.c,v 1.13 2007-04-21 02:36:23 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -88,8 +88,10 @@ MACHINE_SETUP(landisk)
 	    (uint64_t) SCI_DEVICE_BASE);
 	device_add(machine, tmpstr);
 
+#if 0
 	/*  Realtek PCI NIC:  */
 	bus_pci_add(machine, pcibus, machine->memory, 0, 0, 0, "rtl8139c");
+#endif
 
 	if (!machine->prom_emulation)
 		return;

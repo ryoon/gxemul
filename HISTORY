@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1527 2007-04-20 16:32:05 debug Exp $
+$Id: HISTORY,v 1.1528 2007-04-21 02:36:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3422,3 +3422,4 @@ Changelog for GXemul:
 		Adding a dummy Realtek 8139C+ skeleton device (dev_rtl8139c).
 		Implementing the first M88K instructions (br, or[.u] imm), and
 		adding disassembly of some more instructions.
+20070421	Continuing a little on dev_rtl8139c.

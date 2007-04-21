@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.43 2007-04-20 06:55:14 debug Exp $
+ *  $Id: dev_sh4.c,v 1.44 2007-04-21 02:36:23 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -1644,19 +1644,19 @@ DEVINIT(sh4)
 	dev_ram_init(machine, SH4_CCDD, SH4_DCACHE_SIZE,     DEV_RAM_RAM, 0x0);
 
 	/*  0xf2000000	SH4_ITLB_AA  */
-	memory_device_register(machine->memory, devinit->name, SH4_ITLB_AA,
+	memory_device_register(machine->memory, "sh4_itlb_aa", SH4_ITLB_AA,
 	    0x01000000, dev_sh4_itlb_aa_access, d, DM_DEFAULT, NULL);
 
 	/*  0xf3000000	SH4_ITLB_DA1  */
-	memory_device_register(machine->memory, devinit->name, SH4_ITLB_DA1,
+	memory_device_register(machine->memory, "sh4_itlb_da1", SH4_ITLB_DA1,
 	    0x01000000, dev_sh4_itlb_da1_access, d, DM_DEFAULT, NULL);
 
 	/*  0xf6000000	SH4_UTLB_AA  */
-	memory_device_register(machine->memory, devinit->name, SH4_UTLB_AA,
+	memory_device_register(machine->memory, "sh4_utlb_aa", SH4_UTLB_AA,
 	    0x01000000, dev_sh4_utlb_aa_access, d, DM_DEFAULT, NULL);
 
 	/*  0xf7000000	SH4_UTLB_DA1  */
-	memory_device_register(machine->memory, devinit->name, SH4_UTLB_DA1,
+	memory_device_register(machine->memory, "sh4_utlb_da1", SH4_UTLB_DA1,
 	    0x01000000, dev_sh4_utlb_da1_access, d, DM_DEFAULT, NULL);
 
 

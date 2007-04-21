@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.81 2007-04-20 06:22:28 debug Exp $
+ *  $Id: bus_pci.c,v 1.82 2007-04-21 02:36:23 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -1166,8 +1166,11 @@ PCIINIT(rtl8139c)
 	switch (machine->machine_type) {
 	case MACHINE_LANDISK:
 		irq = 5;
-		pci_int_line = 0x005;
+		pci_int_line = 0x105;
 		break;
+	default:fatal("rtl8139c for this machine has not been "
+		    "implemented yet\n");
+		exit(1);
 	}
 
 	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140000 | pci_int_line);

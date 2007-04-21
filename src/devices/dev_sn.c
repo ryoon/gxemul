@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.17 2007-04-13 16:06:53 debug Exp $
+ *  $Id: dev_sn.c,v 1.18 2007-04-21 06:13:53 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -51,7 +51,7 @@
 #define	DEV_SN_LENGTH		0x1000
 
 struct sn_data {
-	int		irq_nr;
+	struct interrupt irq;
 	unsigned char	macaddr[6];
 	uint32_t	reg[SONIC_NREGS];
 };
@@ -76,6 +76,7 @@ DEVICE_ACCESS(sn)
 	}
 
 	switch (regnr) {
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ sn: unimplemented write to address 0x%x"
@@ -85,6 +86,7 @@ DEVICE_ACCESS(sn)
 			fatal("[ sn: unimplemented read from address 0x%x "
 			    "(regnr %i) ]\n", (int)relative_addr, regnr);
 		}
+		/*  exit(1);  */
 	}
 
 	if (writeflag == MEM_READ)
@@ -105,7 +107,8 @@ DEVINIT(sn)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct sn_data));
-	d->irq_nr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	net_generate_unique_mac(devinit->machine, d->macaddr);
 

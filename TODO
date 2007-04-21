@@ -1,4 +1,4 @@
-$Id: TODO,v 1.479 2007-04-19 16:54:04 debug Exp $
+$Id: TODO,v 1.480 2007-04-21 06:13:53 debug Exp $
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)
@@ -240,7 +240,13 @@ HPCmips:
 	x)  A NIC? (As a PCMCIA device?)
 
 M88K:
-	o)  Everything.
+	o)  Everything. :)
+		o)  Do loads/stores use signed or unsigned 16-bit offsets?
+		o)  Find manuals!
+		o)  MMU stuff
+		o)  Exceptions
+		o)  FPU
+		o)  Control registers
 
 AVR:
 	o)  Everything.

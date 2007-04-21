@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.3 2007-04-20 16:32:05 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.4 2007-04-21 06:13:53 debug Exp $
  *
  *  M88K instructions.
  *
@@ -215,7 +215,10 @@ X(to_be_translated)
 	}
 
 	iword = *((uint32_t *)&ib[0]);
-	iword = BE32_TO_HOST(iword);
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iword = LE32_TO_HOST(iword);
+	else
+		iword = BE32_TO_HOST(iword);
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD

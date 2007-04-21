@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.2 2007-04-20 16:32:05 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.3 2007-04-21 06:13:53 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -252,7 +252,11 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	debug("%08x:  ", (int)dumpaddr);
 
-	iw = ib[3] + (ib[2]<<8) + (ib[1]<<16) + (ib[0]<<24);
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
+	else
+		iw = ib[3] + (ib[2]<<8) + (ib[1]<<16) + (ib[0]<<24);
+
 	debug("%08"PRIx32"\t", (uint32_t) iw);
 
 	op26   = (iw >> 26) & 0x3f;
@@ -279,9 +283,9 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x0b:	/*  st.b  */
 		debug("%s%s\tr%i,r%i,%i",
 		    op26 >= 0x08? "st" : "ld",
-		    memop[op26 & 3], d, s1, simm16);
+		    memop[op26 & 3], d, s1, imm16);
 		if (running) {
-			uint32_t tmpaddr = cpu->cd.m88k.r[s1] + simm16;
+			uint32_t tmpaddr = cpu->cd.m88k.r[s1] + imm16;
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    tmpaddr, &offset);
 			if (symbol != NULL)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.13 2007-04-21 02:36:23 debug Exp $
+ *  $Id: machine_landisk.c,v 1.14 2007-04-21 06:13:53 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -60,8 +60,10 @@
 
 MACHINE_SETUP(landisk)
 {
+#if 0
 	struct pci_data *pcibus =
 	    machine->cpus[machine->bootstrap_cpu]->cd.sh.pcic_pcibus;
+#endif
 	char tmpstr[300];
 
 	machine->machine_name = "Landisk USL-5P";

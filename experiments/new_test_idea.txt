@@ -226,3 +226,14 @@ _will_ be used, then the first choice is better.
 
 -------------------------------------------------------------------------------
 
+2007-04-21: Interestingly, this approach is very similar to what is used
+in a paper from 1990, by Robert Bedichek. "Some Efficient 
+Architecture Simlation Techniques".
+
+     http://xsim.com/papers/bedichek90some.pdf
+
+The paper details the same solution to intermediate representation that I 
+use in GXemul, including the end-of-page stuff, and to-be-translated 
+instruction.
+
+-------------------------------------------------------------------------------

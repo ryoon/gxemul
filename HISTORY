@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1528 2007-04-21 02:36:22 debug Exp $
+$Id: HISTORY,v 1.1529 2007-04-22 03:57:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3423,3 +3423,4 @@ Changelog for GXemul:
 		Implementing the first M88K instructions (br, or[.u] imm), and
 		adding disassembly of some more instructions.
 20070421	Continuing a little on dev_rtl8139c.
+20070422	Implementing the 9346 EEPROM "read" command for dev_rtl8139c.

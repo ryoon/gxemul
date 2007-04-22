@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.14 2007-04-21 06:13:53 debug Exp $
+ *  $Id: machine_landisk.c,v 1.15 2007-04-22 03:57:38 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -58,9 +58,13 @@
 #include "sh4_scireg.h"
 
 
+/*  This is not really implemented yet: (experimental)  */
+/*  #define INCLUDE_LANDISK_NIC  */
+
+
 MACHINE_SETUP(landisk)
 {
-#if 0
+#ifdef INCLUDE_LANDISK_NIC
 	struct pci_data *pcibus =
 	    machine->cpus[machine->bootstrap_cpu]->cd.sh.pcic_pcibus;
 #endif
@@ -90,7 +94,7 @@ MACHINE_SETUP(landisk)
 	    (uint64_t) SCI_DEVICE_BASE);
 	device_add(machine, tmpstr);
 
-#if 0
+#ifdef INCLUDE_LANDISK_NIC
 	/*  Realtek PCI NIC:  */
 	bus_pci_add(machine, pcibus, machine->memory, 0, 0, 0, "rtl8139c");
 #endif

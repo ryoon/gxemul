@@ -25,14 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtl8139c.c,v 1.2 2007-04-21 02:36:23 debug Exp $
+ *  $Id: dev_rtl8139c.c,v 1.3 2007-04-22 03:57:38 debug Exp $
  *
  *  Realtek 8139-style NIC.
  *
  *  TODO: Pretty much everything.
- *
- *
- *  Next thing to implement: RL_EECMD, eeprom stuff.
  */
 
 #include <stdio.h>
@@ -53,14 +50,77 @@
 
 
 #define	DEV_RTL8139C_LENGTH	0x100
+#define	EEPROM_SIZE		0x100
 
 struct rtl8139c_data {
 	struct interrupt	irq;
 	unsigned char		macaddr[6];
 
-	/*  Register:  */
+	/*  Registers:  */
 	uint8_t			rl_command;
+	uint8_t			rl_eecmd;
+
+	/*  EEPROM:  */
+	int			eeprom_address_width;
+	int			eeprom_selected;
+	int8_t			eeprom_cur_cmd_bit;
+	uint16_t		eeprom_cur_cmd;
+	uint16_t		eeprom_cur_data;
+	uint16_t		eeprom_reg[EEPROM_SIZE];
 };
+
+
+/*
+ *  eeprom_clk():
+ *
+ *  Called whenever the eeprom CLK bit is toggled from 0 to 1.
+ */
+static void eeprom_clk(struct rtl8139c_data *d)
+{
+	int data_in = d->rl_eecmd & RL_EE_DATAIN? 1 : 0;
+
+	if (d->eeprom_cur_cmd_bit < d->eeprom_address_width + 4) {
+		d->eeprom_cur_cmd <<= 1;
+		d->eeprom_cur_cmd |= data_in;
+	}
+
+	if (d->eeprom_cur_cmd_bit == d->eeprom_address_width + 3) {
+		int cmd = d->eeprom_cur_cmd >> d->eeprom_address_width;
+		int addr = d->eeprom_cur_cmd & ((1<<d->eeprom_address_width)-1);
+
+		debug("[ rtl8139c eeprom cmd=0x%x addr=0x%02x ]\n", cmd, addr);
+
+		switch (cmd) {
+
+		case RL_9346_READ:
+			d->eeprom_cur_data = d->eeprom_reg[addr % EEPROM_SIZE];
+			break;
+
+		default:fatal("[ rtl8139c eeprom: only the read command has"
+			    " been implemented. sorry. ]\n");
+			exit(1);
+		}
+	}
+
+	/*  Data output: (Note: Only the READ command has been implemented.)  */
+	if (d->eeprom_cur_cmd_bit >= d->eeprom_address_width + 4) {
+		int cur_out_bit = d->eeprom_cur_cmd_bit -
+		    (d->eeprom_address_width + 4);
+		int bit = d->eeprom_cur_data & (1 << (15-cur_out_bit));
+
+		if (bit)
+			d->rl_eecmd |= RL_EE_DATAOUT;
+		else
+			d->rl_eecmd &= ~RL_EE_DATAOUT;
+	}
+
+	d->eeprom_cur_cmd_bit ++;
+
+	if (d->eeprom_cur_cmd_bit >= d->eeprom_address_width + 4 + 16) {
+		d->eeprom_cur_cmd = 0;
+		d->eeprom_cur_cmd_bit = 0;
+	}
+}
 
 
 DEVICE_ACCESS(rtl8139c)
@@ -85,6 +145,25 @@ DEVICE_ACCESS(rtl8139c)
 			d->rl_command = idata;
 		} else {
 			odata = d->rl_command;
+		}
+		break;
+
+	case RL_EECMD:
+		if (writeflag == MEM_WRITE) {
+			uint8_t old = d->rl_eecmd;
+			d->rl_eecmd = idata;
+
+			if (!d->eeprom_selected && d->rl_eecmd & RL_EE_SEL) {
+				/*  Reset eeprom cmd bit state:  */
+				d->eeprom_cur_cmd = 0;
+				d->eeprom_cur_cmd_bit = 0;
+			}
+			d->eeprom_selected = d->rl_eecmd & RL_EE_SEL;
+
+			if (idata & RL_EE_CLK && !(old & RL_EE_CLK))
+				eeprom_clk(d);
+		} else {
+			odata = d->rl_eecmd;
 		}
 		break;
 
@@ -133,6 +212,13 @@ DEVINIT(rtl8139c)
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	net_generate_unique_mac(devinit->machine, d->macaddr);
+
+	/*  TODO: eeprom address width = 6 on 8129?  */
+	d->eeprom_address_width = 8;
+	d->eeprom_reg[0] = 0x8139;
+	d->eeprom_reg[7] = d->macaddr[0] + (d->macaddr[1] << 8);
+	d->eeprom_reg[8] = d->macaddr[2] + (d->macaddr[3] << 8);
+	d->eeprom_reg[9] = d->macaddr[4] + (d->macaddr[5] << 8);
 
 	name2 = malloc(nlen);
 	if (name2 == NULL) {

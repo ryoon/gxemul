@@ -1,4 +1,4 @@
-$Id: TODO,v 1.480 2007-04-21 06:13:53 debug Exp $
+$Id: TODO,v 1.481 2007-04-22 16:40:12 debug Exp $
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)
@@ -241,7 +241,9 @@ HPCmips:
 
 M88K:
 	o)  Everything. :)
-		o)  Do loads/stores use signed or unsigned 16-bit offsets?
+		o)  More instruction disassembly!
+		o)  Implement more instructions.
+		o)  has-delay-slot (for debugging)
 		o)  Find manuals!
 		o)  MMU stuff
 		o)  Exceptions

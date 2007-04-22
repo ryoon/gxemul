@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.3 2007-04-21 06:13:53 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.4 2007-04-22 14:12:57 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -296,7 +296,8 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				/*  Store:  */
 				debug(" = ");
 				switch (op26 & 3) {
-				case 0:	debug("0x%016"PRIx64, (uint64_t)
+				case 0:	/*  TODO: Endianness!!!  */
+					debug("0x%016"PRIx64, (uint64_t)
 					    ((((uint64_t) cpu->cd.m88k.r[d])
 					    << 32) + ((uint64_t)
 					    cpu->cd.m88k.r[d+1])) );
@@ -311,6 +312,9 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 					    (uint8_t) cpu->cd.m88k.r[d]);
 					break;
 				}
+			} else {
+				/*  Load:  */
+				/*  TODO  */
 			}
 		}
 		debug("\n");

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1529 2007-04-22 03:57:37 debug Exp $
+$Id: HISTORY,v 1.1530 2007-04-22 14:32:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3424,3 +3424,6 @@ Changelog for GXemul:
 		adding disassembly of some more instructions.
 20070421	Continuing a little on dev_rtl8139c.
 20070422	Implementing the 9346 EEPROM "read" command for dev_rtl8139c.
+		Finally found and fixed an old bug in the log n symbol search
+		(it sometimes missed symbols). Debug trace (-i, -t etc) should
+		now show more symbols. :-)

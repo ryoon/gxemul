@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.266 2007-04-21 02:36:23 debug Exp $
+$Id: RELEASE,v 1.267 2007-04-22 14:32:01 debug Exp $
 
 Currently working on what will become 0.4.5.1, which is 0.4.5 + some
 SuperH updates to allow OpenBSD/landisk to run).
@@ -42,13 +42,17 @@ The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 	experimental CPUs (RCA180x and Transputer) have been removed, to
 	make the emulator slightly more maintainable.
 
-The change between release 0.4.5 and 0.4.5.1 is:
+The changes between release 0.4.5 and 0.4.5.1 are:
 
     o)	OpenBSD/landisk 4.1 can be installed and run from a disk image.
 
 	(This is the result of some SuperH emulation fixes, and a temporary
 	workaround/hack to allow OpenBSD/landisk to boot. The hack needs
 	to be removed once the real bug has been found.)
+
+    o)	Finally found and fixed an old bug in the address to symbol name
+	lookup mechanism, which caused some symbols to be missed. Debug
+	output with -t or -i should now show all symbols.
 
 Please read the HISTORY file for more details.
 

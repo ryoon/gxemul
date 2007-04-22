@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.37 2006-12-30 13:30:52 debug Exp $
+ *  $Id: symbol.c,v 1.38 2007-04-22 14:32:01 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -113,7 +113,6 @@ char *get_symbol_name_and_n_args(struct symbol_context *sc, uint64_t addr,
 	uint64_t *offset, int *n_argsp)
 {
 	struct symbol *s;
-	int stepsize, ofs;
 
 	if (sc->n_symbols == 0)
 		return NULL;
@@ -136,7 +135,7 @@ char *get_symbol_name_and_n_args(struct symbol_context *sc, uint64_t addr,
 					    "%s", s->name);
 				else
 					snprintf(symbol_buf, SYMBOLBUF_MAX,
-					    "%s+0x%lx", s->name, (long)
+					    "%s+0x%"PRIx64, s->name, (uint64_t)
 					    (addr - s->addr));
 				if (offset != NULL)
 					*offset = addr - s->addr;
@@ -148,9 +147,9 @@ char *get_symbol_name_and_n_args(struct symbol_context *sc, uint64_t addr,
 		}
 	} else {
 		/*  Faster, O(log n) search:  */
-		stepsize = sc->n_symbols / 2;
-		ofs = stepsize;
-		while (stepsize > 0 || (stepsize == 0 && ofs == 0)) {
+		int lowest = 0, highest = sc->n_symbols - 1;
+		while (lowest <= highest) {
+			int ofs = (lowest + highest) / 2;
 			s = sc->first_symbol + ofs;
 
 			/*  Found a match?  */
@@ -160,30 +159,21 @@ char *get_symbol_name_and_n_args(struct symbol_context *sc, uint64_t addr,
 					    "%s", s->name);
 				else
 					snprintf(symbol_buf, SYMBOLBUF_MAX,
-					    "%s+0x%lx", s->name, (long)
+					    "%s+0x%"PRIx64, s->name, (uint64_t)
 					    (addr - s->addr));
+
 				if (offset != NULL)
 					*offset = addr - s->addr;
 				if (n_argsp != NULL)
 					*n_argsp = s->n_args;
+
 				return symbol_buf;
 			}
 
-			if (ofs == 0)
-				break;
-
-			stepsize >>= 1;
-
-			/*  Special case for offset 0 (end of search in
-			    the Left direction  */
-			if (stepsize == 0)
-				ofs = 0;
-			else {
-				if (addr < s->addr)
-					ofs -= stepsize;
-				else
-					ofs += stepsize;
-			}
+			if (addr < s->addr)
+				highest = ofs - 1;
+			else
+				lowest = ofs + 1;
 		}
 	}
 
@@ -418,6 +408,7 @@ void symbol_recalc_sizes(struct symbol_context *sc)
 				    - tmp_array[i].addr;
 			else
 				len = 1;
+
 			tmp_array[i].len = len;
 		}
 

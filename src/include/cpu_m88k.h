@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.2 2007-04-20 16:32:05 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.3 2007-04-23 13:13:53 debug Exp $
  */
 
 #include "misc.h"
@@ -86,7 +86,7 @@ struct m88k_cpu {
 
 
 /*  cpu_m88k.c:  */
-void m88k_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr);
+int m88k_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib);
 int m88k_run_instr(struct cpu *cpu);
 void m88k_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);

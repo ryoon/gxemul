@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.4 2007-04-22 14:12:57 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.5 2007-04-23 13:13:53 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -44,6 +44,7 @@
 #include "symbol.h"
 
 #define DYNTRANS_32
+#define DYNTRANS_DELAYSLOT
 #include "tmp_m88k_head.c"
 
 
@@ -89,6 +90,8 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->name            = cpu->cd.m88k.cpu_type.name;
 	cpu->is_32bit        = 1;
 	cpu->byte_order      = EMUL_BIG_ENDIAN;
+
+	cpu->instruction_has_delayslot = m88k_cpu_instruction_has_delayslot;
 
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
@@ -151,6 +154,34 @@ void m88k_cpu_list_available_types(void)
 		if ((i % 5) == 0 || tdefs[i].name == NULL)
 			debug("\n");
 	}
+}
+
+
+/*
+ *  m88k_cpu_instruction_has_delayslot():
+ *
+ *  Return 1 if an opcode is a branch, 0 otherwise.
+ */
+int m88k_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
+{
+	uint32_t iword = *((uint32_t *)&ib[0]);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iword = LE32_TO_HOST(iword);
+	else
+		iword = BE32_TO_HOST(iword);
+
+	switch (iword >> 26) {
+	case 0x31:	/*  br.n  */
+	case 0x33:	/*  bsr.n  */
+	case 0x35:	/*  bb0.n  */
+	case 0x37:	/*  bb1.n  */
+		return 1;
+
+	/*  TODO: jsr.n, jmp.n  */
+	}
+
+	return 0;
 }
 
 
@@ -257,7 +288,12 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	else
 		iw = ib[3] + (ib[2]<<8) + (ib[1]<<16) + (ib[0]<<24);
 
-	debug("%08"PRIx32"\t", (uint32_t) iw);
+	debug("%08"PRIx32, (uint32_t) iw);
+
+	if (running && cpu->delay_slot)
+		debug(" (d)");
+
+	debug("\t");
 
 	op26   = (iw >> 26) & 0x3f;
 	op11   = (iw >> 11) & 0x1f;
@@ -315,6 +351,37 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			} else {
 				/*  Load:  */
 				/*  TODO  */
+			}
+		} else {
+			/*
+			 *  Not running, but the following instruction
+			 *  sequence is quite common:
+			 *
+			 *  or.u      rX,r0,A
+			 *  st_or_st  rY,rX,B
+			 */
+
+			/*  Try loading the instruction before the
+			    current one.  */
+			uint32_t iw2 = 0;
+			cpu->memory_rw(cpu, cpu->mem,
+			    dumpaddr - sizeof(uint32_t), (unsigned char *)&iw2,
+			    sizeof(iw2), MEM_READ, CACHE_INSTRUCTION
+			    | NO_EXCEPTIONS);
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				 iw2 = LE32_TO_HOST(iw2);
+			else
+				 iw2 = BE32_TO_HOST(iw2);
+			if ((iw2 >> 26) == 0x17 &&	/*  or.u  */
+			    ((iw2 >> 21) & 0x1f) == s1) {
+				uint32_t tmpaddr = (iw2 << 16) + imm16;
+				symbol = get_symbol_name(
+				    &cpu->machine->symbol_context,
+				    tmpaddr, &offset);
+				if (symbol != NULL)
+					debug("\t; [<%s>]", symbol);
+				else
+					debug("\t; [0x%08"PRIx32"]", tmpaddr);
 			}
 		}
 		debug("\n");

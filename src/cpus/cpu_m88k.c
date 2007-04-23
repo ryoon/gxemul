@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.5 2007-04-23 13:13:53 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.6 2007-04-23 13:14:17 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -131,6 +131,10 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 void m88k_cpu_dumpinfo(struct cpu *cpu)
 {
 	/*  struct m88k_cpu_type_def *ct = &cpu->cd.m88k.cpu_type;  */
+
+	debug(", %s-endian",
+	    cpu->byte_order == EMUL_BIG_ENDIAN? "Big" : "Little");
+
 	debug("\n");
 }
 

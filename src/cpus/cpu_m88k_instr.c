@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.4 2007-04-21 06:13:53 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.5 2007-04-28 09:19:51 debug Exp $
  *
  *  M88K instructions.
  *
@@ -177,7 +177,8 @@ X(to_be_translated)
 	uint32_t addr, low_pc, iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int32_t op26, op10, op11, d, s1, s2, w5, d16, d26, imm16, simm16;
+	uint32_t op26, op10, op11, d, s1, s2, w5, imm16;
+	int32_t d16, d26, simm16;
 	int offset, shift;
 	int in_crosspage_delayslot = 0;
 	void (*samepage_function)(struct cpu *, struct m88k_instr_call *);

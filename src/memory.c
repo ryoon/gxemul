@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.201 2006-12-30 13:30:52 debug Exp $
+ *  $Id: memory.c,v 1.202 2007-04-28 09:19:51 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -601,7 +601,7 @@ uint64_t memory_checksum(struct memory *mem)
 {
 	uint64_t internal_state = 0x80624185376feff2ULL;
 	uint64_t checksum = 0xcb9a87d5c010072cULL;
-	const int n_entries = (1 << BITS_PER_PAGETABLE) - 1;
+	const size_t n_entries = (1 << BITS_PER_PAGETABLE) - 1;
 	const size_t len = (1 << BITS_PER_MEMBLOCK) / sizeof(uint64_t);
 	size_t entry, i;
 

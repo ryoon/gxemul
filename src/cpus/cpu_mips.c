@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.78 2007-04-28 01:46:07 debug Exp $
+ *  $Id: cpu_mips.c,v 1.79 2007-04-28 09:19:51 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1680,9 +1680,11 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("cpu%i: ", cpu->cpu_id);
 			debug("config_select1 = 0x");
 			if (cpu->is_32bit)
-				debug("%08"PRIx32, (uint32_t)cpu->cd.mips.cop0_config_select1);
+				debug("%08"PRIx32,
+				    (uint32_t)cpu->cd.mips.cop0_config_select1);
 			else
-				debug("%016"PRIx64, (uint64_t)cpu->cd.mips.cop0_config_select1);
+				debug("%016"PRIx64,
+				    (uint64_t)cpu->cd.mips.cop0_config_select1);
 			debug("\n");
 		}
 
@@ -1782,7 +1784,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		switch (exccode) {
 
 		case EXCEPTION_INT:
-			debug(" cause_im=0x%02x", (int)((reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
+			debug(" cause_im=0x%02x", (int)
+			    ((reg[COP0_CAUSE] & CAUSE_IP_MASK)
+			    >> CAUSE_IP_SHIFT));
 			break;
 
 		case EXCEPTION_SYS:
@@ -1872,7 +1876,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 		if (exc_model == EXC3K) {
 			reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
-			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << R2K3K_CONTEXT_BADVPN_SHIFT) & R2K3K_CONTEXT_BADVPN_MASK);
+			reg[COP0_CONTEXT] |= ((vaddr_vpn2 <<
+			    R2K3K_CONTEXT_BADVPN_SHIFT) &
+			    R2K3K_CONTEXT_BADVPN_MASK);
 
 			reg[COP0_ENTRYHI] = (vaddr & R2K3K_ENTRYHI_VPN_MASK)
 			    | (vaddr_asid << R2K3K_ENTRYHI_ASID_SHIFT);
@@ -1882,8 +1888,11 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			reg[COP0_ENTRYHI] = (int64_t)(int32_t)reg[COP0_ENTRYHI];
 		} else {
 			if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
-				reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK_R4100;
-				reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK_R4100);
+				reg[COP0_CONTEXT] &=
+				    ~CONTEXT_BADVPN2_MASK_R4100;
+				reg[COP0_CONTEXT] |= ((vaddr_vpn2 <<
+				    CONTEXT_BADVPN2_SHIFT) &
+				    CONTEXT_BADVPN2_MASK_R4100);
 
 				/*  TODO:  fix these  */
 				reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.69 2007-04-20 06:22:28 debug Exp $
+ *  $Id: cpu_sh.c,v 1.70 2007-04-28 09:19:51 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -274,9 +274,9 @@ void sh_update_interrupt_priorities(struct cpu *cpu)
 void sh_cpu_interrupt_assert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = interrupt->extra;
-	int irq_nr = interrupt->line;
-	int index = irq_nr / 0x20;
-	int prio;
+	unsigned int irq_nr = interrupt->line;
+	unsigned int index = irq_nr / 0x20;
+	unsigned int prio;
 
 	/*  Assert the interrupt, and check its priority level:  */
 	cpu->cd.sh.int_prio_and_pending[index] |= SH_INT_ASSERTED;

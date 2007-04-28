@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.19 2007-02-10 13:31:20 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.20 2007-04-28 09:19:52 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -112,6 +112,6 @@
 	{ "SB1",	0x000401,   0x00,	0,	EXC64, MMU64,  64, 1,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "SR7100",	0x000504,   0x00,	0,	EXC64, MMU64,  64, 1,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "Allegrex",	0x000000,   0x00,	0,	EXC32, MMU32,   2, 0,	 4, 1,14,6,2,14,6,2, 0, 0, 0 }, \
-	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+	{ NULL,		0,          0,          0,      0,     0,       0, 0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
 
 #endif	/*  MIPS_CPU_TYPES_H  */

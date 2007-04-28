@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lca.c,v 1.8 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_lca.c,v 1.9 2007-04-28 09:19:52 debug Exp $
  *
  *  LCA PCI bus (for Alpha machines).
  */
@@ -154,7 +154,7 @@ DEVICE_ACCESS(lca_pci_conf)
 
 DEVICE_ACCESS(lca_isa)
 {
-	int ofs, i;
+	unsigned int ofs, i;
 	uint8_t byte;
 
 	relative_addr >>= 5;

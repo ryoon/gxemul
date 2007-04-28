@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.55 2007-02-07 18:58:32 debug Exp $
+ *  $Id: cpu_mips.h,v 1.56 2007-04-28 09:19:52 debug Exp $
  */
 
 #include "interrupt.h"
@@ -235,7 +235,7 @@ struct mips_cpu {
 	struct timer	*timer;
 
 	int		rmw;		/*  Read-Modify-Write  */
-	int		rmw_len;	/*  Length of rmw modification  */
+	uint64_t	rmw_len;	/*  Length of rmw modification  */
 	uint64_t	rmw_addr;	/*  Address of rmw modification  */
 
 	/*

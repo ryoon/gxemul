@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.20 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_pvr.c,v 1.21 2007-04-28 09:19:52 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -1119,7 +1119,7 @@ DEVICE_ACCESS(pvr_vram_alt)
 {
 	struct pvr_data_alt *d_alt = extra;
 	struct pvr_data *d = d_alt->d;
-	int i;
+	size_t i;
 
 	if (writeflag == MEM_READ) {
 		/*  Copy from real vram:  */

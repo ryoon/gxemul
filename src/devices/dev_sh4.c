@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.44 2007-04-21 02:36:23 debug Exp $
+ *  $Id: dev_sh4.c,v 1.45 2007-04-28 09:19:52 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -104,7 +104,7 @@ struct sh4_data {
 	int		scif_delayed_tx;
 	int		scif_console_handle;
 	uint8_t		scif_tx_fifo[SCIF_TX_FIFO_SIZE + 1];
-	int		scif_tx_fifo_cursize;
+	size_t		scif_tx_fifo_cursize;
 	struct interrupt scif_tx_irq;
 	struct interrupt scif_rx_irq;
 	int		scif_tx_irq_asserted;
@@ -260,7 +260,7 @@ static void scif_reassert_interrupts(struct sh4_data *d)
 DEVICE_TICK(sh4)
 {
 	struct sh4_data *d = (struct sh4_data *) extra;
-	int i;
+	unsigned int i;
 
 	/*
 	 *  Serial controller interrupts:
@@ -876,7 +876,8 @@ DEVICE_ACCESS(sh4)
 		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.pteh;
 		else {
-			int old_asid = cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK;
+			unsigned int old_asid = cpu->cd.sh.pteh
+			    & SH4_PTEH_ASID_MASK;
 			cpu->cd.sh.pteh = idata;
 
 			if ((idata & SH4_PTEH_ASID_MASK) != old_asid) {
@@ -1473,8 +1474,8 @@ DEVICE_ACCESS(sh4)
 	case SH4_SCIF_BASE + SCIF_FTDR:
 		if (writeflag == MEM_WRITE) {
 			/*  Add to TX fifo:  */
-			if (d->scif_tx_fifo_cursize >= sizeof(
-			    d->scif_tx_fifo)) {
+			if (d->scif_tx_fifo_cursize >=
+			    sizeof(d->scif_tx_fifo)) {
 				fatal("[ SCIF TX fifo overrun! ]\n");
 				d->scif_tx_fifo_cursize = 0;
 			}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.63 2007-04-28 01:46:07 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.64 2007-04-28 09:19:51 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -535,10 +535,10 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
  *
  *  Note: In the R3000 case, the asid argument is shifted 6 bits.
  */
-static void invalidate_asid(struct cpu *cpu, int asid)
+static void invalidate_asid(struct cpu *cpu, unsigned int asid)
 {
 	struct mips_coproc *cp = cpu->cd.mips.coproc[0];
-	int i, ntlbs = cp->nr_of_tlbs;
+	unsigned int i, ntlbs = cp->nr_of_tlbs;
 	struct mips_tlb *tlb = cp->tlbs;
 
 	if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
@@ -683,7 +683,9 @@ void coproc_register_write(struct cpu *cpu,
 	int readonly = 0;
 	uint64_t tmp = *ptr;
 	uint64_t tmp2 = 0, old;
-	int inval = 0, old_asid, oldmode;
+	int inval = 0;
+	unsigned int old_asid;
+	uint64_t oldmode;
 
 	switch (cp->coproc_nr) {
 	case 0:
@@ -1800,6 +1802,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		int pfn_shift = 12, vpn_shift = 12;
 		int wf0, wf1, mask;
 		uint64_t vaddr0, vaddr1, paddr0, paddr1, ptmp;
+		uint64_t psize;
 
 		cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
 		cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
@@ -1885,7 +1888,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		 *  Invalidate any code translations, if we are writing Dirty
 		 *  pages to the TLB:  (TODO: 4KB hardcoded... ugly)
 		 */
-		for (ptmp = 0; ptmp < (1 << pfn_shift); ptmp += 0x1000) {
+		psize = 1 << pfn_shift;
+		for (ptmp = 0; ptmp < psize; ptmp += 0x1000) {
 			if (wf0)
 				cpu->invalidate_code_translation(cpu,
 				    paddr0 + ptmp, INVALIDATE_PADDR);

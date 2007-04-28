@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.14 2007-03-08 19:04:09 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.15 2007-04-28 09:19:51 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -477,7 +477,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 				    NO_EXCEPTIONS | PHYSICAL);
 			} else {
 				/*  Device present:  */
-				int i;
+				unsigned int i;
 				struct maple_devinfo *di =
 				    &d->device[port]->devinfo;
 				/*  debug("[ dreamcast_maple: response="

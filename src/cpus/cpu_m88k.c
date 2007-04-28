@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.6 2007-04-23 13:14:17 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.7 2007-04-28 09:19:51 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -272,7 +272,8 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	uint32_t iw;
 	char *symbol, *mnem = NULL;
 	uint64_t offset;
-	int32_t op26, op10, op11, d, s1, s2, w5, d16, d26, imm16, simm16;
+	uint32_t op26, op10, op11, d, s1, s2, w5, imm16;
+	int32_t d16, d26, simm16;
 
 	if (running)
 		dumpaddr = cpu->pc;

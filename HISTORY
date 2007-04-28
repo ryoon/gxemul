@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1533 2007-04-28 01:46:07 debug Exp $
+$Id: HISTORY,v 1.1534 2007-04-28 09:19:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3433,3 +3433,7 @@ Changelog for GXemul:
 		Applying parts of a patch from Carl van Schaik to clear out
 		bottom bits of MIPS addresses more correctly, when using large
 		page sizes, and doing some other minor cleanup/refactoring.
+		Fixing a couple of warnings given by gcc with the -W option (a
+		few more warnings than just plain -Wall).
+		Reducing SuperH dyntrans physical address space from 64-bit to
+		32-bit (since SH5/SH64 isn't imlemented yet anyway).

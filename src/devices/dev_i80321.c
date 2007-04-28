@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.20 2007-02-05 16:49:21 debug Exp $
+ *  $Id: dev_i80321.c,v 1.21 2007-04-28 09:19:52 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -139,7 +139,7 @@ DEVICE_ACCESS(i80321)
 	struct i80321_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	char *n = NULL;
-	int i, bus, dev, func, reg;
+	int bus, dev, func, reg;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -227,6 +227,7 @@ DEVICE_ACCESS(i80321)
 			}
 		} else {
 			uint64_t tmp;
+			unsigned int i;
 			int r = relative_addr - (VERDE_ATU_BASE + ATU_OCCDR);
 			bus_pci_data_access(cpu, d->pci_bus, &tmp,
 			    sizeof(uint32_t), MEM_READ);

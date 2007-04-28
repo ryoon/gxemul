@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.5 2007-03-26 03:01:09 debug Exp $
+ *  $Id: diskimage.c,v 1.6 2007-04-28 09:19:52 debug Exp $
  *
  *  Disk image support.
  *
@@ -419,7 +419,8 @@ static size_t fwrite_helper(off_t offset, unsigned char *buf,
 	}
 
 	/*  Split the write into OVERLAY_BLOCK_SIZE writes:  */
-	for (curofs=offset; curofs<offset+len; curofs+=OVERLAY_BLOCK_SIZE) {
+	for (curofs = offset; curofs < (off_t) (offset+len);
+	     curofs += OVERLAY_BLOCK_SIZE) {
 		/*  Always write to the last overlay:  */
 		int overlay_nr = d->nr_of_overlays-1;
 		off_t lenwritten;

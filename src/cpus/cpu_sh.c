@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.71 2007-04-28 09:39:16 debug Exp $
+ *  $Id: cpu_sh.c,v 1.72 2007-04-28 09:44:35 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -467,9 +467,9 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		/*  Floating point:  */
 		debug("cpu%i: fpscr = 0x%08"PRIx32" (%s,%s,%s)  fpul = 0x%08"
 		    PRIx32"\n", x, cpu->cd.sh.fpscr,
-		    cpu->cd.sh.fpscr & SH_FPSCR_PR? "PR" : "pr",
-		    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "SZ" : "sz",
-		    cpu->cd.sh.fpscr & SH_FPSCR_FR? "FR" : "fr",
+		    cpu->cd.sh.fpscr & SH_FPSCR_PR? "PR" : "!pr",
+		    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "SZ" : "!sz",
+		    cpu->cd.sh.fpscr & SH_FPSCR_FR? "FR" : "!fr",
 		    cpu->cd.sh.fpul);
 
 		for (i=0; i<SH_N_FPRS; i++) {

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.269 2007-04-28 09:19:09 debug Exp $
+$Id: RELEASE,v 1.270 2007-04-28 13:47:49 debug Exp $
 
 Currently working on what will become 0.4.5.1, which is 0.4.5 + some
 SuperH updates to allow OpenBSD/landisk to run).
@@ -16,7 +16,7 @@ emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-Processors (ARM, MIPS, PowerPC, SuperH) are emulated using dynamic 
+Processors (ARM, MIPS, PowerPC, and SuperH) are emulated using dynamic 
 translation. Unlike some other dynamically translating emulators, GXemul 
 does not need to generate native code, only a "runnable intermediate 
 representation", and will thus run on any host architecture.

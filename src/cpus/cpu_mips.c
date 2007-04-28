@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.77 2007-04-10 17:52:27 debug Exp $
+ *  $Id: cpu_mips.c,v 1.78 2007-04-28 01:46:07 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -624,8 +624,13 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			uint64_t lo0 = cop0->tlbs[j].lo0;
 			uint64_t lo1 = cop0->tlbs[j].lo1;
 			uint64_t mask = cop0->tlbs[j].mask;
+			uint64_t psize;
+
+			mask |= (1 << (pageshift+1)) - 1;
+			/*  here mask = e.g. 0x1fff for 4KB pages  */
 
 			printf("%3i: ", j);
+
 			switch (m->cpus[i]->cd.mips.cpu_type.mmu_model) {
 			case MMU3K:
 				if (!(lo0 & R2K3K_ENTRYLO_V)) {
@@ -651,12 +656,11 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			default:switch (m->cpus[i]->cd.mips.cpu_type.mmu_model){
 				case MMU32:
 					printf("vaddr=0x%08"PRIx32" ",
-					    (uint32_t) hi);
+					    (uint32_t) (hi & ~mask));
 					break;
-				case MMU10K:
-				default:/*  R4000 etc.  */
+				default:/*  R4x00, R1x000, MIPS64, etc.  */
 					printf("vaddr=%016"PRIx64" ",
-					    (uint64_t) hi);
+					    (uint64_t) (hi & ~mask));
 				}
 				if (hi & TLB_G)
 					printf("(global): ");
@@ -668,32 +672,39 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 
 				if (!(lo0 & ENTRYLO_V))
 					printf(" p0=(invalid)   ");
-				else
-					printf(" p0=0x%09"PRIx64" ", (uint64_t)
-					    (((lo0&ENTRYLO_PFN_MASK) >>
-					    ENTRYLO_PFN_SHIFT) << pageshift));
+				else {
+					uint64_t paddr = lo0 & ENTRYLO_PFN_MASK;
+					paddr >>= ENTRYLO_PFN_SHIFT;
+					paddr <<= pageshift;
+					paddr &= ~(mask >> 1);
+					printf(" p0=0x%09"PRIx64" ",
+					    (uint64_t) paddr);
+				}
 				printf(lo0 & ENTRYLO_D? "D" : " ");
 
 				if (!(lo1 & ENTRYLO_V))
 					printf(" p1=(invalid)   ");
-				else
-					printf(" p1=0x%09"PRIx64" ", (uint64_t)
-					    (((lo1&ENTRYLO_PFN_MASK) >>
-					    ENTRYLO_PFN_SHIFT) << pageshift));
-				printf(lo1 & ENTRYLO_D? "D" : " ");
-				mask |= (1 << (pageshift+1)) - 1;
-				switch (mask) {
-				case 0x7ff:	printf(" (1KB)"); break;
-				case 0x1fff:	printf(" (4KB)"); break;
-				case 0x7fff:	printf(" (16KB)"); break;
-				case 0x1ffff:	printf(" (64KB)"); break;
-				case 0x7ffff:	printf(" (256KB)"); break;
-				case 0x1fffff:	printf(" (1MB)"); break;
-				case 0x7fffff:	printf(" (4MB)"); break;
-				case 0x1ffffff:	printf(" (16MB)"); break;
-				case 0x7ffffff:	printf(" (64MB)"); break;
-				default:printf(" (mask=%08x?)", (int)mask);
+				else {
+					uint64_t paddr = lo1 & ENTRYLO_PFN_MASK;
+					paddr >>= ENTRYLO_PFN_SHIFT;
+					paddr <<= pageshift;
+					paddr &= ~(mask >> 1);
+					printf(" p1=0x%09"PRIx64" ",
+					    (uint64_t) paddr);
 				}
+				printf(lo1 & ENTRYLO_D? "D" : " ");
+
+				/*  convert e.g. 0x1fff to 4096  */
+				psize = (mask + 1) >> 1;
+
+				if (psize >= 1024 && psize <= 256*1024)
+					printf(" (%iKB)", (int) (psize >> 10));
+				else if (psize >= 1024*1024 && psize <=
+				    64*1024*1024)
+					printf(" (%iMB)", (int) (psize >> 20));
+				else
+					printf(" (?)");
+
 				printf("\n");
 			}
 		}

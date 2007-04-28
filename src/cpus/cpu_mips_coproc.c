@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.62 2007-02-03 16:18:56 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.63 2007-04-28 01:46:07 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1838,9 +1838,11 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		}
 
 		paddr0 = ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
-		    >> ENTRYLO_PFN_SHIFT) << pfn_shift;
+		    >> ENTRYLO_PFN_SHIFT) << pfn_shift
+		    >> vpn_shift << vpn_shift;
 		paddr1 = ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
-		    >> ENTRYLO_PFN_SHIFT) << pfn_shift;
+		    >> ENTRYLO_PFN_SHIFT) << pfn_shift
+		    >> vpn_shift << vpn_shift;
 
 		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
 			vaddr0 = cp->tlbs[index].hi &

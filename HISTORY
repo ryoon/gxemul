@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1532 2007-04-28 00:10:10 debug Exp $
+$Id: HISTORY,v 1.1533 2007-04-28 01:46:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3430,3 +3430,6 @@ Changelog for GXemul:
 20070423	Continuing a little on M88K disassembly.
 20070428	Fixing a memset arg order bug in src/net/net.c (thanks to
 		Nigel Horne for noticing the bug).
+		Applying parts of a patch from Carl van Schaik to clear out
+		bottom bits of MIPS addresses more correctly, when using large
+		page sizes, and doing some other minor cleanup/refactoring.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.15 2006-12-30 13:30:56 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.16 2007-04-28 01:46:07 debug Exp $
  */
 
 
@@ -383,8 +383,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 						    cached_lo0)
 						    & ENTRYLO_PFN_MASK)
 						    >> ENTRYLO_PFN_SHIFT;
-						paddr = (pfn << pfn_shift) |
-						    (vaddr & pmask);
+						paddr = ((pfn << pfn_shift) &
+						    ~pmask) | (vaddr & pmask);
 #endif
 
 						*return_paddr = paddr;

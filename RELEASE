@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.267 2007-04-22 14:32:01 debug Exp $
+$Id: RELEASE,v 1.268 2007-04-28 00:13:15 debug Exp $
 
 Currently working on what will become 0.4.5.1, which is 0.4.5 + some
 SuperH updates to allow OpenBSD/landisk to run).
@@ -42,7 +42,7 @@ The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 	experimental CPUs (RCA180x and Transputer) have been removed, to
 	make the emulator slightly more maintainable.
 
-The changes between release 0.4.5 and 0.4.5.1 are:
+The changes between release 0.4.5 and 0.4.5.1 include, among other things:
 
     o)	OpenBSD/landisk 4.1 can be installed and run from a disk image.
 

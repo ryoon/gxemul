@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.214 2007-04-19 16:54:04 debug Exp $
+$Id: guestoses.html,v 1.215 2007-04-28 00:12:03 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -214,6 +214,10 @@ For an ftp install, substitute steps 2 and 3 above with these:
 </pre>
 	(If using 10.0.0.254 as the nameserver fails, then try entering the
 	IP number of a real-world nameserver instead.)
+	<p>
+	Note that NetBSD 1.6.2 is nowadays located at
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2</a>
+	(note <tt>NetBSD-archive</tt> part).
 </ol>
 
 <p>If you want to use a graphical framebuffer during the install, you can
@@ -1487,7 +1491,9 @@ follow these instructions:
 	  <li>root disk = <b>wd0</b> (the disk to install onto)
 	  <li>Use the entire disk for OpenBSD = <b>yes</b>
 	  <li>Create one big root partition (a) and a small swap partition (b). c is the entire disk.
-	  <li>Do <b>not</b> configure the network.
+	  <li>Do <b>not</b> configure the network. (The Realtek NIC
+		found in the Landisk machine is not implemented yet
+		in the emulator.)
 	  <li>Location of sets = <b>disk</b>
 	  <li>Is the disk partition already mounted = <b>no</b>
 	  <li>Disk containing the install media = <b>wd1</b>
@@ -2522,7 +2528,10 @@ trying to run /sbin/init.
 run in GXemul.
 
 <p><font color="#ff0000">NOTE: This is still too
-unstable to be considered really working!</font>
+unstable to be considered really working! Snapshots from April 2007
+or so will probably not work, unless an #if 0 is changed to
+#if 1 in the implementation of the 'LDC Rm,SR' instruction
+(in src/cpus/cpu_sh_instr.c).</font>
 
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20070224-netbsd-landisk.png"><img src="20070224-netbsd-landisk_small.png"></a>

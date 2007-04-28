@@ -1,4 +1,49 @@
-$Id: TODO,v 1.482 2007-04-23 00:52:48 debug Exp $
+$Id: TODO,v 1.483 2007-04-28 00:12:03 debug Exp $
+
+--------------------------------------------
+
+Testing for the next release (0.4.5.1):
+
+TEST DISK OVERLAY IMAGES
+TEST LANDISK/SUPERH EMULATION MODES
+REGRESSION TESTS FOR ALL OTHER SUPPORTED GUEST OSES:
+
+# NetBSD/pmax 3.1 or 1.6.2
+	1.6.2, ftp: TODO: remember to try X11
+# NetBSD/arc 1.6.2
+# NetBSD/hpcmips 3.1
+# NetBSD/cobalt 3.1
+# NetBSD/evbmips 3.1
+# NetBSD/algor 3.1
+# NetBSD/sgimips 3.1
+# NetBSD/cats 3.1
+# NetBSD/evbarm 2.1
+# NetBSD/netwinder 3.1
+# NetBSD/prep 2.1
+# NetBSD/macppc 3.1
+# NetBSD/dreamcast 3.1 GENERIC_MD
+# NetBSD/dreamcast 3.1 Live CD
+# Linux/dreamcast Live CD
+# OpenBSD/pmax 2.8-BETA
+# OpenBSD/cats 4.0
+# OpenBSD/landisk 4.1
+# Ultrix/RISC 4.5
+# Sprite for DECstation
+# Debian GNU/Linux for DECstation 
+
+Optional stuff:
+
+    * Mach/PMAX
+    * Redhat Linux for DECstation
+    * OpenBSD/sgi
+    * OpenBSD/arc 2.3
+    * Debian GNU/Linux for CATS
+    * Linux/QEMU_MIPS
+    * Windows NT/MIPS
+    * NetBSD/bebox 19981119
+    * NetBSD/landisk 
+
+--------------------------------------------
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are probably out-to-date by now.)

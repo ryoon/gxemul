@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.3 2007-04-23 13:13:53 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.4 2007-04-28 00:12:03 debug Exp $
  */
 
 #include "misc.h"
@@ -42,19 +42,17 @@ struct m88k_cpu_type_def {
 	int		type;
 };
 
-#define	M88K_CPU_TYPE_DEFS	{					\
-	{ "88100", 88100 },						\
-	{ "88110", 88110 },						\
-	{ NULL,    0     }						\
+#define	M88K_CPU_TYPE_DEFS	{	\
+	{ "88100", 88100 },		\
+	{ "88110", 88110 },		\
+	{ NULL,    0     }		\
 	}
 
-
-#define	N_M88K_REGS		32
 
 #define	M88K_N_IC_ARGS			3
 #define	M88K_INSTR_ALIGNMENT_SHIFT	2
 #define	M88K_IC_ENTRIES_SHIFT		10
-#define	M88K_IC_ENTRIES_PER_PAGE		(1 << M88K_IC_ENTRIES_SHIFT)
+#define	M88K_IC_ENTRIES_PER_PAGE	(1 << M88K_IC_ENTRIES_SHIFT)
 #define	M88K_PC_TO_IC_ENTRY(a)		(((a)>>M88K_INSTR_ALIGNMENT_SHIFT) \
 					& (M88K_IC_ENTRIES_PER_PAGE-1))
 #define	M88K_ADDR_TO_PAGENR(a)		((a) >> (M88K_IC_ENTRIES_SHIFT \
@@ -65,15 +63,22 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 #define	M88K_MAX_VPH_TLB_ENTRIES		128
 
 
+#define	N_M88K_REGS		32
+
 /*  Register r0 is always zero.  */
 #define	M88K_ZERO_REG		0
 
 struct m88k_cpu {
 	struct m88k_cpu_type_def cpu_type;
 
+	/*  General-Purpose Registers:  */
 	uint32_t		r[N_M88K_REGS];
 
+	/*  Destination for non-nop instructions with r0 as dest. reg.:  */
+	uint32_t		zero;
+
 	int			irq_asserted;
+
 
 	/*
 	 *  Instruction translation cache, and 32-bit virtual -> physical ->

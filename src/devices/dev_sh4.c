@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.45 2007-04-28 09:19:52 debug Exp $
+ *  $Id: dev_sh4.c,v 1.46 2007-04-28 14:19:43 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -79,7 +79,7 @@
 #define	PCI_PRODUCT_HITACHI_SH7751R	0x350e   
 
 #define	SCIF_TX_FIFO_SIZE	16
-#define	SCIF_DELAYED_TX_VALUE	1	/*  2 to be safe, 1 = faster  */
+#define	SCIF_DELAYED_TX_VALUE	2	/*  2 to be safe, 1 = fast but buggy  */
 
 /*  General-purpose I/O stuff:  */
 #define	SH4_PCTRA		0xff80002c

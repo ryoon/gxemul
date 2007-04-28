@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1535 2007-04-28 09:39:15 debug Exp $
+$Id: HISTORY,v 1.1536 2007-04-28 14:19:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3440,3 +3440,5 @@ Changelog for GXemul:
 		Adding address-to-symbol annotation to a few more instructions
 		in the SuperH instruction trace output.
 		Beginning regression testing for the next release.
+		Reverting the value of SCIF_DELAYED_TX_VALUE from 1 to 2,
+		because OpenBSD/landisk may oterhwise hang randomly.

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1531 2007-04-23 13:13:53 debug Exp $
+$Id: HISTORY,v 1.1532 2007-04-28 00:10:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3428,3 +3428,5 @@ Changelog for GXemul:
 		(it sometimes missed symbols). Debug trace (-i, -t etc) should
 		now show more symbols. :-)
 20070423	Continuing a little on M88K disassembly.
+20070428	Fixing a memset arg order bug in src/net/net.c (thanks to
+		Nigel Horne for noticing the bug).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.8 2007-03-24 06:40:16 debug Exp $
+ *  $Id: net.c,v 1.9 2007-04-28 00:10:11 debug Exp $
  *
  *  Emulated network.
  *
@@ -789,7 +789,7 @@ struct net *net_init(struct emul *emul, int init_flags,
 			exit(1);
 		}
 
-		memset((char *)&si_self, sizeof(si_self), 0);
+		memset((char *)&si_self, 0, sizeof(si_self));
 		si_self.sin_family = AF_INET;
 		si_self.sin_port = htons(local_port);
 		si_self.sin_addr.s_addr = htonl(INADDR_ANY);

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.483 2007-04-28 00:12:03 debug Exp $
+$Id: TODO,v 1.484 2007-04-28 09:39:16 debug Exp $
 
 --------------------------------------------
 
@@ -9,6 +9,7 @@ TEST LANDISK/SUPERH EMULATION MODES
 REGRESSION TESTS FOR ALL OTHER SUPPORTED GUEST OSES:
 
 # NetBSD/pmax 3.1 or 1.6.2
+	3.1, automatic using the expect script: ONGOING
 	1.6.2, ftp: TODO: remember to try X11
 # NetBSD/arc 1.6.2
 # NetBSD/hpcmips 3.1

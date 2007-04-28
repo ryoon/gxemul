@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.70 2007-04-28 09:19:51 debug Exp $
+ *  $Id: cpu_sh.c,v 1.71 2007-04-28 09:39:16 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -733,7 +733,8 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr)
 int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr)
 {
-	uint64_t addr;
+	char *symbol;
+	uint64_t offset, addr;
 	uint16_t iword;
 	int hi4, lo4, lo8, r8, r4;
 
@@ -764,8 +765,16 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			else if (lo4 == 0x6)
 				debug("mov.l\tr%i,@(r0,r%i)", r4, r8);
 			if (running) {
-				debug("\t; r0+r%i = 0x%08"PRIx32, r8,
-				    cpu->cd.sh.r[0] + cpu->cd.sh.r[r8]);
+				uint32_t addr = cpu->cd.sh.r[0] +
+				    cpu->cd.sh.r[r8];
+				debug("\t; r0+r%i = ", r8);
+				symbol = get_symbol_name(
+				    &cpu->machine->symbol_context,
+				    addr, &offset);
+				if (symbol != NULL)
+					debug("<%s>", symbol);
+				else
+					debug("0x%08"PRIx32, addr);
 			}
 			debug("\n");
 		} else if (lo4 == 0x7)
@@ -786,8 +795,16 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			else if (lo4 == 0xe)
 				debug("mov.l\t@(r0,r%i),r%i", r4, r8);
 			if (running) {
-				debug("\t; r0+r%i = 0x%08"PRIx32, r4,
-				    cpu->cd.sh.r[0] + cpu->cd.sh.r[r4]);
+				uint32_t addr = cpu->cd.sh.r[0] +
+				    cpu->cd.sh.r[r4];
+				debug("\t; r0+r%i = ", r4);
+				symbol = get_symbol_name(
+				    &cpu->machine->symbol_context,
+				    addr, &offset);
+				if (symbol != NULL)
+					debug("<%s>", symbol);
+				else
+					debug("0x%08"PRIx32, addr);
 			}
 			debug("\n");
 		} else if (lo8 == 0x12)
@@ -850,8 +867,14 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	case 0x1:
 		debug("mov.l\tr%i,@(%i,r%i)", r4, lo4 * 4, r8);
 		if (running) {
-			debug("\t; r%i+%i = 0x%08"PRIx32, r8, lo4 * 4,
-			    cpu->cd.sh.r[r8] + lo4 * 4);
+			uint32_t addr = cpu->cd.sh.r[r8] + lo4 * 4;
+			debug("\t; r%i+%i = ", r8, lo4 * 4);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    addr, &offset);
+			if (symbol != NULL)
+				debug("<%s>", symbol);
+			else
+				debug("0x%08"PRIx32, addr);
 		}
 		debug("\n");
 		break;
@@ -998,9 +1021,17 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("shlr16\tr%i\n", r8);
 		else if (lo8 == 0x2a)
 			debug("lds\tr%i,pr\n", r8);
-		else if (lo8 == 0x2b)
-			debug("jmp\t@r%i\n", r8);
-		else if (lo8 == 0x2e)
+		else if (lo8 == 0x2b) {
+			debug("jmp\t@r%i", r8);
+			if (running) {
+				symbol = get_symbol_name(
+				    &cpu->machine->symbol_context,
+				    cpu->cd.sh.r[r8], &offset);
+				if (symbol != NULL)
+					debug("\t\t; <%s>", symbol);
+			}
+			debug("\n");
+		} else if (lo8 == 0x2e)
 			debug("ldc\tr%i,vbr\n", r8);
 		else if (lo8 == 0x33)
 			debug("stc.l\tssr,@-r%i\n", r8);
@@ -1110,9 +1141,14 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		} else if (r8 == 0x9 || r8 == 0xb || r8 == 0xd || r8 == 0xf) {
 			addr = (int8_t)lo8;
 			addr = dumpaddr + 4 + (addr << 1);
-			debug("b%s%s\t0x%x\n",
+			debug("b%s%s\t0x%x",
 			    (r8 == 0x9 || r8 == 0xd)? "t" : "f",
 			    (r8 == 0x9 || r8 == 0xb)? "" : "/s", (int)addr);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    addr, &offset);
+			if (symbol != NULL)
+				debug("\t; <%s>", symbol);
+			debug("\n");
 		} else
 			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, r8);
 		break;
@@ -1120,14 +1156,25 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	case 0xd:
 		addr = lo8 * (hi4==9? 2 : 4);
 		addr += (dumpaddr & ~(hi4==9? 1 : 3)) + 4;
-		debug("mov.%s\t0x%x,r%i\n", hi4==9? "w":"l", (int)addr, r8);
+		debug("mov.%s\t0x%x,r%i", hi4==9? "w":"l", (int)addr, r8);
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    addr, &offset);
+		if (symbol != NULL)
+			debug("\t; <%s>", symbol);
+		debug("\n");
 		break;
 	case 0xa:
 	case 0xb:
 		addr = (int32_t)(int16_t)((iword & 0xfff) << 4);
 		addr = ((int32_t)addr >> 3);
 		addr += dumpaddr + 4;
-		debug("%s\t0x%x\n", hi4==0xa? "bra":"bsr", (int)addr);
+		debug("%s\t0x%x", hi4==0xa? "bra":"bsr", (int)addr);
+
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    addr, &offset);
+		if (symbol != NULL)
+			debug("\t; <%s>", symbol);
+		debug("\n");
 		break;
 	case 0xc:
 		if (r8 == 0x0)

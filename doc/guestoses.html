@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.217 2007-04-29 02:27:36 debug Exp $
+$Id: guestoses.html,v 1.218 2007-04-29 13:44:27 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -506,7 +506,7 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 </ol>
 
 <p>You should now be able to boot NetBSD/evbmips using this command:<pre>
-	<b>gxemul -e malta -d nbsd_malta.img netbsd-MALTA.gz</b>
+	<b>gxemul -x -e malta -d nbsd_malta.img netbsd-MALTA.gz</b>
 </pre>
 
 <p>NOTE: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
@@ -2003,7 +2003,7 @@ it works.</font>
 mailed Adaptec several times, asking for documentation, but never received 
 any reply.) OpenBSD/sgi can still run in the emulator, as long as it doesn't
 use SCSI. For a simple test with the ramdisk (install) kernel, try dowloading<pre>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi</a>/<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd.rd">bsd.rd</a>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi</a>/<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd.rd">bsd.rd</a>
 
 </pre>and run <b><tt>gxemul -xeo2 bsd.rd</tt></b>.
 
@@ -2045,7 +2045,7 @@ reboot</b>
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
 (log in as anonymous...)
-<b>cd pub/OpenBSD/3.9/sgi
+<b>cd pub/OpenBSD/4.0/sgi
 mget b*tgz c*tgz e* g* m*
 quit
 sh
@@ -2056,8 +2056,8 @@ dd if=/dev/zero of=swap bs=1024 count=32768
 halt</b>
 </pre></td></tr></table>
   <li>Download the OpenBSD/sgi GENERIC and RAMDISK kernels:<pre>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd</a>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd.rd</a>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd</a>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd.rd</a>
 
 </pre>
   <li>Create a configuration file called <tt>config_client</tt>:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.9 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.10 2007-04-29 13:44:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -99,12 +99,12 @@ MACHINE_SETUP(cobalt)
 	    machine->path, machine->bootstrap_cpu);
 	pci_data = dev_gt_init(machine, mem, 0x14000000, tmpstr,
 	    tmpstr2, 11);
-	bus_pci_add(machine, pci_data, mem, 0,  7, 0, "dec21143");
+	/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, "dec21143");  */
 	/*  bus_pci_add(machine, pci_data, mem, 0,  8, 0, "symbios_860");
 	    PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 	bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
 	bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
-	bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
+	/*  bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");  */
 
 	if (!machine->prom_emulation)
 		return;

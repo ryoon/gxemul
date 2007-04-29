@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1536 2007-04-28 14:19:43 debug Exp $
+$Id: HISTORY,v 1.1537 2007-04-29 02:27:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3442,3 +3442,9 @@ Changelog for GXemul:
 		Beginning regression testing for the next release.
 		Reverting the value of SCIF_DELAYED_TX_VALUE from 1 to 2,
 		because OpenBSD/landisk may oterhwise hang randomly.
+20070429	The ugly hack/workaround to get OpenBSD/landisk booting without
+		crashing does NOT work anymore (with the April 21 snapshot
+		of OpenBSD/landisk). Strangely enough, removing the hack
+		completely causes OpenBSD/landisk to work (!).
+		More regression testing (re-testing everything SuperH-related,
+		and some other things).

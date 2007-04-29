@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.46 2007-04-28 14:19:43 debug Exp $
+ *  $Id: dev_sh4.c,v 1.47 2007-04-29 02:27:36 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -819,10 +819,10 @@ DEVICE_ACCESS(sh4_pcic)
 		break;
 
 	default:if (writeflag == MEM_READ) {
-			fatal("[ sh4_pcic: read from addr 0x%x ]\n",
+			fatal("[ sh4_pcic: read from addr 0x%x: TODO ]\n",
 			    (int)relative_addr);
 		} else {
-			fatal("[ sh4_pcic: write to addr 0x%x: 0x%x ]\n",
+			fatal("[ sh4_pcic: write to addr 0x%x: 0x%x: TODO ]\n",
 			    (int)relative_addr, (int)idata);
 		}
 		exit(1);
@@ -1316,16 +1316,6 @@ DEVICE_ACCESS(sh4)
 	case SHREG_SCSPTR:
 		odata = sh_sci_access(d, cpu,
 		    writeflag == MEM_WRITE? 1 : 0, idata);
-
-		/*
-		 *  TODO
-		 *
-		 *  Find out the REAL way to make OpenBSD/landisk run
-		 *  in a stable manner! This is a SUPER-UGLY HACK which
-		 *  just side-steps the real bug.
-		 */
-		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-
 		break;
 
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.270 2007-04-28 13:47:49 debug Exp $
+$Id: RELEASE,v 1.271 2007-04-29 02:27:36 debug Exp $
 
 Currently working on what will become 0.4.5.1, which is 0.4.5 + some
 SuperH updates to allow OpenBSD/landisk to run).
@@ -45,12 +45,8 @@ The changes between release 0.4.4.1 and 0.4.5 include, among other things:
 The changes between release 0.4.5 and 0.4.5.1 include, among other things:
 
     o)	OpenBSD/landisk has now had its first release (4.1, 2007-05-01).
-	It is possible to install OpenBSD/landisk onto a disk image in
-	the emulator.
-
-	(This is the result of some SuperH emulation fixes, and a temporary
-	workaround/hack to allow OpenBSD/landisk to boot. The hack needs
-	to be removed once the real bug has been found.)
+	Landisk emulation is now stable enough to allow OpenBSD/landisk
+	to be installed onto a disk image, and run from it.
 
     o)	Finally found and fixed an old bug in the address to symbol name
 	lookup mechanism, which caused some symbols to be missed. Debug

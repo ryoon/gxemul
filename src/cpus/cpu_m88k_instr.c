@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.5 2007-04-28 09:19:51 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.6 2007-05-01 15:31:12 debug Exp $
  *
  *  M88K instructions.
  *
@@ -34,6 +34,15 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+#define SYNCH_PC                {                                       \
+                int low_pc = ((size_t)ic - (size_t)cpu->cd.m88k.cur_ic_page) \
+                    / sizeof(struct m88k_instr_call);                   \
+                cpu->pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1)               \
+                    << M88K_INSTR_ALIGNMENT_SHIFT);                     \
+                cpu->pc += (low_pc << M88K_INSTR_ALIGNMENT_SHIFT);      \
+        }
 
 
 /*
@@ -84,6 +93,38 @@ X(or_imm)
 X(or_r0_imm)
 {
 	reg(ic->arg[0]) = ic->arg[2];
+}
+
+
+/*
+ *  st:  Store a 32-bit word in memory.
+ *
+ *  arg[0] = pointer to register d (containing the value to store)
+ *  arg[1] = pointer to register s1 (base register)
+ *  arg[2] = offset
+ */
+X(st)
+{
+	uint32_t addr = reg(ic->arg[1]) + ic->arg[2];
+	uint32_t *p = (uint32_t *) cpu->cd.m88k.host_store[addr >> 12];
+	uint32_t data = reg(ic->arg[0]);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE32_TO_HOST(data);
+	else
+		data = BE32_TO_HOST(data);
+
+	if (p != NULL) {
+		p[(addr & 0xfff) >> 2] = data;
+		reg(ic->arg[1]) = addr;
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
 }
 
 
@@ -249,6 +290,15 @@ X(to_be_translated)
 	d26    = ((int32_t)((iword & 0x03ffffff) << 6)) >> 4;
 
 	switch (op26) {
+
+	case 0x09:
+		ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+		ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+		ic->arg[2] = imm16;
+		switch (op26) {
+		case 0x09: ic->f = instr(st); break;
+		}
+		break;
 
 	case 0x16:	/*  or   imm  */
 	case 0x17:	/*  or.u imm  */

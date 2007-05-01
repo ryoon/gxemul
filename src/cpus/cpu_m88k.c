@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.8 2007-05-01 12:53:00 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.9 2007-05-01 15:31:12 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -530,7 +530,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		} else if ((iw & 0x03e0f800) == 0x00008000) {
 			debug("stcr\tr%i,%s", s1,
 			    m88k_cr_name(cpu, cr6));
-			if (iw & 0x1f)
+			if (s1 != (iw & 0x1f))
 				debug("\t\t; NOTE: weird encoding: "
 				    "low 5 bits = 0x%02x", iw&0x1f);
 			debug("\n");

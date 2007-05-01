@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.1 2007-05-01 12:53:00 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.2 2007-05-01 15:31:12 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
- *  TODO: This is mostly bogus.
+ *
+ *  TODO: This is completely bogus so far.
  */
 
 #include <stdio.h>
@@ -69,7 +70,7 @@ MACHINE_SETUP(mvme88k)
 		return;
 
 	/*
-	 *  Boot loader args (for OpenBSD/mvme88k):
+	 *  Boot loader args, according to OpenBSD/mvme88k's locore.S:
 	 *
 	 *  r2 = boot flags
 	 *  r3 = boot controller physical address
@@ -81,9 +82,9 @@ MACHINE_SETUP(mvme88k)
 	 */
 
 	switch (machine->machine_subtype) {
-	case MACHINE_MVME88K_187:	cpu->cd.m88k.r[8] = 0x187; break;
-	case MACHINE_MVME88K_188:	cpu->cd.m88k.r[8] = 0x188; break;
-	case MACHINE_MVME88K_197:	cpu->cd.m88k.r[8] = 0x197; break;
+	case MACHINE_MVME88K_187:  cpu->cd.m88k.r[8] = 0x187; break;
+	case MACHINE_MVME88K_188:  cpu->cd.m88k.r[8] = 0x188; break;
+	case MACHINE_MVME88K_197:  cpu->cd.m88k.r[8] = 0x197; break;
 	}
 }
 

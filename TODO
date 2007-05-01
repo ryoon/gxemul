@@ -1,4 +1,4 @@
-$Id: TODO,v 1.488 2007-05-01 04:03:51 debug Exp $
+$Id: TODO,v 1.489 2007-05-01 04:05:06 debug Exp $
 
 --------------------------------------------
 
@@ -25,7 +25,7 @@ REGRESSION TESTS FOR ALL OTHER SUPPORTED GUEST OSES
 # Linux/dreamcast Live CD	OK
 # OpenBSD/pmax 2.8-BETA		not tested because of lack of time
 # OpenBSD/cats 4.0		OK
-# OpenBSD/landisk 4.1		ongoing
+# OpenBSD/landisk 4.1		OK
 # Ultrix/RISC 4.5		OK
 # Sprite for DECstation		OK
 # Debian GNU/Linux for pmax	not tested because of lack of time

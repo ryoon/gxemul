@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1539 2007-05-01 04:03:51 debug Exp $
+$Id: HISTORY,v 1.1540 2007-05-01 12:53:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3461,3 +3461,6 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.5.1  ==============
 
+20070501	Continuing a little on m88k disassembly (control registers,
+		more instructions).
+		Adding a dummy mvme88k machine mode.

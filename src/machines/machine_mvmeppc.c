@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.18 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.19 2007-05-01 12:53:01 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -186,7 +186,7 @@ MACHINE_DEFAULT_RAM(mvmeppc)
 
 MACHINE_REGISTER(mvmeppc)
 {
-	MR_DEFAULT(mvmeppc, "MVME", ARCH_PPC, MACHINE_MVMEPPC);
+	MR_DEFAULT(mvmeppc, "MVMEPPC", ARCH_PPC, MACHINE_MVMEPPC);
 
 	machine_entry_add_alias(me, "mvmeppc");
 

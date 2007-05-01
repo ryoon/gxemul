@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.7 2007-04-28 09:19:51 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.8 2007-05-01 12:53:00 debug Exp $
  *
  *  M88K CPU emulation.
  */
@@ -52,6 +52,22 @@ static char *memop[4] = { ".d", "", ".h", ".b" };
 
 void m88k_irq_interrupt_assert(struct interrupt *interrupt);
 void m88k_irq_interrupt_deassert(struct interrupt *interrupt);
+
+
+static char *m88k_cr_names[] = M88K_CR_NAMES;
+static char *m88k_cr_197_names[] = M88K_CR_NAMES_197;
+
+static char *m88k_cr_name(struct cpu *cpu, int i)
+{
+	char **cr_names = m88k_cr_names;
+
+	/*  Hm. Is this really MVME197 specific? TODO  */
+	if (cpu->machine->machine_subtype == MACHINE_MVME88K_197)
+		cr_names = m88k_cr_197_names;
+
+	return cr_names[i];
+}
+
 
 
 /*
@@ -98,11 +114,24 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 		debug("%s", cpu->name);
 	}
 
+
+	/*
+	 *  Add register names as settings:
+	 */
+
 	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+
 	for (i=0; i<N_M88K_REGS - 1; i++) {
 		char name[10];
+
 		snprintf(name, sizeof(name), "r%i", i);
 		CPU_SETTINGS_ADD_REGISTER32(name, cpu->cd.m88k.r[i]);
+	}
+
+	for (i=0; i<N_M88K_CONTROL_REGS; i++) {
+		char name[10];
+		snprintf(name, sizeof(name), "%s", m88k_cr_name(cpu, i));
+		CPU_SETTINGS_ADD_REGISTER32(name, cpu->cd.m88k.cr[i]);
 	}
 
 	/*  Register the CPU interrupt pin:  */
@@ -180,6 +209,7 @@ int m88k_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 	case 0x33:	/*  bsr.n  */
 	case 0x35:	/*  bb0.n  */
 	case 0x37:	/*  bb1.n  */
+	case 0x3b:	/*  bcnd.n  */
 		return 1;
 
 	/*  TODO: jsr.n, jmp.n  */
@@ -215,8 +245,25 @@ void m88k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if (i == 0)
 				debug("                  ");
 			else
-				debug("  r%-2i = 0x%08x", i,
-				    (int)cpu->cd.m88k.r[i]);
+				debug("  r%-2i = 0x%08"PRIx32,
+				    i, cpu->cd.m88k.r[i]);
+			if ((i % 4) == 3)
+				debug("\n");
+		}
+	}
+
+	if (coprocs & 1) {
+		int n_control_regs = 32;
+
+		/*  Hm. Is this really MVME197 specific? TODO  */
+		if (cpu->machine->machine_subtype == MACHINE_MVME88K_197)
+			n_control_regs = 64;
+
+		for (i=0; i<n_control_regs; i++) {
+			if ((i % 4) == 0)
+				debug("cpu%i:", x);
+			debug("  %4s=0x%08"PRIx32,
+			    m88k_cr_name(cpu, i), cpu->cd.m88k.cr[i]);
 			if ((i % 4) == 3)
 				debug("\n");
 		}
@@ -272,7 +319,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	uint32_t iw;
 	char *symbol, *mnem = NULL;
 	uint64_t offset;
-	uint32_t op26, op10, op11, d, s1, s2, w5, imm16;
+	uint32_t op26, op10, op11, d, s1, s2, w5, cr6, imm16;
 	int32_t d16, d26, simm16;
 
 	if (running)
@@ -309,6 +356,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	imm16  = iw & 0xffff;
 	simm16 = (int16_t) (iw & 0xffff);
 	w5     = (iw >>  5) & 0x1f;
+	cr6    = (iw >>  5) & 0x3f;
 	d16    = ((int16_t) (iw & 0xffff)) * 4;
 	d26    = ((int32_t)((iw & 0x03ffffff) << 6)) >> 4;
 
@@ -363,7 +411,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			 *  sequence is quite common:
 			 *
 			 *  or.u      rX,r0,A
-			 *  st_or_st  rY,rX,B
+			 *  st_or_ld  rY,rX,B
 			 */
 
 			/*  Try loading the instruction before the
@@ -411,7 +459,42 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x17:	mnem = "or"; break;
 		}
 		debug("%s%s\t", mnem, op26 & 1? ".u" : "");
-		debug("r%i,r%i,0x%x\n", d, s1, imm16);
+		debug("r%i,r%i,0x%x", d, s1, imm16);
+
+		if (op26 == 0x16 && d == s1 && d != M88K_ZERO_REG) {
+			/*
+			 *  The following instruction sequence is common:
+			 *
+			 *  or.u   rX,r0,A
+			 *  or     rX,rX,B	; rX = AAAABBBB
+			 */
+
+			/*  Try loading the instruction before the
+			    current one.  */
+			uint32_t iw2 = 0;
+			cpu->memory_rw(cpu, cpu->mem,
+			    dumpaddr - sizeof(uint32_t), (unsigned char *)&iw2,
+			    sizeof(iw2), MEM_READ, CACHE_INSTRUCTION
+			    | NO_EXCEPTIONS);
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				 iw2 = LE32_TO_HOST(iw2);
+			else
+				 iw2 = BE32_TO_HOST(iw2);
+			if ((iw2 >> 26) == 0x17 &&	/*  or.u  */
+			    ((iw2 >> 21) & 0x1f) == s1) {
+				uint32_t tmpaddr = (iw2 << 16) + imm16;
+				symbol = get_symbol_name(
+				    &cpu->machine->symbol_context,
+				    tmpaddr, &offset);
+				debug("\t; ");
+				if (symbol != NULL)
+					debug("<%s>", symbol);
+				else
+					debug("0x%08"PRIx32, tmpaddr);
+			}
+		}
+
+		debug("\n");
 		break;
 
 	case 0x18:	/*  addu    */
@@ -440,6 +523,25 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("%s\tr%i,r%i,%i\n", mnem, d, s1, simm16);
 		break;
 
+	case 0x20:
+		if ((iw & 0x001ff81f) == 0x00004000) {
+			debug("ldcr\tr%i,%s\n", d,
+			    m88k_cr_name(cpu, cr6));
+		} else if ((iw & 0x03e0f800) == 0x00008000) {
+			debug("stcr\tr%i,%s", s1,
+			    m88k_cr_name(cpu, cr6));
+			if (iw & 0x1f)
+				debug("\t\t; NOTE: weird encoding: "
+				    "low 5 bits = 0x%02x", iw&0x1f);
+			debug("\n");
+		} else if ((iw & 0x0000f81f) == 0x0000c000) {
+			debug("xcr\tr%i,r%i,%s\n", d, s1,
+			    m88k_cr_name(cpu, cr6));
+		} else {
+			debug("UNIMPLEMENTED 0x20\n");
+		}
+		break;
+
 	case 0x30:
 	case 0x31:
 	case 0x32:
@@ -459,9 +561,17 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x35:	/*  bb0.n  */
 	case 0x36:	/*  bb1    */
 	case 0x37:	/*  bb1.n  */
-		debug("bb%s%s\t",
-		    op26 >= 0x36? "1" : "0",
-		    op26 & 1? ".n" : "");
+	case 0x3a:	/*  bcnd    */
+	case 0x3b:	/*  bcnd.n  */
+		switch (op26) {
+		case 0x34:
+		case 0x35: mnem = "bb0"; break;
+		case 0x36:
+		case 0x37: mnem = "bb1"; break;
+		case 0x3a:
+		case 0x3b: mnem = "bcnd"; break;
+		}
+		debug("%s%s\t", mnem, op26 & 1? ".n" : "");
 		debug("%i,r%i,0x%08"PRIx32, d, s1, (uint32_t) (dumpaddr + d16));
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    dumpaddr + d16, &offset);
@@ -470,8 +580,90 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("\n");
 		break;
 
+	case 0x3c:
+		switch (op10) {
+		case 0x20:	/*  clr  */
+		case 0x22:	/*  set  */
+		case 0x24:	/*  ext  */
+		case 0x26:	/*  extu  */
+		case 0x28:	/*  mak  */
+		case 0x2a:	/*  rot  */
+			switch (op10) {
+			case 0x20: mnem = "clr"; break;
+			case 0x22: mnem = "set"; break;
+			case 0x24: mnem = "ext"; break;
+			case 0x26: mnem = "extu"; break;
+			case 0x28: mnem = "mak"; break;
+			case 0x2a: mnem = "rot"; break;
+			}
+			debug("%s\tr%i,r%i,", mnem, d, s1);
+			/*  Don't include w5 for the rot instruction:  */
+			if (op10 != 0x2a)
+				debug("%i", w5);
+			/*  Note: o5 = s2:  */
+			debug("<%i>\n", s2);
+			break;
+		case 0x34:	/*  tb0  */
+		case 0x36:	/*  tb1  */
+			switch (op10) {
+			case 0x34: mnem = "tb0"; break;
+			case 0x36: mnem = "tb1"; break;
+			}
+			debug("%s\t%i,r%i,0x%x\n", mnem, d, s1, iw & 0x1ff);
+			break;
+		default:debug("UNIMPLEMENTED 0x3c, op10=0x%02x\n", op10);
+		}
+		break;
+
 	case 0x3d:
-		if ((iw & 0x03fff3e0) == 0x0000c000) {
+		switch ((iw >> 8) & 0xff) {
+		case 0x40:	/*  and  */
+		case 0x44:	/*  and.c  */
+		case 0x50:	/*  xor  */
+		case 0x54:	/*  xor.c  */
+		case 0x58:	/*  or  */
+		case 0x5c:	/*  or.c  */
+		case 0x68:	/*  divu  */
+		case 0x69:	/*  divu.d  */
+		case 0x6c:	/*  mul  */
+		case 0x6d:	/*  mulu.d  */
+		case 0x6e:	/*  muls  */
+		case 0x78:	/*  div  */
+		case 0x7c:	/*  cmp  */
+		case 0x80:	/*  clr  */
+		case 0x88:	/*  set  */
+		case 0x90:	/*  ext  */
+		case 0x98:	/*  extu  */
+		case 0xa0:	/*  mak  */
+		case 0xa8:	/*  rot  */
+			/*  Three-register opcodes:  */
+			switch ((iw >> 8) & 0xff) {
+			case 0x40: mnem = "and"; break;
+			case 0x44: mnem = "and.c"; break;
+			case 0x50: mnem = "xor"; break;
+			case 0x54: mnem = "xor.c"; break;
+			case 0x58: mnem = "or"; break;
+			case 0x5c: mnem = "or.c"; break;
+			case 0x68: mnem = "divu"; break;
+			case 0x69: mnem = "divu.d"; break;
+			case 0x6c: mnem = "mul"; break;
+			case 0x6d: mnem = "mulu.d"; break;
+			case 0x6e: mnem = "muls"; break;
+			case 0x78: mnem = "div"; break;
+			case 0x7c: mnem = "cmp"; break;
+			case 0x80: mnem = "clr"; break;
+			case 0x88: mnem = "set"; break;
+			case 0x90: mnem = "ext"; break;
+			case 0x98: mnem = "extu"; break;
+			case 0xa0: mnem = "mak"; break;
+			case 0xa8: mnem = "rot"; break;
+			}
+			debug("%s\tr%i,r%i,r%i\n", mnem, d, s1, s2);
+			break;
+		case 0xc0:	/*  jmp  */
+		case 0xc4:	/*  jmp.n  */
+		case 0xc8:	/*  jsr  */
+		case 0xcc:	/*  jsr.n  */
 			debug("%s%s\t(r%i)\n",
 			    op11 & 1? "jsr" : "jmp",
 			    iw & 0x400? ".n" : "",
@@ -486,14 +678,27 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				else
 					debug("0x%08"PRIx32, tmpaddr);
 			}
-		} else if ((iw & 0x0000ffe0) == 0x00000000) {
-			debug("xmem\tr%i,r%i,r%i\n", d, s1, s2);
-		} else {
-			debug("UNIMPLEMENTED 0x3d\n");
+			break;
+		case 0xfc:
+			switch (iw & 0xff) {
+			case 0x00:
+				debug("rte\n");
+				break;
+			case 0x01:
+			case 0x02:
+			case 0x03:
+				debug("illop%i\n", iw & 0xff);
+				break;
+			default:debug("UNIMPLEMENTED 0x3d,0xfc: 0x%02x\n",
+				    iw & 0xff);
+			}
+			break;
+		default:debug("UNIMPLEMENTED 0x3d, opbyte = 0x%02x\n",
+			    (iw >> 8) & 0xff);
 		}
 		break;
 
-	default:debug("UNIMPLEMENTED\n");
+	default:debug("UNIMPLEMENTED op26=0x%02x\n", op26);
 	}
 
 	return sizeof(uint32_t);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.4 2007-04-28 00:12:03 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.5 2007-05-01 12:53:00 debug Exp $
  */
 
 #include "misc.h"
@@ -47,6 +47,95 @@ struct m88k_cpu_type_def {
 	{ "88110", 88110 },		\
 	{ NULL,    0     }		\
 	}
+
+/*  Control register names:  */
+#define	N_M88K_CONTROL_REGS	64
+#define	M88K_CR_NAMES	{						\
+	"PID",  "PSR",  "EPSR", "SSBR",		/*   0 ..  3  */	\
+	"SXIP", "SNIP", "SFIP", "VBR",		/*   4 ..  7  */	\
+	"DMT0", "DMD0", "DMA0", "DMT1",		/*   8 .. 11  */	\
+	"DMD1", "DMA1", "DMT2", "DMD2",		/*  12 .. 15  */	\
+	"DMA2", "SR0",  "SR1",  "SR2",		/*  16 .. 19  */	\
+	"SR3",  "CR21", "CR22", "CR23",		/*  20 .. 23  */	\
+	"CR24", "CR25", "CR26", "CR27",		/*  24 .. 27  */	\
+	"CR28", "CR29", "CR30", "CR31",		/*  28 .. 31  */	\
+	"CR32", "CR25", "CR26", "CR27",		/*  32 .. 35  */	\
+	"CR36", "CR37", "CR38", "CR39",		/*  36 .. 39  */	\
+	"CR40", "CR41", "CR42", "CR43",		/*  40 .. 43  */	\
+	"CR44", "CR45", "CR46", "CR47",		/*  44 .. 47  */	\
+	"CR48", "CR49", "CR50", "CR51",		/*  48 .. 51  */	\
+	"CR52", "CR53", "CR54", "CR55",		/*  52 .. 55  */	\
+	"CR56", "CR57", "CR58", "CR59",		/*  56 .. 59  */	\
+	"CR60", "CR61", "CR62", "CR63"		/*  60 .. 63  */	}
+
+#define M88K_CR_PID	0
+#define M88K_CR_PSR     1 
+#define M88K_CR_EPSR    2 
+#define M88K_CR_SSBR    3 
+#define M88K_CR_SXIP    4 
+#define M88K_CR_SNIP    5 
+#define M88K_CR_SFIP    6 
+#define M88K_CR_VBR     7 
+#define M88K_CR_DMT0    8 
+#define M88K_CR_DMD0    9 
+#define M88K_CR_DMA0    10
+#define M88K_CR_DMT1    11
+#define M88K_CR_DMD1    12
+#define M88K_CR_DMA1    13
+#define M88K_CR_DMT2    14
+#define M88K_CR_DMD2    15
+#define M88K_CR_DMA2    16
+#define M88K_CR_SR0     17
+#define M88K_CR_SR1     18
+#define M88K_CR_SR2     19
+#define M88K_CR_SR3     20
+
+/*  MVME197 extended control registers:  */
+#define	M88K_CR_NAMES_197	{					\
+	"PID",  "PSR",  "EPSR", "SSBR",		/*   0 ..  3  */	\
+	"EXIP", "ENIP", "SFIP", "VBR",		/*   4 ..  7  */	\
+	"DMT0", "DMD0", "DMA0", "DMT1",		/*   8 .. 11  */	\
+	"DMD1", "DMA1", "DMT2", "DMD2",		/*  12 .. 15  */	\
+	"SRX", "SR0",  "SR1",  "SR2",		/*  16 .. 19  */	\
+	"SR3",  "CR21", "CR22", "CR23",		/*  20 .. 23  */	\
+	"CR24", "ICMD", "ICTL", "ISAR",		/*  24 .. 27  */	\
+	"ISAP", "IUAP", "IIR",  "IBP",		/*  28 .. 31  */	\
+	"IPPU", "IPPL", "ISR",  "ILAR",		/*  32 .. 35  */	\
+	"IPAR", "CR37", "CR38", "CR39",		/*  36 .. 39  */	\
+	"DCMD", "DCTL", "DSAR", "DSAP",		/*  40 .. 43  */	\
+	"DUAP", "DIR",  "DBP",  "DPPU",		/*  44 .. 47  */	\
+	"DPPL", "DSR",  "DLAR", "DPAR",		/*  48 .. 51  */	\
+	"CR52", "CR53", "CR54", "CR55",		/*  52 .. 55  */	\
+	"CR56", "CR57", "CR58", "CR59",		/*  56 .. 59  */	\
+	"CR60", "CR61", "CR62", "CR63"		/*  60 .. 63  */	}
+
+#define M88K_CR_EXIP    4
+#define M88K_CR_ENIP    5
+#define M88K_CR_SRX     16
+#define M88K_CR_ICMD    25
+#define M88K_CR_ICTL    26
+#define M88K_CR_ISAR    27
+#define M88K_CR_ISAP    28
+#define M88K_CR_IUAP    29
+#define M88K_CR_IIR     30
+#define M88K_CR_IBP     31
+#define M88K_CR_IPPU    32
+#define M88K_CR_IPPL    33
+#define M88K_CR_ISR     34
+#define M88K_CR_ILAR    35
+#define M88K_CR_IPAR    36
+#define M88K_CR_DCMD    40
+#define M88K_CR_DCTL    41
+#define M88K_CR_DSAR    42
+#define M88K_CR_DSAP    43
+#define M88K_CR_DUAP    44
+#define M88K_CR_DIR     45
+#define M88K_CR_DBP     46
+#define M88K_CR_DPPU    47
+#define M88K_CR_DPPL    48
+#define M88K_CR_DSR     49
+#define M88K_CR_DLAR    50
+#define M88K_CR_DPAR    51
 
 
 #define	M88K_N_IC_ARGS			3
@@ -76,6 +165,9 @@ struct m88k_cpu {
 
 	/*  Destination for non-nop instructions with r0 as dest. reg.:  */
 	uint32_t		zero;
+
+	/*  Control Registers:  */
+	uint32_t		cr[N_M88K_CONTROL_REGS];
 
 	int			irq_asserted;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.162 2007-04-19 15:18:16 debug Exp $
+ *  $Id: machine.h,v 1.163 2007-05-01 12:53:00 debug Exp $
  */
 
 #include <sys/types.h>
@@ -297,6 +297,7 @@ struct machine {
 /*  M88K:  */
 #define	MACHINE_BAREM88K	8000
 #define	MACHINE_TESTM88K	8001
+#define	MACHINE_MVME88K		8002
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0
@@ -376,6 +377,11 @@ struct machine {
 #define	MACHINE_MVMEPPC_1600		1
 #define	MACHINE_MVMEPPC_2100		2
 #define	MACHINE_MVMEPPC_5500		3
+
+/*  MVME88K  */
+#define	MACHINE_MVME88K_187		1
+#define	MACHINE_MVME88K_188		2
+#define	MACHINE_MVME88K_197		3
 
 
 /*  For the automachine system:  */

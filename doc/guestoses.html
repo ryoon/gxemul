@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.218 2007-04-29 13:44:27 debug Exp $
+$Id: guestoses.html,v 1.219 2007-05-01 04:03:34 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -878,11 +878,12 @@ image, from an emulated CATS machine:
 
 <p>
 <ol>
-  <li>Install NetBSD/cats 3.1 according to instructions
-	<a href="#netbsdcatsinstall">further up on this page</a>.
-  <p>
+  <li>Download a NetBSD/cats 3.1 ramdisk kernel:<pre>
+	<b>wget <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a></b>
+
+</pre>
   <li>Create an empty harddisk image, which will be the disk image
-	that you will install NetBSD onto:<pre>
+	that you will install NetBSD/evbarm onto:<pre>
 	<b>dd if=/dev/zero of=nbsd_iq80321.img bs=1024 count=1 seek=999000</b>
 
 </pre>
@@ -892,38 +893,30 @@ image, from an emulated CATS machine:
 
 </pre>
   <p>
-  <li>The first step is to copy the distribution .tgz files onto the CATS
-	machine's harddisk. Start the CATS machine like this:<pre>
-	<b>gxemul -XEcats -d nbsd_cats.img -d evbarmcd.iso netbsd.aout-GENERIC.gz</b>
+  <li>Now let's extract the files from the CD-ROM image onto the IQ80321's disk image. Start the 
+	CATS machine using the following command line:<pre>
+	<b>gxemul -XEcats -d nbsd_iq80321.img -d evbarmcd.iso netbsd.aout-INSTALL.gz</b>
 
-</pre>and execute the following commands as <tt>root</tt>:
+</pre>Exit from the installer, and execute the following commands as <tt>root</tt>:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>mount /dev/cd0a /mnt; cd /root; cp /mnt/evbarm/binary/sets/[bcegmt]* .
-sync; halt</b>
-</pre></td></tr></table>
-  <p>
-  <li>Now let's extract the files onto the IQ80321's disk image. Start the 
-	CATS machine again, with the following command line:<pre>
-	<b>gxemul -XEcats -d nbsd_cats.img -d nbsd_iq80321.img netbsd.aout-GENERIC.gz</b>
 
-</pre>and execute the following commands as <tt>root</tt>:
-<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>disklabel -I -i wd1</b>
+<b>disklabel -I -i wd0</b>
     (enter suitable commands, e.g. <i>a, 4.2BSD, 1c, 750M, b,
      swap, a, 200M, P, W, y, Q</i>)
-<b>newfs /dev/wd1a; mount /dev/wd1a /mnt; cd /mnt; sh
-for a in /root/[bcegmt]*.tgz; do echo $a; tar zxfp $a; done
+<b>newfs /dev/wd0a; mount /dev/wd0a /mnt2; cd /mnt2
+mount /dev/cd0a /mnt; sh
+for a in /mnt/*/binary/sets/[bcegmt]*.tgz; do echo $a; tar zxfp $a; done
 exit
 cd dev; sh ./MAKEDEV all; cd ../etc
 echo rc_configured=YES &gt;&gt; rc.conf
 echo "/dev/wd0a / ffs rw 1 1" &gt; fstab
 echo "/dev/wd0b none swap sw 0 0" &gt;&gt; fstab
-cd /; umount /mnt; sync; halt</b>
+cd /; umount /mnt; umount /mnt2; sync; halt</b>
 </pre></td></tr></table>
 </ol>
 
 <p>You should now be able to boot NetBSD/evbarm using this command:<pre>
-	<b>gxemul -xEiq80321 -d nbsd_iq80321.img netbsd-wd0-IQ80321.gz</b>
+	<b>gxemul -x -E iq80321 -d nbsd_iq80321.img netbsd-wd0-IQ80321.gz</b>
 </pre>
 
 
@@ -1443,10 +1436,7 @@ boot from the harddisk image:
 
 It is possible to install and run
 <a href="http://www.openbsd.org/landisk.html">OpenBSD/landisk</a>
-in GXemul. There is at the time of writing this (2007-04-15) no
-stable release of OpenBSD/landisk, but there are snapshots available
-on the OpenBSD ftp site. Hopefully these instructions will work for
-OpenBSD 4.1 as well, when it has been released.
+in GXemul.
 
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20070419-openbsd-landisk.png"><img src="20070419-openbsd-landisk_small.png"></a>
@@ -1458,29 +1448,28 @@ follow these instructions:
 <ol>
   <li>Create an empty harddisk image, which will be the root disk
 	that OpenBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=obsd_landisk.img bs=1024 count=1 seek=1900000</b>
+	<b>dd if=/dev/zero of=obsd_landisk.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
   <li>Download the entire landisk directory from the ftp server:<pre>
-	<b>wget -np -l 0 -r <a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/snapshots/landisk/">ftp://ftp.se.openbsd.org/pub/OpenBSD/snapshots/landisk/</a></b>
-	<b>cp ftp.se.openbsd.org/pub/OpenBSD/snapshots/landisk/bsd .</b>
-	<b>cp ftp.se.openbsd.org/pub/OpenBSD/snapshots/landisk/bsd.rd .</b>
+	<b>wget -np -l 0 -r <a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.1/landisk/">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.1/landisk/</a></b>
+	<b>cp ftp.se.openbsd.org/pub/OpenBSD/4.1/landisk/bsd .</b>
+	<b>cp ftp.se.openbsd.org/pub/OpenBSD/4.1/landisk/bsd.rd .</b>
 
 </pre>
 	(Replace ftp.se.openbsd.org with a server closer to you, for
-	increased download speed. Also, when OpenBSD 4.1 has been released,
-	changing 'snapshots' to '4.1' should hopefully work.)
+	increased download speed.)
   <p>
   <li>You now need to make an ISO image of the entire directory you downloaded.
 	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
 	already have <tt>mkisofs</tt> installed on your system, you need
 	to install it in order to do this.)<pre>
-	<b>mkisofs -allow-lowercase -o openbsd_landisk_snapshot.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
+	<b>mkisofs -U -o openbsd_landisk_4.1.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
 	<b>rm -rf ftp.se.openbsd.org</b>      <i>(this directory is not needed anymore)</i>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -x -E landisk -d obsd_landisk.img -d d:openbsd_landisk_snapshot.iso bsd.rd</b>
+	<b>gxemul -x -E landisk -d obsd_landisk.img -d d:openbsd_landisk_4.1.iso bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
@@ -1497,7 +1486,7 @@ follow these instructions:
 	  <li>Location of sets = <b>disk</b>
 	  <li>Is the disk partition already mounted = <b>no</b>
 	  <li>Disk containing the install media = <b>wd1</b>
-	  <li>Pathname to the sets = <b>snapshot/landisk</b>
+	  <li>Pathname to the sets = <b>4.1/landisk</b>
 	</ul>
 </ol>
 

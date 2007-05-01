@@ -1,4 +1,4 @@
-$Id: README,v 1.121 2007-04-19 16:54:03 debug Exp $
+$Id: README,v 1.122 2007-05-01 03:31:37 debug Exp $
 
 Working on what will become 0.4.5.1
 
@@ -18,7 +18,7 @@ emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-Processors (ARM, MIPS, PowerPC, SuperH) are emulated using dynamic 
+Processors (ARM, MIPS, PowerPC, and SuperH) are emulated using dynamic 
 translation. Unlike some other dynamically translating emulators, GXemul 
 does not need to generate native code, only a "runnable intermediate 
 representation", and will thus run on any host architecture.

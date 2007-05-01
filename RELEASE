@@ -1,12 +1,11 @@
-$Id: RELEASE,v 1.271 2007-04-29 02:27:36 debug Exp $
+$Id: RELEASE,v 1.272 2007-05-01 05:26:48 debug Exp $
 
-Currently working on what will become 0.4.5.1, which is 0.4.5 + some
-SuperH updates to allow OpenBSD/landisk to run).
+Currently working on what will become 0.4.6.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.5.1
-==================================================================
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.6
+================================================================
 
 Copyright (C) 2003-2007  Anders Gavare.
 
@@ -26,31 +25,9 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax and NetBSD/cats.
 
 
-The changes between release 0.4.4.1 and 0.4.5 include, among other things:
+The changes between release 0.4.5.1 and 0.4.6 include, among other things:
 
-    o)	Initial support for "disk overlays" has been implemented. This
-	enables e.g. simple roll-back of emulated disk contents to a
-	previous state.
-
-    o)	Dyntrans bug fixes; code translations on physical addresses that
-	were offset a multiple of 128 MB from each other could either
-	cause weird bugs, or translation leaks (leading to unnecessary
-	dyntrans cache overflows).
-
-    o)	Some cleanup: The GDB debugging stub support, some dummy machine
-	modes (TS7200, Walnut, PB1000, and Meshcube), and some dummy or
-	experimental CPUs (RCA180x and Transputer) have been removed, to
-	make the emulator slightly more maintainable.
-
-The changes between release 0.4.5 and 0.4.5.1 include, among other things:
-
-    o)	OpenBSD/landisk has now had its first release (4.1, 2007-05-01).
-	Landisk emulation is now stable enough to allow OpenBSD/landisk
-	to be installed onto a disk image, and run from it.
-
-    o)	Finally found and fixed an old bug in the address to symbol name
-	lookup mechanism, which caused some symbols to be missed. Debug
-	output with -t or -i should now show all symbols.
+    o)	TODO ...
 
 Please read the HISTORY file for more details.
 

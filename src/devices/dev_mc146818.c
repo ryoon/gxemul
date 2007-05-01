@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.95 2007-02-03 16:55:55 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.96 2007-05-01 05:26:48 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -635,9 +635,9 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	}
 
 	if (access_style == MC146818_DEC) {
-	/*  Station Ethernet Address, on DECstation 3100:  */
-	for (i=0; i<6; i++)
-		ether_address[i] = 0x10 * (i+1);
+		/*  Station Ethernet Address, on DECstation 3100:  */
+		for (i=0; i<6; i++)
+			ether_address[i] = 0x10 * (i+1);
 
 		d->reg[0x01] = ether_address[0];
 		d->reg[0x05] = ether_address[1];

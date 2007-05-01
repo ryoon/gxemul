@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.41 2007-04-28 09:19:34 debug Exp $
+ *  $Id: cpu_sh.h,v 1.42 2007-05-01 05:26:48 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -54,7 +54,7 @@ struct sh_cpu_type_def {
 	{ "SH7750",  32, 4, SH4_PVR_SH7750, 0	                 }, \
 	{ "SH7750R", 32, 4, SH4_PVR_SH7750, SH4_PRR_7750R	 }, \
 	{ "SH7751R", 32, 4, SH4_PVR_SH7751, SH4_PRR_7751R	 }, \
-	{ "SH5",     64, 5, 0,              0	                 }, \
+	/* { "SH5",  64, 5, 0,              0	                 }, */ \
 	{ NULL,       0, 0, 0,              0	                 }  }
 
 

@@ -1,37 +1,4 @@
-$Id: TODO,v 1.489 2007-05-01 04:05:06 debug Exp $
-
---------------------------------------------
-
-Testing for the next release (0.4.5.1):
-
-TEST DISK OVERLAY IMAGES
-TEST LANDISK/SUPERH EMULATION MODES
-REGRESSION TESTS FOR ALL OTHER SUPPORTED GUEST OSES
-
-# NetBSD/pmax 3.1 or 1.6.2	OK
-# NetBSD/arc 1.6.2		OK
-# NetBSD/hpcmips 3.1		OK
-# NetBSD/cobalt 3.1		OK
-# NetBSD/evbmips 3.1		OK
-# NetBSD/algor 3.1		OK
-# NetBSD/sgimips 3.1		OK
-# NetBSD/cats 3.1		OK
-# NetBSD/evbarm 2.1		OK
-# NetBSD/netwinder 3.1		OK
-# NetBSD/prep 2.1		OK
-# NetBSD/macppc 3.1		OK
-# NetBSD/dreamcast 3.1 MD	OK
-# NetBSD/dreamcast 3.1 LiveCD	OK
-# Linux/dreamcast Live CD	OK
-# OpenBSD/pmax 2.8-BETA		not tested because of lack of time
-# OpenBSD/cats 4.0		OK
-# OpenBSD/landisk 4.1		OK
-# Ultrix/RISC 4.5		OK
-# Sprite for DECstation		OK
-# Debian GNU/Linux for pmax	not tested because of lack of time
-
-Optional:
-# OpenBSD/sgi			FAILED to boot after setup (as expected)
+$Id: TODO,v 1.490 2007-05-01 05:26:48 debug Exp $
 
 --------------------------------------------
 
@@ -444,8 +411,8 @@ Clocks and timers:
 	x)  Fix the PowerPC DECR interrupt speed! (MacPPC and PReP speed, etc.)
 	x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 	x)  Test the 8253? Right now it doesn't seem to be used?
-	x)  NetWinder timeofday is incorrect! It seems to be exactly
-	    1 day ahead of actual time?
+	x)  NetWinder timeofday is incorrect! Huh? grep -R for ta_rtc_read in
+	    NetBSD sources; it doesn't seem to be initialized _AT ALL_?!
 	x)  Cobalt TOD is incorrect!
 	x)  Go through all other machines, one by one, and fix them.
 

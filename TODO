@@ -1,4 +1,4 @@
-$Id: TODO,v 1.487 2007-04-29 13:44:27 debug Exp $
+$Id: TODO,v 1.488 2007-05-01 04:03:51 debug Exp $
 
 --------------------------------------------
 
@@ -16,27 +16,27 @@ REGRESSION TESTS FOR ALL OTHER SUPPORTED GUEST OSES
 # NetBSD/algor 3.1		OK
 # NetBSD/sgimips 3.1		OK
 # NetBSD/cats 3.1		OK
-# NetBSD/evbarm 2.1		.
-# NetBSD/netwinder 3.1		.
-# NetBSD/prep 2.1		ongoing
+# NetBSD/evbarm 2.1		OK
+# NetBSD/netwinder 3.1		OK
+# NetBSD/prep 2.1		OK
 # NetBSD/macppc 3.1		OK
 # NetBSD/dreamcast 3.1 MD	OK
 # NetBSD/dreamcast 3.1 LiveCD	OK
 # Linux/dreamcast Live CD	OK
-# OpenBSD/pmax 2.8-BETA		.
+# OpenBSD/pmax 2.8-BETA		not tested because of lack of time
 # OpenBSD/cats 4.0		OK
-# OpenBSD/landisk 4.1		OK
+# OpenBSD/landisk 4.1		ongoing
 # Ultrix/RISC 4.5		OK
 # Sprite for DECstation		OK
-# Debian GNU/Linux for pmax	. 
+# Debian GNU/Linux for pmax	not tested because of lack of time
 
 Optional:
-# OpenBSD/sgi			ongoing
+# OpenBSD/sgi			FAILED to boot after setup (as expected)
 
 --------------------------------------------
 
 Some things, in totally random order, that I'd like to fix:
-(Some items in this list are probably out-to-date by now.)
+(Some items in this list are possibly out-of-date by now.)
 
 Dyntrans:
 	x)  Instruction combination collisions? How to avoid easily...
@@ -444,7 +444,8 @@ Clocks and timers:
 	x)  Fix the PowerPC DECR interrupt speed! (MacPPC and PReP speed, etc.)
 	x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 	x)  Test the 8253? Right now it doesn't seem to be used?
-	x)  NetWinder timeofday is incorrect!
+	x)  NetWinder timeofday is incorrect! It seems to be exactly
+	    1 day ahead of actual time?
 	x)  Cobalt TOD is incorrect!
 	x)  Go through all other machines, one by one, and fix them.
 

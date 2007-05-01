@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.6 2007-05-01 15:31:12 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.7 2007-05-01 15:36:57 debug Exp $
  *
  *  M88K instructions.
  *
@@ -102,6 +102,9 @@ X(or_r0_imm)
  *  arg[0] = pointer to register d (containing the value to store)
  *  arg[1] = pointer to register s1 (base register)
  *  arg[2] = offset
+ *
+ *  TODO: Build-time generated shorter versions, without the
+ *        conditional endianness check etc.
  */
 X(st)
 {

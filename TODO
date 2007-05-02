@@ -1,4 +1,4 @@
-$Id: TODO,v 1.490 2007-05-01 05:26:48 debug Exp $
+$Id: TODO,v 1.491 2007-05-02 08:26:12 debug Exp $
 
 --------------------------------------------
 
@@ -81,7 +81,6 @@ Simple Valgrind-like checks?
 
 MIPS:
 	o)  Nicer MIPS status bits in register dumps.
-	o)  Alignment exceptions.
 	o)  Floating point exception correctness.
 	o)  Fix this? Triggered by NetBSD/sgimips? Hm:
 		to_be_translated(): TODO: unimplemented instruction:

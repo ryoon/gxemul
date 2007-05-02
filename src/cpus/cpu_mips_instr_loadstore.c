@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.13 2006-12-30 13:30:54 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.14 2007-05-02 08:26:12 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -59,14 +59,25 @@ void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
 #ifndef LS_1
 	/*  Check alignment:  */
 	if (addr & (LS_SIZE - 1)) {
-		fatal("TODO: mips dyntrans alignment exception, size = %i,"
-		    " addr = %016"PRIx64", pc = %016"PRIx64"\n", LS_SIZE,
+#if 1
+		/*  Cause an address alignment exception:  */
+		mips_cpu_exception(cpu,
+#ifdef LS_LOAD
+		    EXCEPTION_ADEL,
+#else
+		    EXCEPTION_ADES,
+#endif
+		    0, addr, 0, 0, 0, 0);
+#else
+		fatal("{ mips dyntrans alignment exception, size = %i,"
+		    " addr = %016"PRIx64", pc = %016"PRIx64" }\n", LS_SIZE,
 		    (uint64_t) addr, cpu->pc);
 
 		/*  TODO: Generalize this into a abort_call, or similar:  */
 		cpu->running = 0;
 		debugger_n_steps_left_before_interaction = 0;
 		cpu->cd.mips.next_ic = &nothing_call;
+#endif
 		return;
 	}
 #endif

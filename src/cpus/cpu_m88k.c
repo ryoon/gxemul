@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.9 2007-05-01 15:31:12 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.10 2007-05-02 08:37:04 debug Exp $
  *
- *  M88K CPU emulation.
+ *  Motorola M881x0 CPU emulation.
  */
 
 #include <stdio.h>
@@ -123,7 +123,6 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	for (i=0; i<N_M88K_REGS - 1; i++) {
 		char name[10];
-
 		snprintf(name, sizeof(name), "r%i", i);
 		CPU_SETTINGS_ADD_REGISTER32(name, cpu->cd.m88k.r[i]);
 	}
@@ -133,6 +132,7 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 		snprintf(name, sizeof(name), "%s", m88k_cr_name(cpu, i));
 		CPU_SETTINGS_ADD_REGISTER32(name, cpu->cd.m88k.cr[i]);
 	}
+
 
 	/*  Register the CPU interrupt pin:  */
 	{
@@ -211,8 +211,12 @@ int m88k_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 	case 0x37:	/*  bb1.n  */
 	case 0x3b:	/*  bcnd.n  */
 		return 1;
-
-	/*  TODO: jsr.n, jmp.n  */
+	case 0x3d:
+		switch ((iword >> 8) & 0xff) {
+		case 0xc4:	/*  jmp.n  */
+		case 0xcc:	/*  jsr.n  */
+			return 1;
+		}
 	}
 
 	return 0;

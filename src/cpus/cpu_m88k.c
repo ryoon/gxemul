@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.10 2007-05-02 08:37:04 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.11 2007-05-03 13:09:27 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -66,6 +66,14 @@ static char *m88k_cr_name(struct cpu *cpu, int i)
 		cr_names = m88k_cr_197_names;
 
 	return cr_names[i];
+}
+
+static char *m88k_fcr_name(struct cpu *cpu, int fi)
+{
+	/*  TODO  */
+	static char fcr_name[10];
+	snprintf(fcr_name, sizeof(fcr_name), "fcr%i", fi);
+	return fcr_name;
 }
 
 
@@ -366,6 +374,8 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	switch (op26) {
 
+	case 0x02:	/*  ld.hu  */
+	case 0x03:	/*  ld.bu  */
 	case 0x04:	/*  ld.d  */
 	case 0x05:	/*  ld    */
 	case 0x06:	/*  ld.h  */
@@ -374,9 +384,13 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x09:	/*  st    */
 	case 0x0a:	/*  st.h  */
 	case 0x0b:	/*  st.b  */
-		debug("%s%s\tr%i,r%i,%i",
-		    op26 >= 0x08? "st" : "ld",
-		    memop[op26 & 3], d, s1, imm16);
+		switch (op26) {
+		case 0x02:  debug("ld.hu"); break;
+		case 0x03:  debug("ld.bu"); break;
+		default:    debug("%s%s", op26 >= 0x08? "st" : "ld",
+				memop[op26 & 3]);
+		}
+		debug("\tr%i,r%i,%i", d, s1, imm16);
 		if (running) {
 			uint32_t tmpaddr = cpu->cd.m88k.r[s1] + imm16;
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
@@ -531,16 +545,29 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		if ((iw & 0x001ff81f) == 0x00004000) {
 			debug("ldcr\tr%i,%s\n", d,
 			    m88k_cr_name(cpu, cr6));
+		} else if ((iw & 0x001ff81f) == 0x00004800) {
+			debug("fldcr\tr%i,%s\n", d,
+			    m88k_fcr_name(cpu, cr6));
 		} else if ((iw & 0x03e0f800) == 0x00008000) {
 			debug("stcr\tr%i,%s", s1,
 			    m88k_cr_name(cpu, cr6));
-			if (s1 != (iw & 0x1f))
+			if (s1 != s2)
 				debug("\t\t; NOTE: weird encoding: "
-				    "low 5 bits = 0x%02x", iw&0x1f);
+				    "low 5 bits = 0x%02x", s2);
+			debug("\n");
+		} else if ((iw & 0x03e0f800) == 0x00008800) {
+			debug("fstcr\tr%i,%s", s1,
+			    m88k_fcr_name(cpu, cr6));
+			if (s1 != s2)
+				debug("\t\t; NOTE: weird encoding: "
+				    "low 5 bits = 0x%02x", s2);
 			debug("\n");
 		} else if ((iw & 0x0000f81f) == 0x0000c000) {
 			debug("xcr\tr%i,r%i,%s\n", d, s1,
 			    m88k_cr_name(cpu, cr6));
+		} else if ((iw & 0x0000f81f) == 0x0000c800) {
+			debug("xcr\tr%i,r%i,%s\n", d, s1,
+			    m88k_fcr_name(cpu, cr6));
 		} else {
 			debug("UNIMPLEMENTED 0x20\n");
 		}
@@ -627,11 +654,27 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x54:	/*  xor.c  */
 		case 0x58:	/*  or  */
 		case 0x5c:	/*  or.c  */
+		case 0x60:	/*  addu  */
+		case 0x61:	/*  addu.co  */
+		case 0x62:	/*  addu.ci  */
+		case 0x63:	/*  addu.cio  */
+		case 0x64:	/*  subu  */
+		case 0x65:	/*  subu.co  */
+		case 0x66:	/*  subu.ci  */
+		case 0x67:	/*  subu.cio  */
 		case 0x68:	/*  divu  */
 		case 0x69:	/*  divu.d  */
 		case 0x6c:	/*  mul  */
 		case 0x6d:	/*  mulu.d  */
 		case 0x6e:	/*  muls  */
+		case 0x70:	/*  add  */
+		case 0x71:	/*  add.co  */
+		case 0x72:	/*  add.ci  */
+		case 0x73:	/*  add.cio  */
+		case 0x74:	/*  sub  */
+		case 0x75:	/*  sub.co  */
+		case 0x76:	/*  sub.ci  */
+		case 0x77:	/*  sub.cio  */
 		case 0x78:	/*  div  */
 		case 0x7c:	/*  cmp  */
 		case 0x80:	/*  clr  */
@@ -648,11 +691,27 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			case 0x54: mnem = "xor.c"; break;
 			case 0x58: mnem = "or"; break;
 			case 0x5c: mnem = "or.c"; break;
+			case 0x60: mnem = "addu"; break;
+			case 0x61: mnem = "addu.co"; break;
+			case 0x62: mnem = "addu.ci"; break;
+			case 0x63: mnem = "addu.cio"; break;
+			case 0x64: mnem = "subu"; break;
+			case 0x65: mnem = "subu.co"; break;
+			case 0x66: mnem = "subu.ci"; break;
+			case 0x67: mnem = "subu.cio"; break;
 			case 0x68: mnem = "divu"; break;
 			case 0x69: mnem = "divu.d"; break;
 			case 0x6c: mnem = "mul"; break;
 			case 0x6d: mnem = "mulu.d"; break;
 			case 0x6e: mnem = "muls"; break;
+			case 0x70: mnem = "add"; break;
+			case 0x71: mnem = "add.co"; break;
+			case 0x72: mnem = "add.ci"; break;
+			case 0x73: mnem = "add.cio"; break;
+			case 0x74: mnem = "sub"; break;
+			case 0x75: mnem = "sub.co"; break;
+			case 0x76: mnem = "sub.ci"; break;
+			case 0x77: mnem = "sub.cio"; break;
 			case 0x78: mnem = "div"; break;
 			case 0x7c: mnem = "cmp"; break;
 			case 0x80: mnem = "clr"; break;
@@ -683,6 +742,14 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 					debug("0x%08"PRIx32, tmpaddr);
 			}
 			break;
+		case 0xe8:	/*  ff1  */
+		case 0xec:	/*  ff0  */
+			debug("%s\tr%i,r%i\n",
+			    ((iw >> 8) & 0xff) == 0xe8 ? "ff1" : "ff0", d, s2);
+			break;
+		case 0xf8:	/*  tbnd  */
+			debug("tbnd\tr%i,r%i\n", s1, s2);
+			break;
 		case 0xfc:
 			switch (iw & 0xff) {
 			case 0x00:
@@ -700,6 +767,10 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		default:debug("UNIMPLEMENTED 0x3d, opbyte = 0x%02x\n",
 			    (iw >> 8) & 0xff);
 		}
+		break;
+
+	case 0x3e:
+		debug("tbnd\tr%i,0x%x\n", s1, imm16);
 		break;
 
 	default:debug("UNIMPLEMENTED op26=0x%02x\n", op26);

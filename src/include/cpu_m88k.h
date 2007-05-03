@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.5 2007-05-01 12:53:00 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.6 2007-05-03 13:09:27 debug Exp $
  */
 
 #include "misc.h"
@@ -137,6 +137,8 @@ struct m88k_cpu_type_def {
 #define M88K_CR_DLAR    50
 #define M88K_CR_DPAR    51
 
+#define	N_M88K_FPU_CONTROL_REGS		64
+
 
 #define	M88K_N_IC_ARGS			3
 #define	M88K_INSTR_ALIGNMENT_SHIFT	2
@@ -169,6 +171,10 @@ struct m88k_cpu {
 	/*  Control Registers:  */
 	uint32_t		cr[N_M88K_CONTROL_REGS];
 
+	/*  Floating Point registers:  */
+	uint32_t		fcr[N_M88K_FPU_CONTROL_REGS];
+
+	/*  Current interrupt assertion:  */
 	int			irq_asserted;
 
 

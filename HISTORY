@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1541 2007-05-02 08:26:11 debug Exp $
+$Id: HISTORY,v 1.1542 2007-05-03 13:09:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3465,3 +3465,4 @@ Changelog for GXemul:
 		more instructions).
 		Adding a dummy mvme88k machine mode.
 20070502	Re-adding MIPS load/store alignment exceptions.
+20070503	Implementing more of the M88K disassembly code.

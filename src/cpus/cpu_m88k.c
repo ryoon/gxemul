@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.11 2007-05-03 13:09:27 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.12 2007-05-03 14:03:55 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -72,7 +72,7 @@ static char *m88k_fcr_name(struct cpu *cpu, int fi)
 {
 	/*  TODO  */
 	static char fcr_name[10];
-	snprintf(fcr_name, sizeof(fcr_name), "fcr%i", fi);
+	snprintf(fcr_name, sizeof(fcr_name), "FCR%i", fi);
 	return fcr_name;
 }
 
@@ -139,6 +139,12 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 		char name[10];
 		snprintf(name, sizeof(name), "%s", m88k_cr_name(cpu, i));
 		CPU_SETTINGS_ADD_REGISTER32(name, cpu->cd.m88k.cr[i]);
+	}
+
+	for (i=0; i<N_M88K_FPU_CONTROL_REGS; i++) {
+		char name[10];
+		snprintf(name, sizeof(name), "%s", m88k_fcr_name(cpu, i));
+		CPU_SETTINGS_ADD_REGISTER32(name, cpu->cd.m88k.fcr[i]);
 	}
 
 
@@ -276,6 +282,19 @@ void m88k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				debug("cpu%i:", x);
 			debug("  %4s=0x%08"PRIx32,
 			    m88k_cr_name(cpu, i), cpu->cd.m88k.cr[i]);
+			if ((i % 4) == 3)
+				debug("\n");
+		}
+	}
+
+	if (coprocs & 2) {
+		int n_fpu_control_regs = 64;
+
+		for (i=0; i<n_fpu_control_regs; i++) {
+			if ((i % 4) == 0)
+				debug("cpu%i:", x);
+			debug("  %5s=0x%08"PRIx32,
+			    m88k_fcr_name(cpu, i), cpu->cd.m88k.fcr[i]);
 			if ((i % 4) == 3)
 				debug("\n");
 		}

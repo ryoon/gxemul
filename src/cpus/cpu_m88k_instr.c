@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.7 2007-05-01 15:36:57 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.8 2007-05-04 13:33:02 debug Exp $
  *
  *  M88K instructions.
  *
@@ -54,7 +54,8 @@ X(nop)
 
 
 /*
- *  br_samepage:  Branch (to within the same translated page)
+ *  br_samepage:    Branch (to within the same translated page)
+ *  br_n_samepage:  Branch (to within the same translated page) with delay slot
  *
  *  arg[0] = pointer to new instr_call
  */
@@ -62,10 +63,20 @@ X(br_samepage)
 {
 	cpu->cd.m88k.next_ic = (struct m88k_instr_call *) ic->arg[0];
 }
+X(br_n_samepage)
+{
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT))
+		cpu->cd.m88k.next_ic = (struct m88k_instr_call *) ic->arg[0];
+	cpu->delay_slot = NOT_DELAYED;
+}
 
 
 /*
- *  br:  Branch (to a different translated page)
+ *  br:    Branch (to a different translated page)
+ *  br.n:  Branch (to a different translated page) with delay slot
  *
  *  arg[0] = relative offset from start of page
  */
@@ -76,10 +87,28 @@ X(br)
 	/*  Find the new physical page and update the translation pointers:  */
 	quick_pc_to_pointers(cpu);
 }
+X(br_n)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		old_pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
+		    M88K_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc = old_pc + (int32_t)ic->arg[2];
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
 
 
 /*
  *  or_imm:     d = s1 | imm
+ *  xor_imm:    d = s1 ^ imm
+ *  and_imm:    d = s1 & imm
  *  or_r0_imm:  d = imm		(optimized case when s1 = r0)
  *
  *  arg[0] = pointer to register d
@@ -89,6 +118,14 @@ X(br)
 X(or_imm)
 {
 	reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2];
+}
+X(xor_imm)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2];
+}
+X(and_imm)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2];
 }
 X(or_r0_imm)
 {
@@ -225,7 +262,7 @@ X(to_be_translated)
 	int32_t d16, d26, simm16;
 	int offset, shift;
 	int in_crosspage_delayslot = 0;
-	void (*samepage_function)(struct cpu *, struct m88k_instr_call *);
+	void (*samepage_function)(struct cpu *, struct m88k_instr_call *)=NULL;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.m88k.cur_ic_page)
@@ -303,10 +340,18 @@ X(to_be_translated)
 		}
 		break;
 
-	case 0x16:	/*  or   imm  */
-	case 0x17:	/*  or.u imm  */
+	case 0x10:	/*  and   imm  */
+	case 0x11:	/*  and.u imm  */
+	case 0x14:	/*  xor   imm  */
+	case 0x15:	/*  xor.u imm  */
+	case 0x16:	/*  or    imm  */
+	case 0x17:	/*  or.u  imm  */
 		shift = 0;
 		switch (op26) {
+		case 0x10: ic->f = instr(and_imm); break;
+		case 0x11: ic->f = instr(and_imm); shift = 16; break;
+		case 0x14: ic->f = instr(xor_imm); break;
+		case 0x15: ic->f = instr(xor_imm); shift = 16; break;
 		case 0x16: ic->f = instr(or_imm); break;
 		case 0x17: ic->f = instr(or_imm); shift = 16; break;
 		}
@@ -324,8 +369,17 @@ X(to_be_translated)
 		break;
 
 	case 0x30:	/*  br  */
-		ic->f = instr(br);
-		samepage_function = instr(br_samepage);
+	case 0x31:	/*  br.n  */
+		switch (op26) {
+		case 0x30:
+			ic->f = instr(br);
+			samepage_function = instr(br_samepage);
+			break;
+		case 0x31:
+			ic->f = instr(br_n);
+			samepage_function = instr(br_n_samepage);
+			break;
+		}
 
 		offset = (addr & 0xffc) + d26;
 		if (offset >= 0 && offset <= 0xffc) {

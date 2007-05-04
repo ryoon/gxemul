@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1543 2007-05-04 10:25:46 debug Exp $
+$Id: HISTORY,v 1.1544 2007-05-04 13:33:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3467,3 +3467,5 @@ Changelog for GXemul:
 20070502	Re-adding MIPS load/store alignment exceptions.
 20070503	Implementing more of the M88K disassembly code.
 20070504	Adding disassembly of some more M88K load/store instructions.
+		Implementing some relatively simple M88K instructions (br.n,
+		xor[.u], and[.u]).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.13 2007-05-04 10:25:46 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.14 2007-05-04 13:33:02 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -585,7 +585,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("xcr\tr%i,r%i,%s\n", d, s1,
 			    m88k_cr_name(cpu, cr6));
 		} else if ((iw & 0x0000f81f) == 0x0000c800) {
-			debug("xcr\tr%i,r%i,%s\n", d, s1,
+			debug("fxcr\tr%i,r%i,%s\n", d, s1,
 			    m88k_fcr_name(cpu, cr6));
 		} else {
 			debug("UNIMPLEMENTED 0x20\n");
@@ -791,7 +791,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0xc4:	/*  jmp.n  */
 		case 0xc8:	/*  jsr  */
 		case 0xcc:	/*  jsr.n  */
-			debug("%s%s\t(r%i)\n",
+			debug("%s%s\t(r%i)",
 			    op11 & 1? "jsr" : "jmp",
 			    iw & 0x400? ".n" : "",
 			    s2);
@@ -805,6 +805,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				else
 					debug("0x%08"PRIx32, tmpaddr);
 			}
+			debug("\n");
 			break;
 		case 0xe8:	/*  ff1  */
 		case 0xec:	/*  ff0  */

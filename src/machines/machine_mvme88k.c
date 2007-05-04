@@ -25,12 +25,25 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.2 2007-05-01 15:31:12 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.3 2007-05-04 13:33:02 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
  *
  *  TODO: This is completely bogus so far.
+ *
+ *  MVME187 according to http://mcg.motorola.com/us/products/docs/pdf/187igd.pdf
+ *  ("MVME187 RISC Single Board Computer Installation Guide"):
+ *
+ *	88100 MPU, two MC88200 or MC88204 CMMUs (one for data cache and
+ *		one for instruction cache).
+ *	82596CA LAN Ethernet
+ *	53C710 SCSI
+ *	CD2401 SCC SERIAL IO
+ *	PRINTER PORT
+ *	MK48T08 BBRAM & CLOCK
+ *	EPROM
+ *	VME bus
  */
 
 #include <stdio.h>

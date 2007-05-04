@@ -1,18 +1,21 @@
-$Id: TODO,v 1.492 2007-05-03 13:09:27 debug Exp $
+$Id: TODO,v 1.493 2007-05-04 09:30:55 debug Exp $
 
 --------------------------------------------
-
-* Landisk => exakt maskinmodell i dokumentationen!
-
-* Hur välja Landisk-modell? Jämför med OpenBSD-källkod.
 
 * M88K! När manualerna har kommit:
 	Gå igenom de instruktioner som är implementerade redan!
 	Gå igenom all disassembly!
+		Kvar borde vara load/stores, xmem, .usr* och flyttalssaker.
 	Implementera instruktioner!
+		Gör om load/store till automatgenererade!
+		Alla branches.
+		Alla logiska/aritmetiska.
+		Compare-bitar!
+		Övriga...
 	Implementera controlregister och dylikt.
 	Implementera devices.
 	Implementera MMU, cachar, osv.
+	BUG PROM call emulation. (kanske både för 88k och 68k?)
 
 * Native code generation backend:
 	Experimentera med M88K på AMD64 först, endast, för att

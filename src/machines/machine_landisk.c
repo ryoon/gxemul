@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.15 2007-04-22 03:57:38 debug Exp $
+ *  $Id: machine_landisk.c,v 1.16 2007-05-04 09:30:43 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -41,6 +41,9 @@
  *
  *  TODO:
  *	Realtek NIC (irq 5), PCIIDE (irq 6), USB controllers, etc.
+ *
+ *  TODO 2:
+ *	Make it possible to select different landisk models.
  */
 
 #include <stdio.h>

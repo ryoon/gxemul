@@ -1,11 +1,12 @@
-$Id: TODO,v 1.493 2007-05-04 09:30:55 debug Exp $
+$Id: TODO,v 1.494 2007-05-04 10:25:46 debug Exp $
 
 --------------------------------------------
 
 * M88K! När manualerna har kommit:
 	Gå igenom de instruktioner som är implementerade redan!
 	Gå igenom all disassembly!
-		Kvar borde vara load/stores, xmem, .usr* och flyttalssaker.
+		Kontrollera korrekthet!
+		Kvar borde nästan endast bara vara flyttalssaker.
 	Implementera instruktioner!
 		Gör om load/store till automatgenererade!
 		Alla branches.

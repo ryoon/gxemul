@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.12 2007-05-03 14:03:55 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.13 2007-05-04 10:25:46 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -631,7 +631,26 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 
 	case 0x3c:
-		switch (op10) {
+		if ((iw & 0x0000f000)==0x1000 || (iw & 0x0000f000)==0x2000) {
+			/*  Load/store:  */
+			debug("%s", (iw & 0x0000f000) == 0x1000? "ld" : "st");
+			switch (iw & 0x00000c00) {
+			case 0x000: debug(".d"); break;
+			case 0x400: break;
+			case 0x800: debug(".x"); break;
+			default: debug(".UNIMPLEMENTED");
+			}
+			if (iw & 0x100)
+				debug(".usr");
+			if (iw & 0x80)
+				debug(".wt");
+			debug("\tr%i,r%i", d, s1);
+			if (iw & 0x200)
+				debug("[r%i]", s2);
+			else
+				debug(",r%i", s2);
+			debug("\n");
+		} else switch (op10) {
 		case 0x20:	/*  clr  */
 		case 0x22:	/*  set  */
 		case 0x24:	/*  ext  */
@@ -666,7 +685,33 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 
 	case 0x3d:
-		switch ((iw >> 8) & 0xff) {
+		if ((iw & 0xf000) >= 0x0000 && (iw & 0xf000) <= 0x3fff) {
+			/*  Load, Store, xmem, and lda:  */
+			switch (iw & 0xf000) {
+			case 0x2000: debug("st"); break;
+			case 0x3000: debug("lda"); break;
+			default:     if ((iw & 0xf800) >= 0x0800)
+					  debug("ld");
+				     else
+					  debug("xmem");
+			}
+			if ((iw & 0xf000) >= 0x1000)	/*  ld, st, lda  */
+				debug("%s", memop[(iw >> 10) & 3]);
+			else if ((iw & 0xf800) == 0x0000)/*  xmem  */
+				debug("%s", (iw & 0x800) <= 0x300? ".bu" : "");
+			else				/*  ld  */
+				debug("%s", (iw & 0xf00) < 0xc00? ".hu":".bu");
+			if (iw & 0x100)
+				debug(".usr");
+			if (iw & 0x80)
+				debug(".wt");
+			debug("\tr%i,r%i", d, s1);
+			if (iw & 0x200)
+				debug("[r%i]", s2);
+			else
+				debug(",r%i", s2);
+			debug("\n");
+		} else switch ((iw >> 8) & 0xff) {
 		case 0x40:	/*  and  */
 		case 0x44:	/*  and.c  */
 		case 0x50:	/*  xor  */

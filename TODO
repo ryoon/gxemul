@@ -1,12 +1,8 @@
-$Id: TODO,v 1.496 2007-05-05 11:43:51 debug Exp $
+$Id: TODO,v 1.497 2007-05-05 13:01:28 debug Exp $
 
 --------------------------------------------
 
 MIPS Linux:
-	* Uppdatera dokumentationen med bättre instruktioner för
-	  att köra Redhat!
-	* Uppdatera dokumentationen med bättre instruktioner för
-	  att experimentera med Linux/evbmips (Malta).
 	* Linux/QEMU_MIPS funkar inte längre?
 
 * M88K! När manualerna har kommit:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.9 2006-12-30 13:31:03 debug Exp $
+ *  $Id: yamon.c,v 1.10 2007-05-05 11:43:51 debug Exp $
  *
  *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
@@ -143,6 +143,8 @@ int yamon_emul(struct cpu *cpu)
 	uint32_t ofs = (cpu->pc & 0xff) + YAMON_FUNCTION_BASE;
 	uint8_t ch;
 	int n;
+	uint32_t oid;
+	uint64_t paddr, psize;
 
 	switch (ofs) {
 
@@ -190,15 +192,40 @@ int yamon_emul(struct cpu *cpu)
 
 	case YAMON_SYSCON_READ_OFS:
 		/*
-		 *  syscon
+		 *  syscon_read(oid [a0], addr [a1], size [a2])
 		 */
-		fatal("[ yamon_emul(): syscon: TODO ]\n");
 
-		/*  TODO. For now, return some kind of "failure":  */
-		cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
+		oid = cpu->cd.mips.gpr[MIPS_GPR_A0];
+		paddr = cpu->cd.mips.gpr[MIPS_GPR_A1];
+		psize = cpu->cd.mips.gpr[MIPS_GPR_A2];
+
+		switch (oid) {
+		case SYSCON_BOARD_CPU_CLOCK_FREQ_ID:
+			if (psize == sizeof(uint32_t)) {
+				uint32_t freq = cpu->machine->emulated_hz;
+
+				debug("[ yamon_emul(): reporting CPU "
+				    "frequency of %"PRIu32" ]\n", freq);
+
+				cpu->memory_rw(cpu, cpu->mem, (int32_t)paddr,
+				    (void *) &freq, sizeof(freq), MEM_WRITE,
+				    CACHE_DATA | NO_EXCEPTIONS);
+
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
+			} else {
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
+			}
+			break;
+
+		default:
+			fatal("[ yamon_emul(): unimplemented object id 0x%"
+			    PRIx32" ]\n", oid);
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
+		}
 		break;
 
-	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
+	default:
+		cpu_register_dump(cpu->machine, cpu, 1, 0);
 		printf("\n");
 		fatal("[ yamon_emul(): unimplemented yamon function 0x%"
 		    PRIx32" ]\n", ofs);

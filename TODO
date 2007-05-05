@@ -1,6 +1,12 @@
-$Id: TODO,v 1.494 2007-05-04 10:25:46 debug Exp $
+$Id: TODO,v 1.495 2007-05-05 02:59:37 debug Exp $
 
 --------------------------------------------
+
+MIPS Linux:
+	* Uppdatera dokumentationen med bättre instruktioner för
+	  att köra Redhat!
+	* Uppdatera dokumentationen med bättre instruktioner för
+	  att experimentera med Linux/evbmips (Malta).
 
 * M88K! När manualerna har kommit:
 	Gå igenom de instruktioner som är implementerade redan!

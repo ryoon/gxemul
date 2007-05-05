@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1544 2007-05-04 13:33:01 debug Exp $
+$Id: HISTORY,v 1.1545 2007-05-05 02:59:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3468,4 +3468,5 @@ Changelog for GXemul:
 20070503	Implementing more of the M88K disassembly code.
 20070504	Adding disassembly of some more M88K load/store instructions.
 		Implementing some relatively simple M88K instructions (br.n,
-		xor[.u], and[.u]).
+		xor[.u] imm, and[.u] imm).
+20070505	Implementing M88K three-register and, or, xor, and jmp[.n].

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.14 2007-05-04 13:33:02 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.15 2007-05-05 02:59:37 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -498,12 +498,12 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("%s%s\t", mnem, op26 & 1? ".u" : "");
 		debug("r%i,r%i,0x%x", d, s1, imm16);
 
-		if (op26 == 0x16 && d == s1 && d != M88K_ZERO_REG) {
+		if (op26 == 0x16 && d != M88K_ZERO_REG) {
 			/*
 			 *  The following instruction sequence is common:
 			 *
 			 *  or.u   rX,r0,A
-			 *  or     rX,rX,B	; rX = AAAABBBB
+			 *  or     rY,rX,B	; rY = AAAABBBB
 			 */
 
 			/*  Try loading the instruction before the

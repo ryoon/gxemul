@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.8 2007-05-04 13:33:02 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.9 2007-05-05 02:59:37 debug Exp $
  *
  *  M88K instructions.
  *
@@ -106,6 +106,33 @@ X(br_n)
 
 
 /*
+ *  jmp:   Jump to register
+ *  jmp.n: Jump to register, with delay slot
+ *
+ *  arg[2] = pointer to register s2
+ */
+X(jmp)
+{
+	cpu->pc = reg(ic->arg[2]);
+	quick_pc_to_pointers(cpu);
+}
+X(jmp_n)
+{
+	MODE_uint_t target = reg(ic->arg[2]);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = target;
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
  *  or_imm:     d = s1 | imm
  *  xor_imm:    d = s1 ^ imm
  *  and_imm:    d = s1 & imm
@@ -130,6 +157,38 @@ X(and_imm)
 X(or_r0_imm)
 {
 	reg(ic->arg[0]) = ic->arg[2];
+}
+X(or_r0_imm0)
+{
+	reg(ic->arg[0]) = 0;
+}
+
+
+/*
+ *  or:     d = s1 | s2
+ *  or_r0:  d =      s2
+ *  xor:    d = s1 ^ s2
+ *  and:    d = s1 & s2
+ *
+ *  arg[0] = pointer to register d
+ *  arg[1] = pointer to register s1
+ *  arg[2] = pointer to register s2
+ */
+X(or)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) | reg(ic->arg[2]);
+}
+X(or_r0)
+{
+	reg(ic->arg[0]) = reg(ic->arg[2]);
+}
+X(xor)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) ^ reg(ic->arg[2]);
+}
+X(and)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) & reg(ic->arg[2]);
 }
 
 
@@ -361,8 +420,12 @@ X(to_be_translated)
 		ic->arg[2] = imm16 << shift;
 
 		/*  Optimization for  or d,r0,imm  */
-		if (s1 == M88K_ZERO_REG && ic->f == instr(or_imm))
-			ic->f = instr(or_r0_imm);
+		if (s1 == M88K_ZERO_REG && ic->f == instr(or_imm)) {
+			if (ic->arg[2] == 0)
+				ic->f = instr(or_r0_imm0);
+			else
+				ic->f = instr(or_r0_imm);
+		}
 
 		if (d == M88K_ZERO_REG)
 			ic->f = instr(nop);
@@ -390,6 +453,38 @@ X(to_be_translated)
 		} else {
 			/*  Different page:  */
 			ic->arg[0] = offset;
+		}
+		break;
+
+	case 0x3d:
+		switch ((iword >> 8) & 0xff) {
+		case 0x40:	/*  and  */
+		case 0x50:	/*  xor  */
+		case 0x58:	/*  or   */
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
+			switch ((iword >> 8) & 0xff) {
+			case 0x40: ic->f = instr(and); break;
+			case 0x50: ic->f = instr(xor); break;
+			case 0x58: ic->f = instr(or); break;
+			}
+
+			/*  Optimization for  or rX,r0,rY  */
+			if (s1 == M88K_ZERO_REG && ic->f == instr(or))
+				ic->f = instr(or_r0);
+			if (d == M88K_ZERO_REG)
+				ic->f = instr(nop);
+			break;
+		case 0xc0:	/*  jmp (s2)  */
+		case 0xc4:	/*  jmp.n (s2)  */
+			switch ((iword >> 8) & 0xff) {
+			case 0xc0: ic->f = instr(jmp); break;
+			case 0xc4: ic->f = instr(jmp_n); break;
+			}
+			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
+			break;
+		default:goto bad;
 		}
 		break;
 

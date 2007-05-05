@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.15 2007-05-05 02:59:37 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.16 2007-05-05 03:46:21 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -207,7 +207,7 @@ void m88k_cpu_list_available_types(void)
 /*
  *  m88k_cpu_instruction_has_delayslot():
  *
- *  Return 1 if an opcode is a branch, 0 otherwise.
+ *  Returns 1 if an opcode has a delay slot after it, 0 otherwise.
  */
 int m88k_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 {
@@ -341,7 +341,7 @@ void m88k_irq_interrupt_deassert(struct interrupt *interrupt)
  *  If running is 1, cpu->pc should be the address of the instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
- *  register contents) will not be shown, and addr will be used instead of
+ *  register contents) will not be shown, and dumpaddr will be used instead of
  *  cpu->pc for relative addresses.
  */                     
 int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
@@ -364,7 +364,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i:\t", cpu->cpu_id);
 
-	debug("%08x:  ", (int)dumpaddr);
+	debug("%08"PRIx32":  ", (uint32_t) dumpaddr);
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);

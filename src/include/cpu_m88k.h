@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.7 2007-05-04 09:30:55 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.8 2007-05-05 03:46:21 debug Exp $
  */
 
 #include "misc.h"
@@ -156,8 +156,9 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 
 #define	N_M88K_REGS		32
 
-/*  Register r0 is always zero.  */
+/*  Register r0 is always zero, r1 is the return address on function calls.  */
 #define	M88K_ZERO_REG		0
+#define	M88K_RETURN_REG		1
 
 struct m88k_cpu {
 	struct m88k_cpu_type_def cpu_type;

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.219 2007-05-01 04:03:34 debug Exp $
+$Id: guestoses.html,v 1.220 2007-05-05 13:00:25 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -1727,11 +1727,13 @@ DECstation onto a harddisk image in the emulator:
 	<a href="http://cdimage.debian.org/debian-cd/3.1_r0a/mipsel/iso-cd/debian-31r0a-mipsel-netinst.iso">http://cdimage.debian.org/debian-cd/3.1_r0a/mipsel/iso-cd/debian-31r0a-mipsel-netinst.iso</a>
 
 </pre>
-	<font color="#ff0000">NOTE 2007-04-14: It seems that the ISO image
+	<font color="#ff0000"><b>NOTE 2007-04-14:</b></font> It seems that the ISO image
 	has been removed from the cdimage site. You may need to search
-	for it elsewhere. :-/ Alternatively, you can follow
-	Michel Lespinasse's instructions at
-	<a href="http://people.zoy.org/~walken/gxemul-etch/HOWTO.html">http://people.zoy.org/~walken/gxemul-etch/HOWTO.html</a>.</font>
+	for it elsewhere. Alternatively, you can follow Michel Lespinasse's instructions at
+	<a href="http://people.zoy.org/~walken/gxemul-etch/HOWTO.html">http://people.zoy.org/~walken/gxemul-etch/HOWTO.html</a>.
+
+	<p><font color="#ff0000"><b>NOTE 2007-05-05:</b></font> John Reiser has been kind enough to
+	place a copy of debian-31r0a-mipsel-netinst.iso <a href="http://bitwagon.com/ftp/debian-31r0a-mipsel-netinst.iso">here</a>.
   <p>
   <li>Start the installation like this:<pre>
 	<b>gxemul -X -e3max -d debian_pmax.img -d debian-31r0a-mipsel-netinst.iso vmlinux-2.4.31</b>
@@ -1931,6 +1933,14 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
 	<b>dd if=/dev/zero of=redhat_mips.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
+<!--
+dd if=/dev/zero of=/dev/stdout bs=1024 count=200 >> mipsel-root-20011216.tgz
+gxemul -XY2 -e3max -d redhat_mips.img -d mipsel-root-20011216.tgz vmlinux-2.4.31
+In the three dialogs, choose English, United States, and Continue.
+Then choose Execute a shell.
+tar xfvz /dev/scsi/host0/bus0/target1/lun0/disc sbin/mke2fs sbin/fdisk
+fdisk
+-->
   <li>This is the tricky part: on redhat_mips.img, you need to create an MS-DOS
 	(!) partition table, and then an ext2 partition. This is what Linux
 	will then see as /dev/sda1.

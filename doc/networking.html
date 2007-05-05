@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: networking.html,v 1.4 2006-12-30 13:30:51 debug Exp $
+$Id: networking.html,v 1.5 2007-05-05 06:42:50 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -94,17 +94,28 @@ is not designed for security or anything like that.
 </font>
 
 
-<p>The emulated machine must of course have a NIC which is emulated 
-sufficiently. At the moment, the following NICs should work:
+<p>The emulated machine must have a NIC (network interface card). Not all
+machines have this. At the moment, the following NICs are more or less
+working:
+
 <ul>
+  <li><tt><b>dec21143</b></tt>, Digital's 21143 PCI NIC (known as <tt>dc</tt>
+	in OpenBSD, or <tt>tlp</tt> in NetBSD)
   <li><tt><b>ether</b></tt>, the "fake" experimental ethernet device
 	(documented <a href="experiments.html#expdevices_ether">here</a>)
   <li><tt><b>le</b></tt>, Turbochannel Lance Ethernet, as used in
 	DECstation 5000/200 ("3max")
   <li><tt><b>mec</b></tt>, the SGI O2's ethernet controller
-  <li><tt><b>dec21143</b></tt>, Digital's 21143 NIC (known as <tt>dc</tt>
-	in OpenBSD, or <tt>tlp</tt> in NetBSD)
 </ul>
+
+<p>It is not possible to simply attach any of the supported NICs into any
+of the supported emulated machines. Some machines, for example, have a 
+specific NIC in them, others may have a PCI bus where a PCI NIC can be 
+used. This is very much machine-dependent.
+
+<p>If you are impatient, and simply want to try out networking in GXemul,
+I would recommend trying out an ftp install of <a
+href="guestoses.html#netbsdpmaxinstall">NetBSD/pmax</a>.
 
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.10 2007-05-05 11:43:51 debug Exp $
+ *  $Id: yamon.c,v 1.11 2007-05-05 12:08:14 debug Exp $
  *
  *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
@@ -206,6 +206,11 @@ int yamon_emul(struct cpu *cpu)
 
 				debug("[ yamon_emul(): reporting CPU "
 				    "frequency of %"PRIu32" ]\n", freq);
+
+				if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+					freq = LE32_TO_HOST(freq);
+				else
+					freq = BE32_TO_HOST(freq);
 
 				cpu->memory_rw(cpu, cpu->mem, (int32_t)paddr,
 				    (void *) &freq, sizeof(freq), MEM_WRITE,

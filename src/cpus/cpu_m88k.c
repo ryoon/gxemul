@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.17 2007-05-06 04:14:57 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.18 2007-05-06 04:36:56 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -718,7 +718,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 
 	case 0x3d:
-		if ((iw & 0xf000) >= 0x0000 && (iw & 0xf000) <= 0x3fff) {
+		if ((iw & 0xf000) <= 0x3fff) {
 			/*  Load, Store, xmem, and lda:  */
 			switch (iw & 0xf000) {
 			case 0x2000: debug("st"); break;

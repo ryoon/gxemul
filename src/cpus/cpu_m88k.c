@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.16 2007-05-05 03:46:21 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.17 2007-05-06 04:14:57 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -329,6 +329,39 @@ void m88k_irq_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct cpu *cpu = (struct cpu *) interrupt->extra;
 	cpu->cd.m88k.irq_asserted = 0;
+}
+
+
+/*
+ *  m88k_ldcr():
+ *
+ *  Read from a control register. Store the resulting value in a register (pointed
+ *  to by r32ptr).
+ */
+void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
+{
+	switch (cr) {
+
+	default:fatal("m88k_ldcr: UNIMPLEMENTED cr = 0x%02x (%s)\n",
+		    cr, m88k_cr_name(cpu, cr));
+		exit(1);
+	}
+}
+
+
+/*
+ *  m88k_stcr():
+ *
+ *  Write to a control register.
+ */
+void m88k_stcr(struct cpu *cpu, uint32_t value, int cr)
+{
+	switch (cr) {
+
+	default:fatal("m88k_stcr: UNIMPLEMENTED cr = 0x%02x (%s)\n",
+		    cr, m88k_cr_name(cpu, cr));
+		exit(1);
+	}
 }
 
 

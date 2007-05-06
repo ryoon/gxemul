@@ -28,11 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.8 2007-05-05 03:46:21 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.9 2007-05-06 04:14:57 debug Exp $
  */
 
 #include "misc.h"
 #include "interrupt.h"
+
+#include "m88k_psl.h"
 
 struct cpu_family;
 
@@ -40,12 +42,15 @@ struct cpu_family;
 struct m88k_cpu_type_def {
 	char		*name;
 	int		type;
+	uint32_t	pid;
 };
 
-#define	M88K_CPU_TYPE_DEFS	{	\
-	{ "88100", 88100 },		\
-	{ "88110", 88110 },		\
-	{ NULL,    0     }		\
+#define M88K_PID(arn,vn) ((arn << M88K_ARN_SHIFT) | (vn << M88K_VN_SHIFT))
+
+#define	M88K_CPU_TYPE_DEFS				{	\
+	{ "88100", 88100, M88K_PID(M88K_ARN_88100,3) },		\
+	{ "88110", 88110, M88K_PID(M88K_ARN_88110,0) },		\
+	{ NULL,        0, 0			     }		\
 	}
 
 /*  Control register names:  */
@@ -166,8 +171,8 @@ struct m88k_cpu {
 	/*  General-Purpose Registers:  */
 	uint32_t		r[N_M88K_REGS];
 
-	/*  Destination for non-nop instructions with r0 as dest. reg.:  */
-	uint32_t		zero;
+	/*  Destination (scratch register) for non-nop instructions with r0 as dest.:  */
+	uint32_t		zero_scratch;
 
 	/*  Control Registers:  */
 	uint32_t		cr[N_M88K_CONTROL_REGS];
@@ -199,5 +204,7 @@ void m88k_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 int m88k_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int m88k_cpu_family_init(struct cpu_family *);
+void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr);
+void m88k_stcr(struct cpu *cpu, uint32_t value, int cr);
 
 #endif	/*  CPU_M88K_H  */

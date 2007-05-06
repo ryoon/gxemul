@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.11 2007-05-06 03:36:17 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.12 2007-05-06 04:14:57 debug Exp $
  *
  *  M88K instructions.
  *
@@ -426,6 +426,38 @@ X(st)
 }
 
 
+/*
+ *  ldcr:  Load value from a control register, store in register d.
+ *
+ *  arg[0] = pointer to register d
+ *  arg[1] = 6-bit control register number
+ */
+X(ldcr)
+{
+	SYNCH_PC;
+
+	/*  TODO: Check for kernel/user mode!  */
+
+	m88k_ldcr(cpu, (uint32_t *) (void *) ic->arg[0], ic->arg[1]);
+}
+
+
+/*
+ *  stcr:  Store a value into a control register.
+ *
+ *  arg[0] = pointer to source register
+ *  arg[1] = 6-bit control register number
+ */
+X(stcr)
+{
+	SYNCH_PC;
+
+	/*  TODO: Check for kernel/user mode!  */
+
+	m88k_stcr(cpu, reg(ic->arg[0]), ic->arg[1]);
+}
+
+
 /*****************************************************************************/
 
 
@@ -516,7 +548,7 @@ X(to_be_translated)
 	uint32_t addr, low_pc, iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	uint32_t op26, op10, op11, d, s1, s2, w5, imm16;
+	uint32_t op26, op10, op11, d, s1, s2, w5, cr6, imm16;
 	int32_t d16, d26, simm16;
 	int offset, shift;
 	int in_crosspage_delayslot = 0;
@@ -583,6 +615,7 @@ X(to_be_translated)
 	s2     =  iword        & 0x1f;
 	imm16  =  iword        & 0xffff;
 	simm16 = (int16_t) (iword & 0xffff);
+	cr6    = (iword >>  5) & 0x3f;
 	w5     = (iword >>  5) & 0x1f;
 	d16    = ((int16_t) (iword & 0xffff)) * 4;
 	d26    = ((int32_t)((iword & 0x03ffffff) << 6)) >> 4;
@@ -628,6 +661,23 @@ X(to_be_translated)
 
 		if (d == M88K_ZERO_REG)
 			ic->f = instr(nop);
+		break;
+
+	case 0x20:
+		if ((iword & 0x001ff81f) == 0x00004000) {
+			ic->f = instr(ldcr);
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[1] = cr6;
+			if (d == M88K_ZERO_REG)
+				ic->arg[0] = (size_t) &cpu->cd.m88k.zero_scratch;
+		} else if ((iword & 0x03e0f800) == 0x00008000) {
+			ic->f = instr(stcr);
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[1] = cr6;
+			if (s1 != s2)
+				goto bad;
+		} else
+			goto bad;
 		break;
 
 	case 0x30:	/*  br     */

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.272 2007-05-01 05:26:48 debug Exp $
+$Id: RELEASE,v 1.273 2007-05-06 04:14:57 debug Exp $
 
 Currently working on what will become 0.4.6.
 
@@ -129,6 +129,8 @@ them like this is in order:
     This product includes software developed by Marcus Comstedt.
 
     This product includes software developed by Bill Paul.
+
+    This product includes software developed by Nivas Madhur.
 
 Also, src/include/alpha_rpb.h requires the following:
 

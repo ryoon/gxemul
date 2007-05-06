@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1547 2007-05-05 11:43:51 debug Exp $
+$Id: HISTORY,v 1.1548 2007-05-06 03:36:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3474,3 +3474,4 @@ Changelog for GXemul:
 		Applying a patch from Bruce M. Simpson which implements the
 		SYSCON_BOARD_CPU_CLOCK_FREQ_ID object of the syscon call in
 		the yamon PROM emulation.
+20070506	Implementing M88K bb0[.n] and bb1[.n].

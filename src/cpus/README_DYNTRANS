@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.15 2007-04-19 15:18:16 debug Exp $
+$Id: README_DYNTRANS,v 1.16 2007-05-09 10:27:51 debug Exp $
 
 This README is old. Hm.
 
@@ -18,6 +18,7 @@ Dyntrans TODO:
 	F-CPU		?				?		?
 	H8		16-bit				8/16		no
 	HPPA		32-bit				64/32		yes
+	i860		?				?		yes(?)
 	i960		32-bit + variable		32		?
 	IA64		128-bit				64		no
 	M68K		16-bit + variable		32		no

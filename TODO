@@ -1,6 +1,10 @@
-$Id: TODO,v 1.497 2007-05-05 13:01:28 debug Exp $
+$Id: TODO,v 1.498 2007-05-09 10:27:51 debug Exp $
 
 --------------------------------------------
+
+M88K-länkar på länksidan:
+	Flytta ner från CPU till Machine!
+	Skriv ut Aviion-scannade PDF:er!
 
 MIPS Linux:
 	* Linux/QEMU_MIPS funkar inte längre?
@@ -21,9 +25,17 @@ MIPS Linux:
 	Implementera MMU, cachar, osv.
 	BUG PROM call emulation. (kanske både för 88k och 68k?)
 
+* NCDWare3.5/tftpboot/Xncd19c, NCD19
+	1280x1024, 8 MB ram
+	X-terminal software
+
 * Native code generation backend:
 	Experimentera med M88K på AMD64 först, endast, för att
 	hålla nere mängden saker som måste implementeras...
+
+	Börja eventuellt med tråkig men nödvändig del, nämligen
+	den som konverterar pseudo-amd64-opcodes till verklig
+	maskinkod, inklusive hopp frammåt och bakåt osv.
 
 --------------------------------------------
 

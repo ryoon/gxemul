@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.89 2007-04-10 15:37:00 debug Exp $
+.\" $Id: gxemul.1,v 1.90 2007-05-09 10:27:51 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -29,7 +29,7 @@
 .\" This is a minimal man page for GXemul. Process this file with
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd APRIL 2007
+.Dd MAY 2007
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -54,11 +54,11 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run inside the emulator as if they were running on a 
 real machine.
 .Pp
-Processors (ARM, MIPS, PowerPC, SuperH) are emulated using dynamic translation.
-However, unlike some other dynamically translating emulators, GXemul does
-not need to generate native code, only a "runnable intermediate
-representation", and will thus run on any host architecture, without the
-need to implement per-architecture backends.
+Processors (ARM, MIPS, PowerPC, and SuperH) are emulated using dynamic
+translation. However, unlike some other dynamically translating emulators, 
+GXemul does not need to generate native code, only a "runnable 
+intermediate representation", and will thus run on any host architecture, 
+without the need to implement per-architecture backends.
 .Pp
 The emulator can be invoked in the following ways:
 .Pp
@@ -389,8 +389,9 @@ Enable native code generation at runtime. This is not really implemented
 yet. Don't use it unless you know what you are doing. It will most
 likely not work.
 .It Fl B
-Disable native code generation at runtime. (This is the default in
-GXemul 0.4.4; there are no implemented native code generation backends.)
+Disable native code generation at runtime. This is the default in this
+release of GXemul; there are no implemented native code generation 
+backends.
 .It Fl c Ar cmd
 Add
 .Ar cmd
@@ -417,7 +418,7 @@ Display a list of all available command line options.
 .It Fl k Ar n
 Set the size of the dyntrans cache (per emulated CPU) to
 .Ar n
-MB. The default size is 32 MB.
+MB. The default size is 40 MB.
 .It Fl K
 Force the single-step debugger to be entered at the end of a simulation.
 .It Fl q

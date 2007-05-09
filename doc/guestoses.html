@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.220 2007-05-05 13:00:25 debug Exp $
+$Id: guestoses.html,v 1.221 2007-05-09 22:47:55 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -2367,18 +2367,26 @@ once.
 <a name="linux_qemu_mips"></a>
 <h3>Linux/QEMU_MIPS:</h3>
 
-I've added a semi-bogus machine mode which tries to 
-mimic the MIPS machine mode used in Fabrice Bellard's
-<a href="http://fabrice.bellard.free.fr/qemu/">QEMU</a>.
+I've added a machine mode which emulates the MIPS machine mode used 
+in Fabrice Bellard's <a href="http://fabrice.bellard.free.fr/qemu/">QEMU</a>.
+Starting with QEMU 0.9.0, there are other MIPS modes in QEMU (i.e. Malta); 
+the QEMU_MIPS mode in GXemul refers to the old QEMU-specific MIPS machine.
 
-<p>Download <a href="http://fabrice.bellard.free.fr/qemu/mips-test-0.1.tar.gz">mips-test-0.1.tar.gz</a>
-from <a href="http://fabrice.bellard.free.fr/qemu/download.html">http://fabrice.bellard.free.fr/qemu/download.html</a>,
-and extract its contents (<tt>tar zxvf mips-test-0.1.tar.gz</tt>).
+<p>The following steps should let you boot into the Linux/QEMU_MIPS
+kernel, in way similar to the <tt>run-qemu</tt> script:
 
-<p>Test it in GXemul using the following command line:<pre>
-	<b>gxemul -E qemu_mips -o 'console=ttyS0 root=/dev/ram
+<p>
+<ol>
+  <li>Download the archive from
+	<a href="http://fabrice.bellard.free.fr/qemu/download.html">http://fabrice.bellard.free.fr/qemu/download.html</a> and extract it:<pre>
+	<b>wget <a href="http://fabrice.bellard.free.fr/qemu/mips-test-0.2.tar.gz">http://fabrice.bellard.free.fr/qemu/mips-test-0.2.tar.gz</a>
+	tar zxvf mips-test-0.2.tar.gz</b>
+
+</pre>
+  <li>Start GXemul using the following command line:<pre>
+	<b>gxemul -E qemu_mips -x -M 128 -o 'console=ttyS0
 		rd_start=0x80800000 rd_size=10000000 init=/bin/sh'
-		0x80800000:mips-test/initrd mips-test/vmlinux-r1</b>
+		0x80800000:mips-test/initrd.gz mips-test/vmlinux-2.6.18-3-qemu</b>
 
 </pre>
 </ol>
@@ -2415,16 +2423,16 @@ Windows NT onto a disk image:
 	<p>
 	<li>Create an empty harddisk image, which will be the disk image
 		that you will install Windows NT onto:<pre>
-	$ <b><tt>dd if=/dev/zero of=winnt_test.img bs=1024 count=1 seek=999000</tt></b>
+	<b><tt>dd if=/dev/zero of=winnt_test.img bs=1024 count=1 seek=999000</tt></b>
 
 </pre>
 	<li>Run the ARC installer, to partition the disk image:<pre>
-	$ <b><tt>gxemul -X -e pica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\ARCINST</tt></b>
+	<b><tt>gxemul -X -e pica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\ARCINST</tt></b>
 </pre>
 	Note that <tt>ARCINST</tt> <i>almost</i> works, but not quite.
 	<p>
 	<li>Run the SETUP program:<pre>
-	$ <b><tt>gxemul -X -e pica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\SETUPLDR</tt></b>
+	<b><tt>gxemul -X -e pica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\SETUPLDR</tt></b>
 </pre>
 </ol>
 

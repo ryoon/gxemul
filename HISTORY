@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1549 2007-05-06 04:14:57 debug Exp $
+$Id: HISTORY,v 1.1550 2007-05-09 11:03:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3476,3 +3476,7 @@ Changelog for GXemul:
 		the yamon PROM emulation.
 20070506	Implementing M88K bb0[.n] and bb1[.n], and skeletons for
 		ldcr and stcr (although no control regs are implemented yet).
+20070509	Found and fixed the bug which caused Linux for QEMU_MIPS to
+		stop working in 0.4.5.1: It was a faulty change to the MIPS
+		'sc' and 'scd' instructions I made while going through gcc -W
+		warnings on 20070428.

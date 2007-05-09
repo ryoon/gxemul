@@ -1,13 +1,6 @@
-$Id: TODO,v 1.498 2007-05-09 10:27:51 debug Exp $
+$Id: TODO,v 1.499 2007-05-09 11:03:41 debug Exp $
 
 --------------------------------------------
-
-M88K-länkar på länksidan:
-	Flytta ner från CPU till Machine!
-	Skriv ut Aviion-scannade PDF:er!
-
-MIPS Linux:
-	* Linux/QEMU_MIPS funkar inte längre?
 
 * M88K! När manualerna har kommit:
 	Gå igenom de instruktioner som är implementerade redan!

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.127 2007-04-28 09:19:51 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.128 2007-05-09 11:03:41 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2283,7 +2283,7 @@ X(lld)
 }
 X(sc)
 {
-	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	MODE_int_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
 	uint64_t r = reg(ic->arg[0]);
 	int low_pc, i;
 	uint8_t word[sizeof(uint32_t)];
@@ -2341,7 +2341,7 @@ X(sc)
 }
 X(scd)
 {
-	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	MODE_int_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
 	uint64_t r = reg(ic->arg[0]);
 	int low_pc, i;
 	uint8_t word[sizeof(uint64_t)];

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.13 2007-05-10 14:33:01 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.14 2007-05-10 14:43:02 debug Exp $
  *
  *  M88K instructions.
  *
@@ -985,6 +985,15 @@ X(to_be_translated)
 
 			if (d == M88K_ZERO_REG)
 				ic->f = instr(nop);
+			break;
+
+		case 0x36:	/*  tb1  */
+			if (s1 == M88K_ZERO_REG) {
+				/*  nop, because r0 cannot cause any trap
+				    with the tb1 instruction (no 1 bits :-)  */
+				ic->f = instr(nop);
+			} else
+				goto bad;
 			break;
 
 		default:goto bad;

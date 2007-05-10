@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1551 2007-05-09 22:47:54 debug Exp $
+$Id: HISTORY,v 1.1552 2007-05-10 14:33:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3482,3 +3482,6 @@ Changelog for GXemul:
 		warnings on 20070428.
 20070510	Updating the Linux/QEMU_MIPS section in guestoses.html to
 		use mips-test-0.2.tar.gz instead of 0.1.
+		A big thank you to Miod Vallat for sending me M88K manuals.
+		Implementing more M88K instructions (addu, subu, div[u], mulu,
+		ext[u], clr, set, cmp).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.18 2007-05-06 04:36:56 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.19 2007-05-10 14:33:01 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -163,6 +163,16 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
                 interrupt_handler_register(&template);
         }
 
+	/*  Set the Processor ID:  */
+	cpu->cd.m88k.cr[M88K_CR_PID] = cpu->cd.m88k.cpu_type.pid | M88K_PID_MC;
+
+	/*  Start in supervisor mode.  */
+	cpu->cd.m88k.cr[M88K_CR_PSR] = M88K_PSR_MODE;
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		cpu->cd.m88k.cr[M88K_CR_PSR] |= M88K_PSR_BO;
+
+	/*  Initial stack pointer:  */
+	cpu->cd.m88k.r[31] = 1048576 * cpu->machine->physical_ram_in_mb - 1024;
 
 	return 1;
 }
@@ -340,12 +350,19 @@ void m88k_irq_interrupt_deassert(struct interrupt *interrupt)
  */
 void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
 {
+	uint32_t retval = cpu->cd.m88k.cr[cr];
+
 	switch (cr) {
+
+	case M88K_CR_PID:
+		break;
 
 	default:fatal("m88k_ldcr: UNIMPLEMENTED cr = 0x%02x (%s)\n",
 		    cr, m88k_cr_name(cpu, cr));
 		exit(1);
 	}
+
+	*r32ptr = retval;
 }
 
 
@@ -442,7 +459,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		default:    debug("%s%s", op26 >= 0x08? "st" : "ld",
 				memop[op26 & 3]);
 		}
-		debug("\tr%i,r%i,%i", d, s1, imm16);
+		debug("\tr%i,r%i,0x%x", d, s1, imm16);
 		if (running) {
 			uint32_t tmpaddr = cpu->cd.m88k.r[s1] + imm16;
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
@@ -455,8 +472,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				/*  Store:  */
 				debug(" = ");
 				switch (op26 & 3) {
-				case 0:	/*  TODO: Endianness!!!  */
-					debug("0x%016"PRIx64, (uint64_t)
+				case 0:	debug("0x%016"PRIx64, (uint64_t)
 					    ((((uint64_t) cpu->cd.m88k.r[d])
 					    << 32) + ((uint64_t)
 					    cpu->cd.m88k.r[d+1])) );
@@ -571,26 +587,21 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x19:	/*  subu    */
 	case 0x1a:	/*  divu    */
 	case 0x1b:	/*  mulu    */
-		switch (op26) {
-		case 0x18:	mnem = "addu"; break;
-		case 0x19:	mnem = "subu"; break;
-		case 0x1a:	mnem = "divu"; break;
-		case 0x1b:	mnem = "mulu"; break;
-		}
-		debug("%s\tr%i,r%i,%i\n", mnem, d, s1, imm16);
-		break;
-
 	case 0x1c:	/*  add    */
 	case 0x1d:	/*  sub    */
 	case 0x1e:	/*  div    */
 	case 0x1f:	/*  cmp    */
 		switch (op26) {
+		case 0x18:	mnem = "addu"; break;
+		case 0x19:	mnem = "subu"; break;
+		case 0x1a:	mnem = "divu"; break;
+		case 0x1b:	mnem = "mulu"; break;
 		case 0x1c:	mnem = "add"; break;
 		case 0x1d:	mnem = "sub"; break;
 		case 0x1e:	mnem = "div"; break;
 		case 0x1f:	mnem = "cmp"; break;
 		}
-		debug("%s\tr%i,r%i,%i\n", mnem, d, s1, simm16);
+		debug("%s\tr%i,r%i,%i\n", mnem, d, s1, imm16);
 		break;
 
 	case 0x20:
@@ -655,7 +666,21 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x3b: mnem = "bcnd"; break;
 		}
 		debug("%s%s\t", mnem, op26 & 1? ".n" : "");
-		debug("%i,r%i,0x%08"PRIx32, d, s1, (uint32_t) (dumpaddr + d16));
+		if (op26 == 0x3a || op26 == 0x3b) {
+			/*  Attempt to decode bcnd condition:  */
+			switch (d) {
+			case 0x1: debug("gt0"); break;
+			case 0x2: debug("eq0"); break;
+			case 0x3: debug("ge0"); break;
+			case 0xc: debug("lt0"); break;
+			case 0xd: debug("ne0"); break;
+			case 0xe: debug("le0"); break;
+			default:  debug("%i", d);
+			}
+		} else {
+			debug("%i", d);
+		}
+		debug(",r%i,0x%08"PRIx32, s1, (uint32_t) (dumpaddr + d16));
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    dumpaddr + d16, &offset);
 		if (symbol != NULL)
@@ -832,7 +857,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				uint32_t tmpaddr = cpu->cd.m88k.r[s2];
 				symbol = get_symbol_name(&cpu->machine->
 				    symbol_context, tmpaddr, &offset);
-				debug("\t; ");
+				debug("\t\t; ");
 				if (symbol != NULL)
 					debug("<%s>", symbol);
 				else

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.12 2007-05-06 04:14:57 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.13 2007-05-10 14:33:01 debug Exp $
  *
  *  M88K instructions.
  *
@@ -332,34 +332,142 @@ X(jmp_n_trace)
 
 
 /*
+ *  cmp_imm:  Compare S1 with immediate value.
+ *  cmp:      Compare S1 with S2.
+ *
+ *  arg[0] = pointer to register d
+ *  arg[1] = pointer to register s1
+ *  arg[2] = pointer to register s2 or imm
+ */
+static void m88k_cmp(struct cpu *cpu, struct m88k_instr_call *ic, uint32_t y)
+{
+	uint32_t x = reg(ic->arg[1]);
+	uint32_t r;
+
+	if (x == y) {
+		r = M88K_CMP_HS | M88K_CMP_LS | M88K_CMP_GE
+		  | M88K_CMP_LE | M88K_CMP_EQ;
+	} else {
+		r = M88K_CMP_NE;
+		if (x > y)
+			r |= M88K_CMP_HS | M88K_CMP_HI;
+		else
+			r |= M88K_CMP_LO | M88K_CMP_LS;
+		if ((int32_t)x > (int32_t)y)
+			r |= M88K_CMP_GE | M88K_CMP_GT;
+		else
+			r |= M88K_CMP_LT | M88K_CMP_LE;
+	}
+
+	reg(ic->arg[0]) = r;
+}
+X(cmp_imm) { m88k_cmp(cpu, ic, ic->arg[2]); }
+X(cmp)     { m88k_cmp(cpu, ic, reg(ic->arg[2])); }
+
+
+/*
+ *  extu_imm:  Extract bits, unsigned, immediate W<O>.
+ *  extu:      Extract bits, unsigned, W<O> taken from register s2.
+ *  ext_imm:   Extract bits, signed, immediate W<O>.
+ *  ext:       Extract bits, signed, W<O> taken from register s2.
+ *  clr:       Clear bits, W<O> taken from register s2.
+ *  set:       Set bits, W<O> taken from register s2.
+ *
+ *  arg[0] = pointer to register d
+ *  arg[1] = pointer to register s1
+ *  arg[2] = pointer to register s2 or 10 bits wwwwwooooo
+ */
+static void m88k_extu(struct cpu *cpu, struct m88k_instr_call *ic, int w, int o)
+{
+	uint32_t x = reg(ic->arg[1]) >> o;
+	if (w != 0) {
+		x <<= (32-w);
+		x >>= (32-w);
+	}
+	reg(ic->arg[0]) = x;
+}
+static void m88k_ext(struct cpu *cpu, struct m88k_instr_call *ic, int w, int o)
+{
+	int32_t x = reg(ic->arg[1]) >> o;
+	if (w != 0) {
+		x <<= (32-w);
+		x >>= (32-w);
+	}
+	reg(ic->arg[0]) = x;
+}
+X(extu_imm)
+{
+	m88k_extu(cpu, ic, ic->arg[2] >> 5, ic->arg[2] & 0x1f);
+}
+X(extu)
+{
+	m88k_extu(cpu, ic, (reg(ic->arg[2]) >> 5) & 0x1f,
+	    reg(ic->arg[2]) & 0x1f);
+}
+X(ext_imm)
+{
+	m88k_ext(cpu, ic, ic->arg[2] >> 5, ic->arg[2] & 0x1f);
+}
+X(ext)
+{
+	m88k_ext(cpu, ic, (reg(ic->arg[2]) >> 5) & 0x1f,
+	    reg(ic->arg[2]) & 0x1f);
+}
+X(clr)
+{
+	int w = (reg(ic->arg[2]) >> 5) & 0x1f, o = reg(ic->arg[2]) & 0x1f;
+	uint32_t x = w == 0? 0xffffffff : (1 << w) - 1;
+	x <<= o;
+	reg(ic->arg[0]) = reg(ic->arg[1]) & ~x;
+}
+X(set)
+{
+	int w = (reg(ic->arg[2]) >> 5) & 0x1f, o = reg(ic->arg[2]) & 0x1f;
+	uint32_t x = w == 0? 0xffffffff : (1 << w) - 1;
+	x <<= o;
+	reg(ic->arg[0]) = reg(ic->arg[1]) | x;
+}
+
+
+/*
+ *  or_r0_imm0: d = 0		(optimized case when s1 = r0, imm = 0)
+ *  or_r0_imm:  d = imm		(optimized case when s1 = r0)
  *  or_imm:     d = s1 | imm
  *  xor_imm:    d = s1 ^ imm
  *  and_imm:    d = s1 & imm
- *  or_r0_imm:  d = imm		(optimized case when s1 = r0)
+ *  addu_imm:   d = s1 + imm
+ *  subu_imm:   d = s1 - imm
+ *  mulu_imm:   d = s1 * imm
+ *  divu_imm:   d = s1 / imm	(unsigned)
+ *  div_imm:    d = s1 / imm	(signed)
  *
  *  arg[0] = pointer to register d
  *  arg[1] = pointer to register s1
  *  arg[2] = imm
  */
-X(or_imm)
+X(or_r0_imm0) { reg(ic->arg[0]) = 0; }
+X(or_r0_imm)  { reg(ic->arg[0]) = ic->arg[2]; }
+X(or_imm)   { reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2]; }
+X(xor_imm)  { reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2]; }
+X(and_imm)  { reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2]; }
+X(addu_imm) { reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2]; }
+X(subu_imm) { reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2]; }
+X(mulu_imm) { reg(ic->arg[0]) = reg(ic->arg[1]) * ic->arg[2]; }
+X(divu_imm)
 {
-	reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2];
+	if (ic->arg[2] == 0) {
+		fatal("TODO: divu_imm division by zero exception\n");
+		exit(1);
+	}
+	reg(ic->arg[0]) = (uint32_t) reg(ic->arg[1]) / ic->arg[2];
 }
-X(xor_imm)
+X(div_imm)
 {
-	reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2];
-}
-X(and_imm)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2];
-}
-X(or_r0_imm)
-{
-	reg(ic->arg[0]) = ic->arg[2];
-}
-X(or_r0_imm0)
-{
-	reg(ic->arg[0]) = 0;
+	if (ic->arg[2] == 0) {
+		fatal("TODO: div_imm division by zero exception\n");
+		exit(1);
+	}
+	reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / ic->arg[2];
 }
 
 
@@ -368,6 +476,11 @@ X(or_r0_imm0)
  *  or_r0:  d =      s2
  *  xor:    d = s1 ^ s2
  *  and:    d = s1 & s2
+ *  addu:   d = s1 + s2
+ *  subu:   d = s1 - s2
+ *  mul:    d = s1 * s2
+ *  divu:   d = s1 / s2		(unsigned)
+ *  div:    d = s1 / s2		(signed)
  *
  *  arg[0] = pointer to register d
  *  arg[1] = pointer to register s1
@@ -388,6 +501,34 @@ X(xor)
 X(and)
 {
 	reg(ic->arg[0]) = reg(ic->arg[1]) & reg(ic->arg[2]);
+}
+X(addu)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]);
+}
+X(subu)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) - reg(ic->arg[2]);
+}
+X(mul)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]);
+}
+X(divu)
+{
+	if (reg(ic->arg[2]) == 0) {
+		fatal("TODO: divu division by zero exception\n");
+		exit(1);
+	}
+	reg(ic->arg[0]) = (uint32_t) reg(ic->arg[1]) / reg(ic->arg[2]);
+}
+X(div)
+{
+	if (reg(ic->arg[2]) == 0) {
+		fatal("TODO: div division by zero exception\n");
+		exit(1);
+	}
+	reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / reg(ic->arg[2]);
 }
 
 
@@ -414,7 +555,40 @@ X(st)
 
 	if (p != NULL) {
 		p[(addr & 0xfff) >> 2] = data;
-		reg(ic->arg[1]) = addr;
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+}
+
+
+/*
+ *  st_d:  Store a pair of 32-bit words in memory.
+ *
+ *  arg[0] = pointer to first register
+ *  arg[1] = pointer to register s1 (base register)
+ *  arg[2] = offset
+ *
+ *  TODO: Build-time generated shorter versions, without the
+ *        conditional endianness check etc.
+ */
+X(st_d)
+{
+	uint32_t addr = reg(ic->arg[1]) + ic->arg[2];
+	uint64_t *p = (uint64_t *) cpu->cd.m88k.host_store[addr >> 12];
+	uint64_t data = ((uint64_t)reg(ic->arg[0]) << 32) | reg(ic->arg[0]+4);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE64_TO_HOST(data);
+	else
+		data = BE64_TO_HOST(data);
+
+	if (p != NULL) {
+		p[(addr & 0xfff) >> 3] = data;
 	} else {
 		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
@@ -622,11 +796,13 @@ X(to_be_translated)
 
 	switch (op26) {
 
-	case 0x09:
+	case 0x08:	/*  st.d  */
+	case 0x09:	/*  st    */
 		ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 		ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 		ic->arg[2] = imm16;
 		switch (op26) {
+		case 0x08: ic->f = instr(st_d); break;
 		case 0x09: ic->f = instr(st); break;
 		}
 		break;
@@ -637,6 +813,12 @@ X(to_be_translated)
 	case 0x15:	/*  xor.u imm  */
 	case 0x16:	/*  or    imm  */
 	case 0x17:	/*  or.u  imm  */
+	case 0x18:	/*  addu  imm  */
+	case 0x19:	/*  subu  imm  */
+	case 0x1a:	/*  divu  imm  */
+	case 0x1b:	/*  mulu  imm  */
+	case 0x1e:	/*  div   imm  */
+	case 0x1f:	/*  cmp   imm  */
 		shift = 0;
 		switch (op26) {
 		case 0x10: ic->f = instr(and_imm); break;
@@ -645,6 +827,12 @@ X(to_be_translated)
 		case 0x15: ic->f = instr(xor_imm); shift = 16; break;
 		case 0x16: ic->f = instr(or_imm); break;
 		case 0x17: ic->f = instr(or_imm); shift = 16; break;
+		case 0x18: ic->f = instr(addu_imm); break;
+		case 0x19: ic->f = instr(subu_imm); break;
+		case 0x1a: ic->f = instr(divu_imm); break;
+		case 0x1b: ic->f = instr(mulu_imm); break;
+		case 0x1e: ic->f = instr(div_imm); break;
+		case 0x1f: ic->f = instr(cmp_imm); break;
 		}
 
 		ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
@@ -759,18 +947,125 @@ X(to_be_translated)
 		}
 		break;
 
+	case 0x3c:
+		switch (op10) {
+
+		case 0x20:	/*  clr  */
+		case 0x22:	/*  set  */
+		case 0x24:	/*  ext  */
+		case 0x26:	/*  extu  */
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[2] = iword & 0x3ff;
+
+			switch (op10) {
+			case 0x20: ic->f = instr(and_imm);
+				   {
+					int w = ic->arg[2] >> 5;
+					int o = ic->arg[2] & 0x1f;
+					uint32_t x = w == 0? 0xffffffff
+					    : (1 << w) - 1;
+					x <<= o;
+					ic->arg[2] = ~x;
+				   }
+				   break;
+			case 0x22: ic->f = instr(or_imm);
+				   {
+					int w = ic->arg[2] >> 5;
+					int o = ic->arg[2] & 0x1f;
+					uint32_t x = w == 0? 0xffffffff
+					    : (1 << w) - 1;
+					x <<= o;
+					ic->arg[2] = x;
+				   }
+				   break;
+			case 0x24: ic->f = instr(ext_imm); break;
+			case 0x26: ic->f = instr(extu_imm); break;
+			}
+
+			if (d == M88K_ZERO_REG)
+				ic->f = instr(nop);
+			break;
+
+		default:goto bad;
+		}
+		break;
+
 	case 0x3d:
-		switch ((iword >> 8) & 0xff) {
-		case 0x40:	/*  and  */
-		case 0x50:	/*  xor  */
-		case 0x58:	/*  or   */
+		if ((iword & 0xf000) <= 0x3fff ) {
+			/*  Load, Store, xmem, and lda:  */
+			int op = 0, opsize, user = 0, wt = 0;
+			int signedness = 1, scaled = 0;
+
+			switch (iword & 0xf000) {
+			case 0x2000: op = 0; /* st */  break;
+			case 0x3000: op = 1; /* lda */ break;
+			default:     if ((iword & 0xf800) >= 0x0800)
+					op = 2; /* ld */
+				     else
+					op = 3; /* xmem */
+			}
+
+			/*  for (most) ld, st, lda:  */
+			opsize = (iword >> 10) & 3;
+
+			/*  Turn opsize into x, where size = 1 << x:  */
+			opsize = 3 - opsize;
+
+			/*  xmem: TODO  */
+
+			if ((iword & 0xf800) == 0x800) {
+				signedness = 0;
+				if ((iword & 0xf00) < 0xc00)
+					opsize = 1;
+				else
+					opsize = 0;
+			}
+
+			if (iword & 0x100)
+				user = 1;
+			if (iword & 0x80)
+				wt = 1;
+			if (iword & 0x200)
+				scaled = 1;
+
+/* 4 opsizes, 2 modes (load/store), 2 endianness, 2 signedness
+2 scaled, 2 user, 2 wt = 2+1+1+1+1+1 = 7 bits = 128 functions */
+
+printf("op=%i opsize=%i\n", op, opsize);
+
+			goto bad;
+		} else switch ((iword >> 8) & 0xff) {
+		case 0x40:	/*  and   */
+		case 0x50:	/*  xor   */
+		case 0x58:	/*  or    */
+		case 0x60:	/*  addu  */
+		case 0x64:	/*  subu  */
+		case 0x68:	/*  divu  */
+		case 0x6c:	/*  mul   */
+		case 0x78:	/*  div   */
+		case 0x7c:	/*  cmp   */
+		case 0x80:	/*  clr   */
+		case 0x88:	/*  set   */
+		case 0x90:	/*  ext   */
+		case 0x98:	/*  extu  */
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
 			switch ((iword >> 8) & 0xff) {
-			case 0x40: ic->f = instr(and); break;
-			case 0x50: ic->f = instr(xor); break;
-			case 0x58: ic->f = instr(or); break;
+			case 0x40: ic->f = instr(and);  break;
+			case 0x50: ic->f = instr(xor);  break;
+			case 0x58: ic->f = instr(or);   break;
+			case 0x60: ic->f = instr(addu); break;
+			case 0x64: ic->f = instr(subu); break;
+			case 0x68: ic->f = instr(divu); break;
+			case 0x6c: ic->f = instr(mul);  break;
+			case 0x78: ic->f = instr(div);  break;
+			case 0x7c: ic->f = instr(cmp);  break;
+			case 0x80: ic->f = instr(clr);  break;
+			case 0x88: ic->f = instr(set);  break;
+			case 0x90: ic->f = instr(ext);  break;
+			case 0x98: ic->f = instr(extu); break;
 			}
 
 			/*  Optimization for  or rX,r0,rY  */

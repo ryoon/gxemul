@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.9 2007-05-06 04:14:57 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.10 2007-05-10 14:33:01 debug Exp $
  */
 
 #include "misc.h"
@@ -165,13 +165,29 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 #define	M88K_ZERO_REG		0
 #define	M88K_RETURN_REG		1
 
+#define	M88K_CMP_HS	0x00001000
+#define	M88K_CMP_LO	0x00000800
+#define	M88K_CMP_LS	0x00000400
+#define	M88K_CMP_HI	0x00000100
+#define	M88K_CMP_GE	0x00000080
+#define	M88K_CMP_LT	0x00000040
+#define	M88K_CMP_LE	0x00000020
+#define	M88K_CMP_GT	0x00000010
+#define	M88K_CMP_NE	0x00000008
+#define	M88K_CMP_EQ	0x00000004
+
 struct m88k_cpu {
 	struct m88k_cpu_type_def cpu_type;
 
-	/*  General-Purpose Registers:  */
-	uint32_t		r[N_M88K_REGS];
+	/*
+	 *  General-Purpose Registers:
+	 *
+	 *  32 (N_M88K_REGS) registers, plus one which is always zero. (This
+	 *  is to support st.d with d = r31.)
+	 */
+	uint32_t		r[N_M88K_REGS+1];
 
-	/*  Destination (scratch register) for non-nop instructions with r0 as dest.:  */
+	/*  Destination scratch register for non-nop instructions with d=r0:  */
 	uint32_t		zero_scratch;
 
 	/*  Control Registers:  */

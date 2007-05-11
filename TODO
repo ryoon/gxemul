@@ -1,22 +1,9 @@
-$Id: TODO,v 1.499 2007-05-09 11:03:41 debug Exp $
+$Id: TODO,v 1.500 2007-05-11 14:46:55 debug Exp $
 
 --------------------------------------------
 
-* M88K! När manualerna har kommit:
-	Gå igenom de instruktioner som är implementerade redan!
-	Gå igenom all disassembly!
-		Kontrollera korrekthet!
-		Kvar borde nästan endast bara vara flyttalssaker.
-	Implementera instruktioner!
-		Gör om load/store till automatgenererade!
-		Alla branches.
-		Alla logiska/aritmetiska.
-		Compare-bitar!
-		Övriga...
-	Implementera controlregister och dylikt.
-	Implementera devices.
-	Implementera MMU, cachar, osv.
-	BUG PROM call emulation. (kanske både för 88k och 68k?)
+* M88K:
+	Kolla Exceptions för alla instruktioner i manualen...
 
 * NCDWare3.5/tftpboot/Xncd19c, NCD19
 	1280x1024, 8 MB ram

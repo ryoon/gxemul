@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.1 2007-05-11 09:28:35 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.2 2007-05-11 14:46:55 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  
@@ -92,8 +92,8 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 		m88k_cpu_exception(cpu, ....
 #else
 		fatal("{ m88k dyntrans alignment exception, size = %i,"
-		    " addr = %016"PRIx64", pc = %016"PRIx64" }\n", LS_SIZE,
-		    (uint64_t) addr, cpu->pc);
+		    " addr = %016"PRIx32", pc = %016"PRIx32" }\n", LS_SIZE,
+		    (uint32_t) addr, (uint32_t) cpu->pc);
 
 		/*  TODO: Generalize this into a abort_call, or similar:  */
 		cpu->running = 0;

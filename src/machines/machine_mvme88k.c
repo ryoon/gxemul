@@ -25,12 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.3 2007-05-04 13:33:02 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.4 2007-05-11 14:46:55 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
  *
- *  TODO: This is completely bogus so far.
+ *  TODO: This is completely bogus so far. No devices exist yet.
  *
  *  MVME187 according to http://mcg.motorola.com/us/products/docs/pdf/187igd.pdf
  *  ("MVME187 RISC Single Board Computer Installation Guide"):
@@ -81,6 +81,9 @@ MACHINE_SETUP(mvme88k)
 
 	if (!machine->prom_emulation)
 		return;
+
+
+	mvmeprom_init(machine);
 
 	/*
 	 *  Boot loader args, according to OpenBSD/mvme88k's locore.S:

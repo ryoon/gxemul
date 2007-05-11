@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.22 2007-05-11 09:35:05 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.23 2007-05-11 14:46:55 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -40,6 +40,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "mvmeprom.h"
 #include "settings.h"
 #include "symbol.h"
 
@@ -47,6 +48,8 @@
 #define DYNTRANS_DELAYSLOT
 #include "tmp_m88k_head.c"
 
+
+void m88k_pc_to_pointers(struct cpu *);
 
 static char *memop[4] = { ".d", "", ".h", ".b" };
 
@@ -356,6 +359,7 @@ void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
 
 	case M88K_CR_PID:
 	case M88K_CR_PSR:
+	case M88K_CR_EPSR:
 	case M88K_CR_VBR:
 	case M88K_CR_SR0:
 	case M88K_CR_SR1:
@@ -409,6 +413,10 @@ void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte)
 		cpu->cd.m88k.cr[cr] = value;
 		break;
 
+	case M88K_CR_EPSR:
+		cpu->cd.m88k.cr[cr] = value;
+		break;
+
 	case M88K_CR_SSBR:	/*  Shadow ScoreBoard Register  */
 		if (value & 1)
 			fatal("[ m88k_stcr: WARNING! bit 0 non-zero when"
@@ -434,6 +442,101 @@ void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte)
 		    cr, m88k_cr_name(cpu, cr));
 		exit(1);
 	}
+}
+
+
+/*
+ *  m88k_exception():
+ *
+ *  Cause an exception.
+ */
+void m88k_exception(struct cpu *cpu, int vector, int is_trap)
+{
+	debug("[ EXCEPTION 0x%03x: ", vector);
+	switch (vector) {
+	case M88K_EXCEPTION_RESET:
+		debug("RESET"); break;
+	case M88K_EXCEPTION_INTERRUPT:
+		debug("INTERRUPT"); break;
+	case M88K_EXCEPTION_INSTRUCTION_ACCESS:
+		debug("INSTRUCTION_ACCESS"); break;
+	case M88K_EXCEPTION_DATA_ACCESS:
+		debug("DATA_ACCESS"); break;
+	case M88K_EXCEPTION_MISALIGNED_ACCESS:
+		debug("MISALIGNED_ACCESS"); break;
+	case M88K_EXCEPTION_UNIMPLEMENTED_OPCODE:
+		debug("UNIMPLEMENTED_OPCODE"); break;
+	case M88K_EXCEPTION_PRIVILEGE_VIOLATION:
+		debug("PRIVILEGE_VIOLATION"); break;
+	case M88K_EXCEPTION_BOUNDS_CHECK_VIOLATION:
+		debug("BOUNDS_CHECK_VIOLATION"); break;
+	case M88K_EXCEPTION_ILLEGAL_INTEGER_DIVIDE:
+		debug("ILLEGAL_INTEGER_DIVIDE"); break;
+	case M88K_EXCEPTION_INTEGER_OVERFLOW:
+		debug("INTEGER_OVERFLOW"); break;
+	case M88K_EXCEPTION_ERROR:
+		debug("ERROR"); break;
+	case M88K_EXCEPTION_SFU1_PRECISE:
+		debug("SFU1_PRECISE"); break;
+	case M88K_EXCEPTION_SFU1_IMPRECISE:
+		debug("SFU1_IMPRECISE"); break;
+	case MVMEPROM_VECTOR:
+		debug("MVMEPROM_VECTOR"); break;
+	default:debug("unknown"); break;
+	}
+	debug(" ]\n");
+
+	/*  Stuff common for all exceptions:  */
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_SFRZ) {
+		/*
+		 *  Non-trap exceptions when the shadow freeze bit is already
+		 *  set result in an Error exception:
+		 */
+		if (!is_trap) {
+			vector = M88K_EXCEPTION_ERROR;
+			debug("[ SFRZ already set in PSR => ERROR ]\n");
+		}
+	} else {
+		/*  Freeze shadow registers, and save the PSR:  */
+
+		/*  TODO  */
+
+		cpu->cd.m88k.cr[M88K_CR_EPSR] = cpu->cd.m88k.cr[M88K_CR_PSR];
+	}
+
+	cpu->cd.m88k.cr[M88K_CR_SSBR] = 0;
+
+	cpu->cd.m88k.cr[M88K_CR_PSR] |=
+	      M88K_PSR_SFRZ	/*  Freeze shadow registers,          */
+	    | M88K_PSR_IND	/*  disable interrupts,               */
+	    | M88K_PSR_SFD1	/*  disable the floating point unit,  */
+	    | M88K_PSR_MODE;	/*  and switch to supervisor mode.    */
+
+	cpu->cd.m88k.cr[M88K_CR_SXIP] = cpu->pc;
+	cpu->cd.m88k.cr[M88K_CR_SNIP] = cpu->pc + 4;
+	cpu->cd.m88k.cr[M88K_CR_SFIP] = cpu->pc + 8;
+
+	cpu->pc = cpu->cd.m88k.cr[M88K_CR_VBR] + 8 * vector;
+
+	if (cpu->delay_slot)
+		cpu->delay_slot = EXCEPTION_IN_DELAY_SLOT;
+	else
+		cpu->delay_slot = NOT_DELAYED;
+
+	/*  Vector-specific handling:  */
+	if (vector < M88K_EXCEPTION_USER_TRAPS_START) {
+		switch (vector) {
+
+		case M88K_EXCEPTION_RESET:
+			fatal("[ m88k_exception: reset ]\n");
+			exit(1);
+
+		default:fatal("m88k_exception(): 0x%x: TODO\n", vector);
+			exit(1);
+		}
+	}
+
+	m88k_pc_to_pointers(cpu);
 }
 
 
@@ -937,6 +1040,9 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			case 0x02:
 			case 0x03:
 				debug("illop%i\n", iw & 0xff);
+				break;
+			case (M88K_PROM_INSTR & 0xff):
+				debug("gxemul_prom_call\n");
 				break;
 			default:debug("UNIMPLEMENTED 0x3d,0xfc: 0x%02x\n",
 				    iw & 0xff);

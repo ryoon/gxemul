@@ -1,13 +1,13 @@
 #
-#  $Id: Makefile.skel,v 1.6 2007-03-06 18:45:18 debug Exp $
+#  $Id: Makefile.skel,v 1.7 2007-05-11 14:46:55 debug Exp $
 #
 #  Makefile for GXemul src/promemul
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 
-OBJS=arcbios.o dec_prom.o dreamcast.o dreamcast_scramble.o of.o \
-	ps2_bios.o sh_ipl_g.o yamon.o
+OBJS=arcbios.o dec_prom.o dreamcast.o dreamcast_scramble.o \
+	mvmeprom.o of.o ps2_bios.o sh_ipl_g.o yamon.o
 
 all: $(OBJS)
 

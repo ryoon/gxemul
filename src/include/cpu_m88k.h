@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.11 2007-05-11 01:17:27 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.12 2007-05-11 14:46:55 debug Exp $
  */
 
 #include "misc.h"
@@ -176,6 +176,25 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 #define	M88K_CMP_NE	0x00000008
 #define	M88K_CMP_EQ	0x00000004
 
+/*  Exception numbers:  */
+#define	M88K_EXCEPTION_RESET				0
+#define	M88K_EXCEPTION_INTERRUPT			1
+#define	M88K_EXCEPTION_INSTRUCTION_ACCESS		2
+#define	M88K_EXCEPTION_DATA_ACCESS			3
+#define	M88K_EXCEPTION_MISALIGNED_ACCESS		4
+#define	M88K_EXCEPTION_UNIMPLEMENTED_OPCODE		5
+#define	M88K_EXCEPTION_PRIVILEGE_VIOLATION		6
+#define	M88K_EXCEPTION_BOUNDS_CHECK_VIOLATION		7
+#define	M88K_EXCEPTION_ILLEGAL_INTEGER_DIVIDE		8
+#define	M88K_EXCEPTION_INTEGER_OVERFLOW			9
+#define	M88K_EXCEPTION_ERROR				10
+#define	M88K_EXCEPTION_SFU1_PRECISE			114
+#define	M88K_EXCEPTION_SFU1_IMPRECISE			115
+#define	M88K_EXCEPTION_USER_TRAPS_START			128
+
+/*  A reserved/unimplemented instruction, used for PROM calls:  */
+#define	M88K_PROM_INSTR		0xf400fc92
+
 struct m88k_cpu {
 	struct m88k_cpu_type_def cpu_type;
 
@@ -222,5 +241,6 @@ int m88k_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 int m88k_cpu_family_init(struct cpu_family *);
 void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr);
 void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte);
+void m88k_exception(struct cpu *cpu, int vector, int is_trap);
 
 #endif	/*  CPU_M88K_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.17 2007-05-11 09:35:05 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.18 2007-05-11 14:46:55 debug Exp $
  *
  *  M88K instructions.
  *
@@ -300,7 +300,10 @@ X(bb1_n_samepage)
 /*
  *  jmp:   Jump to register
  *  jmp.n: Jump to register, with delay slot
+ *  jsr:   Jump to register, set r1 to return address
+ *  jsr.n: Jump to register, set r1 to return address, with delay slot
  *
+ *  arg[1] = offset to return address, from start of current page
  *  arg[2] = pointer to register s2
  */
 X(jmp)
@@ -339,6 +342,50 @@ X(jmp_n_trace)
 		cpu->delay_slot = NOT_DELAYED;
 		cpu->pc = target;
 		cpu_functioncall_trace_return(cpu);
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(jsr)
+{
+	cpu->cd.m88k.r[M88K_RETURN_REG] = (cpu->pc & 0xfffff000) + ic->arg[1];
+	cpu->pc = reg(ic->arg[2]) & ~3;
+	quick_pc_to_pointers(cpu);
+}
+X(jsr_n)
+{
+	MODE_uint_t target = reg(ic->arg[2]) & ~3;
+	cpu->cd.m88k.r[M88K_RETURN_REG] = (cpu->pc & 0xfffff000) + ic->arg[1];
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = target;
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(jsr_trace)
+{
+	cpu->cd.m88k.r[M88K_RETURN_REG] = (cpu->pc & 0xfffff000) + ic->arg[1];
+	cpu->pc = reg(ic->arg[2]) & ~3;
+	cpu_functioncall_trace(cpu, cpu->pc);
+	quick_pc_to_pointers(cpu);
+}
+X(jsr_n_trace)
+{
+	MODE_uint_t target = reg(ic->arg[2]) & ~3;
+	cpu->cd.m88k.r[M88K_RETURN_REG] = (cpu->pc & 0xfffff000) + ic->arg[1];
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = target;
+		cpu_functioncall_trace(cpu, cpu->pc);
 		quick_pc_to_pointers(cpu);
 	} else
 		cpu->delay_slot = NOT_DELAYED;
@@ -475,6 +522,7 @@ X(set)
  *  mulu_imm:   d = s1 * imm
  *  divu_imm:   d = s1 / imm	(unsigned)
  *  div_imm:    d = s1 / imm	(signed)
+ *  sub_imm:    d = s1 - imm	(subtraction with overflow exception)
  *
  *  arg[0] = pointer to register d
  *  arg[1] = pointer to register s1
@@ -507,6 +555,20 @@ X(div_imm)
 		exit(1);
 	}
 	reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / ic->arg[2];
+}
+X(sub_imm)
+{
+	int32_t a = reg(ic->arg[1]);
+	int32_t b = ic->arg[2];
+	int32_t res = a - b;
+
+	if (a < 0 && res >= 0) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_INTEGER_OVERFLOW, 0);
+		return;
+	}
+
+	reg(ic->arg[0]) = res;
 }
 
 
@@ -606,6 +668,86 @@ X(stcr)
 		fatal("TODO: ldcr: Cause exception (non-supervisor access)\n");
 		exit(1);
 	}
+}
+
+
+/*
+ *  rte:  Return from exception
+ */
+X(rte)
+{
+	/*  If executed from user mode, then cause an exception:  */
+	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+		return;
+	}
+
+	m88k_stcr(cpu, cpu->cd.m88k.cr[M88K_CR_EPSR], M88K_CR_PSR, 1);
+	cpu->pc = cpu->cd.m88k.cr[M88K_CR_SNIP];
+	quick_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  prom-call:
+ */
+X(prom_call)
+{
+	/*  If executed from user mode, then cause an exception:  */
+	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_UNIMPLEMENTED_OPCODE, 0);
+		return;
+	}
+
+	switch (cpu->machine->machine_type) {
+	case MACHINE_MVME88K:
+		mvmeprom_emul(cpu);
+		break;
+	default:fatal("m88k prom_call: unimplemented machine type\n");
+		exit(1);
+	}
+
+	if (!cpu->running) {
+		cpu->n_translated_instrs --;
+		cpu->cd.m88k.next_ic = &nothing_call;
+	}
+}
+
+
+/*
+ *  tb0, tb1:  Trap on bit Clear/Set
+ *
+ *  arg[0] = bitmask to check (e.g. 0x00020000 for bit 17)
+ *  arg[1] = pointer to register s1
+ *  arg[2] = 9-bit vector number
+ */
+X(tb0)
+{
+	SYNCH_PC;
+
+	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)
+	    && ic->arg[2] < M88K_EXCEPTION_USER_TRAPS_START) {
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+		return;
+	}
+
+	if (!(reg(ic->arg[1]) & ic->arg[0]))
+		m88k_exception(cpu, ic->arg[2], 1);
+}
+X(tb1)
+{
+	SYNCH_PC;
+
+	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)
+	    && ic->arg[2] < M88K_EXCEPTION_USER_TRAPS_START) {
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+		return;
+	}
+
+	if (reg(ic->arg[1]) & ic->arg[0])
+		m88k_exception(cpu, ic->arg[2], 1);
 }
 
 
@@ -823,6 +965,7 @@ X(to_be_translated)
 	case 0x19:	/*  subu   imm  */
 	case 0x1a:	/*  divu   imm  */
 	case 0x1b:	/*  mulu   imm  */
+	case 0x1d:	/*  sub    imm  */
 	case 0x1e:	/*  div    imm  */
 	case 0x1f:	/*  cmp    imm  */
 		shift = 0;
@@ -839,6 +982,7 @@ X(to_be_translated)
 		case 0x19: ic->f = instr(subu_imm); break;
 		case 0x1a: ic->f = instr(divu_imm); break;
 		case 0x1b: ic->f = instr(mulu_imm); break;
+		case 0x1d: ic->f = instr(sub_imm); break;
 		case 0x1e: ic->f = instr(div_imm); break;
 		case 0x1f: ic->f = instr(cmp_imm); break;
 		}
@@ -1018,13 +1162,15 @@ X(to_be_translated)
 				ic->f = instr(nop);
 			break;
 
+		case 0x34:	/*  tb0  */
 		case 0x36:	/*  tb1  */
-			if (s1 == M88K_ZERO_REG) {
-				/*  nop, because r0 cannot cause any trap
-				    with the tb1 instruction (no 1 bits :-)  */
-				ic->f = instr(nop);
-			} else
-				goto bad;
+			ic->arg[0] = 1 << d;
+			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[2] = iword & 0x1ff;
+			switch (op10) {
+			case 0x34: ic->f = instr(tb0); break;
+			case 0x36: ic->f = instr(tb1); break;
+			}
 			break;
 
 		default:goto bad;
@@ -1135,11 +1281,20 @@ X(to_be_translated)
 			break;
 		case 0xc0:	/*  jmp    */
 		case 0xc4:	/*  jmp.n  */
+		case 0xc8:	/*  jsr    */
+		case 0xcc:	/*  jsr.n  */
 			switch ((iword >> 8) & 0xff) {
 			case 0xc0: ic->f = instr(jmp); break;
 			case 0xc4: ic->f = instr(jmp_n); break;
+			case 0xc8: ic->f = instr(jsr); break;
+			case 0xcc: ic->f = instr(jsr_n); break;
 			}
+
+			ic->arg[1] = (addr & 0xffc) + 4;
 			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
+
+			if (((iword >> 8) & 0x04) == 0x04)
+				ic->arg[1] = (addr & 0xffc) + 8;
 
 			if (cpu->machine->show_trace_tree &&
 			    s2 == M88K_RETURN_REG) {
@@ -1147,6 +1302,24 @@ X(to_be_translated)
 					ic->f = instr(jmp_trace);
 				if (ic->f == instr(jmp_n))
 					ic->f = instr(jmp_n_trace);
+			}
+			if (cpu->machine->show_trace_tree) {
+				if (ic->f == instr(jsr))
+					ic->f = instr(jsr_trace);
+				if (ic->f == instr(jsr_n))
+					ic->f = instr(jsr_n_trace);
+			}
+			break;
+		case 0xfc:
+			switch (iword & 0xff) {
+			case 0x00:
+				ic->f = instr(rte);
+				break;
+			case (M88K_PROM_INSTR & 0xff):
+				ic->f = instr(prom_call);
+				break;
+			default:fatal("Unimplemented 3d/fc instruction\n");
+				goto bad;
 			}
 			break;
 		default:goto bad;

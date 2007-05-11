@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1555 2007-05-11 09:28:35 debug Exp $
+$Id: HISTORY,v 1.1556 2007-05-11 14:46:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3493,3 +3493,6 @@ Changelog for GXemul:
 		corresponding devices; AVR emulation wasn't really meaningful.
 		Implementing autogeneration of most M88K loads/stores. The
 		rectangle drawing demo (with -O0) for M88K runs :-)
+		Beginning on M88K exception handling.
+		More M88K instructions: tb0, tb1, rte, sub, jsr[.n].
+		Adding some skeleton MVME PROM ("BUG") emulation.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.251 2007-03-16 14:45:30 debug Exp $
+ *  $Id: misc.h,v 1.252 2007-05-11 14:46:55 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -213,10 +213,9 @@ size_t mystrlcat(char *dst, const char *src, size_t size);
 #endif
 
 
-/*  pc_bios.c:  */
-void pc_bios_simple_pmode_setup(struct cpu *cpu);
-void pc_bios_init(struct cpu *cpu);
-int pc_bios_emul(struct cpu *cpu);
+/*  mvmeprom.c:  */
+void mvmeprom_init(struct machine *machine);
+int mvmeprom_emul(struct cpu *cpu);
 
 
 /*  ps2_bios.c:  */

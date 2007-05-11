@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.21 2007-05-11 01:31:20 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.22 2007-05-11 09:35:05 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -345,8 +345,8 @@ void m88k_irq_interrupt_deassert(struct interrupt *interrupt)
 /*
  *  m88k_ldcr():
  *
- *  Read from a control register. Store the resulting value in a register (pointed
- *  to by r32ptr).
+ *  Read from a control register. Store the resulting value in a register
+ *  (pointed to by r32ptr).
  */
 void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
 {

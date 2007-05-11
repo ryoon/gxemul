@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.16 2007-05-11 09:28:35 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.17 2007-05-11 09:35:05 debug Exp $
  *
  *  M88K instructions.
  *
@@ -865,7 +865,8 @@ X(to_be_translated)
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 			ic->arg[1] = cr6;
 			if (d == M88K_ZERO_REG)
-				ic->arg[0] = (size_t) &cpu->cd.m88k.zero_scratch;
+				ic->arg[0] = (size_t)
+				    &cpu->cd.m88k.zero_scratch;
 		} else if ((iword & 0x03e0f800) == 0x00008000) {
 			ic->f = instr(stcr);
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[s1];

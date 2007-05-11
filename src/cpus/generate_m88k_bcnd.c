@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_m88k_bcnd.c,v 1.1 2007-05-11 01:17:27 debug Exp $
+ *  $Id: generate_m88k_bcnd.c,v 1.2 2007-05-11 09:28:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -109,7 +109,7 @@ void bcnd(int samepage, int n_bit, int m5)
 			printf("\t\t\tcpu->cd.m88k.next_ic = (struct "
 			    "m88k_instr_call *) ic->arg[2];\n");
 		else {
-			printf("\t\t\told_pc &= ((M88K_IC_ENTRIES_PER_PAGE-1)"
+			printf("\t\t\told_pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1)"
 			    " << M88K_INSTR_ALIGNMENT_SHIFT);\n");
 			printf("\t\t\tcpu->pc = old_pc + ic->arg[2];\n");
 			printf("\t\t\tquick_pc_to_pointers(cpu);\n");

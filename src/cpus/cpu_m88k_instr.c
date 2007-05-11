@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.15 2007-05-11 01:17:27 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.16 2007-05-11 09:28:35 debug Exp $
  *
  *  M88K instructions.
  *
@@ -285,6 +285,16 @@ X(bb1_n_samepage)
 
 /*  Include all automatically generated bcnd and bcnd.n instructions:  */
 #include "tmp_m88k_bcnd.c"
+
+
+/*  Include all automatically generated load/store instructions:  */
+#include "tmp_m88k_loadstore.c"
+#define M88K_LOADSTORE_STORE            4
+#define M88K_LOADSTORE_SIGNEDNESS       8
+#define M88K_LOADSTORE_ENDIANNESS       16
+#define M88K_LOADSTORE_SCALEDNESS       32
+#define M88K_LOADSTORE_USR              64
+#define M88K_LOADSTORE_REGISTEROFFSET   128
 
 
 /*
@@ -562,74 +572,6 @@ X(div)
 
 
 /*
- *  st:  Store a 32-bit word in memory.
- *
- *  arg[0] = pointer to register d (containing the value to store)
- *  arg[1] = pointer to register s1 (base register)
- *  arg[2] = offset
- *
- *  TODO: Build-time generated shorter versions, without the
- *        conditional endianness check etc.
- */
-X(st)
-{
-	uint32_t addr = reg(ic->arg[1]) + ic->arg[2];
-	uint32_t *p = (uint32_t *) cpu->cd.m88k.host_store[addr >> 12];
-	uint32_t data = reg(ic->arg[0]);
-
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-		data = LE32_TO_HOST(data);
-	else
-		data = BE32_TO_HOST(data);
-
-	if (p != NULL) {
-		p[(addr & 0xfff) >> 2] = data;
-	} else {
-		SYNCH_PC;
-		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
-		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  Exception.  */
-			return;
-		}
-	}
-}
-
-
-/*
- *  st_d:  Store a pair of 32-bit words in memory.
- *
- *  arg[0] = pointer to first register
- *  arg[1] = pointer to register s1 (base register)
- *  arg[2] = offset
- *
- *  TODO: Build-time generated shorter versions, without the
- *        conditional endianness check etc.
- */
-X(st_d)
-{
-	uint32_t addr = reg(ic->arg[1]) + ic->arg[2];
-	uint64_t *p = (uint64_t *) cpu->cd.m88k.host_store[addr >> 12];
-	uint64_t data = ((uint64_t)reg(ic->arg[0]) << 32) | reg(ic->arg[0]+4);
-
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-		data = LE64_TO_HOST(data);
-	else
-		data = BE64_TO_HOST(data);
-
-	if (p != NULL) {
-		p[(addr & 0xfff) >> 3] = data;
-	} else {
-		SYNCH_PC;
-		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
-		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  Exception.  */
-			return;
-		}
-	}
-}
-
-
-/*
  *  ldcr:  Load value from a control register, store in register d.
  *
  *  arg[0] = pointer to register d
@@ -831,14 +773,41 @@ X(to_be_translated)
 
 	switch (op26) {
 
-	case 0x08:	/*  st.d  */
-	case 0x09:	/*  st    */
-		ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
-		ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
-		ic->arg[2] = imm16;
-		switch (op26) {
-		case 0x08: ic->f = instr(st_d); break;
-		case 0x09: ic->f = instr(st); break;
+	case 0x02:	/*  ld.hu  */
+	case 0x03:	/*  ld.bu  */
+	case 0x04:	/*  ld.d   */
+	case 0x05:	/*  ld     */
+	case 0x06:	/*  ld.h   */
+	case 0x07:	/*  ld.b   */
+	case 0x08:	/*  st.d   */
+	case 0x09:	/*  st     */
+	case 0x0a:	/*  st.h   */
+	case 0x0b:	/*  st.b   */
+		{
+			int store = 0, signedness = 0, opsize = 0;
+
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[2] = imm16;
+
+			switch (op26) {
+			case 0x02: opsize = 1; break;
+			case 0x03: opsize = 0; break;
+			case 0x04: opsize = 3; break;
+			case 0x05: opsize = 2; break;
+			case 0x06: opsize = 1; signedness = 1; break;
+			case 0x07: opsize = 0; signedness = 1; break;
+			case 0x08: store = 1; opsize = 3; break;
+			case 0x09: store = 1; opsize = 2; break;
+			case 0x0a: store = 1; opsize = 1; break;
+			case 0x0b: store = 1; opsize = 0; break;
+			}
+
+			ic->f = m88k_loadstore[ opsize
+			    + (store? M88K_LOADSTORE_STORE : 0)
+			    + (signedness? M88K_LOADSTORE_SIGNEDNESS:0)
+			    + (cpu->byte_order == EMUL_BIG_ENDIAN?
+			       M88K_LOADSTORE_ENDIANNESS : 0) ];
 		}
 		break;
 
@@ -1068,10 +1037,10 @@ X(to_be_translated)
 			int signedness = 1, scaled = 0;
 
 			switch (iword & 0xf000) {
-			case 0x2000: op = 0; /* st */  break;
-			case 0x3000: op = 1; /* lda */ break;
+			case 0x2000: op = 1; /* st */  break;
+			case 0x3000: op = 2; /* lda */ break;
 			default:     if ((iword & 0xf800) >= 0x0800)
-					op = 2; /* ld */
+					op = 0; /* ld */
 				     else
 					op = 3; /* xmem */
 			}
@@ -1090,6 +1059,9 @@ X(to_be_translated)
 					opsize = 1;
 				else
 					opsize = 0;
+			} else {
+				if (opsize >= 2 || op == 1)
+					signedness = 0;
 			}
 
 			if (iword & 0x100)
@@ -1099,12 +1071,26 @@ X(to_be_translated)
 			if (iword & 0x200)
 				scaled = 1;
 
-/* 4 opsizes, 2 modes (load/store), 2 endianness, 2 signedness
-2 scaled, 2 user, 2 wt = 2+1+1+1+1+1 = 7 bits = 128 functions */
+			if (wt) {
+				fatal("wt bit not yet implemented! TODO\n");
+				goto bad;
+			}
 
-printf("op=%i opsize=%i\n", op, opsize);
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
 
-			goto bad;
+			if (op == 0 || op == 1)
+				ic->f = m88k_loadstore[ opsize
+				    + (op==1? M88K_LOADSTORE_STORE : 0)
+				    + (signedness? M88K_LOADSTORE_SIGNEDNESS:0)
+				    + (cpu->byte_order == EMUL_BIG_ENDIAN?
+				       M88K_LOADSTORE_ENDIANNESS : 0)
+				    + (scaled? M88K_LOADSTORE_SCALEDNESS : 0)
+				    + (user? M88K_LOADSTORE_USR : 0)
+				    + M88K_LOADSTORE_REGISTEROFFSET ];
+			else
+				goto bad;
 		} else switch ((iword >> 8) & 0xff) {
 		case 0x40:	/*  and   */
 		case 0x50:	/*  xor   */

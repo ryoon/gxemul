@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.12 2007-05-11 14:46:55 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.13 2007-05-11 23:22:21 debug Exp $
  */
 
 #include "misc.h"
@@ -165,9 +165,9 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 #define	M88K_ZERO_REG		0
 #define	M88K_RETURN_REG		1
 
-#define	M88K_CMP_HS	0x00001000
-#define	M88K_CMP_LO	0x00000800
-#define	M88K_CMP_LS	0x00000400
+#define	M88K_CMP_HS	0x00000800
+#define	M88K_CMP_LO	0x00000400
+#define	M88K_CMP_LS	0x00000200
 #define	M88K_CMP_HI	0x00000100
 #define	M88K_CMP_GE	0x00000080
 #define	M88K_CMP_LT	0x00000040

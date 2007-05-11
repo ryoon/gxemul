@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1556 2007-05-11 14:46:55 debug Exp $
+$Id: HISTORY,v 1.1557 2007-05-11 23:22:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3496,3 +3496,5 @@ Changelog for GXemul:
 		Beginning on M88K exception handling.
 		More M88K instructions: tb0, tb1, rte, sub, jsr[.n].
 		Adding some skeleton MVME PROM ("BUG") emulation.
+20070512	Fixing a bug in the cmp instruction.
+		Adding the lda (scaled register) instruction.

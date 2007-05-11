@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.18 2007-05-11 14:46:55 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.19 2007-05-11 23:22:21 debug Exp $
  *
  *  M88K instructions.
  *
@@ -573,48 +573,31 @@ X(sub_imm)
 
 
 /*
- *  or:     d = s1 | s2
- *  or_r0:  d =      s2
- *  xor:    d = s1 ^ s2
- *  and:    d = s1 & s2
- *  addu:   d = s1 + s2
- *  subu:   d = s1 - s2
- *  mul:    d = s1 * s2
- *  divu:   d = s1 / s2		(unsigned)
- *  div:    d = s1 / s2		(signed)
+ *  or:     	d = s1 | s2
+ *  or_r0:  	d =      s2
+ *  xor:    	d = s1 ^ s2
+ *  and:    	d = s1 & s2
+ *  addu:   	d = s1 + s2
+ *  lda_reg_X:	same as addu, but s2 is scaled by 2, 4, or 8
+ *  subu:   	d = s1 - s2
+ *  mul:    	d = s1 * s2
+ *  divu:   	d = s1 / s2		(unsigned)
+ *  div:    	d = s1 / s2		(signed)
  *
  *  arg[0] = pointer to register d
  *  arg[1] = pointer to register s1
  *  arg[2] = pointer to register s2
  */
-X(or)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]) | reg(ic->arg[2]);
-}
-X(or_r0)
-{
-	reg(ic->arg[0]) = reg(ic->arg[2]);
-}
-X(xor)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]) ^ reg(ic->arg[2]);
-}
-X(and)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]) & reg(ic->arg[2]);
-}
-X(addu)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]);
-}
-X(subu)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]) - reg(ic->arg[2]);
-}
-X(mul)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]);
-}
+X(or)	{ reg(ic->arg[0]) = reg(ic->arg[1]) | reg(ic->arg[2]); }
+X(or_r0){ reg(ic->arg[0]) = reg(ic->arg[2]); }
+X(xor)	{ reg(ic->arg[0]) = reg(ic->arg[1]) ^ reg(ic->arg[2]); }
+X(and)	{ reg(ic->arg[0]) = reg(ic->arg[1]) & reg(ic->arg[2]); }
+X(addu)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]); }
+X(lda_reg_2)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 2; }
+X(lda_reg_4)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 4; }
+X(lda_reg_8)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 8; }
+X(subu)	{ reg(ic->arg[0]) = reg(ic->arg[1]) - reg(ic->arg[2]); }
+X(mul)	{ reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]); }
 X(divu)
 {
 	if (reg(ic->arg[2]) == 0) {
@@ -1228,6 +1211,7 @@ X(to_be_translated)
 			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
 
 			if (op == 0 || op == 1)
+				/*  ld or st:  */
 				ic->f = m88k_loadstore[ opsize
 				    + (op==1? M88K_LOADSTORE_STORE : 0)
 				    + (signedness? M88K_LOADSTORE_SIGNEDNESS:0)
@@ -1236,7 +1220,19 @@ X(to_be_translated)
 				    + (scaled? M88K_LOADSTORE_SCALEDNESS : 0)
 				    + (user? M88K_LOADSTORE_USR : 0)
 				    + M88K_LOADSTORE_REGISTEROFFSET ];
-			else
+			else if (op == 2) {
+				/*  lda:  */
+				if (scaled) {
+					switch (opsize) {
+					case 0: ic->f = instr(addu); break;
+					case 1: ic->f = instr(lda_reg_2); break;
+					case 2: ic->f = instr(lda_reg_4); break;
+					case 3: ic->f = instr(lda_reg_8); break;
+					}
+				} else {
+					ic->f = instr(addu);
+				}
+			} else
 				goto bad;
 		} else switch ((iword >> 8) & 0xff) {
 		case 0x40:	/*  and   */

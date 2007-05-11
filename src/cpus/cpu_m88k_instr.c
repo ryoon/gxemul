@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.14 2007-05-10 14:43:02 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.15 2007-05-11 01:17:27 debug Exp $
  *
  *  M88K instructions.
  *
@@ -283,6 +283,10 @@ X(bb1_n_samepage)
 }
 
 
+/*  Include all automatically generated bcnd and bcnd.n instructions:  */
+#include "tmp_m88k_bcnd.c"
+
+
 /*
  *  jmp:   Jump to register
  *  jmp.n: Jump to register, with delay slot
@@ -348,11 +352,10 @@ static void m88k_cmp(struct cpu *cpu, struct m88k_instr_call *ic, uint32_t y)
 		r = M88K_CMP_HS | M88K_CMP_LS | M88K_CMP_GE
 		  | M88K_CMP_LE | M88K_CMP_EQ;
 	} else {
-		r = M88K_CMP_NE;
 		if (x > y)
-			r |= M88K_CMP_HS | M88K_CMP_HI;
+			r = M88K_CMP_NE | M88K_CMP_HS | M88K_CMP_HI;
 		else
-			r |= M88K_CMP_LO | M88K_CMP_LS;
+			r = M88K_CMP_NE | M88K_CMP_LO | M88K_CMP_LS;
 		if ((int32_t)x > (int32_t)y)
 			r |= M88K_CMP_GE | M88K_CMP_GT;
 		else
@@ -370,6 +373,8 @@ X(cmp)     { m88k_cmp(cpu, ic, reg(ic->arg[2])); }
  *  extu:      Extract bits, unsigned, W<O> taken from register s2.
  *  ext_imm:   Extract bits, signed, immediate W<O>.
  *  ext:       Extract bits, signed, W<O> taken from register s2.
+ *  mak_imm:   Make bit field, immediate W<O>.
+ *  mak:       Make bit field, W<O> taken from register s2.
  *  clr:       Clear bits, W<O> taken from register s2.
  *  set:       Set bits, W<O> taken from register s2.
  *
@@ -395,6 +400,15 @@ static void m88k_ext(struct cpu *cpu, struct m88k_instr_call *ic, int w, int o)
 	}
 	reg(ic->arg[0]) = x;
 }
+static void m88k_mak(struct cpu *cpu, struct m88k_instr_call *ic, int w, int o)
+{
+	uint32_t x = reg(ic->arg[1]);
+	if (w != 0) {
+		x <<= (32-w);
+		x >>= (32-w);
+	}
+	reg(ic->arg[0]) = x << o;
+}
 X(extu_imm)
 {
 	m88k_extu(cpu, ic, ic->arg[2] >> 5, ic->arg[2] & 0x1f);
@@ -411,6 +425,15 @@ X(ext_imm)
 X(ext)
 {
 	m88k_ext(cpu, ic, (reg(ic->arg[2]) >> 5) & 0x1f,
+	    reg(ic->arg[2]) & 0x1f);
+}
+X(mak_imm)
+{
+	m88k_mak(cpu, ic, ic->arg[2] >> 5, ic->arg[2] & 0x1f);
+}
+X(mak)
+{
+	m88k_mak(cpu, ic, (reg(ic->arg[2]) >> 5) & 0x1f,
 	    reg(ic->arg[2]) & 0x1f);
 }
 X(clr)
@@ -434,7 +457,9 @@ X(set)
  *  or_r0_imm:  d = imm		(optimized case when s1 = r0)
  *  or_imm:     d = s1 | imm
  *  xor_imm:    d = s1 ^ imm
- *  and_imm:    d = s1 & imm
+ *  and_imm:    d = (s1 & imm) | (s1 & 0xffff0000)
+ *  and_u_imm:  d = (s1 & imm) | (s1 & 0xffff)
+ *  mask_imm:   d = s1 & imm
  *  addu_imm:   d = s1 + imm
  *  subu_imm:   d = s1 - imm
  *  mulu_imm:   d = s1 * imm
@@ -445,14 +470,18 @@ X(set)
  *  arg[1] = pointer to register s1
  *  arg[2] = imm
  */
-X(or_r0_imm0) { reg(ic->arg[0]) = 0; }
-X(or_r0_imm)  { reg(ic->arg[0]) = ic->arg[2]; }
-X(or_imm)   { reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2]; }
-X(xor_imm)  { reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2]; }
-X(and_imm)  { reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2]; }
-X(addu_imm) { reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2]; }
-X(subu_imm) { reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2]; }
-X(mulu_imm) { reg(ic->arg[0]) = reg(ic->arg[1]) * ic->arg[2]; }
+X(or_r0_imm0)	{ reg(ic->arg[0]) = 0; }
+X(or_r0_imm)	{ reg(ic->arg[0]) = ic->arg[2]; }
+X(or_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2]; }
+X(xor_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2]; }
+X(and_imm)	{ reg(ic->arg[0]) = (reg(ic->arg[1]) & ic->arg[2])
+		    | (reg(ic->arg[1]) & 0xffff0000); }
+X(and_u_imm)	{ reg(ic->arg[0]) = (reg(ic->arg[1]) & ic->arg[2])
+		    | (reg(ic->arg[1]) & 0xffff); }
+X(mask_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2]; }
+X(addu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2]; }
+X(subu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2]; }
+X(mulu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) * ic->arg[2]; }
 X(divu_imm)
 {
 	if (ic->arg[2] == 0) {
@@ -610,9 +639,12 @@ X(ldcr)
 {
 	SYNCH_PC;
 
-	/*  TODO: Check for kernel/user mode!  */
-
-	m88k_ldcr(cpu, (uint32_t *) (void *) ic->arg[0], ic->arg[1]);
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE) {
+		m88k_ldcr(cpu, (uint32_t *) (void *) ic->arg[0], ic->arg[1]);
+	} else {
+		fatal("TODO: ldcr: Cause exception (non-supervisor access)\n");
+		exit(1);
+	}
 }
 
 
@@ -626,9 +658,12 @@ X(stcr)
 {
 	SYNCH_PC;
 
-	/*  TODO: Check for kernel/user mode!  */
-
-	m88k_stcr(cpu, reg(ic->arg[0]), ic->arg[1]);
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE) {
+		m88k_stcr(cpu, reg(ic->arg[0]), ic->arg[1], 0);
+	} else {
+		fatal("TODO: ldcr: Cause exception (non-supervisor access)\n");
+		exit(1);
+	}
 }
 
 
@@ -807,22 +842,26 @@ X(to_be_translated)
 		}
 		break;
 
-	case 0x10:	/*  and   imm  */
-	case 0x11:	/*  and.u imm  */
-	case 0x14:	/*  xor   imm  */
-	case 0x15:	/*  xor.u imm  */
-	case 0x16:	/*  or    imm  */
-	case 0x17:	/*  or.u  imm  */
-	case 0x18:	/*  addu  imm  */
-	case 0x19:	/*  subu  imm  */
-	case 0x1a:	/*  divu  imm  */
-	case 0x1b:	/*  mulu  imm  */
-	case 0x1e:	/*  div   imm  */
-	case 0x1f:	/*  cmp   imm  */
+	case 0x10:	/*  and    imm  */
+	case 0x11:	/*  and.u  imm  */
+	case 0x12:	/*  mask   imm  */
+	case 0x13:	/*  mask.u imm  */
+	case 0x14:	/*  xor    imm  */
+	case 0x15:	/*  xor.u  imm  */
+	case 0x16:	/*  or     imm  */
+	case 0x17:	/*  or.u   imm  */
+	case 0x18:	/*  addu   imm  */
+	case 0x19:	/*  subu   imm  */
+	case 0x1a:	/*  divu   imm  */
+	case 0x1b:	/*  mulu   imm  */
+	case 0x1e:	/*  div    imm  */
+	case 0x1f:	/*  cmp    imm  */
 		shift = 0;
 		switch (op26) {
 		case 0x10: ic->f = instr(and_imm); break;
-		case 0x11: ic->f = instr(and_imm); shift = 16; break;
+		case 0x11: ic->f = instr(and_u_imm); shift = 16; break;
+		case 0x12: ic->f = instr(mask_imm); break;
+		case 0x13: ic->f = instr(mask_imm); shift = 16; break;
 		case 0x14: ic->f = instr(xor_imm); break;
 		case 0x15: ic->f = instr(xor_imm); shift = 16; break;
 		case 0x16: ic->f = instr(or_imm); break;
@@ -911,10 +950,10 @@ X(to_be_translated)
 
 		break;
 
-	case 0x34:	/*  bb0    */
-	case 0x35:	/*  bb0.n  */
-	case 0x36:	/*  bb1    */
-	case 0x37:	/*  bb1.n  */
+	case 0x34:	/*  bb0     */
+	case 0x35:	/*  bb0.n   */
+	case 0x36:	/*  bb1     */
+	case 0x37:	/*  bb1.n   */
 		switch (op26) {
 		case 0x34:
 			ic->f = instr(bb0);
@@ -947,6 +986,26 @@ X(to_be_translated)
 		}
 		break;
 
+	case 0x3a:	/*  bcnd    */
+	case 0x3b:	/*  bcnd.n  */
+		ic->f = m88k_bcnd[d + 32 * (op26 & 1)];
+		samepage_function = m88k_bcnd[64 + d + 32 * (op26 & 1)];
+
+		if (ic->f == NULL)
+			goto bad;
+
+		ic->arg[0] = (size_t) &cpu->cd.m88k.r[s1];
+
+		offset = (addr & 0xffc) + d16;
+		ic->arg[2] = offset;
+
+		if (offset >= 0 && offset <= 0xffc) {
+			ic->f = samepage_function;
+			ic->arg[2] = (size_t) ( cpu->cd.m88k.cur_ic_page +
+			    (offset >> M88K_INSTR_ALIGNMENT_SHIFT) );
+		}
+		break;
+
 	case 0x3c:
 		switch (op10) {
 
@@ -954,12 +1013,13 @@ X(to_be_translated)
 		case 0x22:	/*  set  */
 		case 0x24:	/*  ext  */
 		case 0x26:	/*  extu  */
+		case 0x28:	/*  mak  */
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[2] = iword & 0x3ff;
 
 			switch (op10) {
-			case 0x20: ic->f = instr(and_imm);
+			case 0x20: ic->f = instr(mask_imm);
 				   {
 					int w = ic->arg[2] >> 5;
 					int o = ic->arg[2] & 0x1f;
@@ -981,6 +1041,7 @@ X(to_be_translated)
 				   break;
 			case 0x24: ic->f = instr(ext_imm); break;
 			case 0x26: ic->f = instr(extu_imm); break;
+			case 0x28: ic->f = instr(mak_imm); break;
 			}
 
 			if (d == M88K_ZERO_REG)
@@ -1058,6 +1119,7 @@ printf("op=%i opsize=%i\n", op, opsize);
 		case 0x88:	/*  set   */
 		case 0x90:	/*  ext   */
 		case 0x98:	/*  extu  */
+		case 0xa0:	/*  mak   */
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
@@ -1075,6 +1137,7 @@ printf("op=%i opsize=%i\n", op, opsize);
 			case 0x88: ic->f = instr(set);  break;
 			case 0x90: ic->f = instr(ext);  break;
 			case 0x98: ic->f = instr(extu); break;
+			case 0xa0: ic->f = instr(mak);  break;
 			}
 
 			/*  Optimization for  or rX,r0,rY  */

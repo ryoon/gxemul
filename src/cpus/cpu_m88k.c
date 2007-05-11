@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.19 2007-05-10 14:33:01 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.20 2007-05-11 01:17:27 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -166,8 +166,8 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Set the Processor ID:  */
 	cpu->cd.m88k.cr[M88K_CR_PID] = cpu->cd.m88k.cpu_type.pid | M88K_PID_MC;
 
-	/*  Start in supervisor mode.  */
-	cpu->cd.m88k.cr[M88K_CR_PSR] = M88K_PSR_MODE;
+	/*  Start in supervisor mode, with interrupts disabled.  */
+	cpu->cd.m88k.cr[M88K_CR_PSR] = M88K_PSR_MODE | M88K_PSR_IND;
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		cpu->cd.m88k.cr[M88K_CR_PSR] |= M88K_PSR_BO;
 
@@ -355,6 +355,12 @@ void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
 	switch (cr) {
 
 	case M88K_CR_PID:
+	case M88K_CR_PSR:
+	case M88K_CR_VBR:
+	case M88K_CR_SR0:
+	case M88K_CR_SR1:
+	case M88K_CR_SR2:
+	case M88K_CR_SR3:
 		break;
 
 	default:fatal("m88k_ldcr: UNIMPLEMENTED cr = 0x%02x (%s)\n",
@@ -370,10 +376,59 @@ void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
  *  m88k_stcr():
  *
  *  Write to a control register.
+ *  (Used by both the stcr and rte instructions.)
  */
-void m88k_stcr(struct cpu *cpu, uint32_t value, int cr)
+void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte)
 {
+	uint32_t old = cpu->cd.m88k.cr[cr];
+
 	switch (cr) {
+
+	case M88K_CR_PSR:	/*  Processor Status Regoster  */
+		if ((cpu->byte_order == EMUL_LITTLE_ENDIAN
+		    && !(value & M88K_PSR_BO)) ||
+		    (cpu->byte_order == EMUL_BIG_ENDIAN
+		    && (value & M88K_PSR_BO))) {
+			fatal("TODO: attempt to change endianness by flipping"
+			    " the endianness bit in the PSR. How should this"
+			    " be handled? Aborting.\n");
+			exit(1);
+		}
+
+		if (!rte && old & M88K_PSR_MODE && !(value & M88K_PSR_MODE))
+			fatal("[ m88k_stcr: WARNING! the PSR_MODE bit is being"
+			    " cleared; this should be done using the RTE "
+			    "instruction only, according to the M88100 "
+			    "manual! Continuing anyway. ]\n");
+
+		if (value & M88K_PSR_MXM) {
+			fatal("m88k_stcr: TODO: MXM support\n");
+			exit(1);
+		}
+
+		cpu->cd.m88k.cr[cr] = value;
+		break;
+
+	case M88K_CR_SSBR:	/*  Shadow ScoreBoard Register  */
+		if (value & 1)
+			fatal("[ m88k_stcr: WARNING! bit 0 non-zero when"
+			    " writing to SSBR (?) ]\n");
+		cpu->cd.m88k.cr[cr] = value;
+		break;
+
+	case M88K_CR_VBR:
+		if (value & 0x00000fff)
+			fatal("[ m88k_stcr: WARNING! bits 0..11 non-zero when"
+			    " writing to VBR (?) ]\n");
+		cpu->cd.m88k.cr[cr] = value;
+		break;
+
+	case M88K_CR_SR0:	/*  Supervisor Storage Registers 0..3  */
+	case M88K_CR_SR1:
+	case M88K_CR_SR2:
+	case M88K_CR_SR3:
+		cpu->cd.m88k.cr[cr] = value;
+		break;
 
 	default:fatal("m88k_stcr: UNIMPLEMENTED cr = 0x%02x (%s)\n",
 		    cr, m88k_cr_name(cpu, cr));

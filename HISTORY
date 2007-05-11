@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1552 2007-05-10 14:33:01 debug Exp $
+$Id: HISTORY,v 1.1553 2007-05-11 01:17:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3485,3 +3485,7 @@ Changelog for GXemul:
 		A big thank you to Miod Vallat for sending me M88K manuals.
 		Implementing more M88K instructions (addu, subu, div[u], mulu,
 		ext[u], clr, set, cmp).
+20070511	Fixing bugs in the M88K "and" and "and.u" instructions (found
+		by comparing against the manual).
+		Implementing more M88K instructions (mask[.u], mak, bcnd (auto-
+		generated)) and some more control register details.

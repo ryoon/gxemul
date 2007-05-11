@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.255 2007-05-11 01:17:27 debug Exp $
+#  $Id: configure,v 1.256 2007-05-11 07:51:56 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -95,7 +95,10 @@ if [ z"$*" != z ]; then
 fi
 
 
-#  Stable releases:
+#  These architectures are included in the stable release of GXemul.
+#  (Generally, I only include those architectures that are emulated well
+#  enough for at least one unmodified guest OS for that architecture to
+#  run in the emulator.)
 ENABLEARM=YES
 ENABLEMIPS=YES
 ENABLEPPC=YES
@@ -106,7 +109,6 @@ if [ z"$UNSTABLE" = zYES ]; then
 	printf "###\n###  DEVELOPMENT (UNSTABLE)\n###\n### "
 	printf "(Enabling some archs that are not working yet.)\n###\n\n"
 	ENABLEALPHA=YES
-	ENABLEAVR=YES
 	ENABLEM88K=YES
 	ENABLESPARC=YES
 fi
@@ -167,10 +169,6 @@ if [ z$ENABLEARM = zYES ]; then
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_re.o tmp_arm_rf.o tmp_arm_multi.o"
 	CPU_TOOLS="$CPU_TOOLS generate_arm_dpi generate_arm_r"
 	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_multi"
-fi
-if [ z$ENABLEAVR = zYES ]; then
-	printf "#define ENABLE_AVR\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_avr.o"
 fi
 if [ z$ENABLEM88K = zYES ]; then
 	printf "#define ENABLE_M88K\n" >> config.h

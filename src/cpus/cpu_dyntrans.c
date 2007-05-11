@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.148 2007-05-11 01:31:20 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.149 2007-05-11 07:51:56 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -306,27 +306,6 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 		I;
 
 		n_instrs = 1;
-	} else if (cpu->machine->cycle_accurate) {
-		/*  Executing multiple instructions, and call devices'
-		    tick functions:  */
-		n_instrs = 0;
-		for (;;) {
-			struct DYNTRANS_IC *ic;
-/*  TODO: continue here  */
-int64_t cycles = cpu->cd.avr.extra_cycles;
-			I;
-			n_instrs += 1;
-cycles = cpu->cd.avr.extra_cycles - cycles + 1;
-/*  The instruction took 'cycles' cycles.  */
-/* printf("A\n"); */
-while (cycles-- > 0)
-	cpu->machine->tick_func[1](cpu, cpu->machine->tick_extra[1]);
-/* printf("B\n"); */
-
-			if (n_instrs + cpu->n_translated_instrs >=
-			    N_SAFE_DYNTRANS_LIMIT)
-				break;
-		}
 	} else if (cpu->machine->statistics_enabled) {
 		/*  Gather statistics while executing multiple instructions:  */
 		n_instrs = 0;

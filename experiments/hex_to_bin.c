@@ -1,5 +1,5 @@
 /*
- *  $Id: hex_to_bin.c,v 1.1 2006-02-26 11:22:23 debug Exp $
+ *  $Id: hex_to_bin.c,v 1.2 2007-05-11 07:51:56 debug Exp $
  *
  *  Quick hack to convert .hex files (such as the AVR Hello World program at
  *  http://www.tfs.net/~petek/atmel/hiworld/hiworld.hex) into raw binaries.
@@ -7,6 +7,10 @@
  *  E.g.  hex_to_bin hiworld.hex hiworld.bin
  *
  *  and then:   gxemul -E bareavr .....  0:hiworld.bin
+ *
+ *  Note: The experimental AVR emulation was removed from GXemul at 20070511.
+ *        Use versions prior to this versions if you want to play with AVR
+ *        emulation.
  */
 
 #include <stdio.h>

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.136 2007-04-20 06:22:28 debug Exp $
+#  $Id: Makefile.skel,v 1.137 2007-05-11 07:51:57 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -12,7 +12,7 @@ OBJS=lk201.o \
 	dev_mc146818.o dev_mk48txx.o \
 	dev_dc7085.o dev_ssc.o dev_scc.o dev_ns16550.o dev_z8530.o \
 	dev_fb.o dev_colorplanemask.o dev_px.o dev_sfb.o dev_pmagja.o \
-	dev_bt459.o dev_bt455.o dev_bt431.o dev_pal.o \
+	dev_bt459.o dev_bt455.o dev_bt431.o \
 	dev_dec21030.o dev_pvr.o dev_mb8696x.o dev_rs5c313.o \
 	dev_vga.o dev_pckbc.o dev_8253.o dev_8259.o dev_pccmos.o \
 	dev_rd94.o dev_jazz.o dev_fdc.o \
@@ -30,7 +30,7 @@ OBJS=lk201.o \
 	dev_pmppc.o dev_bebox.o dev_prep.o dev_footbridge.o dev_algor.o \
 	dev_igsfb.o dev_dreamcast_rtc.o dev_dreamcast_asic.o \
 	dev_dreamcast_maple.o dev_dreamcast_gdrom.o dev_dreamcast_g2.o \
-	dev_i80321.o dev_iq80321_7seg.o dev_avr.o dev_sh4.o \
+	dev_i80321.o dev_iq80321_7seg.o dev_sh4.o \
 	dev_lca.o \
 	bus_isa.o bus_pci.o \
 	autodev.o

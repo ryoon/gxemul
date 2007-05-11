@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.163 2007-05-01 12:53:00 debug Exp $
+ *  $Id: machine.h,v 1.164 2007-05-11 07:51:57 debug Exp $
  */
 
 #include <sys/types.h>
@@ -81,10 +81,6 @@ struct machine {
 	int	arch;			/*  ARCH_MIPS, ARCH_PPC, ..  */
 	int	machine_type;		/*  MACHINE_PMAX, ..  */
 	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
-
-	/*  NOTE/TODO: This isn't working yet:  */
-	int	cycle_accurate;		/*  Set to non-zero for cycle
-					    accurate (slow) emulation.  */
 
 	/*  Name set by code in src/machines/machine_*.c:  */
 	char	*machine_name;
@@ -231,8 +227,7 @@ struct machine {
 #define	ARCH_ALPHA		4
 #define	ARCH_ARM		5
 #define	ARCH_SH			6
-#define	ARCH_AVR		7
-#define	ARCH_M88K		8
+#define	ARCH_M88K		7
 
 /*  MIPS:  */
 #define	MACHINE_BAREMIPS	1000
@@ -289,15 +284,10 @@ struct machine {
 #define	MACHINE_DREAMCAST	6003
 #define	MACHINE_LANDISK		6004
 
-/*  AVR:  */
-#define	MACHINE_BAREAVR		7000
-#define	MACHINE_AVR_PAL		7001
-#define	MACHINE_AVR_MAHPONG	7002
-
 /*  M88K:  */
-#define	MACHINE_BAREM88K	8000
-#define	MACHINE_TESTM88K	8001
-#define	MACHINE_MVME88K		8002
+#define	MACHINE_BAREM88K	7000
+#define	MACHINE_TESTM88K	7001
+#define	MACHINE_MVME88K		7002
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0

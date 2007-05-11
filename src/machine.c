@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.693 2007-01-28 14:15:29 debug Exp $
+ *  $Id: machine.c,v 1.694 2007-05-11 07:51:56 debug Exp $
  */
 
 #include <stdio.h>
@@ -288,18 +288,16 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 		exit(1);
 	}
 
-	if (!machine->cycle_accurate) {
-		/*
-		 *  The dyntrans subsystem wants to run code in relatively
-		 *  large chunks without checking for external interrupts;
-		 *  too low tickshifts are not allowed.
-		 */
-		if (tickshift < N_SAFE_DYNTRANS_LIMIT_SHIFT) {
-			fatal("ERROR! tickshift = %i, less than "
-			    "N_SAFE_DYNTRANS_LIMIT_SHIFT (%i)\n",
-			    tickshift, N_SAFE_DYNTRANS_LIMIT_SHIFT);
-			exit(1);
-		}
+	/*
+	 *  The dyntrans subsystem wants to run code in relatively
+	 *  large chunks without checking for external interrupts;
+	 *  too low tickshifts are not allowed.
+	 */
+	if (tickshift < N_SAFE_DYNTRANS_LIMIT_SHIFT) {
+		fatal("ERROR! tickshift = %i, less than "
+		    "N_SAFE_DYNTRANS_LIMIT_SHIFT (%i)\n",
+		    tickshift, N_SAFE_DYNTRANS_LIMIT_SHIFT);
+		exit(1);
 	}
 
 	machine->ticks_till_next[n]   = 0;

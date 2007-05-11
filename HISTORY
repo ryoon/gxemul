@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1553 2007-05-11 01:17:26 debug Exp $
+$Id: HISTORY,v 1.1554 2007-05-11 07:51:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3489,3 +3489,5 @@ Changelog for GXemul:
 		by comparing against the manual).
 		Implementing more M88K instructions (mask[.u], mak, bcnd (auto-
 		generated)) and some more control register details.
+		Cleanup: Removing the experimental AVR emulation mode and
+		corresponding devices; AVR emulation wasn't really meaningful.

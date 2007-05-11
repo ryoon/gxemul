@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.376 2007-04-19 15:18:15 debug Exp $
+ *  $Id: cpu.c,v 1.377 2007-05-11 07:51:56 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -581,10 +581,6 @@ void cpu_init(void)
 
 #ifdef ENABLE_ARM
 	add_cpu_family(arm_cpu_family_init, ARCH_ARM);
-#endif
-
-#ifdef ENABLE_AVR
-	add_cpu_family(avr_cpu_family_init, ARCH_AVR);
 #endif
 
 #ifdef ENABLE_M88K

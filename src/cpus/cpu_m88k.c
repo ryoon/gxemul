@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.20 2007-05-11 01:17:27 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.21 2007-05-11 01:31:20 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -152,7 +152,7 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 	{
 		struct interrupt template;
 		char name[50];
-		snprintf(name, sizeof(name), "%s.irq", cpu->path);
+		snprintf(name, sizeof(name), "%s", cpu->path);
 
                 memset(&template, 0, sizeof(template));
                 template.line = 0;

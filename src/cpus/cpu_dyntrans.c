@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.147 2007-04-19 15:18:16 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.148 2007-05-11 01:31:20 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1794,6 +1794,13 @@ stop_running_translated:
 
 	ic = cpu->cd.DYNTRANS_ARCH.next_ic = &nothing_call;
 	cpu->cd.DYNTRANS_ARCH.next_ic ++;
+
+#ifdef DYNTRANS_DELAYSLOT
+	/*  Special hack: If the bad instruction was in a delay slot,
+	    make sure that execution does not continue anyway:  */
+	if (cpu->delay_slot)
+		cpu->delay_slot |= EXCEPTION_IN_DELAY_SLOT;
+#endif
 
 	/*  Execute the "nothing" instruction:  */
 	ic->f(cpu, ic);

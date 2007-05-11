@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.33 2007-04-19 15:18:16 debug Exp $
+ *  $Id: machine_test.c,v 1.34 2007-05-11 01:31:21 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -52,13 +52,15 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 {
 	char tmpstr[1000];
 
-	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=none",
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64,
 	    (uint64_t) DEV_CONS_ADDRESS);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
+#if 0
 	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64,
 	    (uint64_t) DEV_MP_ADDRESS);
 	device_add(machine, tmpstr);
+#endif
 
 	snprintf(tmpstr, sizeof(tmpstr), "fbctrl addr=0x%"PRIx64,
 	    (uint64_t) DEV_FBCTRL_ADDRESS);
@@ -68,11 +70,11 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 	    (uint64_t) DEV_DISK_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=none",
+	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64,
 	    (uint64_t) DEV_ETHER_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=none",
+	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64,
 	    (uint64_t) DEV_RTC_ADDRESS);
 	device_add(machine, tmpstr);
 }

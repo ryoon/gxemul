@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.2 2007-05-11 14:46:55 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.3 2007-05-12 00:25:55 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  
@@ -56,8 +56,6 @@
  *
  *  TODO:
  *	USR bit
- *	32-bit aligned 64-bit loads/stores (because these are allowed
- *		by the m88k architecture!)
  */
 
 
@@ -74,9 +72,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 	    ic->arg[2];
 #endif
 	uint8_t data[LS_SIZE];
-#ifdef LS_LOAD
 	uint64_t x;
-#endif
 
 	/*  Synchronize the PC:  */
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.m88k.cur_ic_page)
@@ -89,7 +85,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 	if (addr & (LS_SIZE - 1)) {
 #if 0
 		/*  Cause an address alignment exception:  */
-		m88k_cpu_exception(cpu, ....
+		m88k_cpu_exception(cpu, M88K_EXCEPTION_MISALIGNED_ACCESS, 0);
 #else
 		fatal("{ m88k dyntrans alignment exception, size = %i,"
 		    " addr = %016"PRIx32", pc = %016"PRIx32" }\n", LS_SIZE,
@@ -99,6 +95,9 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 		cpu->running = 0;
 		debugger_n_steps_left_before_interaction = 0;
 		cpu->cd.m88k.next_ic = &nothing_call;
+
+		if (cpu->delay_slot)
+			cpu->delay_slot |= EXCEPTION_IN_DELAY_SLOT;
 #endif
 		return;
 	}
@@ -111,6 +110,15 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 		return;
 	}
 	x = memory_readmax64(cpu, data, LS_SIZE);
+#ifdef LS_8
+	if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+		reg(ic->arg[0]) = x >> 32;
+		reg(ic->arg[0] + 4) = x;
+	} else {
+		reg(ic->arg[0]) = x;
+		reg(ic->arg[0] + 4) = x >> 32;
+	}
+#else
 #ifdef LS_SIGNED
 #ifdef LS_1
 	x = (int8_t)x;
@@ -123,8 +131,19 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 #endif
 #endif
 	reg(ic->arg[0]) = x;
+#endif
+
 #else	/*  LS_STORE:  */
-	memory_writemax64(cpu, data, LS_SIZE, reg(ic->arg[0]));
+
+#ifdef LS_8
+	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+		x = ((uint64_t)reg(ic->arg[0]) << 32) + reg(ic->arg[0] + 4);
+	else
+		x = ((uint64_t)reg(ic->arg[0] + 4) << 32) + reg(ic->arg[0]);
+#else
+	x = reg(ic->arg[0]);
+#endif
+	memory_writemax64(cpu, data, LS_SIZE, x);
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, CACHE_DATA)) {
 		/*  Exception.  */
@@ -223,26 +242,39 @@ exit(1);
 #endif	/*  LS_4  */
 
 #ifdef LS_8
-	*((uint64_t *)ic->arg[0]) =
+
+	/*  Load first word in pair:  */
+	reg(ic->arg[0]) =
 #ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
-	    ( *(uint64_t *)(p + addr) );
+	    ( *(uint32_t *)(p + addr) );
 #else
-	    ((uint64_t)p[addr] << 56) + ((uint64_t)p[addr+1] << 48) +
-	    ((uint64_t)p[addr+2] << 40) + ((uint64_t)p[addr+3] << 32) +
-	    ((uint64_t)p[addr+4] << 24) +
-	    (p[addr+5] << 16) + (p[addr+6] << 8) + p[addr+7];
+	    ((p[addr]<<24) + (p[addr+1]<<16) + (p[addr+2]<<8) + p[addr+3]);
 #endif
 #else
 #ifdef HOST_LITTLE_ENDIAN
-	    ( *(uint64_t *)(p + addr) );
+	    ( *(uint32_t *)(p + addr + 4) );
 #else
-	    p[addr+0] + (p[addr+1] << 8) + (p[addr+2] << 16) +
-	    ((uint64_t)p[addr+3] << 24) + ((uint64_t)p[addr+4] << 32) +
-	    ((uint64_t)p[addr+5] << 40) + ((uint64_t)p[addr+6] << 48) +
-	    ((uint64_t)p[addr+7] << 56);
+	    (p[addr+4] + (p[addr+5]<<8) + (p[addr+6]<<16) + (p[addr+7]<<24));
 #endif
 #endif
+
+	/*  Load second word in pair:  */
+	reg(ic->arg[0] + 4) =
+#ifdef LS_BE
+#ifdef HOST_BIG_ENDIAN
+	    ( *(uint32_t *)(p + addr + 4) );
+#else
+	    ((p[addr+4]<<24) + (p[addr+5]<<16) + (p[addr+6]<<8) + p[addr+7]);
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	    ( *(uint32_t *)(p + addr) );
+#else
+	    (p[addr] + (p[addr+1]<<8) + (p[addr+2]<<16) + (p[addr+3]<<24));
+#endif
+#endif
+
 #endif	/*  LS_8  */
 
 #else
@@ -286,24 +318,43 @@ exit(1);
 #endif
 #endif  /*  LS_4  */
 #ifdef LS_8
-	{ uint64_t x = *(uint64_t *)(ic->arg[0]);
+
+	/*  First word in pair:  */
+	{ uint32_t x = reg(ic->arg[0]);
 #ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
-	*((uint64_t *)(p+addr)) = x; }
+	*((uint32_t *)(p+addr)) = x; }
 #else
-	p[addr]   = x >> 56; p[addr+1] = x >> 48; p[addr+2] = x >> 40;
-	p[addr+3] = x >> 32; p[addr+4] = x >> 24; p[addr+5] = x >> 16;
-	p[addr+6] = x >> 8;  p[addr+7] = x; }
+	p[addr]   = x >> 24; p[addr+1] = x >> 16;
+	p[addr+2] = x >> 8;  p[addr+3] = x; }
 #endif
 #else
 #ifdef HOST_LITTLE_ENDIAN
-	*((uint64_t *)(p+addr)) = x; }
+	*((uint32_t *)(p+addr+4)) = x; }
 #else
-	p[addr]   = x;       p[addr+1] = x >>  8; p[addr+2] = x >> 16;
-	p[addr+3] = x >> 24; p[addr+4] = x >> 32; p[addr+5] = x >> 40;
-	p[addr+6] = x >> 48; p[addr+7] = x >> 56; }
+	p[addr  +4] = x;        p[addr+1+4] = x >> 8;
+	p[addr+2+4] = x >> 16;  p[addr+3+4] = x >> 24; }
 #endif
 #endif
+
+	/*  Second word in pair:  */
+	{ uint32_t x = reg(ic->arg[0]);
+#ifdef LS_BE
+#ifdef HOST_BIG_ENDIAN
+	*((uint32_t *)(p+addr+4)) = x; }
+#else
+	p[addr  +4] = x >> 24; p[addr+1+4] = x >> 16;
+	p[addr+2+4] = x >> 8;  p[addr+3+4] = x; }
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	*((uint32_t *)(p+addr)) = x; }
+#else
+	p[addr  ] = x;        p[addr+1] = x >> 8;
+	p[addr+2] = x >> 16;  p[addr+3] = x >> 24; }
+#endif
+#endif
+
 #endif	/*  LS_8  */
 
 #endif	/*  store  */

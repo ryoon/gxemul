@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.19 2007-05-11 23:22:21 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.20 2007-05-12 00:36:18 debug Exp $
  *
  *  M88K instructions.
  *
@@ -519,6 +519,8 @@ X(set)
  *  mask_imm:   d = s1 & imm
  *  addu_imm:   d = s1 + imm
  *  subu_imm:   d = s1 - imm
+ *  inc_reg:    d ++;		(addu special case; d = d + 1)
+ *  dec_reg:    d --;		(subu special case; d = d - 1)
  *  mulu_imm:   d = s1 * imm
  *  divu_imm:   d = s1 / imm	(unsigned)
  *  div_imm:    d = s1 / imm	(signed)
@@ -539,6 +541,8 @@ X(and_u_imm)	{ reg(ic->arg[0]) = (reg(ic->arg[1]) & ic->arg[2])
 X(mask_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2]; }
 X(addu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2]; }
 X(subu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2]; }
+X(inc_reg)	{ reg(ic->arg[0]) ++; }
+X(dec_reg)	{ reg(ic->arg[0]) --; }
 X(mulu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) * ic->arg[2]; }
 X(divu_imm)
 {
@@ -980,6 +984,13 @@ X(to_be_translated)
 				ic->f = instr(or_r0_imm0);
 			else
 				ic->f = instr(or_r0_imm);
+		}
+
+		if (d == s1 && ic->arg[2] == 1) {
+			if (ic->f == instr(addu_imm))
+				ic->f = instr(inc_reg);
+			if (ic->f == instr(subu_imm))
+				ic->f = instr(dec_reg);
 		}
 
 		if (d == M88K_ZERO_REG)

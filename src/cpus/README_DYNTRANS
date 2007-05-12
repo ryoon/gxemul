@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.16 2007-05-09 10:27:51 debug Exp $
+$Id: README_DYNTRANS,v 1.17 2007-05-12 08:25:43 debug Exp $
 
 This README is old. Hm.
 
@@ -27,11 +27,12 @@ Dyntrans TODO:
 	OpenRISC	?				?		?
 	PC532		?				32 (?)		?
 	POWER/PPC	32-bit				64/32		no
-	RCA180x		8-bit				8-16 (?)	no
+	RCA180x		8-bit (+ variable on 1805)	8-16 (?)	no
 	SH		32-bit, 16-bit (SHcompact)	64/32		yes(*)
 	SPARC		32-bit				64/32		yes
 	Transputer	8-bit				32/16		no
-	x86		8-bit + variable		64/32/16	no
+	x86/AMD64	8-bit + variable		64/32/16	no
+	Z80000		16-bit + variable		32		no(?)
 	VAX		8-bit + variable		32		no
 
 	(*) Delay slot in SHcompact/32-bit-mode

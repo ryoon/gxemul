@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.4 2007-05-11 14:46:55 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.5 2007-05-12 09:34:38 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
@@ -96,6 +96,9 @@ MACHINE_SETUP(mvme88k)
 	 *  r7 = ((Clun << 8) | Dlun): encoded bootdev
 	 *  r8 = board type (0x187, 0x188, 0x197)
 	 */
+
+	/*  Some address beyond the loaded kernel:  */
+	cpu->cd.m88k.r[4] = 6 * 1048576;
 
 	switch (machine->machine_subtype) {
 	case MACHINE_MVME88K_187:  cpu->cd.m88k.r[8] = 0x187; break;

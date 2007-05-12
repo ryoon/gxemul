@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.6 2007-05-12 10:32:05 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.7 2007-05-12 23:07:39 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
@@ -114,6 +114,9 @@ MACHINE_SETUP(mvme88k)
 	case MACHINE_MVME88K_188:  cpu->cd.m88k.r[8] = 0x188; break;
 	case MACHINE_MVME88K_197:  cpu->cd.m88k.r[8] = 0x197; break;
 	}
+
+	/*  TODO: r3 and r7 must be set correctly to let
+	    OpenBSD/mvme88k detect correct boot device.  */
 }
 
 

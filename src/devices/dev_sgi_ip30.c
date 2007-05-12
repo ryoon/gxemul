@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.24 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.25 2007-05-12 01:14:01 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -402,7 +402,7 @@ DEVINIT(sgi_ip30)
 	    NULL);
 
 	machine_add_tickfunction(devinit->machine,
-	    dev_sgi_ip30_tick, d, 16, 0.0);
+	    dev_sgi_ip30_tick, d, 16);
 
 	return 1;
 }

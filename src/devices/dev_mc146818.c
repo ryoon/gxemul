@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.96 2007-05-01 05:26:48 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.97 2007-05-12 01:14:00 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -58,7 +58,7 @@
 
 /*  #define MC146818_DEBUG  */
 
-#define	TICK_SHIFT	14
+#define	MC146818_TICK_SHIFT	14
 
 
 /*  256 on DECstation, SGI uses reg at 72*4 as the Century  */
@@ -704,6 +704,6 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	mc146818_update_time(d);
 
 	machine_add_tickfunction(machine, dev_mc146818_tick, d,
-	    TICK_SHIFT, 0.0);
+	    MC146818_TICK_SHIFT);
 }
 

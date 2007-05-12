@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtc.c,v 1.5 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_rtc.c,v 1.6 2007-05-12 01:14:01 debug Exp $
  *
  *  An experimental Real-Time Clock device. It can be used to retrieve the
  *  current system time, and to cause periodic interrupts.
@@ -174,7 +174,7 @@ DEVINIT(rtc)
 	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine,
-	    dev_rtc_tick, d, DEV_RTC_TICK_SHIFT, 0.0);
+	    dev_rtc_tick, d, DEV_RTC_TICK_SHIFT);
 
 	return 1;
 }

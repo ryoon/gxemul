@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_asic.c,v 1.7 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_dreamcast_asic.c,v 1.8 2007-05-12 01:14:00 debug Exp $
  *  
  *  Dreamcast ASIC.
  *
@@ -219,7 +219,7 @@ DEVINIT(dreamcast_asic)
 	    SYSASIC_SIZE, dev_dreamcast_asic_access, d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_dreamcast_asic_tick, d,
-	    DREAMCAST_ASIC_TICK_SHIFT, 0.0);
+	    DREAMCAST_ASIC_TICK_SHIFT);
 
 	return 1;
 }

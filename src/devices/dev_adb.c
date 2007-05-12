@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.12 2007-01-28 11:29:52 debug Exp $
+ *  $Id: dev_adb.c,v 1.13 2007-05-12 01:13:59 debug Exp $
  *
  *  ADB (Apple Desktop Bus) controller.
  *
@@ -453,7 +453,7 @@ DEVINIT(adb)
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_ADB_LENGTH, dev_adb_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_adb_tick, d,
-	    TICK_SHIFT, 0.0);
+	    TICK_SHIFT);
 
 	return 1;
 }

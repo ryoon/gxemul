@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.74 2007-02-16 19:57:56 debug Exp $
+ *  $Id: dev_wdc.c,v 1.75 2007-05-12 01:14:01 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -964,7 +964,7 @@ DEVINIT(wdc)
 	    d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_wdc_tick,
-	    d, tick_shift, 0.0);
+	    d, tick_shift);
 
 	devinit->return_ptr = d;
 

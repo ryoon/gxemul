@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.35 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.36 2007-05-12 01:14:01 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -443,6 +443,6 @@ void dev_sgi_gbe_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "sgi_gbe", baseaddr, DEV_SGI_GBE_LENGTH,
 	    dev_sgi_gbe_access, d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_sgi_gbe_tick, d, 18, 0.0);
+	machine_add_tickfunction(machine, dev_sgi_gbe_tick, d, 18);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.21 2007-01-28 00:41:16 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.22 2007-05-12 01:14:00 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -213,7 +213,7 @@ DEVINIT(dec5800)
 	    devinit->addr + 0x30000000, 0x100, dev_dec5800_vectors_access,
 	    d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_dec5800_tick,
-	    d, 14, 0.0);
+	    d, 14);
 
 	return 1;
 }

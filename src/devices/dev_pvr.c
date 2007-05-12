@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.21 2007-04-28 09:19:52 debug Exp $
+ *  $Id: dev_pvr.c,v 1.22 2007-05-12 01:14:01 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -1221,7 +1221,7 @@ DEVINIT(pvr)
 	pvr_reset_ta(d);
 
 	machine_add_tickfunction(machine, dev_pvr_fb_tick, d,
-	    PVR_FB_TICK_SHIFT, 0.0);
+	    PVR_FB_TICK_SHIFT);
 
 	return 1;
 }

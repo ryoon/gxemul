@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.48 2007-05-01 04:03:09 debug Exp $
+ *  $Id: dev_sh4.c,v 1.49 2007-05-12 01:14:01 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -1720,7 +1720,7 @@ DEVINIT(sh4)
 
 	d->sh4_timer = timer_add(SH4_PSEUDO_TIMER_HZ, sh4_timer_tick, d);
 	machine_add_tickfunction(devinit->machine, dev_sh4_tick, d,
-	    SH4_TICK_SHIFT, 0.0);
+	    SH4_TICK_SHIFT);
 
 	/*  Initial Timer values, according to the SH7750 manual:  */
 	d->tcor[0] = 0xffffffff; d->tcnt[0] = 0xffffffff;

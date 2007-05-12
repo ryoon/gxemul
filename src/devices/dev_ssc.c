@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.29 2007-01-28 00:41:17 debug Exp $
+ *  $Id: dev_ssc.c,v 1.30 2007-05-12 01:14:01 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -50,6 +50,7 @@
 #define	TX_INT_ENABLE	0x40
 #define	TX_READY	0x80
 
+#define	SSC_TICK_SHIFT	14
 
 /*
  *  _TXRX is for debugging putchar/getchar. The other
@@ -246,6 +247,6 @@ void dev_ssc_init(struct machine *machine, struct memory *mem,
 	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH,
 	    dev_ssc_access, d, DM_DEFAULT, NULL);
 
-	machine_add_tickfunction(machine, dev_ssc_tick, d, 14, 0.0);
+	machine_add_tickfunction(machine, dev_ssc_tick, d, SSC_TICK_SHIFT);
 }
 

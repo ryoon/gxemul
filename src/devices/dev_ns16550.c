@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.58 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.59 2007-05-12 01:14:00 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -364,7 +364,7 @@ DEVINIT(ns16550)
 	    DEV_NS16550_LENGTH * d->addrmult, dev_ns16550_access, d,
 	    DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine,
-	    dev_ns16550_tick, d, TICK_SHIFT, 0.0);
+	    dev_ns16550_tick, d, TICK_SHIFT);
 
 	/*
 	 *  NOTE:  Ugly cast into a pointer, because this is a convenient way

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.28 2007-01-05 15:20:06 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.29 2007-05-12 01:14:00 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -1011,7 +1011,7 @@ DEVINIT(dec21143)
 	    devinit->addr, 0x100, dev_dec21143_access, d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine,
-	    dev_dec21143_tick, d, DEC21143_TICK_SHIFT, 0.0);
+	    dev_dec21143_tick, d, DEC21143_TICK_SHIFT);
 
 	/*
 	 *  NetBSD/cats uses memory accesses, OpenBSD/cats uses I/O registers.

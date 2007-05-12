@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.21 2007-04-28 09:19:52 debug Exp $
+ *  $Id: dev_i80321.c,v 1.22 2007-05-12 01:14:00 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -354,7 +354,7 @@ DEVINIT(i80321)
 	d->timer = timer_add(d->hz, tmr0_tick, d);
 
 	machine_add_tickfunction(devinit->machine, dev_i80321_tick,
-	    d, TICK_SHIFT, 0.0);
+	    d, TICK_SHIFT);
 
 	devinit->return_ptr = d->pci_bus;
 

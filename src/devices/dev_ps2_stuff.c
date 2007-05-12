@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.31 2007-02-16 16:48:07 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.32 2007-05-12 01:14:01 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -474,7 +474,7 @@ DEVINIT(ps2)
 	memory_device_register(devinit->machine->memory, "ps2", devinit->addr,
 	    DEV_PS2_LENGTH, dev_ps2_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine,
-	    dev_ps2_tick, d, TICK_STEPS_SHIFT, 0.0);
+	    dev_ps2_tick, d, TICK_STEPS_SHIFT);
 
 	return 1;
 }

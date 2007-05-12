@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.694 2007-05-11 07:51:56 debug Exp $
+ *  $Id: machine.c,v 1.695 2007-05-12 01:13:59 debug Exp $
  */
 
 #include <stdio.h>
@@ -278,7 +278,7 @@ int machine_name_to_type(char *stype, char *ssubtype,
  *  The hz value is used in this case.
  */
 void machine_add_tickfunction(struct machine *machine, void (*func)
-	(struct cpu *, void *), void *extra, int tickshift, double hz)
+	(struct cpu *, void *), void *extra, int tickshift)
 {
 	int n = machine->n_tick_entries;
 
@@ -304,7 +304,6 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 	machine->ticks_reset_value[n] = 1 << tickshift;
 	machine->tick_func[n]         = func;
 	machine->tick_extra[n]        = extra;
-	machine->tick_hz[n]           = hz;
 
 	machine->n_tick_entries ++;
 }

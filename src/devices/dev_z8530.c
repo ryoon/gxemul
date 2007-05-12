@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.13 2007-01-28 14:31:43 debug Exp $
+ *  $Id: dev_z8530.c,v 1.14 2007-05-12 01:14:02 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -233,7 +233,7 @@ DEVINIT(z8530)
 	    NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_z8530_tick, d,
-	    ZS_TICK_SHIFT, 0.0);
+	    ZS_TICK_SHIFT);
 
 	devinit->return_ptr = (void *)(size_t) d->console_handle[0];
 

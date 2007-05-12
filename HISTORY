@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1558 2007-05-12 00:25:55 debug Exp $
+$Id: HISTORY,v 1.1559 2007-05-12 01:13:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3499,3 +3499,4 @@ Changelog for GXemul:
 20070512	Fixing a bug in the M88K cmp instruction.
 		Adding the M88K lda (scaled register) instruction.
 		Fixing bugs in 64-bit (32-bit pairs) M88K loads/stores.
+		Removing the unused tick_hz stuff from the machine struct.

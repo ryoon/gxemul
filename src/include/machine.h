@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.164 2007-05-11 07:51:57 debug Exp $
+ *  $Id: machine.h,v 1.165 2007-05-12 01:14:02 debug Exp $
  */
 
 #include <sys/types.h>
@@ -115,7 +115,6 @@ struct machine {
 	int	ticks_reset_value[MAX_TICK_FUNCTIONS];
 	void	(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
 	void	*tick_extra[MAX_TICK_FUNCTIONS];
-	double	tick_hz[MAX_TICK_FUNCTIONS];
 
 	char	*cpu_name;  /*  TODO: remove this, there could be several
 				cpus with different names in a machine  */
@@ -421,8 +420,7 @@ void machine_destroy(struct machine *machine);
 int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch);
 void machine_add_tickfunction(struct machine *machine,
-	void (*func)(struct cpu *, void *), void *extra,
-	int clockshift, double hz);
+	void (*func)(struct cpu *, void *), void *extra, int clockshift);
 void machine_statistics_init(struct machine *, char *fname);
 void machine_register(char *name, MACHINE_SETUP_TYPE(setup));
 void dump_mem_string(struct cpu *cpu, uint64_t addr);

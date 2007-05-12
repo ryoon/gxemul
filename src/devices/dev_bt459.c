@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.67 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_bt459.c,v 1.68 2007-05-12 01:14:00 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -584,6 +584,6 @@ void dev_bt459_init(struct machine *machine, struct memory *mem,
 		    dev_bt459_irq_access, (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_bt459_tick, d,
-	    BT459_TICK_SHIFT, 0.0);
+	    BT459_TICK_SHIFT);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.51 2007-01-29 18:32:01 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.52 2007-05-12 01:14:01 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -306,7 +306,7 @@ void dev_crime_init(struct machine *machine, struct memory *mem,
 	device_add(machine, tmpstr);
 
 	machine_add_tickfunction(machine, dev_crime_tick, d,
-	    CRIME_TICKSHIFT, 0.0);
+	    CRIME_TICKSHIFT);
 }
 
 
@@ -1117,7 +1117,7 @@ void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_sgi_mec_tick, d,
-	    MEC_TICK_SHIFT, 0.0);
+	    MEC_TICK_SHIFT);
 
 	net_add_nic(machine->emul->net, d, macaddr);
 }

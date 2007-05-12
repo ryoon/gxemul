@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.55 2007-02-03 16:18:56 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.56 2007-05-12 01:14:00 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -594,8 +594,9 @@ DEVINIT(footbridge)
 		d->timer_control[i] = TIMER_MODE_PERIODIC;
 		d->timer_load[i] = TIMER_MAX_VAL;
 	}
+
 	machine_add_tickfunction(devinit->machine,
-	    dev_footbridge_tick, d, DEV_FOOTBRIDGE_TICK_SHIFT, 0.0);
+	    dev_footbridge_tick, d, DEV_FOOTBRIDGE_TICK_SHIFT);
 
 	devinit->return_ptr = d->pcibus;
 	return 1;

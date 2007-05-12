@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.15 2007-04-28 09:19:51 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.16 2007-05-12 01:14:00 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -646,7 +646,7 @@ DEVINIT(dreamcast_maple)
 	machine->main_console_handle = d->console_handle;
 
 	machine_add_tickfunction(devinit->machine, dev_maple_tick, d,
-	    MAPLE_TICK_SHIFT, 0.0);
+	    MAPLE_TICK_SHIFT);
 
 	return 1;
 }

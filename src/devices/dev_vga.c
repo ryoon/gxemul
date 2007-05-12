@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.101 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_vga.c,v 1.102 2007-05-12 01:14:01 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -1280,8 +1280,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->update_y2 = d->max_y - 1;
 	d->modified = 1;
 
-	machine_add_tickfunction(machine, dev_vga_tick, d,
-	    VGA_TICK_SHIFT, 0.0);
+	machine_add_tickfunction(machine, dev_vga_tick, d, VGA_TICK_SHIFT);
 
 	register_reset(d);
 

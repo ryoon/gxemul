@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.27 2007-01-28 13:28:27 debug Exp $
+ *  $Id: dev_jazz.c,v 1.28 2007-05-12 01:14:00 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  *
@@ -702,7 +702,7 @@ DEVINIT(jazz)
 	/*  Add a timer, hardcoded to 100 Hz. TODO: Don't hardcode!  */
 	d->timer = timer_add(100.0, timer_tick, d);
 	machine_add_tickfunction(devinit->machine, dev_jazz_tick,
-	    d, DEV_JAZZ_TICKSHIFT, 0.0);
+	    d, DEV_JAZZ_TICKSHIFT);
 
 	devinit->return_ptr = d;
 

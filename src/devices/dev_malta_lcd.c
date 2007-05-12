@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta_lcd.c,v 1.9 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_malta_lcd.c,v 1.10 2007-05-12 01:14:00 debug Exp $
  *
  *  Malta (evbmips) LCD thingy. Mostly a dummy device.
  */
@@ -136,7 +136,7 @@ DEVINIT(malta_lcd)
 	    dev_malta_lcd_access, (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_malta_lcd_tick,
-	    d, MALTA_LCD_TICK_SHIFT, 0.0);
+	    d, MALTA_LCD_TICK_SHIFT);
 
 	return 1;
 }

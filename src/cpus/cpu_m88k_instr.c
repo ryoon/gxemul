@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.21 2007-05-12 09:34:49 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.22 2007-05-12 10:02:39 debug Exp $
  *
  *  M88K instructions.
  *
@@ -280,6 +280,48 @@ X(bb1_n_samepage)
 			cpu->cd.m88k.next_ic ++;
 	} else
 		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  ff0, ff1: Find first cleared/set bit in a register
+ *
+ *  arg[0] = pointer to register d
+ *  arg[2] = pointer to register s2
+ */
+X(ff0)
+{
+	uint32_t mask = 0x80000000, s2 = reg(ic->arg[2]);
+	int n = 31;
+
+	for (;;) {
+		if (!(s2 & mask)) {
+			reg(ic->arg[0]) = n;
+			return;
+		}
+		mask >>= 1; n--;
+		if (mask == 0) {
+			reg(ic->arg[0]) = 32;
+			return;
+		}
+	}
+}
+X(ff1)
+{
+	uint32_t mask = 0x80000000, s2 = reg(ic->arg[2]);
+	int n = 31;
+
+	for (;;) {
+		if (s2 & mask) {
+			reg(ic->arg[0]) = n;
+			return;
+		}
+		mask >>= 1; n--;
+		if (mask == 0) {
+			reg(ic->arg[0]) = 32;
+			return;
+		}
+	}
 }
 
 
@@ -582,8 +624,11 @@ X(sub_imm)
  *  xor:    	d = s1 ^ s2
  *  and:    	d = s1 & s2
  *  addu:   	d = s1 + s2
+ *  addu_co:   	d = s1 + s2		carry out
+ *  addu_ci:   	d = s1 + s2 + carry	carry in
  *  lda_reg_X:	same as addu, but s2 is scaled by 2, 4, or 8
  *  subu:   	d = s1 - s2
+ *  subu_co:   	d = s1 - s2		carry/borrow out
  *  mul:    	d = s1 * s2
  *  divu:   	d = s1 / s2		(unsigned)
  *  div:    	d = s1 / s2		(signed)
@@ -617,6 +662,31 @@ X(div)
 		exit(1);
 	}
 	reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / reg(ic->arg[2]);
+}
+X(addu_co)
+{
+	uint64_t a = reg(ic->arg[1]), b = reg(ic->arg[2]);
+	a += b;
+	reg(ic->arg[0]) = a;
+	cpu->cd.m88k.cr[M88K_CR_PSR] &= ~M88K_PSR_C;
+	if ((a >> 32) & 1)
+		cpu->cd.m88k.cr[M88K_CR_PSR] |= M88K_PSR_C;
+}
+X(addu_ci)
+{
+	uint32_t result = reg(ic->arg[1]) + reg(ic->arg[2]);
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_C)
+		result ++;
+	reg(ic->arg[0]) = result;
+}
+X(subu_co)
+{
+	uint64_t a = reg(ic->arg[1]), b = reg(ic->arg[2]);
+	a -= b;
+	reg(ic->arg[0]) = a;
+	cpu->cd.m88k.cr[M88K_CR_PSR] |= M88K_PSR_C;
+	if ((a >> 32) & 1)
+		cpu->cd.m88k.cr[M88K_CR_PSR] &= ~M88K_PSR_C;
 }
 
 
@@ -1345,7 +1415,10 @@ X(to_be_translated)
 		case 0x50:	/*  xor   */
 		case 0x58:	/*  or    */
 		case 0x60:	/*  addu  */
+		case 0x61:	/*  addu.co  */
+		case 0x62:	/*  addu.ci  */
 		case 0x64:	/*  subu  */
+		case 0x65:	/*  subu.co  */
 		case 0x68:	/*  divu  */
 		case 0x6c:	/*  mul   */
 		case 0x78:	/*  div   */
@@ -1358,12 +1431,16 @@ X(to_be_translated)
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
+
 			switch ((iword >> 8) & 0xff) {
 			case 0x40: ic->f = instr(and);  break;
 			case 0x50: ic->f = instr(xor);  break;
 			case 0x58: ic->f = instr(or);   break;
 			case 0x60: ic->f = instr(addu); break;
+			case 0x61: ic->f = instr(addu_co); break;
+			case 0x62: ic->f = instr(addu_ci); break;
 			case 0x64: ic->f = instr(subu); break;
+			case 0x65: ic->f = instr(subu_co); break;
 			case 0x68: ic->f = instr(divu); break;
 			case 0x6c: ic->f = instr(mul);  break;
 			case 0x78: ic->f = instr(div);  break;
@@ -1411,6 +1488,19 @@ X(to_be_translated)
 				if (ic->f == instr(jsr_n))
 					ic->f = instr(jsr_n_trace);
 			}
+			break;
+		case 0xe8:	/*  ff1  */
+		case 0xec:      /*  ff0  */
+			switch ((iword >> 8) & 0xff) {
+			case 0xe8: ic->f = instr(ff1); break;
+			case 0xec: ic->f = instr(ff0); break;
+			}
+
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
+
+			if (d == M88K_ZERO_REG)
+				ic->f = instr(nop);
 			break;
 		case 0xfc:
 			switch (iword & 0xff) {

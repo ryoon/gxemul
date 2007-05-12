@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.23 2007-05-11 14:46:55 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.24 2007-05-12 09:34:49 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -601,17 +601,25 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	switch (op26) {
 
-	case 0x02:	/*  ld.hu  */
-	case 0x03:	/*  ld.bu  */
-	case 0x04:	/*  ld.d  */
-	case 0x05:	/*  ld    */
-	case 0x06:	/*  ld.h  */
-	case 0x07:	/*  ld.b  */
-	case 0x08:	/*  st.d  */
-	case 0x09:	/*  st    */
-	case 0x0a:	/*  st.h  */
-	case 0x0b:	/*  st.b  */
+	case 0x00:	/*  xmem.bu  */
+	case 0x01:	/*  xmem     */
+	case 0x02:	/*  ld.hu    */
+	case 0x03:	/*  ld.bu    */
+	case 0x04:	/*  ld.d     */
+	case 0x05:	/*  ld       */
+	case 0x06:	/*  ld.h     */
+	case 0x07:	/*  ld.b     */
+	case 0x08:	/*  st.d     */
+	case 0x09:	/*  st       */
+	case 0x0a:	/*  st.h     */
+	case 0x0b:	/*  st.b     */
+		if (iw == 0x00000000) {
+			debug("nop\n");
+			break;
+		}
 		switch (op26) {
+		case 0x00:  debug("xmem.bu"); break;
+		case 0x01:  debug("xmem"); break;
 		case 0x02:  debug("ld.hu"); break;
 		case 0x03:  debug("ld.bu"); break;
 		default:    debug("%s%s", op26 >= 0x08? "st" : "ld",

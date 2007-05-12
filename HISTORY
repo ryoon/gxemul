@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1559 2007-05-12 01:13:59 debug Exp $
+$Id: HISTORY,v 1.1560 2007-05-12 09:34:49 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3500,3 +3500,5 @@ Changelog for GXemul:
 		Adding the M88K lda (scaled register) instruction.
 		Fixing bugs in 64-bit (32-bit pairs) M88K loads/stores.
 		Removing the unused tick_hz stuff from the machine struct.
+		Implementing the M88K xmem instruction. OpenBSD/mvme88k gets
+		far enough to display the Copyright banner :-)

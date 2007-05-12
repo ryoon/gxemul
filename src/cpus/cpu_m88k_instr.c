@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.20 2007-05-12 00:36:18 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.21 2007-05-12 09:34:49 debug Exp $
  *
  *  M88K instructions.
  *
@@ -677,6 +677,78 @@ X(rte)
 
 
 /*
+ *  xmem_slow:  Unoptimized xmem (exchange register with memory)
+ *
+ *  arg[0] = copy of the instruction word
+ */
+X(xmem_slow)
+{
+	uint32_t iword = ic->arg[0], addr;
+	uint8_t tmp[4];
+	uint8_t data[4];
+	int d      = (iword >> 21) & 0x1f;
+	int s1     = (iword >> 16) & 0x1f;
+	int s2     =  iword        & 0x1f;
+	int imm16  =  iword        & 0xffff;
+	int scaled = iword & 0x200;
+	int size   = iword & 0x400;
+	int user   = iword & 0x80;
+
+	if (user) {
+		fatal("xmem_slow: user: not yet (TODO)\n");
+		exit(1);
+	}
+
+	if ((iword & 0xf0000000) == 0) {
+		/*  immediate offset:  */
+		addr = imm16;
+		scaled = 0;
+		size = (iword >> 26) & 1;
+		user = 0;
+	} else {
+		/*  register offset:  */
+		addr = cpu->cd.m88k.r[s2];
+		if (scaled && size)
+			addr *= sizeof(uint32_t);
+	}
+
+	addr += cpu->cd.m88k.r[s1];
+
+	if (size) {
+		uint32_t x = cpu->cd.m88k.r[d];
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			x = LE32_TO_HOST(x);
+		else
+			x = BE32_TO_HOST(x);
+		*((uint32_t *)&tmp[0]) = x;
+	} else
+		tmp[0] = cpu->cd.m88k.r[d];
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, (uint8_t *) &data,
+	    size? 4 : 1, MEM_READ, CACHE_DATA)) {
+		/*  Exception?  */
+		return;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, (uint8_t *) &tmp,
+	    size? 4 : 1, MEM_WRITE, CACHE_DATA)) {
+		/*  Exception?  */
+		return;
+	}
+
+	if (size) {
+		uint32_t x = *((uint32_t *)&data[0]);
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			x = LE32_TO_HOST(x);
+		else
+			x = BE32_TO_HOST(x);
+		cpu->cd.m88k.r[d] = x;
+	} else
+		cpu->cd.m88k.r[d] = data[0];
+}
+
+
+/*
  *  prom-call:
  */
 X(prom_call)
@@ -901,6 +973,14 @@ X(to_be_translated)
 	d26    = ((int32_t)((iword & 0x03ffffff) << 6)) >> 4;
 
 	switch (op26) {
+
+	case 0x00:
+	case 0x01:
+		ic->f = instr(xmem_slow);
+		ic->arg[0] = iword;
+		if (d == M88K_ZERO_REG)
+			ic->f = instr(nop);
+		break;
 
 	case 0x02:	/*  ld.hu  */
 	case 0x03:	/*  ld.bu  */
@@ -1192,17 +1272,25 @@ X(to_be_translated)
 			/*  Turn opsize into x, where size = 1 << x:  */
 			opsize = 3 - opsize;
 
-			/*  xmem: TODO  */
-
-			if ((iword & 0xf800) == 0x800) {
-				signedness = 0;
-				if ((iword & 0xf00) < 0xc00)
-					opsize = 1;
-				else
-					opsize = 0;
+			if (op == 3) {
+				/*  xmem:  */
+				switch ((iword >> 10) & 3) {
+				case 0: opsize = 0; break;
+				case 1: opsize = 2; break;
+				default:fatal("Weird xmem opsize/type?\n");
+					goto bad;
+				}
 			} else {
-				if (opsize >= 2 || op == 1)
+				if ((iword & 0xf800) == 0x800) {
 					signedness = 0;
+					if ((iword & 0xf00) < 0xc00)
+						opsize = 1;
+					else
+						opsize = 0;
+				} else {
+					if (opsize >= 2 || op == 1)
+						signedness = 0;
+				}
 			}
 
 			if (iword & 0x100)
@@ -1221,7 +1309,7 @@ X(to_be_translated)
 			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
 
-			if (op == 0 || op == 1)
+			if (op == 0 || op == 1) {
 				/*  ld or st:  */
 				ic->f = m88k_loadstore[ opsize
 				    + (op==1? M88K_LOADSTORE_STORE : 0)
@@ -1231,7 +1319,9 @@ X(to_be_translated)
 				    + (scaled? M88K_LOADSTORE_SCALEDNESS : 0)
 				    + (user? M88K_LOADSTORE_USR : 0)
 				    + M88K_LOADSTORE_REGISTEROFFSET ];
-			else if (op == 2) {
+				if (op == 0 && d == M88K_ZERO_REG)
+					ic->f = instr(nop);
+			} else if (op == 2) {
 				/*  lda:  */
 				if (scaled) {
 					switch (opsize) {
@@ -1243,8 +1333,13 @@ X(to_be_translated)
 				} else {
 					ic->f = instr(addu);
 				}
-			} else
-				goto bad;
+			} else {
+				/*  xmem:  */
+				ic->f = instr(xmem_slow);
+				ic->arg[0] = iword;
+				if (d == M88K_ZERO_REG)
+					ic->f = instr(nop);
+			}
 		} else switch ((iword >> 8) & 0xff) {
 		case 0x40:	/*  and   */
 		case 0x50:	/*  xor   */

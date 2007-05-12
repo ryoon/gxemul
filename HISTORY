@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1562 2007-05-12 10:32:04 debug Exp $
+$Id: HISTORY,v 1.1563 2007-05-12 10:56:33 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3504,3 +3504,5 @@ Changelog for GXemul:
 		far enough to display the Copyright banner :-)
 		Implementing subu.co (guess), addu.co, addu.ci, ff0, and ff1.
 		Adding a dev_mvme187, for MVME187-specific devices/registers.
+		OpenBSD/mvme88k prints more boot messages, but stops when
+		switching to the cl0 console (from the PROM console).

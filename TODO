@@ -1,23 +1,6 @@
-$Id: TODO,v 1.500 2007-05-11 14:46:55 debug Exp $
+$Id: TODO,v 1.501 2007-05-12 01:17:40 debug Exp $
 
---------------------------------------------
-
-* M88K:
-	Kolla Exceptions för alla instruktioner i manualen...
-
-* NCDWare3.5/tftpboot/Xncd19c, NCD19
-	1280x1024, 8 MB ram
-	X-terminal software
-
-* Native code generation backend:
-	Experimentera med M88K på AMD64 först, endast, för att
-	hålla nere mängden saker som måste implementeras...
-
-	Börja eventuellt med tråkig men nödvändig del, nämligen
-	den som konverterar pseudo-amd64-opcodes till verklig
-	maskinkod, inklusive hopp frammåt och bakåt osv.
-
---------------------------------------------
+-------------------------------------------------------------------------------
 
 Some things, in totally random order, that I'd like to fix:
 (Some items in this list are possibly out-of-date by now.)
@@ -524,4 +507,6 @@ Better framebuffer and X-windows functionality:
 		    emulator)
 	o)  Generalize the framebuffer stuff by moving _ALL_ X11
 		specific code to src/x11.c!
+
+-------------------------------------------------------------------------------
 

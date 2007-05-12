@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.117 2007-05-11 07:51:57 debug Exp $
+ *  $Id: cpu.h,v 1.118 2007-05-12 01:13:45 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -44,7 +44,7 @@
 /*
  *  Dyntrans misc declarations, used throughout the dyntrans code.
  *
- *  Note that there is place for all instruction calls within a page,
+ *  Note that there is space for all instruction calls within a page,
  *  and then 2 more. The first one of these "extra" instruction slots is
  *  the end-of-page slot. It transfers control to the first instruction
  *  slot on the next (virtual) page.
@@ -61,7 +61,8 @@
  *
  *  translations is a tiny bitmap indicating which parts of the page have
  *  actual translations. Bit 0 corresponds to the lowest 1/32th of the page,
- *  bit 1 to the second-lowest 1/32th, and so on.
+ *  bit 1 to the second-lowest 1/32th, and so on. This speeds up page
+ *  invalidations, since only part of the page need to be reset.
  */
 #define DYNTRANS_MISC_DECLARATIONS(arch,ARCH,addrtype)  struct \
 	arch ## _instr_call {					\

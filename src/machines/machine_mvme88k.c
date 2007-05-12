@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.5 2007-05-12 09:34:38 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.6 2007-05-12 10:32:05 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
@@ -44,6 +44,13 @@
  *	MK48T08 BBRAM & CLOCK
  *	EPROM
  *	VME bus
+ *
+ *  ... and more details from OpenBSD/mvme88k sources:
+ *
+ *	0xff800000 .. 0xffbfffff = BUG PROM
+ *	0xffe00000 .. 0xffe1ffff = BUG SRAM
+ *	0xfff40000 .. 0xfffeffff = OBIO (Local IO) space
+ *	0xfff43000               = MEMC040 (Memory controller)
  */
 
 #include <stdio.h>
@@ -64,6 +71,8 @@ MACHINE_SETUP(mvme88k)
 
 	case MACHINE_MVME88K_187:
 		machine->machine_name = "MVME187";
+
+		device_add(machine, "mvme187");
 		break;
 
 	case MACHINE_MVME88K_188:

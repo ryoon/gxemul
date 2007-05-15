@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.22 2007-05-12 10:02:39 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.23 2007-05-15 12:34:33 debug Exp $
  *
  *  M88K instructions.
  *
@@ -585,22 +585,35 @@ X(addu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2]; }
 X(subu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2]; }
 X(inc_reg)	{ reg(ic->arg[0]) ++; }
 X(dec_reg)	{ reg(ic->arg[0]) --; }
-X(mulu_imm)	{ reg(ic->arg[0]) = reg(ic->arg[1]) * ic->arg[2]; }
+X(mulu_imm)
+{
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_SFD1) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_SFU1_PRECISE, 0);
+	} else
+		reg(ic->arg[0]) = reg(ic->arg[1]) * ic->arg[2];
+}
 X(divu_imm)
 {
-	if (ic->arg[2] == 0) {
-		fatal("TODO: divu_imm division by zero exception\n");
-		exit(1);
-	}
-	reg(ic->arg[0]) = (uint32_t) reg(ic->arg[1]) / ic->arg[2];
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_SFD1) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_SFU1_PRECISE, 0);
+	} else if (ic->arg[2] == 0) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_ILLEGAL_INTEGER_DIVIDE, 0);
+	} else
+		reg(ic->arg[0]) = (uint32_t) reg(ic->arg[1]) / ic->arg[2];
 }
 X(div_imm)
 {
-	if (ic->arg[2] == 0) {
-		fatal("TODO: div_imm division by zero exception\n");
-		exit(1);
-	}
-	reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / ic->arg[2];
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_SFD1) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_SFU1_PRECISE, 0);
+	} else if (ic->arg[2] == 0) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_ILLEGAL_INTEGER_DIVIDE, 0);
+	} else
+		reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / ic->arg[2];
 }
 X(sub_imm)
 {
@@ -620,9 +633,12 @@ X(sub_imm)
 
 /*
  *  or:     	d = s1 | s2
+ *  or_c:     	d = s1 | ~s2
  *  or_r0:  	d =      s2
  *  xor:    	d = s1 ^ s2
+ *  xor_c:    	d = s1 ^ ~s2
  *  and:    	d = s1 & s2
+ *  and_c:    	d = s1 & ~s2
  *  addu:   	d = s1 + s2
  *  addu_co:   	d = s1 + s2		carry out
  *  addu_ci:   	d = s1 + s2 + carry	carry in
@@ -638,30 +654,46 @@ X(sub_imm)
  *  arg[2] = pointer to register s2
  */
 X(or)	{ reg(ic->arg[0]) = reg(ic->arg[1]) | reg(ic->arg[2]); }
+X(or_c)	{ reg(ic->arg[0]) = reg(ic->arg[1]) | ~(reg(ic->arg[2])); }
 X(or_r0){ reg(ic->arg[0]) = reg(ic->arg[2]); }
 X(xor)	{ reg(ic->arg[0]) = reg(ic->arg[1]) ^ reg(ic->arg[2]); }
+X(xor_c){ reg(ic->arg[0]) = reg(ic->arg[1]) ^ ~(reg(ic->arg[2])); }
 X(and)	{ reg(ic->arg[0]) = reg(ic->arg[1]) & reg(ic->arg[2]); }
+X(and_c){ reg(ic->arg[0]) = reg(ic->arg[1]) & ~(reg(ic->arg[2])); }
 X(addu)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]); }
 X(lda_reg_2)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 2; }
 X(lda_reg_4)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 4; }
 X(lda_reg_8)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 8; }
 X(subu)	{ reg(ic->arg[0]) = reg(ic->arg[1]) - reg(ic->arg[2]); }
-X(mul)	{ reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]); }
+X(mul)
+{
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_SFD1) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_SFU1_PRECISE, 0);
+	} else
+		reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]);
+}
 X(divu)
 {
-	if (reg(ic->arg[2]) == 0) {
-		fatal("TODO: divu division by zero exception\n");
-		exit(1);
-	}
-	reg(ic->arg[0]) = (uint32_t) reg(ic->arg[1]) / reg(ic->arg[2]);
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_SFD1) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_SFU1_PRECISE, 0);
+	} else if (reg(ic->arg[2]) == 0) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_ILLEGAL_INTEGER_DIVIDE, 0);
+	} else
+		reg(ic->arg[0]) = (uint32_t) reg(ic->arg[1]) / reg(ic->arg[2]);
 }
 X(div)
 {
-	if (reg(ic->arg[2]) == 0) {
-		fatal("TODO: div division by zero exception\n");
-		exit(1);
-	}
-	reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / reg(ic->arg[2]);
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_SFD1) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_SFU1_PRECISE, 0);
+	} else if (reg(ic->arg[2]) == 0) {
+		SYNCH_PC;
+		m88k_exception(cpu, M88K_EXCEPTION_ILLEGAL_INTEGER_DIVIDE, 0);
+	} else
+		reg(ic->arg[0]) = (int32_t) reg(ic->arg[1]) / reg(ic->arg[2]);
 }
 X(addu_co)
 {
@@ -691,7 +723,8 @@ X(subu_co)
 
 
 /*
- *  ldcr:  Load value from a control register, store in register d.
+ *  ldcr:   Load value from a control register, store in register d.
+ *  fldcr:  Load value from a floating point control register, store in reg d.
  *
  *  arg[0] = pointer to register d
  *  arg[1] = 6-bit control register number
@@ -700,11 +733,21 @@ X(ldcr)
 {
 	SYNCH_PC;
 
-	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE) {
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)
 		m88k_ldcr(cpu, (uint32_t *) (void *) ic->arg[0], ic->arg[1]);
-	} else {
-		fatal("TODO: ldcr: Cause exception (non-supervisor access)\n");
-		exit(1);
+	else
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+}
+X(fldcr)
+{
+	SYNCH_PC;
+
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE || ic->arg[1] >= 62)
+		reg(ic->arg[0]) = cpu->cd.m88k.fcr[ic->arg[1]];
+	else {
+		/*  TODO: The manual says "floating point privilege
+		    violation", not just "privilege violation"!  */
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
 	}
 }
 
@@ -719,12 +762,10 @@ X(stcr)
 {
 	SYNCH_PC;
 
-	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE) {
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)
 		m88k_stcr(cpu, reg(ic->arg[0]), ic->arg[1], 0);
-	} else {
-		fatal("TODO: ldcr: Cause exception (non-supervisor access)\n");
-		exit(1);
-	}
+	else
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
 }
 
 
@@ -1155,6 +1196,13 @@ X(to_be_translated)
 			if (d == M88K_ZERO_REG)
 				ic->arg[0] = (size_t)
 				    &cpu->cd.m88k.zero_scratch;
+		} else if ((iword & 0x001ff81f) == 0x00004800) {
+			ic->f = instr(fldcr);
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[1] = cr6;
+			if (d == M88K_ZERO_REG)
+				ic->arg[0] = (size_t)
+				    &cpu->cd.m88k.zero_scratch;
 		} else if ((iword & 0x03e0f800) == 0x00008000) {
 			ic->f = instr(stcr);
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[s1];
@@ -1411,45 +1459,51 @@ X(to_be_translated)
 					ic->f = instr(nop);
 			}
 		} else switch ((iword >> 8) & 0xff) {
-		case 0x40:	/*  and   */
-		case 0x50:	/*  xor   */
-		case 0x58:	/*  or    */
-		case 0x60:	/*  addu  */
+		case 0x40:	/*  and    */
+		case 0x44:	/*  and.c  */
+		case 0x50:	/*  xor    */
+		case 0x54:	/*  xor.c  */
+		case 0x58:	/*  or     */
+		case 0x5c:	/*  or.c   */
+		case 0x60:	/*  addu   */
 		case 0x61:	/*  addu.co  */
 		case 0x62:	/*  addu.ci  */
-		case 0x64:	/*  subu  */
+		case 0x64:	/*  subu   */
 		case 0x65:	/*  subu.co  */
-		case 0x68:	/*  divu  */
-		case 0x6c:	/*  mul   */
-		case 0x78:	/*  div   */
-		case 0x7c:	/*  cmp   */
-		case 0x80:	/*  clr   */
-		case 0x88:	/*  set   */
-		case 0x90:	/*  ext   */
-		case 0x98:	/*  extu  */
-		case 0xa0:	/*  mak   */
+		case 0x68:	/*  divu   */
+		case 0x6c:	/*  mul    */
+		case 0x78:	/*  div    */
+		case 0x7c:	/*  cmp    */
+		case 0x80:	/*  clr    */
+		case 0x88:	/*  set    */
+		case 0x90:	/*  ext    */
+		case 0x98:	/*  extu   */
+		case 0xa0:	/*  mak    */
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[2] = (size_t) &cpu->cd.m88k.r[s2];
 
 			switch ((iword >> 8) & 0xff) {
-			case 0x40: ic->f = instr(and);  break;
-			case 0x50: ic->f = instr(xor);  break;
-			case 0x58: ic->f = instr(or);   break;
-			case 0x60: ic->f = instr(addu); break;
+			case 0x40: ic->f = instr(and);   break;
+			case 0x44: ic->f = instr(and_c); break;
+			case 0x50: ic->f = instr(xor);   break;
+			case 0x54: ic->f = instr(xor_c); break;
+			case 0x58: ic->f = instr(or);    break;
+			case 0x5c: ic->f = instr(or_c);  break;
+			case 0x60: ic->f = instr(addu);  break;
 			case 0x61: ic->f = instr(addu_co); break;
 			case 0x62: ic->f = instr(addu_ci); break;
-			case 0x64: ic->f = instr(subu); break;
+			case 0x64: ic->f = instr(subu);  break;
 			case 0x65: ic->f = instr(subu_co); break;
-			case 0x68: ic->f = instr(divu); break;
-			case 0x6c: ic->f = instr(mul);  break;
-			case 0x78: ic->f = instr(div);  break;
-			case 0x7c: ic->f = instr(cmp);  break;
-			case 0x80: ic->f = instr(clr);  break;
-			case 0x88: ic->f = instr(set);  break;
-			case 0x90: ic->f = instr(ext);  break;
-			case 0x98: ic->f = instr(extu); break;
-			case 0xa0: ic->f = instr(mak);  break;
+			case 0x68: ic->f = instr(divu);  break;
+			case 0x6c: ic->f = instr(mul);   break;
+			case 0x78: ic->f = instr(div);   break;
+			case 0x7c: ic->f = instr(cmp);   break;
+			case 0x80: ic->f = instr(clr);   break;
+			case 0x88: ic->f = instr(set);   break;
+			case 0x90: ic->f = instr(ext);   break;
+			case 0x98: ic->f = instr(extu);  break;
+			case 0xa0: ic->f = instr(mak);   break;
 			}
 
 			/*  Optimization for  or rX,r0,rY  */

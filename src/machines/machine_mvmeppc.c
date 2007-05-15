@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.19 2007-05-01 12:53:01 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.20 2007-05-15 12:35:14 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -75,7 +75,7 @@ abort();
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 14, 0, "dec21143");
 
-		device_add(machine, "nvram addr=0x80000074 name2=mvme1600");
+//		device_add(machine, "nvram addr=0x80000074 name2=mvme1600");
 
 		/*
 		 *  "DRAM size register": TODO: turn this into a device?

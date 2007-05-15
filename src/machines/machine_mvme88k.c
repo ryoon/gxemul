@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.7 2007-05-12 23:07:39 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.8 2007-05-15 12:35:14 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
@@ -63,6 +63,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "mvme187.h"
 
 
 MACHINE_SETUP(mvme88k)

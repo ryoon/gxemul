@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.138 2007-05-12 10:32:04 debug Exp $
+#  $Id: Makefile.skel,v 1.139 2007-05-15 12:35:14 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -23,10 +23,9 @@ OBJS=lk201.o \
 	dev_sii.o dev_asc.o dev_wdsc.o dev_wdc.o dev_ahc.o \
 	dev_le.o dev_sn.o dev_dec21143.o dev_rtl8139c.o \
 	dev_ps2_stuff.o dev_ps2_gs.o dev_ps2_gif.o \
-	dev_ps2_spd.o dev_ps2_ether.o \
+	dev_ps2_spd.o dev_ps2_ether.o dev_lpt.o dev_adb.o \
 	dev_ohci.o dev_pcic.o dev_malta_lcd.o dev_hammerhead.o \
-	dev_vr41xx.o dev_mvme187.o \
-	dev_lpt.o dev_adb.o dev_nvram.o \
+	dev_vr41xx.o dev_mvme187.o dev_m8820x.o dev_clmpcc.o dev_vme.o \
 	dev_pmppc.o dev_bebox.o dev_prep.o dev_footbridge.o dev_algor.o \
 	dev_igsfb.o dev_dreamcast_rtc.o dev_dreamcast_asic.o \
 	dev_dreamcast_maple.o dev_dreamcast_gdrom.o dev_dreamcast_g2.o \

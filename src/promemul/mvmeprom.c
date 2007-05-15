@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mvmeprom.c,v 1.1 2007-05-11 14:46:55 debug Exp $
+ *  $Id: mvmeprom.c,v 1.2 2007-05-15 12:35:14 debug Exp $
  *
  *  MVME PROM emulation.
  *
@@ -113,6 +113,11 @@ int mvmeprom_emul(struct cpu *cpu)
 
 	case MVMEPROM_OUTCRLF:
 		console_putchar(cpu->machine->main_console_handle, '\n');
+		break;
+
+	case MVMEPROM_EXIT:
+		fatal("[ MVME PROM: exit ]\n");
+		cpu->running = 0;
 		break;
 
 	case MVMEPROM_GETBRDID:

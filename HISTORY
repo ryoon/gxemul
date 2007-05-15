@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1564 2007-05-12 23:07:39 debug Exp $
+$Id: HISTORY,v 1.1565 2007-05-15 12:35:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3505,3 +3505,8 @@ Changelog for GXemul:
 		Implementing subu.co (guess), addu.co, addu.ci, ff0, and ff1.
 		Adding a dev_mvme187, for MVME187-specific devices/registers.
 		OpenBSD/mvme88k prints more boot messages. :)
+20070515	Continuing on MVME187 emulation (adding more devices, beginning
+		on the CMMUs, etc).
+		Adding the M88K and.c, xor.c, and or.c instructions, and making
+		sure that mul, div, etc cause exceptions if executed when SFD1
+		is disabled.

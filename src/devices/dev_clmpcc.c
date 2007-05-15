@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,9 +25,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mk48txx.c,v 1.5 2007-05-15 12:35:14 debug Exp $
+ *  $Id: dev_clmpcc.c,v 1.1 2007-05-15 12:35:14 debug Exp $
  *
- *  Mostek MK48Txx Real Time Clock.  (MK48T08)
+ *  Cirrus Logic Four Channel Multi-Protocol Communications Controller
+ *  (CD2400/CD2401)
  */
 
 #include <stdio.h>
@@ -42,19 +43,19 @@
 #include "misc.h"
 
 
-#include "mk48txxreg.h"
+#include "clmpccreg.h"
 
 
-#define	MK48TXX_LEN		MK48T08_CLKSZ
+#define	CLMPCC_LEN		0x200
 
-struct mk48txx_data {
-	unsigned char	reg[MK48TXX_LEN];
+struct clmpcc_data {
+	unsigned char	reg[CLMPCC_LEN];
 };
 
 
-DEVICE_ACCESS(mk48txx)
+DEVICE_ACCESS(clmpcc)
 {
-	struct mk48txx_data *d = (struct mk48txx_data *) extra;
+	struct clmpcc_data *d = (struct clmpcc_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -65,16 +66,16 @@ DEVICE_ACCESS(mk48txx)
 
 	switch (relative_addr) {
 
-	case 0:
+	case 0:	/*  Used by OpenBSD/mvme88k when probing...  */
 		break;
 
 	default:if (writeflag == MEM_READ)
-			fatal("[ mk48txx: unimplemented READ from offset %i ]"
+			fatal("[ clmpcc: unimplemented READ from offset 0x%x ]"
 			    "\n", (int)relative_addr);
 		else
-			fatal("[ mk48txx: unimplemented WRITE to offset %i: "
+			fatal("[ clmpcc: unimplemented WRITE to offset 0x%x: "
 			    "0x%x ]\n", (int)relative_addr, (int)idata);
-		exit(1);
+//		exit(1);
 	}
 
 	if (writeflag == MEM_READ)
@@ -84,17 +85,17 @@ DEVICE_ACCESS(mk48txx)
 }
 
 
-DEVINIT(mk48txx)
+DEVINIT(clmpcc)
 {
-	struct mk48txx_data *d = malloc(sizeof(struct mk48txx_data));
+	struct clmpcc_data *d = malloc(sizeof(struct clmpcc_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct mk48txx_data));
+	memset(d, 0, sizeof(struct clmpcc_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, MK48TXX_LEN, dev_mk48txx_access, (void *)d,
+	    devinit->addr, CLMPCC_LEN, dev_clmpcc_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
 	return 1;

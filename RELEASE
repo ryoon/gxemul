@@ -1,8 +1,9 @@
-$Id: RELEASE,v 1.274 2007-05-09 10:27:51 debug Exp $
+$Id: RELEASE,v 1.275 2007-05-15 09:40:29 debug Exp $
 
 Currently working on what will become 0.4.6.
 
-Or perhaps 0.4.5.2, which would be 0.4.5.1 plus minor updates.
+Perhaps I will have enough time to make M88K emulation work
+with a guess OS? (OpenBSD/mvme88k, in that case.)
 
 ------------------------------------------------------------------------------
 

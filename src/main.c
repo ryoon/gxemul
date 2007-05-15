@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.296 2007-03-31 15:11:26 debug Exp $
+ *  $Id: main.c,v 1.297 2007-05-15 09:40:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -315,10 +315,13 @@ static void usage(int longusage)
 #endif
 
 	printf("\nGeneral options:\n");
-#ifdef UNSTABLE_DEVEL
-	printf("  -b        enable native code generation\n");
-	printf("  -B        disable native code generation\n");
+	printf("  -b        enable native code generation");
+#ifndef NATIVE_CODE_GENERATION
+	printf(" (not yet for this host arch, sorry)");
 #endif
+	printf("\n");
+	printf("  -B        disable native code generation (this is "
+	    "the default)\n");
 	printf("  -c cmd    add cmd as a command to run before starting "
 	    "the simulation\n");
 	printf("  -D        skip the srandom call at startup\n");
@@ -367,10 +370,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-#ifdef UNSTABLE_DEVEL
-	    "bB"
-#endif
-	    "C:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
+	    "bBC:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -382,19 +382,20 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
-#ifdef UNSTABLE_DEVEL
 		case 'b':
-#ifndef NATIVE_CODE_GENERATION
-			printf("-b is not available on this host arch.\n");
-			exit(1);
-#else
+#ifdef NATIVE_CODE_GENERATION
 			native_code_translation_enabled = 1;
 			break;
+#else
+			printf("Could not start with native code generation"
+			    " (-b). This version\nof GXemul does not support"
+			    " the -b option on this host architecture.\n");
+			printf("Aborting.\n");
+			exit(1);
 #endif
 		case 'B':
 			native_code_translation_enabled = 0;
 			break;
-#endif	/*  UNSTABLE_DEVEL  */
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;

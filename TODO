@@ -1,83 +1,26 @@
-$Id: TODO,v 1.501 2007-05-12 01:17:40 debug Exp $
+$Id: TODO,v 1.502 2007-05-15 09:40:29 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Some things, in totally random order, that I'd like to fix:
-(Some items in this list are possibly out-of-date by now.)
+kopiera index.html tillbaka till mr.csbnet.se.
 
-Dyntrans:
-	x)  Instruction combination collisions? How to avoid easily...
-	x)  Think about how to do both SHmedia and SHcompact in a reasonable
-	    way! (Or AMD64 long/protected/real, for that matter.)
-	x)  68K emulation; think about how to do variable instruction
-	    lengths across page boundaries.
-	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,
-	    it would be reasonably simple to add; in each individual fast
-	    load/store routine = a lot more work, and it would become
-	    kludgy very fast.)
-	x)  Dyntrans with SMP... lots of work to be done here.
-	x)  Dyntrans with cache emulation... lots of work here as well.
-	x)  Remove the concept of base RAM completely; it would be more
-	    generic to allow RAM devices to be used "anywhere".
-	o)  dev_mp doesn't work well with dyntrans yet
-	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
-	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
-		so that it caches a translation (that is, an instruction
-		word and the instr_call it was translated to the last
-		time), so that it doesn't need to do slow
-		to_be_translated for each end of page?
-	x)  Program Counter statistics:
-		Per machine? What about SMP? All data to the same file?
-		A debugger command should be possible to use to enable/
-		disable statistics gathering.
-		Configuration file option!
-	x)  Breakpoints:
-		o) Physical vs virtual addresses!
-		o) 32-bit vs 64-bit sign extension for MIPS, and others?
-	x)  INVALIDATION should cause translations in _all_ cpus to be
-	    invalidated, e.g. on a write to a write-protected page
-	    (containing code)
-	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
-	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
-	x)  Native code generation backends:
-		o)  think carefully about this.
-		o)  simple syntax for emitting opcodes; backend implementation
-		    must be optional, so I don't have to write more code
-		    than necessary. after all, the non-native (C) code should
-		    always work.
-		o)  convert into native code only after an entire
-			block has been translated? probably best.
-		o)  the "almost native" opcodes may be rearranged,
-		    "peep-hole optimized", etc. and then as a separate step
-		    this list of almost native opcodes is written out
-		    as native code.
-		o)  think about delay slots at the end of a block!
-		o)  x86/amd64 code generator can be very similar... perhaps
-		o)  NOTE that generation is per _ABI_, not per host arch!
-		    the configure script must detect ABI!!!
-		o)  branches to already translated code blocks can
-			link the blocks together
-		o)  load/store are the most important to optimize
+-------------------------------------------------------------------------------
 
-Simple Valgrind-like checks?
-	o)  Mark every address with bits which tell whether or not the address
-	    has been written to.
-	o)  What should happen when programs are loaded?  Text/data, bss (zero
-	    filled). But stack space and heap is uninitialized.
-	o)  Uninitialized local variables:
-		A load from a place on the stack which has not previously
-		been stored to => warning. Increasing the stack pointer using
-		any available means should reset the memory to uninitialized.
-	o)  If calls to malloc() and free() can be intercepted:
-		o)  Access to a memory area after free() => warning.
-		o)  Memory returned by malloc() is marked as not-initialized.
-		o)  Non-passive, but good to have: Change the argument
-		    given to malloc, to return a slightly larger memory
-		    area, i.e.  margin_before + size + margin_after,
-		    and return the pointer  + margin_before.
-		    Any access to the margin_before or _after space results
-		    in warnings. (free() must be modified to free the
-		    actually allocated address.)
+Some things, in no specific order, that I'd like to fix:
+(Some items in this list are perhaps already fixed.)
+
+M88K:
+	o)  CMMUs: Everything!
+	o)  Exceptions:
+		o)  Details about which save registers are set
+		    to which values, on which exceptions
+	o)  Instruction disassembly, and implementation:
+		o)  Floating point stuff
+		o)  "Graphics" instructions
+	o)  Interrupts (these are machine dependent, though).
+	o)  Implement devices etc. for one or more machine modes,
+	    to get some guest OS running. OpenBSD/mvme88k on MVME187
+	    seems to be the smartest path to follow for now.
 
 MIPS:
 	o)  Nicer MIPS status bits in register dumps.
@@ -98,6 +41,8 @@ MIPS:
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
 	o)  Refactor code for performance and readability/maintainability.
 	o)  (Re)implement 128-bit loads/stores for R5900.
+	o)  Coprocessor 1x (i.e. 3) should cause cp1 exceptions, not 3?
+		(See http://lists.gnu.org/archive/html/qemu-devel/2007-05/msg00005.html)
 	o)  R4000 and others:
 		x)  watchhi/watchlo exceptions, and other exception
 		    handling details
@@ -188,23 +133,6 @@ SPARC (both the ISA and the machines):
 	o)  SPARC v8, v7 etc?
 	o)  More machine modes and devices.
 
-Debugger:
-	o)  How does SMP debugging work? Does it simply use "threads"?
-		What if the guest OS (running on an emulated SMP machine)
-		has a usertask running, with userland threads?
-	o)  Try to make the debugger more modular and, if possible, reentrant!
-	o)  Remove the emul command? (But show network info if showing
-		machines?)
-	o)  Evaluate expressions within []? That would allow stuff like
-		cpu[x] where x is an expression.
-	o)  Settings:
-		x)  Special handlers for Write!
-			+)  MIPS coproc regs
-			+)  Alpha/MIPS/SPARC zero registers
-			+)  x86 64/32/16-bit registers
-		x)  Value formatter for resulting output.
-	o)  see src/debugger.c for more
-
 POWER/PowerPC:
 	x)  Fix DECR timer speed, so it matches the host.
 	x)  NetBSD/prep 3.x triggers a possible bug in the emulator:
@@ -246,20 +174,6 @@ HPCmips:
 	x)  Mouse/pad support! :)
 	x)  A NIC? (As a PCMCIA device?)
 
-M88K:
-	o)  Everything. :)
-		o)  More instruction disassembly!
-		o)  Implement more instructions.
-		o)  has-delay-slot (for debugging)
-		o)  Find manuals!
-		o)  MMU stuff
-		o)  Exceptions
-		o)  FPU
-		o)  Control registers
-
-AVR:
-	o)  Everything.
-
 ARM:
 	o)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
@@ -284,6 +198,97 @@ Test machines:
 		for (;;) {
 			halt();
 		}
+
+Debugger:
+	o)  How does SMP debugging work? Does it simply use "threads"?
+		What if the guest OS (running on an emulated SMP machine)
+		has a usertask running, with userland threads?
+	o)  Try to make the debugger more modular and, if possible, reentrant!
+	o)  Remove the emul command? (But show network info if showing
+		machines?)
+	o)  Evaluate expressions within []? That would allow stuff like
+		cpu[x] where x is an expression.
+	o)  Settings:
+		x)  Special handlers for Write!
+			+)  MIPS coproc regs
+			+)  Alpha/MIPS/SPARC zero registers
+			+)  x86 64/32/16-bit registers
+		x)  Value formatter for resulting output.
+	o)  see src/debugger.c for more
+
+Dyntrans:
+	x)  Instruction combination collisions? How to avoid easily...
+	x)  Think about how to do both SHmedia and SHcompact in a reasonable
+	    way! (Or AMD64 long/protected/real, for that matter.)
+	x)  68K emulation; think about how to do variable instruction
+	    lengths across page boundaries.
+	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,
+	    it would be reasonably simple to add; in each individual fast
+	    load/store routine = a lot more work, and it would become
+	    kludgy very fast.)
+	x)  Dyntrans with SMP... lots of work to be done here.
+	x)  Dyntrans with cache emulation... lots of work here as well.
+	x)  Remove the concept of base RAM completely; it would be more
+	    generic to allow RAM devices to be used "anywhere".
+	o)  dev_mp doesn't work well with dyntrans yet
+	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
+	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
+		so that it caches a translation (that is, an instruction
+		word and the instr_call it was translated to the last
+		time), so that it doesn't need to do slow
+		to_be_translated for each end of page?
+	x)  Program Counter statistics:
+		Per machine? What about SMP? All data to the same file?
+		A debugger command should be possible to use to enable/
+		disable statistics gathering.
+		Configuration file option!
+	x)  Breakpoints:
+		o) Physical vs virtual addresses!
+		o) 32-bit vs 64-bit sign extension for MIPS, and others?
+	x)  INVALIDATION should cause translations in _all_ cpus to be
+	    invalidated, e.g. on a write to a write-protected page
+	    (containing code)
+	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
+	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
+	x)  Native code generation backends:
+		o)  think carefully about this.
+		o)  simple syntax for emitting opcodes; backend implementation
+		    must be optional, so I don't have to write more code
+		    than necessary. after all, the non-native (C) code should
+		    always work.
+		o)  convert into native code only after an entire
+			block has been translated? probably best.
+		o)  the "almost native" opcodes may be rearranged,
+		    "peep-hole optimized", etc. and then as a separate step
+		    this list of almost native opcodes is written out
+		    as native code.
+		o)  think about delay slots at the end of a block!
+		o)  x86/amd64 code generator can be very similar... perhaps
+		o)  NOTE that generation is per _ABI_, not per host arch!
+		    the configure script must detect ABI!!!
+		o)  branches to already translated code blocks can
+			link the blocks together
+		o)  load/store are the most important to optimize
+
+Simple Valgrind-like checks?
+	o)  Mark every address with bits which tell whether or not the address
+	    has been written to.
+	o)  What should happen when programs are loaded?  Text/data, bss (zero
+	    filled). But stack space and heap is uninitialized.
+	o)  Uninitialized local variables:
+		A load from a place on the stack which has not previously
+		been stored to => warning. Increasing the stack pointer using
+		any available means should reset the memory to uninitialized.
+	o)  If calls to malloc() and free() can be intercepted:
+		o)  Access to a memory area after free() => warning.
+		o)  Memory returned by malloc() is marked as not-initialized.
+		o)  Non-passive, but good to have: Change the argument
+		    given to malloc, to return a slightly larger memory
+		    area, i.e.  margin_before + size + margin_after,
+		    and return the pointer  + margin_before.
+		    Any access to the margin_before or _after space results
+		    in warnings. (free() must be modified to free the
+		    actually allocated address.)
 
 Better CD Image file support:
 	x)  Support CD formats that contain more than 1 track, e.g.

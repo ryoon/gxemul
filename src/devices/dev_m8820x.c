@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_m8820x.c,v 1.1 2007-05-15 12:35:14 debug Exp $
+ *  $Id: dev_m8820x.c,v 1.2 2007-05-16 23:29:16 debug Exp $
  *
  *  M88200/M88204 CMMU (Cache/Memory Management Unit)
  */
@@ -44,10 +44,8 @@
 
 #include "m8820x.h"
 
-#define	M8820X_LENGTH	0x1000
-
 struct m8820x_data {
-	uint32_t	reg[M8820X_LENGTH / sizeof(uint32_t)];
+	int		cmmu_nr;
 };
 
 
@@ -58,7 +56,8 @@ struct m8820x_data {
  */
 static void m8820x_command(struct cpu *cpu, struct m8820x_data *d)
 {
-	int cmd = d->reg[CMMU_SCR];
+	uint32_t *regs = cpu->cd.m88k.cmmu[d->cmmu_nr]->reg;
+	int cmd = regs[CMMU_SCR];
 
 	switch (cmd) {
 
@@ -91,12 +90,13 @@ DEVICE_ACCESS(m8820x)
 {
 	uint64_t idata = 0, odata = 0;
 	struct m8820x_data *d = extra;
+	uint32_t *regs = cpu->cd.m88k.cmmu[d->cmmu_nr]->reg;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
 	if (writeflag == MEM_READ)
-		odata = d->reg[relative_addr / sizeof(uint32_t)];
+		odata = regs[relative_addr / sizeof(uint32_t)];
 
 	switch (relative_addr / sizeof(uint32_t)) {
 
@@ -112,7 +112,7 @@ DEVICE_ACCESS(m8820x)
 			fatal("m8820x: read from CMMU_SCR: TODO\n");
 			exit(1);
 		} else {
-			d->reg[relative_addr / sizeof(uint32_t)] = idata;
+			regs[relative_addr / sizeof(uint32_t)] = idata;
 			m8820x_command(cpu, d);
 		}
 		break;
@@ -129,7 +129,7 @@ DEVICE_ACCESS(m8820x)
 	case CMMU_SAPR:		/*  TODO: Invalidate something for  */
 	case CMMU_UAPR:		/*  SAPR and UAPR writes?  */
 		if (writeflag == MEM_WRITE)
-			d->reg[relative_addr / sizeof(uint32_t)] = idata;
+			regs[relative_addr / sizeof(uint32_t)] = idata;
 		break;
 
 	case CMMU_BWP0:
@@ -142,7 +142,7 @@ DEVICE_ACCESS(m8820x)
 	case CMMU_BWP7:
 		/*  TODO: Invalidate translations (?)  */
 		if (writeflag == MEM_WRITE)
-			d->reg[relative_addr / sizeof(uint32_t)] = idata;
+			regs[relative_addr / sizeof(uint32_t)] = idata;
 		break;
 
 	case CMMU_CSSP0:
@@ -176,8 +176,7 @@ DEVINIT(m8820x)
 
 	memset(d, 0, sizeof(struct m8820x_data));
 
-	/*  This is a 88200, revision 9:  */
-	d->reg[CMMU_IDR] = (M88200_ID << 21) | (9 << 16);
+	d->cmmu_nr = devinit->addr2;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, M8820X_LENGTH, dev_m8820x_access, (void *)d,

@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_clmpcc.c,v 1.2 2007-05-16 23:29:16 debug Exp $
+ *  $Id: memory_m88k.c,v 1.1 2007-05-16 23:29:16 debug Exp $
  *
- *  Cirrus Logic Four Channel Multi-Protocol Communications Controller
- *  (CD2400/CD2401)
+ *  Virtual to physical memory translation for M88K emulation.
+ *  (This is where the actual work of the M8820x chips is emulated.)
  */
 
 #include <stdio.h>
@@ -36,69 +36,21 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "device.h"
-#include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
-#include "clmpccreg.h"
-
-/*  #define debug fatal  */
-
-#define	CLMPCC_LEN		0x200
-
-struct clmpcc_data {
-	unsigned char	reg[CLMPCC_LEN];
-};
-
-
-DEVICE_ACCESS(clmpcc)
+/*
+ *  m88k_translate_v2p():
+ */
+int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_paddr, int flags)
 {
-	struct clmpcc_data *d = (struct clmpcc_data *) extra;
-	uint64_t idata = 0, odata = 0;
+	*return_paddr = vaddr;
 
-	if (writeflag == MEM_WRITE)
-		idata = memory_readmax64(cpu, data, len);
+	/*  TODO  */
 
-	if (writeflag == MEM_READ)
-		odata = d->reg[relative_addr];
-
-	switch (relative_addr) {
-
-	case 0:	/*  Used by OpenBSD/mvme88k when probing...  */
-		break;
-
-	default:if (writeflag == MEM_READ)
-			debug("[ clmpcc: unimplemented READ from offset 0x%x ]"
-			    "\n", (int)relative_addr);
-		else
-			debug("[ clmpcc: unimplemented WRITE to offset 0x%x: "
-			    "0x%x ]\n", (int)relative_addr, (int)idata);
-		/*  exit(1);  */
-	}
-
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
-
-	return 1;
-}
-
-
-DEVINIT(clmpcc)
-{
-	struct clmpcc_data *d = malloc(sizeof(struct clmpcc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-	memset(d, 0, sizeof(struct clmpcc_data));
-
-	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, CLMPCC_LEN, dev_clmpcc_access, (void *)d,
-	    DM_DEFAULT, NULL);
-
-	return 1;
+	return 2;
 }
 

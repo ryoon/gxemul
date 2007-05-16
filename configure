@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.257 2007-05-11 09:28:35 debug Exp $
+#  $Id: configure,v 1.258 2007-05-16 23:29:16 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -172,7 +172,7 @@ if [ z$ENABLEARM = zYES ]; then
 fi
 if [ z$ENABLEM88K = zYES ]; then
 	printf "#define ENABLE_M88K\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_m88k.o"
+	CPU_ARCHS="$CPU_ARCHS cpu_m88k.o memory_m88k.o"
 	CPU_TOOLS="$CPU_TOOLS generate_m88k_bcnd"
 	CPU_TOOLS="$CPU_TOOLS generate_m88k_loadstore"
 fi

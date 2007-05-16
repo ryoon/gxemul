@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.102 2007-04-16 15:13:44 debug Exp $
+ *  $Id: memory_rw.c,v 1.103 2007-05-16 23:29:16 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -33,6 +33,9 @@
  *
  *	MEMORY_RW should be mips_memory_rw
  *	MEM_MIPS should be defined
+ *
+ *
+ *  TODO: Cleanup the "ok" variable usage!
  */
 
 
@@ -71,7 +74,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 #ifndef MEM_USERLAND
-	int ok = 1;
+	int ok = 2;
 #endif
 	uint64_t paddr;
 	int cache, no_exceptions, offset;
@@ -364,7 +367,7 @@ not just the device in question.
 	    && !no_exceptions)
 		cpu->update_translation_table(cpu, vaddr & ~offset_mask,
 		    memblock, (misc_flags & MEMORY_USER_ACCESS) |
-#if !defined(MEM_MIPS) && !defined(MEM_USERLAND)
+#if !defined(MEM_USERLAND)
 		    (cache == CACHE_INSTRUCTION?
 			(writeflag == MEM_WRITE? 1 : 0) : ok - 1),
 #else
@@ -376,6 +379,7 @@ not just the device in question.
 	 *  If writing, or if mapping a page where writing is ok later on,
 	 *  then invalidate code translations for the (physical) page address:
 	 */
+
 	if ((writeflag == MEM_WRITE
 #if !defined(MEM_USERLAND)
 	    || ok == 2

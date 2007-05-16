@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.8 2007-05-15 12:35:14 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.9 2007-05-16 23:29:16 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
@@ -65,16 +65,41 @@
 #include "misc.h"
 
 #include "mvme187.h"
+#include "mvme88k_vme.h"
+#include "mvme_pcctworeg.h"
 
 
 MACHINE_SETUP(mvme88k)
 {
+	char tmpstr[300];
+
 	switch (machine->machine_subtype) {
 
 	case MACHINE_MVME88K_187:
 		machine->machine_name = "MVME187";
 
+		/*  The mvme187 device contains 187-specific stuff, such
+		    as motherboard registers, and the memory controller:  */
 		device_add(machine, "mvme187");
+
+		/*  PCC2 bus at 0xfff00000:  */
+		snprintf(tmpstr, sizeof(tmpstr), "pcc2 addr=0x%x", PCC2_BASE);
+		device_add(machine, tmpstr);
+
+		/*  VME2 bus at 0xfff40000:  */
+		snprintf(tmpstr, sizeof(tmpstr), "vme addr=0x%x", VME2_BASE);
+		device_add(machine, tmpstr);
+
+		/*  Cirrus Logic serial console at 0xfff45000:  */
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "clmpcc addr=0x%x", 0xfff45000);
+		device_add(machine, tmpstr);
+
+		/*  MK48T08 clock/nvram at 0xfffc0000:  */
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "mk48txx addr=0x%x", 0xfffc0000);
+		device_add(machine, tmpstr);
+
 		break;
 
 	case MACHINE_MVME88K_188:

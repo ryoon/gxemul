@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.24 2007-05-12 09:34:49 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.25 2007-05-16 23:29:16 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -111,7 +111,7 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->invalidate_translation_caches =
 	    m88k_invalidate_translation_caches;
 	cpu->invalidate_code_translation = m88k_invalidate_code_translation;
-	/*  cpu->translate_v2p = m88k_translate_v2p;  */
+	cpu->translate_v2p = m88k_translate_v2p;
 
 	cpu->cd.m88k.cpu_type = cpu_type_defs[found];
 	cpu->name            = cpu->cd.m88k.cpu_type.name;

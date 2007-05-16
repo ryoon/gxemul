@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mvme187.c,v 1.2 2007-05-15 12:35:14 debug Exp $
+ *  $Id: dev_mvme187.c,v 1.3 2007-05-16 23:29:16 debug Exp $
  *
  *  MVME187-specific devices and control registers.
  */
@@ -43,66 +43,13 @@
 
 
 #include "mvme187.h"
-#include "mvme88k_vme.h"
 #include "mvme_memcreg.h"
-#include "mvme_pcctworeg.h"
+#include "m8820x.h"
 
 
 struct mvme187_data {
 	struct memcreg		memcreg;
-
-	uint8_t			pcctwo_reg[PCC2_SIZE];
 };
-
-
-DEVICE_ACCESS(pcc2)
-{
-	uint64_t idata = 0, odata = 0;
-	struct mvme187_data *d = extra;
-
-	if (writeflag == MEM_WRITE)
-		idata = memory_readmax64(cpu, data, len);
-
-	if (writeflag == MEM_READ)
-		odata = d->pcctwo_reg[relative_addr];
-
-	switch (relative_addr) {
-
-	case PCCTWO_CHIPID:
-	case PCCTWO_CHIPREV:
-		if (writeflag == MEM_WRITE) {
-			fatal("TODO: write to PCCTWO_CHIPID or CHIPREV?\n");
-			exit(1);
-		}
-		break;
-
-	case PCCTWO_GENCTL:
-	case PCCTWO_VECBASE:
-		if (writeflag == MEM_WRITE)
-			d->pcctwo_reg[relative_addr] = idata;
-		break;
-
-	case PCCTWO_MASK:
-		if (writeflag == MEM_WRITE) {
-			d->pcctwo_reg[relative_addr] = idata;
-			/*  TODO: Re-Assert interrupts!  */
-		}
-		break;
-
-	default:fatal("[ pcc2: unimplemented %s offset 0x%x",
-		    writeflag == MEM_WRITE? "write to" : "read from",
-		    (int) relative_addr);
-		if (writeflag == MEM_WRITE)
-			fatal(": 0x%x", (int)idata);
-		fatal(" ]\n");
-//		exit(1);
-	}
-
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
-
-	return 1;
-}
 
 
 DEVICE_ACCESS(mvme187_memc)
@@ -151,6 +98,7 @@ DEVINIT(mvme187)
 {
 	struct mvme187_data *d = malloc(sizeof(struct mvme187_data));
 	char tmpstr[300];
+	struct m8820x_cmmu *cmmu;
 	int size_per_memc, r;
 
 	if (d == NULL) {
@@ -182,31 +130,38 @@ DEVINIT(mvme187)
 	    DM_DEFAULT, NULL);
 
 
-	/*  PCC2 (Interrupt/bus controller), 0xFFF?????:  */
-	d->pcctwo_reg[PCCTWO_CHIPID] = PCC2_ID;
-	memory_device_register(devinit->machine->memory, "pcc2",
-	    PCC2_BASE, PCC2_SIZE, dev_pcc2_access, (void *)d,
-	    DM_DEFAULT, NULL);
+	/*  Instruction CMMU:  */
+	cmmu = malloc(sizeof(struct m8820x_cmmu));
+	if (cmmu == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
 
-	/*  VME2 bus at 0xfff40000:  */
-	snprintf(tmpstr, sizeof(tmpstr), "vme addr=0x%x", VME2_BASE);
-	device_add(devinit->machine, tmpstr);
+	devinit->machine->cpus[devinit->machine->bootstrap_cpu]->
+	    cd.m88k.cmmu[0] = cmmu;
+	/*  This is a 88200, revision 9:  */
+	cmmu->reg[CMMU_IDR] = (M88200_ID << 21) | (9 << 16);
 
-	/*  Cirrus Logic serial console at 0xfff45000:  */
-	snprintf(tmpstr, sizeof(tmpstr), "clmpcc addr=0x%x", 0xfff45000);
-	device_add(devinit->machine, tmpstr);
-
-	/*  MK48T08 clock/nvram at 0xfffc0000:  */
-	snprintf(tmpstr, sizeof(tmpstr), "mk48txx addr=0x%x", 0xfffc0000);
-	device_add(devinit->machine, tmpstr);
-
-	/*  Instruction and data CMMUs:  */
 	snprintf(tmpstr, sizeof(tmpstr),
-	    "m8820x addr=0x%x", MVME187_SBC_CMMU_I);
+	    "m8820x addr=0x%x addr2=0", MVME187_SBC_CMMU_I);
 	device_add(devinit->machine, tmpstr);
+
+	/*  ... and data CMMU:  */
+	cmmu = malloc(sizeof(struct m8820x_cmmu));
+	if (cmmu == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	devinit->machine->cpus[devinit->machine->bootstrap_cpu]->
+	    cd.m88k.cmmu[1] = cmmu;
+	/*  This is also a 88200, revision 9:  */
+	cmmu->reg[CMMU_IDR] = (M88200_ID << 21) | (9 << 16);
+
 	snprintf(tmpstr, sizeof(tmpstr),
-	    "m8820x addr=0x%x", MVME187_SBC_CMMU_D);
+	    "m8820x addr=0x%x addr2=1", MVME187_SBC_CMMU_D);
 	device_add(devinit->machine, tmpstr);
+
 
 	return 1;
 }

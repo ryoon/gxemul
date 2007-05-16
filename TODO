@@ -1,4 +1,4 @@
-$Id: TODO,v 1.503 2007-05-15 12:35:14 debug Exp $
+$Id: TODO,v 1.504 2007-05-16 23:29:16 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -6,7 +6,10 @@ Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
 
 M88K:
-	o)  CMMUs: Everything!
+	o)  CMMUs:
+		o)  add TLB entries (56 per CMMU?)
+		o)  add memory_m88k.c
+		o)  translation invalidation!
 	o)  Exceptions:
 		o)  Details about which save registers are set
 		    to which values, on which exceptions

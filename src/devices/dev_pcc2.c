@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_clmpcc.c,v 1.2 2007-05-16 23:29:16 debug Exp $
+ *  $Id: dev_pcc2.c,v 1.1 2007-05-16 23:29:16 debug Exp $
  *
- *  Cirrus Logic Four Channel Multi-Protocol Communications Controller
- *  (CD2400/CD2401)
+ *  PCC2 bus (used in e.g. the MVME187 machine).
  */
 
 #include <stdio.h>
@@ -43,40 +42,55 @@
 #include "misc.h"
 
 
-#include "clmpccreg.h"
+#include "mvme_pcctworeg.h"
 
-/*  #define debug fatal  */
 
-#define	CLMPCC_LEN		0x200
-
-struct clmpcc_data {
-	unsigned char	reg[CLMPCC_LEN];
+struct pcc2_data {
+	uint8_t			pcctwo_reg[PCC2_SIZE];
 };
 
 
-DEVICE_ACCESS(clmpcc)
+DEVICE_ACCESS(pcc2)
 {
-	struct clmpcc_data *d = (struct clmpcc_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	struct pcc2_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
 	if (writeflag == MEM_READ)
-		odata = d->reg[relative_addr];
+		odata = d->pcctwo_reg[relative_addr];
 
 	switch (relative_addr) {
 
-	case 0:	/*  Used by OpenBSD/mvme88k when probing...  */
+	case PCCTWO_CHIPID:
+	case PCCTWO_CHIPREV:
+		if (writeflag == MEM_WRITE) {
+			fatal("TODO: write to PCCTWO_CHIPID or CHIPREV?\n");
+			exit(1);
+		}
 		break;
 
-	default:if (writeflag == MEM_READ)
-			debug("[ clmpcc: unimplemented READ from offset 0x%x ]"
-			    "\n", (int)relative_addr);
-		else
-			debug("[ clmpcc: unimplemented WRITE to offset 0x%x: "
-			    "0x%x ]\n", (int)relative_addr, (int)idata);
-		/*  exit(1);  */
+	case PCCTWO_GENCTL:
+	case PCCTWO_VECBASE:
+		if (writeflag == MEM_WRITE)
+			d->pcctwo_reg[relative_addr] = idata;
+		break;
+
+	case PCCTWO_MASK:
+		if (writeflag == MEM_WRITE) {
+			d->pcctwo_reg[relative_addr] = idata;
+			/*  TODO: Re-Assert interrupts!  */
+		}
+		break;
+
+	default:fatal("[ pcc2: unimplemented %s offset 0x%x",
+		    writeflag == MEM_WRITE? "write to" : "read from",
+		    (int) relative_addr);
+		if (writeflag == MEM_WRITE)
+			fatal(": 0x%x", (int)idata);
+		fatal(" ]\n");
+//		exit(1);
 	}
 
 	if (writeflag == MEM_READ)
@@ -86,17 +100,21 @@ DEVICE_ACCESS(clmpcc)
 }
 
 
-DEVINIT(clmpcc)
+DEVINIT(pcc2)
 {
-	struct clmpcc_data *d = malloc(sizeof(struct clmpcc_data));
+	struct pcc2_data *d = malloc(sizeof(struct pcc2_data));
+
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct clmpcc_data));
 
-	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, CLMPCC_LEN, dev_clmpcc_access, (void *)d,
+	memset(d, 0, sizeof(struct pcc2_data));
+
+	d->pcctwo_reg[PCCTWO_CHIPID] = PCC2_ID;
+
+	memory_device_register(devinit->machine->memory, "pcc2",
+	    devinit->addr, PCC2_SIZE, dev_pcc2_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
 	return 1;

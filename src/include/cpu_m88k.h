@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.13 2007-05-11 23:22:21 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.14 2007-05-16 23:29:16 debug Exp $
  */
 
 #include "misc.h"
@@ -195,6 +195,17 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 /*  A reserved/unimplemented instruction, used for PROM calls:  */
 #define	M88K_PROM_INSTR		0xf400fc92
 
+
+/*  M88200/88204 CMMU:  */
+#define	M8820X_LENGTH		0x1000
+
+struct m8820x_cmmu {
+	uint32_t	reg[M8820X_LENGTH / sizeof(uint32_t)];
+};
+
+#define	MAX_M8820X_CMMUS	8
+
+
 struct m88k_cpu {
 	struct m88k_cpu_type_def cpu_type;
 
@@ -202,7 +213,8 @@ struct m88k_cpu {
 	 *  General-Purpose Registers:
 	 *
 	 *  32 (N_M88K_REGS) registers, plus one which is always zero. (This
-	 *  is to support st.d with d = r31.)
+	 *  is to support st.d with d = r31. ld.d with d=r31 is converted to
+	 *  just ld. TODO)
 	 */
 	uint32_t		r[N_M88K_REGS+1];
 
@@ -217,6 +229,9 @@ struct m88k_cpu {
 
 	/*  Current interrupt assertion:  */
 	int			irq_asserted;
+
+	/*  CMMUs (Cache/Memory Management Units):  */
+	struct m8820x_cmmu	*cmmu[MAX_M8820X_CMMUS];
 
 
 	/*
@@ -242,5 +257,10 @@ int m88k_cpu_family_init(struct cpu_family *);
 void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr);
 void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte);
 void m88k_exception(struct cpu *cpu, int vector, int is_trap);
+
+/*  memory_m88k.c:  */
+int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+
 
 #endif	/*  CPU_M88K_H  */

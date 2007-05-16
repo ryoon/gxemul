@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.3 2007-05-12 00:25:55 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.4 2007-05-16 23:28:41 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  
@@ -338,7 +338,7 @@ exit(1);
 #endif
 
 	/*  Second word in pair:  */
-	{ uint32_t x = reg(ic->arg[0]);
+	{ uint32_t x = reg(ic->arg[0] + 4);
 #ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
 	*((uint32_t *)(p+addr+4)) = x; }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.23 2007-05-15 12:34:33 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.24 2007-05-16 23:28:58 debug Exp $
  *
  *  M88K instructions.
  *
@@ -661,6 +661,7 @@ X(xor_c){ reg(ic->arg[0]) = reg(ic->arg[1]) ^ ~(reg(ic->arg[2])); }
 X(and)	{ reg(ic->arg[0]) = reg(ic->arg[1]) & reg(ic->arg[2]); }
 X(and_c){ reg(ic->arg[0]) = reg(ic->arg[1]) & ~(reg(ic->arg[2])); }
 X(addu)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]); }
+X(addu_s2r0)	{ reg(ic->arg[0]) = reg(ic->arg[1]); }
 X(lda_reg_2)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 2; }
 X(lda_reg_4)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 4; }
 X(lda_reg_8)	{ reg(ic->arg[0]) = reg(ic->arg[1]) + reg(ic->arg[2]) * 8; }
@@ -1123,6 +1124,12 @@ X(to_be_translated)
 			case 0x0b: store = 1; opsize = 0; break;
 			}
 
+			if (opsize == 3 && d == 31) {
+				fatal("m88k load/store of register pair r31/r0"
+				    " is not yet implemented\n");
+				goto bad;
+			}
+
 			ic->f = m88k_loadstore[ opsize
 			    + (store? M88K_LOADSTORE_STORE : 0)
 			    + (signedness? M88K_LOADSTORE_SIGNEDNESS:0)
@@ -1169,13 +1176,15 @@ X(to_be_translated)
 		ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
 		ic->arg[2] = imm16 << shift;
 
-		/*  Optimization for  or d,r0,imm  */
+		/*  Optimization for  or d,r0,imm  and similar  */
 		if (s1 == M88K_ZERO_REG && ic->f == instr(or_imm)) {
 			if (ic->arg[2] == 0)
 				ic->f = instr(or_r0_imm0);
 			else
 				ic->f = instr(or_r0_imm);
 		}
+		if (ic->arg[2] == 0 && ic->f == instr(addu_imm))
+			ic->f = instr(addu_s2r0);
 
 		if (d == s1 && ic->arg[2] == 1) {
 			if (ic->f == instr(addu_imm))
@@ -1437,8 +1446,15 @@ X(to_be_translated)
 				    + (scaled? M88K_LOADSTORE_SCALEDNESS : 0)
 				    + (user? M88K_LOADSTORE_USR : 0)
 				    + M88K_LOADSTORE_REGISTEROFFSET ];
+
 				if (op == 0 && d == M88K_ZERO_REG)
 					ic->f = instr(nop);
+
+				if (opsize == 3 && d == 31) {
+					fatal("m88k load/store of register "
+					    "pair r31/r0: TODO\n");
+					goto bad;
+				}
 			} else if (op == 2) {
 				/*  lda:  */
 				if (scaled) {
@@ -1506,9 +1522,11 @@ X(to_be_translated)
 			case 0xa0: ic->f = instr(mak);   break;
 			}
 
-			/*  Optimization for  or rX,r0,rY  */
+			/*  Optimization for  or rX,r0,rY  etc:  */
 			if (s1 == M88K_ZERO_REG && ic->f == instr(or))
 				ic->f = instr(or_r0);
+			if (s2 == M88K_ZERO_REG && ic->f == instr(addu))
+				ic->f = instr(addu_s2r0);
 			if (d == M88K_ZERO_REG)
 				ic->f = instr(nop);
 			break;

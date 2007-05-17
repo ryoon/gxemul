@@ -1,4 +1,4 @@
-/*  GXemul: $Id: m8820x_pte.h,v 1.1 2007-05-17 02:00:30 debug Exp $  */
+/*  GXemul: $Id: m8820x_pte.h,v 1.2 2007-05-17 02:51:18 debug Exp $  */
 /*	$OpenBSD: mmu.h,v 1.8 2006/05/21 20:55:43 miod Exp $ */
 
 #ifndef M8820X_PTE_H
@@ -205,6 +205,7 @@ typedef	u_int32_t	pt_ind_entry_t;
 
 #define M88K_BTOBLK(x)	(x >> BATC_BLKSHIFT)
 
+#if 0
 static pt_entry_t invalidate_pte(pt_entry_t *);
 static __inline__ pt_entry_t
 invalidate_pte(pt_entry_t *pte)
@@ -217,5 +218,6 @@ invalidate_pte(pt_entry_t *pte)
 	__asm__ __volatile__ ("tb1 0, r0, 0");
 	return oldpte;
 }
+#endif
 
 #endif	/*  M8820X_PTE_H  */

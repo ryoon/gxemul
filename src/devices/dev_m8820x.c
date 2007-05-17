@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_m8820x.c,v 1.2 2007-05-16 23:29:16 debug Exp $
+ *  $Id: dev_m8820x.c,v 1.3 2007-05-17 02:00:30 debug Exp $
  *
  *  M88200/M88204 CMMU (Cache/Memory Management Unit)
  */
@@ -91,6 +91,7 @@ DEVICE_ACCESS(m8820x)
 	uint64_t idata = 0, odata = 0;
 	struct m8820x_data *d = extra;
 	uint32_t *regs = cpu->cd.m88k.cmmu[d->cmmu_nr]->reg;
+	uint32_t *batc = cpu->cd.m88k.cmmu[d->cmmu_nr]->batc;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -140,9 +141,21 @@ DEVICE_ACCESS(m8820x)
 	case CMMU_BWP5:
 	case CMMU_BWP6:
 	case CMMU_BWP7:
-		/*  TODO: Invalidate translations (?)  */
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
+			uint32_t old;
+
 			regs[relative_addr / sizeof(uint32_t)] = idata;
+
+			/*  Also write to the specific batc registers:  */
+			old = batc[(relative_addr / sizeof(uint32_t))
+			    - CMMU_BWP0];
+			batc[(relative_addr / sizeof(uint32_t)) - CMMU_BWP0]
+			    = idata;
+			if (old != idata) {
+				fatal("TODO: invalidate batc translations\n");
+				exit(1);
+			}
+		}
 		break;
 
 	case CMMU_CSSP0:

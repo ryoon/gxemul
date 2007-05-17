@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mvme187.c,v 1.3 2007-05-16 23:29:16 debug Exp $
+ *  $Id: dev_mvme187.c,v 1.4 2007-05-17 02:00:30 debug Exp $
  *
  *  MVME187-specific devices and control registers.
  */
@@ -136,12 +136,13 @@ DEVINIT(mvme187)
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-
+	memset(cmmu, 0, sizeof(struct m8820x_cmmu));
 	devinit->machine->cpus[devinit->machine->bootstrap_cpu]->
 	    cd.m88k.cmmu[0] = cmmu;
 	/*  This is a 88200, revision 9:  */
 	cmmu->reg[CMMU_IDR] = (M88200_ID << 21) | (9 << 16);
-
+	cmmu->batc[8] = BATC8;
+	cmmu->batc[9] = BATC9;
 	snprintf(tmpstr, sizeof(tmpstr),
 	    "m8820x addr=0x%x addr2=0", MVME187_SBC_CMMU_I);
 	device_add(devinit->machine, tmpstr);
@@ -152,12 +153,13 @@ DEVINIT(mvme187)
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-
+	memset(cmmu, 0, sizeof(struct m8820x_cmmu));
 	devinit->machine->cpus[devinit->machine->bootstrap_cpu]->
 	    cd.m88k.cmmu[1] = cmmu;
 	/*  This is also a 88200, revision 9:  */
 	cmmu->reg[CMMU_IDR] = (M88200_ID << 21) | (9 << 16);
-
+	cmmu->batc[8] = BATC8;
+	cmmu->batc[9] = BATC9;
 	snprintf(tmpstr, sizeof(tmpstr),
 	    "m8820x addr=0x%x addr2=1", MVME187_SBC_CMMU_D);
 	device_add(devinit->machine, tmpstr);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.14 2007-05-16 23:29:16 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.15 2007-05-17 02:00:30 debug Exp $
  */
 
 #include "misc.h"
@@ -196,14 +196,23 @@ DYNTRANS_MISC_DECLARATIONS(m88k,M88K,uint32_t)
 #define	M88K_PROM_INSTR		0xf400fc92
 
 
-/*  M88200/88204 CMMU:  */
-#define	M8820X_LENGTH		0x1000
+/*
+ *  M88200/88204 CMMU:
+ */
+
+#define	MAX_M8820X_CMMUS		8
+#define	M8820X_LENGTH			0x1000
+#define	N_M88200_BATC_REGS		10
+#define	N_M88200_PATC_ENTRIES		56
+#define	M8820X_PATC_SUPERVISOR_BIT	0x00000001
 
 struct m8820x_cmmu {
 	uint32_t	reg[M8820X_LENGTH / sizeof(uint32_t)];
+	uint32_t	batc[N_M88200_BATC_REGS];
+	uint32_t	patc_v_and_control[N_M88200_PATC_ENTRIES];
+	uint32_t	patc_p_and_supervisorbit[N_M88200_PATC_ENTRIES];
+	int		patc_update_index;
 };
-
-#define	MAX_M8820X_CMMUS	8
 
 
 struct m88k_cpu {

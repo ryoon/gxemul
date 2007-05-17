@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1569 2007-05-17 03:49:59 debug Exp $
+$Id: HISTORY,v 1.1570 2007-05-17 08:37:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3517,3 +3517,5 @@ Changelog for GXemul:
 		Implementing the clock part of dev_mk48txx.
 		Implementing the M88K fstcr instruction.
 		Implementing m88k_cpu_tlbdump().
+		Beginning on the implementation of a separate address space
+		for M88K .usr loads/stores.

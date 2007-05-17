@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.4 2007-05-16 23:28:41 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.5 2007-05-17 08:37:01 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  
@@ -52,16 +52,17 @@
  *	LS_SCALED for scaled accesses
  *	LS_USR for usr accesses
  *	LS_REGOFS is defined when arg[2] is a register pointer
- *
- *
- *  TODO:
- *	USR bit
  */
 
 
 #ifdef LS_INCLUDE_GENERIC
 void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 {
+#ifdef LS_USR
+	const int memory_rw_flags = CACHE_DATA | MEMORY_USER_ACCESS;
+#else
+	const int memory_rw_flags = CACHE_DATA;
+#endif
 	uint32_t addr = reg(ic->arg[1]) +
 #ifdef LS_REGOFS
 #ifdef LS_SCALED
@@ -80,12 +81,20 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 	cpu->pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1)<<M88K_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << M88K_INSTR_ALIGNMENT_SHIFT);
 
+#ifdef LS_USR
+	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)) {
+		/*  Cause a privilege violation exception:  */
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+		return;
+	}
+#endif
+
 #ifndef LS_1
 	/*  Check alignment:  */
 	if (addr & (LS_SIZE - 1)) {
 #if 0
 		/*  Cause an address alignment exception:  */
-		m88k_cpu_exception(cpu, M88K_EXCEPTION_MISALIGNED_ACCESS, 0);
+		m88k_exception(cpu, M88K_EXCEPTION_MISALIGNED_ACCESS, 0);
 #else
 		fatal("{ m88k dyntrans alignment exception, size = %i,"
 		    " addr = %016"PRIx32", pc = %016"PRIx32" }\n", LS_SIZE,
@@ -105,7 +114,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 
 #ifdef LS_LOAD
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
+	    MEM_READ, memory_rw_flags)) {
 		/*  Exception.  */
 		return;
 	}
@@ -145,7 +154,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 #endif
 	memory_writemax64(cpu, data, LS_SIZE, x);
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
+	    MEM_WRITE, memory_rw_flags)) {
 		/*  Exception.  */
 		return;
 	}
@@ -165,19 +174,34 @@ void LS_N(struct cpu *cpu, struct m88k_instr_call *ic)
 #else
 	    ic->arg[2];
 #endif
-	unsigned char *p;
-#ifdef LS_LOAD
-	p = cpu->cd.m88k.host_load[addr >> 12];
-#else
-	p = cpu->cd.m88k.host_store[addr >> 12];
-#endif
 
 #ifdef LS_USR
-fatal("USR bit: TODO\n");
-exit(1);
+#ifdef LS_LOAD
+	uint8_t *p = cpu->cd.m88k.host_load_usr[addr >> 12];
+#else
+	uint8_t *p = cpu->cd.m88k.host_store_usr[addr >> 12];
+#endif
+#else
+#ifdef LS_LOAD
+	uint8_t *p = cpu->cd.m88k.host_load[addr >> 12];
+#else
+	uint8_t *p = cpu->cd.m88k.host_store[addr >> 12];
+#endif
 #endif
 
-	if (p == NULL
+	/*
+	 *  Call the generic function, if things become too complicated:
+	 *
+	 *  1)  .usr used in non-supervisor mode
+	 *  2)  the page pointer is NULL
+	 *  3)  unaligned access
+	 */
+	if (
+#ifdef LS_USR
+	    !(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE) ||
+#endif
+
+	    p == NULL
 #ifndef LS_1
 	    || addr & (LS_SIZE - 1)
 #endif

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.118 2007-05-12 01:13:45 debug Exp $
+ *  $Id: cpu.h,v 1.119 2007-05-17 08:37:01 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -160,6 +160,9 @@
  *  The values in this array are the tlb index plus 1, so a value of, say,
  *  3 means tlb index 2. A value of 0 would mean a tlb index of -1, which
  *  is not a valid index. (I.e. no hit.)
+ *
+ *  The VPH32EXTENDED variant adds an additional postfix to the array
+ *  names. Used so far only for usermode addresses in M88K emulation.
  */
 #define	N_VPH32_ENTRIES		1048576
 #define	VPH32(arch,ARCH,paddrtype,tlbindextype)				\
@@ -168,6 +171,13 @@
 	paddrtype		phys_addr[N_VPH32_ENTRIES];		\
 	struct arch ## _tc_physpage  *phys_page[N_VPH32_ENTRIES];	\
 	tlbindextype		vaddr_to_tlbindex[N_VPH32_ENTRIES];
+#define	VPH32EXTENDED(arch,ARCH,paddrtype,tlbindextype,ex)		\
+	unsigned char		*host_load_ ## ex[N_VPH32_ENTRIES];	\
+	unsigned char		*host_store_ ## ex[N_VPH32_ENTRIES];	\
+	paddrtype		phys_addr_ ## ex[N_VPH32_ENTRIES];	\
+	struct arch ## _tc_physpage  *phys_page_ ## ex[N_VPH32_ENTRIES];\
+	tlbindextype		vaddr_to_tlbindex_ ## ex[N_VPH32_ENTRIES];
+
 
 /*
  *  64-bit dyntrans emulated Virtual -> physical -> host address translation:

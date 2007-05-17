@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.103 2007-05-16 23:29:16 debug Exp $
+ *  $Id: memory_rw.c,v 1.104 2007-05-17 08:37:01 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -98,9 +98,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		ok = cpu->translate_v2p(cpu, vaddr, &paddr,
 		    (writeflag? FLAG_WRITEFLAG : 0) +
 		    (no_exceptions? FLAG_NOEXCEPTIONS : 0)
-#ifdef MEM_ARM
 		    + (misc_flags & MEMORY_USER_ACCESS)
-#endif
 		    + (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
 
 		/*
@@ -358,11 +356,8 @@ not just the device in question.
 	    && (cpu->cd.mips.cpu_type.mmu_model != MMU3K ||
             !(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES))
 #endif
-#ifndef MEM_MIPS
-/*	    && !(misc_flags & MEMORY_USER_ACCESS)  */
 #ifndef MEM_USERLAND
 	    && !(ok & MEMORY_NOT_FULL_PAGE)
-#endif
 #endif
 	    && !no_exceptions)
 		cpu->update_translation_table(cpu, vaddr & ~offset_mask,

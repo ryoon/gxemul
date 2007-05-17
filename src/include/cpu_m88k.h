@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.16 2007-05-17 03:49:59 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.17 2007-05-17 08:37:01 debug Exp $
  */
 
 #include "misc.h"
@@ -244,12 +244,15 @@ struct m88k_cpu {
 
 
 	/*
-	 *  Instruction translation cache, and 32-bit virtual -> physical ->
-	 *  host address translation:
+	 *  Instruction translation cache, internal TLB structure, and 32-bit
+	 *  virtual -> physical -> host address translation arrays for both
+	 *  normal access and for the special .usr access mode (available in
+	 *  supervisor mode).
 	 */
 	DYNTRANS_ITC(m88k)
 	VPH_TLBS(m88k,M88K)
 	VPH32(m88k,M88K,uint32_t,uint8_t)
+	VPH32EXTENDED(m88k,M88K,uint32_t,uint8_t,usr)
 };
 
 

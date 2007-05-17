@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m88k.c,v 1.4 2007-05-17 03:49:59 debug Exp $
+ *  $Id: memory_m88k.c,v 1.5 2007-05-17 08:37:01 debug Exp $
  *
  *  Virtual to physical memory translation for M88K emulation.
  *
@@ -121,6 +121,9 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	pt_entry_t page_descriptor;
 	int accumulated_flags;
 	int i, seg_nr = vaddr >> 22, page_nr = (vaddr >> 12) & 0x3ff;
+
+	if (flags & MEMORY_USER_ACCESS)
+		supervisor = 0;
 
 
 	/*

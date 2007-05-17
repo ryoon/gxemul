@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.55 2007-02-10 14:04:51 debug Exp $
+ *  $Id: memory.h,v 1.56 2007-05-17 08:37:01 debug Exp $
  *
  *  Memory related functions.
  */
@@ -126,7 +126,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 #define	CACHE_FLAGS_MASK		0x3
 #define	NO_EXCEPTIONS			16
 #define	PHYSICAL			32
-#define	MEMORY_USER_ACCESS		64	/*  for ARM, at least  */
+#define	MEMORY_USER_ACCESS		64	/*  for ARM and M88K  */
 
 /*  Dyntrans Memory flags:  */
 #define	DM_DEFAULT				0

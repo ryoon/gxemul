@@ -1,4 +1,4 @@
-$Id: TODO,v 1.505 2007-05-17 02:00:30 debug Exp $
+$Id: TODO,v 1.506 2007-05-17 02:27:29 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -11,7 +11,6 @@ M88K:
 		    more reasonable!
 		o)  Exceptions.
 		o)  Translation invalidations.
-		o)  M and U bits for pages.
 	o)  Exceptions:
 		o)  Details about which save registers are set
 		    to which values, on which exceptions

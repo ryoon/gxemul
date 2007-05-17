@@ -25,15 +25,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m88k.c,v 1.2 2007-05-17 02:00:30 debug Exp $
+ *  $Id: memory_m88k.c,v 1.3 2007-05-17 02:27:29 debug Exp $
  *
  *  Virtual to physical memory translation for M88K emulation.
  *
  *  (This is where the actual work of the M8820x chips is emulated.)
  *
+ *
  *  TODO:
- *	Exceptions
- *	M and U bits
+ *	M88204 stuff, where it differs from the M88200.
+ *	Exceptions.
  */
 
 #include <stdio.h>
@@ -51,6 +52,50 @@
 
 
 /*  #define	M8820X_TABLE_SEARCH_DEBUG  */
+
+
+/*
+ *  m8820x_mark_page_as_modified():
+ *
+ *  Helper function which traverses the page table structure in emulated
+ *  memory, and marks a page as Modified and Used.
+ */
+void m8820x_mark_page_as_modified(struct cpu *cpu,
+	struct m8820x_cmmu *cmmu, uint32_t apr, uint32_t vaddr)
+{
+	int seg_nr = vaddr >> 22, page_nr = (vaddr >> 12) & 0x3ff;
+	uint32_t *seg_base, *page_base;
+	sdt_entry_t seg_descriptor;
+	pt_entry_t page_descriptor;
+
+	/*  Read the segment descriptor from memory:  */
+	seg_base = (uint32_t *) memory_paddr_to_hostaddr(
+	    cpu->mem, apr & 0xfffff000, 1);
+	seg_descriptor = seg_base[seg_nr];
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		seg_descriptor = LE32_TO_HOST(seg_descriptor);
+	else
+		seg_descriptor = BE32_TO_HOST(seg_descriptor);
+
+	/*  ... and the page descriptor:  */
+	page_base = (uint32_t *) memory_paddr_to_hostaddr(
+	    cpu->mem, seg_descriptor & 0xfffff000, 1);
+	page_descriptor = page_base[page_nr];
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		page_descriptor = LE32_TO_HOST(page_descriptor);
+	else
+		page_descriptor = BE32_TO_HOST(page_descriptor);
+
+	/*  ... set the Modified and Used bits:  */
+	page_descriptor |= PG_M | PG_U;
+
+	/*  ... and write it back:  */
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		page_descriptor = LE32_TO_HOST(page_descriptor);
+	else
+		page_descriptor = BE32_TO_HOST(page_descriptor);
+	page_base[page_nr] = page_descriptor;
+}
 
 
 /*
@@ -115,7 +160,7 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		if ((vaddr & 0xfff80000) != (batc & 0xfff80000))
 			continue;
 
-		/*  A matching entry was found!  */
+		/*  A matching BATC entry was found!  */
 
 		/*  Is it write protected?  */
 		if ((batc & BATC_PROT) && writeflag) {
@@ -129,12 +174,13 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		return batc & BATC_PROT? 1 : 2;
 	}
 
-
 	/*
 	 *  PATC lookup:
 	 *
 	 *  The PATC is a 56-entry array of virtual to physical mappings for
-	 *  4 KB pages.
+	 *  4 KB pages. If writeflag is set, and a PATC entry is found without
+	 *  the Modified bit set, a page table search must be performed to
+	 *  set the Modified bit in emulated memory.
 	 */
 	for (i=0; i<N_M88200_PATC_ENTRIES; i++) {
 		uint32_t vaddr_and_control = cmmu->patc_v_and_control[i];
@@ -162,6 +208,20 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 			exit(1);
 		}
 
+		/*  On writes: Is the page not yet marked as modified?  */
+		if (!(vaddr_and_control & PG_M) && writeflag) {
+			/*  Then perform a page table search and mark
+			    it as Modified (and used):  */
+			m8820x_mark_page_as_modified(cpu, cmmu, apr, vaddr);
+
+			/*  ... and mark the PATC entry too:  */
+			cmmu->patc_v_and_control[i] |= PG_M;
+		}
+
+		/*  Set the Used bit of the PATC entry:  */
+		cmmu->patc_v_and_control[i] |= PG_U;
+
+		/*  ... and finally return the physical address:  */
 		*return_paddr = (paddr_and_sbit & 0xfffff000) | (vaddr & 0xfff);
 		return vaddr_and_control & PG_PROT? 1 : 2;
 	}
@@ -250,15 +310,14 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	}
 
 	/*  ... and write the new one:  */
-	cmmu->patc_v_and_control[cmmu->patc_update_index] =
-	    (vaddr & 0xfffff000) | accumulated_flags | PG_V;
-	cmmu->patc_p_and_supervisorbit[cmmu->patc_update_index] =
-	    (page_descriptor & 0xfffff000) |
-	    (supervisor? M8820X_PATC_SUPERVISOR_BIT : 0);
-
+	i = cmmu->patc_update_index;
 	cmmu->patc_update_index ++;
 	cmmu->patc_update_index %= N_M88200_PATC_ENTRIES;
-
+	cmmu->patc_v_and_control[i] =
+	    (vaddr & 0xfffff000) | accumulated_flags | PG_V;
+	cmmu->patc_p_and_supervisorbit[i] =
+	    (page_descriptor & 0xfffff000) |
+	    (supervisor? M8820X_PATC_SUPERVISOR_BIT : 0);
 
 	/*  Check for writes to read-only pages:  */
 	if (writeflag && (accumulated_flags & PG_RO)) {
@@ -267,7 +326,28 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		exit(1);
 	}
 
-	/*  Now return with the translated page address:  */
+	/*  We now know that we are using the page:  */
+	cmmu->patc_v_and_control[i] |= PG_U;
+	if (writeflag)
+		cmmu->patc_v_and_control[i] |= PG_M;
+
+	/*  Write back the U and possibly the M bit to the page descriptor
+	    in emulated memory:  */
+	{
+		uint32_t tmp = page_descriptor;
+		tmp |= PG_U;
+		if (writeflag)
+			tmp |= PG_M;
+
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			tmp = LE32_TO_HOST(tmp);
+		else
+			tmp = BE32_TO_HOST(tmp);
+
+		page_base[page_nr] = tmp;
+	}
+
+	/*  Now finally return with the translated page address:  */
 	*return_paddr = (page_descriptor & 0xfffff000) | (vaddr & 0xfff);
 	return (accumulated_flags & PG_RO)? 1 : 2;
 }

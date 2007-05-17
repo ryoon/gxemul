@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.15 2007-05-17 02:00:30 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.16 2007-05-17 03:49:59 debug Exp $
  */
 
 #include "misc.h"
@@ -265,6 +265,7 @@ int m88k_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 int m88k_cpu_family_init(struct cpu_family *);
 void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr);
 void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte);
+void m88k_fstcr(struct cpu *cpu, uint32_t value, int fcr);
 void m88k_exception(struct cpu *cpu, int vector, int is_trap);
 
 /*  memory_m88k.c:  */

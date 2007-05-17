@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.24 2007-05-16 23:28:58 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.25 2007-05-17 03:49:59 debug Exp $
  *
  *  M88K instructions.
  *
@@ -754,7 +754,8 @@ X(fldcr)
 
 
 /*
- *  stcr:  Store a value into a control register.
+ *  stcr:   Store a value into a control register.
+ *  fstcr:  Store a value into a floating point control register.
  *
  *  arg[0] = pointer to source register
  *  arg[1] = 6-bit control register number
@@ -767,6 +768,18 @@ X(stcr)
 		m88k_stcr(cpu, reg(ic->arg[0]), ic->arg[1], 0);
 	else
 		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+}
+X(fstcr)
+{
+	SYNCH_PC;
+
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE || ic->arg[1] >= 62)
+		m88k_fstcr(cpu, reg(ic->arg[0]), ic->arg[1]);
+	else {
+		/*  TODO: The manual says "floating point privilege
+		    violation", not just "privilege violation"!  */
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+	}
 }
 
 
@@ -1214,6 +1227,12 @@ X(to_be_translated)
 				    &cpu->cd.m88k.zero_scratch;
 		} else if ((iword & 0x03e0f800) == 0x00008000) {
 			ic->f = instr(stcr);
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[1] = cr6;
+			if (s1 != s2)
+				goto bad;
+		} else if ((iword & 0x03e0f800) == 0x00008800) {
+			ic->f = instr(fstcr);
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[1] = cr6;
 			if (s1 != s2)

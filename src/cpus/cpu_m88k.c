@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.25 2007-05-16 23:29:16 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.26 2007-05-17 03:49:59 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -43,6 +43,8 @@
 #include "mvmeprom.h"
 #include "settings.h"
 #include "symbol.h"
+
+#include "m8820x_pte.h"
 
 #define DYNTRANS_32
 #define DYNTRANS_DELAYSLOT
@@ -326,6 +328,66 @@ void m88k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void m88k_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
+	int cpu_nr, cmmu_nr, i;
+
+	for (cpu_nr = 0; cpu_nr < m->ncpus; cpu_nr++) {
+		struct cpu *cpu = m->cpus[cpu_nr];
+
+		if (x != -1 && cpu_nr != x)
+			continue;
+
+		for (cmmu_nr = 0; cmmu_nr < MAX_M8820X_CMMUS; cmmu_nr++) {
+			struct m8820x_cmmu *cmmu = cpu->cd.m88k.cmmu[cmmu_nr];
+			if (cmmu == NULL)
+				continue;
+
+			printf("cpu%i: CMMU %i (%s)\n", cpu_nr, cmmu_nr,
+			    cmmu_nr & 1? "data" : "instruction");
+
+			/*  BATC:  */
+			for (i = 0; i < N_M88200_BATC_REGS; i++) {
+				uint32_t b = cmmu->batc[i];
+				printf("cpu%i: BATC[%2i]: ", cpu_nr, i);
+				printf("v=0x%08"PRIx32, b & 0xfff80000);
+				printf(", p=0x%08"PRIx32,
+				    (b << 13) & 0xfff80000);
+				printf(", %s %s %s %s %s %s\n",
+				    b & BATC_SO? "SP " : "!sp",
+				    b & BATC_WT? "WT " : "!wt",
+				    b & BATC_GLOBAL? "G  " : "!g ",
+				    b & BATC_INH? "CI " : "!ci",
+				    b & BATC_PROT? "WP " : "!wp",
+				    b & BATC_SO? "V " : "!v");
+			}
+
+			/*  PATC:  */
+			for (i = 0; i < N_M88200_PATC_ENTRIES; i++) {
+				uint32_t v = cmmu->patc_v_and_control[i];
+				uint32_t p = cmmu->patc_p_and_supervisorbit[i];
+
+				printf("cpu%i: patc[%2i]: ", cpu_nr, i);
+				if (p & M8820X_PATC_SUPERVISOR_BIT)
+					printf("superv");
+				else
+					printf("user  ");
+				printf(" v=0x%08"PRIx32, v & 0xfffff000);
+				printf(", p=0x%08"PRIx32, p & 0xfffff000);
+
+				printf("  %s %s %s %s %s %s %s",
+				    v & PG_U1?   "U1 " : "!u1",
+				    v & PG_U0?   "U0 " : "!u0",
+				    v & PG_SO?   "SP " : "!sp",
+				    v & PG_M?    "M "  : "!m",
+				    v & PG_U?    "U "  : "!u",
+				    v & PG_PROT? "WP " : "!wp",
+				    v & PG_V?    "V "  : "!v");
+
+				if (i == cmmu->patc_update_index)
+					printf(" <--");
+				printf("\n");
+			}
+		}
+	}
 }
 
 
@@ -442,6 +504,28 @@ void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte)
 		    cr, m88k_cr_name(cpu, cr));
 		exit(1);
 	}
+}
+
+
+/*
+ *  m88k_fstcr():
+ *
+ *  Write to a floating-point control register.
+ */
+void m88k_fstcr(struct cpu *cpu, uint32_t value, int fcr)
+{
+#if 0
+	/*  TODO (?)  */
+	uint32_t old = cpu->cd.m88k.cr[fcr];
+
+	switch (fcr) {
+	default:fatal("m88k_fstcr: UNIMPLEMENTED fcr = 0x%02x (%s)\n",
+		    fcr, m88k_fcr_name(cpu, fcr));
+		exit(1);
+	}
+#else
+	cpu->cd.m88k.cr[fcr] = value;
+#endif
 }
 
 

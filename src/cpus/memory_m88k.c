@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m88k.c,v 1.3 2007-05-17 02:27:29 debug Exp $
+ *  $Id: memory_m88k.c,v 1.4 2007-05-17 03:49:59 debug Exp $
  *
  *  Virtual to physical memory translation for M88K emulation.
  *
@@ -100,17 +100,20 @@ void m8820x_mark_page_as_modified(struct cpu *cpu,
 
 /*
  *  m88k_translate_v2p():
+ *
+ *  Returns 0 for translation failure (access denied), 1 for read access
+ *  (success), or 2 for read/write access (success).
  */
 int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	uint64_t *return_paddr, int flags)
 {
-//	int instr = flags & FLAG_INSTR;
+	int instr = flags & FLAG_INSTR;
 	int writeflag = (flags & FLAG_WRITEFLAG)? 1 : 0;
-//	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
+	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 //	int exception_type = instr? M88K_EXCEPTION_INSTRUCTION_ACCESS
 //	    : M88K_EXCEPTION_DATA_ACCESS;
 	int supervisor = cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE;
-	struct m8820x_cmmu *cmmu = cpu->cd.m88k.cmmu[0];
+	struct m8820x_cmmu *cmmu = cpu->cd.m88k.cmmu[instr? 0 : 1];
 	uint32_t vaddr = vaddr64;
 	uint32_t apr;
 	uint32_t *seg_base, *page_base;
@@ -209,7 +212,8 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		}
 
 		/*  On writes: Is the page not yet marked as modified?  */
-		if (!(vaddr_and_control & PG_M) && writeflag) {
+		if (!(vaddr_and_control & PG_M) && writeflag &&
+		    !no_exceptions) {
 			/*  Then perform a page table search and mark
 			    it as Modified (and used):  */
 			m8820x_mark_page_as_modified(cpu, cmmu, apr, vaddr);
@@ -219,7 +223,8 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		}
 
 		/*  Set the Used bit of the PATC entry:  */
-		cmmu->patc_v_and_control[i] |= PG_U;
+		if (!no_exceptions)
+			cmmu->patc_v_and_control[i] |= PG_U;
 
 		/*  ... and finally return the physical address:  */
 		*return_paddr = (paddr_and_sbit & 0xfffff000) | (vaddr & 0xfff);
@@ -228,9 +233,13 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 	/*
 	 *  The address was neither found in the BATC, nor the PATC.
+	 */
+	if (no_exceptions)
+		return 0;
+
+	/*
 	 *  Attempt a search through page tables, to refill the PATC:
 	 */
-
 	seg_base = (uint32_t *) memory_paddr_to_hostaddr(
 	    cpu->mem, apr & 0xfffff000, 1);
 

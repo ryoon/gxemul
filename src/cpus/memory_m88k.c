@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m88k.c,v 1.5 2007-05-17 08:37:01 debug Exp $
+ *  $Id: memory_m88k.c,v 1.6 2007-05-17 09:26:05 debug Exp $
  *
  *  Virtual to physical memory translation for M88K emulation.
  *
@@ -110,8 +110,8 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	int instr = flags & FLAG_INSTR;
 	int writeflag = (flags & FLAG_WRITEFLAG)? 1 : 0;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
-//	int exception_type = instr? M88K_EXCEPTION_INSTRUCTION_ACCESS
-//	    : M88K_EXCEPTION_DATA_ACCESS;
+	int exception_type = instr? M88K_EXCEPTION_INSTRUCTION_ACCESS
+	    : M88K_EXCEPTION_DATA_ACCESS;
 	int supervisor = cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE;
 	struct m8820x_cmmu *cmmu = cpu->cd.m88k.cmmu[instr? 0 : 1];
 	uint32_t vaddr = vaddr64;
@@ -237,8 +237,6 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	/*
 	 *  The address was neither found in the BATC, nor the PATC.
 	 */
-	if (no_exceptions)
-		return 0;
 
 	/*
 	 *  Attempt a search through page tables, to refill the PATC:
@@ -264,13 +262,19 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 	/*  Segment descriptor invalid? Then cause a segfault exception.  */
 	if (!(seg_descriptor & SG_V)) {
-		fatal("segment descriptor not valid: TODO exception\n");
-		/*  UPDATE PFSR!  */
-		exit(1);
+		if (no_exceptions)
+			return 0;
+
+		/*  TODO: UPDATE PFSR!  */
+		m88k_exception(cpu, exception_type, 0);
+		return 0;
 	}
 
 	/*  Usermode attempted to access a supervisor segment?  */
 	if ((seg_descriptor & SG_SO) && !supervisor) {
+		if (no_exceptions)
+			return 0;
+
 		fatal("user access of supervisor segment: TODO exception\n");
 		/*  UPDATE PFSR!  */
 		exit(1);
@@ -294,6 +298,9 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 	/*  Page descriptor invalid? Then cause a page fault exception.  */
 	if (!(page_descriptor & PG_V)) {
+		if (no_exceptions)
+			return 0;
+
 		fatal("page descriptor not valid: TODO exception\n");
 		/*  UPDATE PFSR!  */
 		exit(1);
@@ -301,6 +308,9 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 	/*  Usermode attempted to access a supervisor page?  */
 	if ((page_descriptor & PG_SO) && !supervisor) {
+		if (no_exceptions)
+			return 0;
+
 		fatal("user access of supervisor page: TODO exception\n");
 		/*  UPDATE PFSR!  */
 		exit(1);
@@ -313,30 +323,38 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	 *  Overwrite the next entry in the PATC with a new entry:
 	 */
 
-	/*  Invalidate the current entry, if it is valid:  */
-	if (cmmu->patc_v_and_control[cmmu->patc_update_index] & PG_V) {
-		uint32_t vaddr_to_invalidate = cmmu->patc_v_and_control[
-		    cmmu->patc_update_index] & 0xfffff000;
-		cpu->invalidate_translation_caches(cpu,
-		    vaddr_to_invalidate, INVALIDATE_VADDR);
-	}
+	if (!no_exceptions) {
+		/*  Invalidate the current entry, if it is valid:  */
+		if (cmmu->patc_v_and_control[cmmu->patc_update_index] & PG_V) {
+			uint32_t vaddr_to_invalidate = cmmu->patc_v_and_control[
+			    cmmu->patc_update_index] & 0xfffff000;
+			cpu->invalidate_translation_caches(cpu,
+			    vaddr_to_invalidate, INVALIDATE_VADDR);
+		}
 
-	/*  ... and write the new one:  */
-	i = cmmu->patc_update_index;
-	cmmu->patc_update_index ++;
-	cmmu->patc_update_index %= N_M88200_PATC_ENTRIES;
-	cmmu->patc_v_and_control[i] =
-	    (vaddr & 0xfffff000) | accumulated_flags | PG_V;
-	cmmu->patc_p_and_supervisorbit[i] =
-	    (page_descriptor & 0xfffff000) |
-	    (supervisor? M8820X_PATC_SUPERVISOR_BIT : 0);
+		/*  ... and write the new one:  */
+		i = cmmu->patc_update_index;
+		cmmu->patc_update_index ++;
+		cmmu->patc_update_index %= N_M88200_PATC_ENTRIES;
+		cmmu->patc_v_and_control[i] =
+		    (vaddr & 0xfffff000) | accumulated_flags | PG_V;
+		cmmu->patc_p_and_supervisorbit[i] =
+		    (page_descriptor & 0xfffff000) |
+		    (supervisor? M8820X_PATC_SUPERVISOR_BIT : 0);
+	}
 
 	/*  Check for writes to read-only pages:  */
 	if (writeflag && (accumulated_flags & PG_RO)) {
+		if (no_exceptions)
+			return 0;
+
 		fatal("page write protection: TODO exception\n");
 		/*  UPDATE PFSR!  */
 		exit(1);
 	}
+
+	if (no_exceptions)
+		goto ret;
 
 	/*  We now know that we are using the page:  */
 	cmmu->patc_v_and_control[i] |= PG_U;
@@ -359,6 +377,7 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		page_base[page_nr] = tmp;
 	}
 
+ret:
 	/*  Now finally return with the translated page address:  */
 	*return_paddr = (page_descriptor & 0xfffff000) | (vaddr & 0xfff);
 	return (accumulated_flags & PG_RO)? 1 : 2;

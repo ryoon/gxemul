@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.26 2007-05-17 03:49:59 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.27 2007-05-17 09:26:05 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -583,7 +583,7 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 	} else {
 		/*  Freeze shadow registers, and save the PSR:  */
 
-		/*  TODO  */
+		/*  TODO: Shadow registers!  */
 
 		cpu->cd.m88k.cr[M88K_CR_EPSR] = cpu->cd.m88k.cr[M88K_CR_PSR];
 	}
@@ -614,6 +614,9 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 		case M88K_EXCEPTION_RESET:
 			fatal("[ m88k_exception: reset ]\n");
 			exit(1);
+
+		case M88K_EXCEPTION_DATA_ACCESS:
+			break;
 
 		default:fatal("m88k_exception(): 0x%x: TODO\n", vector);
 			exit(1);
@@ -875,10 +878,10 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				debug("\t\t; NOTE: weird encoding: "
 				    "low 5 bits = 0x%02x", s2);
 			debug("\n");
-		} else if ((iw & 0x0000f81f) == 0x0000c000) {
+		} else if ((iw & 0x0000f800) == 0x0000c000) {
 			debug("xcr\tr%i,r%i,%s\n", d, s1,
 			    m88k_cr_name(cpu, cr6));
-		} else if ((iw & 0x0000f81f) == 0x0000c800) {
+		} else if ((iw & 0x0000f800) == 0x0000c800) {
 			debug("fxcr\tr%i,r%i,%s\n", d, s1,
 			    m88k_fcr_name(cpu, cr6));
 		} else {

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1567 2007-05-17 02:00:29 debug Exp $
+$Id: HISTORY,v 1.1568 2007-05-17 02:47:57 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3514,3 +3514,4 @@ Changelog for GXemul:
 		the CMMU registers to the CPU struct, separating dev_pcc2 from
 		dev_mvme187, and beginning on memory_m88k.c (BATC and PATC).
 		Fixing a bug in 64-bit (32-bit pairs) M88K fast stores.
+		Implementing the clock part of dev_mk48txx.

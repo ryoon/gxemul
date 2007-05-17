@@ -25,14 +25,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mk48txx.c,v 1.5 2007-05-15 12:35:14 debug Exp $
+ *  $Id: dev_mk48txx.c,v 1.6 2007-05-17 02:47:58 debug Exp $
  *
- *  Mostek MK48Txx Real Time Clock.  (MK48T08)
+ *  Mostek MK48Txx Real Time Clock.
+ *
+ *
+ *  TODO:
+ *	Only the MK48T08 is implemented so far.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "cpu.h"
 #include "device.h"
@@ -47,9 +52,29 @@
 
 #define	MK48TXX_LEN		MK48T08_CLKSZ
 
+#define	BCD(x)	(((x / 10) << 4) + (x % 10))
+
 struct mk48txx_data {
-	unsigned char	reg[MK48TXX_LEN];
+	uint8_t		reg[MK48TXX_LEN];
 };
+
+
+void mk48txx_update_regs(struct mk48txx_data *d)
+{
+	struct tm *tmp;
+	time_t timet;
+
+	timet = time(NULL);
+	tmp = gmtime(&timet);
+
+	d->reg[MK48T08_CLKOFF + MK48TXX_ISEC] = BCD(tmp->tm_sec);
+	d->reg[MK48T08_CLKOFF + MK48TXX_IMIN] = BCD(tmp->tm_min);
+	d->reg[MK48T08_CLKOFF + MK48TXX_IHOUR] = BCD(tmp->tm_hour);
+	d->reg[MK48T08_CLKOFF + MK48TXX_IWDAY] = tmp->tm_wday + 1;
+	d->reg[MK48T08_CLKOFF + MK48TXX_IDAY] = BCD(tmp->tm_mday);
+	d->reg[MK48T08_CLKOFF + MK48TXX_IMON] = BCD(tmp->tm_mon + 1);
+	d->reg[MK48T08_CLKOFF + MK48TXX_IYEAR] = BCD(tmp->tm_year % 100);
+}
 
 
 DEVICE_ACCESS(mk48txx)
@@ -63,16 +88,36 @@ DEVICE_ACCESS(mk48txx)
 	if (writeflag == MEM_READ)
 		odata = d->reg[relative_addr];
 
+	if (relative_addr < MK48T08_CLKOFF ||
+	    relative_addr >= MK48T08_CLKOFF + MK48TXX_ISEC) {
+		/*  Reads and writes to the RAM part of the mk48txx, or
+		    the clock registers, are OK:  */
+		if (writeflag == MEM_WRITE)
+			d->reg[relative_addr] = idata;
+		return 1;
+	}
+
 	switch (relative_addr) {
 
-	case 0:
+	case MK48T08_CLKOFF + MK48TXX_ICSR:
+		if (writeflag == MEM_WRITE) {
+			if ((idata & MK48TXX_CSR_READ) &&
+			    !(d->reg[relative_addr] & MK48TXX_CSR_READ)) {
+				/*  Switching the read bit from 0 to 1 causes
+				    registers to be "froozen". In the emulator,
+				    simply updating them with data from the
+				    host should be good enough.  */
+				mk48txx_update_regs(d);
+			}
+			d->reg[relative_addr] = idata;
+		}
 		break;
 
 	default:if (writeflag == MEM_READ)
-			fatal("[ mk48txx: unimplemented READ from offset %i ]"
+			fatal("[ mk48txx: unimplemented READ from offset 0x%x ]"
 			    "\n", (int)relative_addr);
 		else
-			fatal("[ mk48txx: unimplemented WRITE to offset %i: "
+			fatal("[ mk48txx: unimplemented WRITE to offset 0x%x: "
 			    "0x%x ]\n", (int)relative_addr, (int)idata);
 		exit(1);
 	}
@@ -92,6 +137,8 @@ DEVINIT(mk48txx)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct mk48txx_data));
+
+	mk48txx_update_regs(d);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, MK48TXX_LEN, dev_mk48txx_access, (void *)d,

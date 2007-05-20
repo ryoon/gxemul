@@ -1,4 +1,4 @@
-$Id: TODO,v 1.510 2007-05-20 11:11:01 debug Exp $
+$Id: TODO,v 1.511 2007-05-20 13:22:44 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -221,6 +221,8 @@ Debugger:
 	o)  see src/debugger.c for more
 
 Dyntrans:
+	x)  "Merge" the cur_physpage and cur_ic_page variables/pointers to
+	    one. I.e. change cur_ic_page to cur_physpage.ic_page or something.
 	x)  Instruction combination collisions? How to avoid easily...
 	x)  Think about how to do both SHmedia and SHcompact in a reasonable
 	    way! (Or AMD64 long/protected/real, for that matter.)

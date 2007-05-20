@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.75 2007-03-10 13:37:06 debug Exp $
+ *  $Id: useremul.c,v 1.76 2007-05-20 10:13:39 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -1425,6 +1425,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 		/*  TODO  */
 		{
 			fd_set fdset;
+			FD_ZERO(&fdset);
 			FD_SET(3, &fdset);
 			result_low = select(4, &fdset, NULL, NULL, NULL);
 		}

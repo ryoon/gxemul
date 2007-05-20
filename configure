@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.258 2007-05-16 23:29:16 debug Exp $
+#  $Id: configure,v 1.259 2007-05-20 10:13:39 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -689,7 +689,14 @@ fi
 if [ z"$UNSTABLE" = zYES ]; then
 	printf "checking whether -g can be used... "
 	if [ z"$COMPAQCC" = zYES ]; then
-		printf "skipping\n"
+		$CC $CFLAGS -g3 _testprog.c -o _testprog > _testprog.stdout 2>&1
+		cat _testprog.stdout >> _testprog.error
+		if [ -x _testprog ]; then
+			CFLAGS="-g3 $CFLAGS"
+			printf "yes (-g3)\n"
+		else
+			printf "no\n"
+		fi
 	else
 		$CC $CFLAGS -g _testprog.c -o _testprog > _testprog.stdout 2>&1
 		cat _testprog.stdout >> _testprog.error
@@ -697,8 +704,8 @@ if [ z"$UNSTABLE" = zYES ]; then
 			CFLAGS="-g $CFLAGS"
 			printf "yes\n"
 		else
-		printf "no\n"
-			fi
+			printf "no\n"
+		fi
 	fi
 	rm -f _testprog _testprog.error _testprog.stdout
 fi
@@ -936,7 +943,7 @@ else
 			printf "#include <stdio.h>\n#include <inttypes.h>\nint main(int argc, char *argv[]){
 			    printf(\"%%lx\\\n\", (int64_t)128);return 0;}\n" > _testpri.c
 			rm -f _testpri
-			$CC $CFLAGS $CWARNINGS _testpri.c -o _testpri 2> /dev/null
+			$CC $CFLAGS $CWARNINGS _testpri.c -o _testpri 2> _testpri.result
 			if [ z`./_testpri` = z80 ]; then
 				printf "PRIx64=lx\n"
 			else
@@ -946,7 +953,7 @@ else
 		fi
 	fi
 fi
-rm -f _testpri.c _testpri
+rm -f _testpri.c _testpri _testpri.result
 
 
 #  Check for 64-bit off_t:

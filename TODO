@@ -1,4 +1,9 @@
-$Id: TODO,v 1.509 2007-05-20 10:49:10 debug Exp $
+$Id: TODO,v 1.510 2007-05-20 11:11:01 debug Exp $
+
+-------------------------------------------------------------------------------
+
+o) M88K stuff, perhaps native code generation as well.
+o) Look at incorporating the testmachine interrupt controller.
 
 -------------------------------------------------------------------------------
 

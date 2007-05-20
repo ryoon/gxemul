@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.119 2007-05-17 08:37:01 debug Exp $
+ *  $Id: cpu.h,v 1.120 2007-05-20 11:11:02 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -291,15 +291,6 @@ struct cpu_family {
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 
 
-#ifdef NATIVE_CODE_GENERATION
-/*
- *  Intermediate Native Representation (INR).
- *  Used for native code generation.
- */
-#include "inr.h"
-#endif
-
-
 /*
  *  The generic CPU struct:
  */
@@ -390,17 +381,10 @@ struct cpu {
 	 *  The translation cache is a relative large chunk of memory (say,
 	 *  32 MB) which is used for translations. When it has been used up,
 	 *  everything restarts from scratch.
-	 *
-	 *  The INR struct contains the Intermediate Native Representation,
-	 *  used during native code generation.
 	 */
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
-
-#ifdef NATIVE_CODE_GENERATION
-	struct inr	inr;
-#endif
 
 	/*
 	 *  CPU-family dependent:

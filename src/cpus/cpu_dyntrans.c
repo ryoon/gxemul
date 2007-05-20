@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.149 2007-05-11 07:51:56 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.150 2007-05-20 11:11:02 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1631,9 +1631,15 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 					DISASSEMBLE(cpu, ib, 1, 0);
 					quiet_mode = old_quiet_mode;
 				}
+#ifdef MODE32
+				fatal("BREAKPOINT: pc = 0x%"PRIx32"\n(The "
+				    "instruction has not yet executed.)\n",
+				    (uint32_t)cpu->pc);
+#else
 				fatal("BREAKPOINT: pc = 0x%"PRIx64"\n(The "
 				    "instruction has not yet executed.)\n",
 				    (uint64_t)cpu->pc);
+#endif
 #ifdef DYNTRANS_DELAYSLOT
 				if (cpu->delay_slot != NOT_DELAYED)
 					fatal("ERROR! Breakpoint in a delay"

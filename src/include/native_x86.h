@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native_x86.h,v 1.3 2007-04-04 14:19:04 debug Exp $
+ *  $Id: native_x86.h,v 1.4 2007-05-20 11:11:02 debug Exp $
  *
  *  AMD64/i386 native code generation; pseudo opcodes.
  *
@@ -39,40 +39,8 @@
  *               only AMD64 hosts, so far.
  */
 
-/*
- *  native_op:
- *
- *  One native_op struct corresponds to exactly 1 actual AMD64/x86 instruction.
- */
-struct native_op {
-	struct native_op	*prev, *next;
-
-	int			opcode;
-
-	uint64_t		arg1;
-	uint64_t		arg2;
-	uint64_t		arg3;
-};
-
-/*  Misc.:  */
-#define	NATIVE_X86_OPCODE_UNKNOWN		0
-
-/*  Load/store:  */
-#define	NATIVE_X86_OPCODE_LOAD_CR64_R64		101
-#define	NATIVE_X86_OPCODE_STORE_CR64_R64	102
-
-/*  Arithmetic, logic, etc.:  */
-#define	NATIVE_X86_OPCODE_XOR_R64_I32		201
-#define	NATIVE_X86_OPCODE_OR_R64_I32		202
-
-
 #define	X86_REG_NAMES	{ "rax","rcx","rdx","rbx","rsp","rbp","rsi","rdi", \
 			  "r08","r09","r10","r11","r12","r13","r14","r15" }
-
-
-#ifdef TEST_NATIVE_X86
-void test_native_x86(void);
-#endif
 
 
 #endif	/*  NATIVE_X86_H  */

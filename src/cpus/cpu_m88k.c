@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.27 2007-05-17 09:26:05 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.28 2007-05-20 01:27:48 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -422,7 +422,20 @@ void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
 	case M88K_CR_PID:
 	case M88K_CR_PSR:
 	case M88K_CR_EPSR:
+	case M88K_CR_SSBR:
+	case M88K_CR_SXIP:
+	case M88K_CR_SNIP:
+	case M88K_CR_SFIP:
 	case M88K_CR_VBR:
+	case M88K_CR_DMT0:
+	case M88K_CR_DMD0:
+	case M88K_CR_DMA0:
+	case M88K_CR_DMT1:
+	case M88K_CR_DMD1:
+	case M88K_CR_DMA1:
+	case M88K_CR_DMT2:
+	case M88K_CR_DMD2:
+	case M88K_CR_DMA2:
 	case M88K_CR_SR0:
 	case M88K_CR_SR1:
 	case M88K_CR_SR2:
@@ -476,6 +489,12 @@ void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte)
 		break;
 
 	case M88K_CR_EPSR:
+		cpu->cd.m88k.cr[cr] = value;
+		break;
+
+	case M88K_CR_SXIP:
+	case M88K_CR_SNIP:
+	case M88K_CR_SFIP:
 		cpu->cd.m88k.cr[cr] = value;
 		break;
 
@@ -536,6 +555,8 @@ void m88k_fstcr(struct cpu *cpu, uint32_t value, int fcr)
  */
 void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 {
+	int update_shadow_regs = 1;
+
 	debug("[ EXCEPTION 0x%03x: ", vector);
 	switch (vector) {
 	case M88K_EXCEPTION_RESET:
@@ -578,8 +599,10 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 		 */
 		if (!is_trap) {
 			vector = M88K_EXCEPTION_ERROR;
-			debug("[ SFRZ already set in PSR => ERROR ]\n");
+			fatal("[ SFRZ already set in PSR => ERROR ]\n");
 		}
+
+		update_shadow_regs = 0;
 	} else {
 		/*  Freeze shadow registers, and save the PSR:  */
 
@@ -588,7 +611,6 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 		cpu->cd.m88k.cr[M88K_CR_EPSR] = cpu->cd.m88k.cr[M88K_CR_PSR];
 	}
 
-	cpu->cd.m88k.cr[M88K_CR_SSBR] = 0;
 
 	cpu->cd.m88k.cr[M88K_CR_PSR] |=
 	      M88K_PSR_SFRZ	/*  Freeze shadow registers,          */
@@ -596,9 +618,28 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 	    | M88K_PSR_SFD1	/*  disable the floating point unit,  */
 	    | M88K_PSR_MODE;	/*  and switch to supervisor mode.    */
 
-	cpu->cd.m88k.cr[M88K_CR_SXIP] = cpu->pc;
-	cpu->cd.m88k.cr[M88K_CR_SNIP] = cpu->pc + 4;
-	cpu->cd.m88k.cr[M88K_CR_SFIP] = cpu->pc + 8;
+	if (update_shadow_regs) {
+		cpu->cd.m88k.cr[M88K_CR_SSBR] = 0;
+
+		/*  SNIP is the address to return to, when executing rte:  */
+		cpu->cd.m88k.cr[M88K_CR_SXIP] = cpu->pc | M88K_XIP_V;
+		cpu->cd.m88k.cr[M88K_CR_SNIP] = cpu->pc | M88K_NIP_V;
+		cpu->cd.m88k.cr[M88K_CR_SFIP] = (cpu->pc + 4) | M88K_FIP_V;
+
+		/*
+		 *  Trap instructions return to the address after the trap.
+		 *  Instruction access exceptions also cause the SNIP and SFIP
+		 *  registers to point to the instructions following the
+		 *  faulting address, and the E bit is also set in SXIP.
+		 */
+		if (is_trap || vector == M88K_EXCEPTION_INSTRUCTION_ACCESS) {
+			cpu->cd.m88k.cr[M88K_CR_SNIP] += 4;
+			cpu->cd.m88k.cr[M88K_CR_SFIP] += 4;
+
+			if (vector == M88K_EXCEPTION_INSTRUCTION_ACCESS)
+				cpu->cd.m88k.cr[M88K_CR_SXIP] |= M88K_XIP_E;
+		}
+	}
 
 	cpu->pc = cpu->cd.m88k.cr[M88K_CR_VBR] + 8 * vector;
 
@@ -879,11 +920,19 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				    "low 5 bits = 0x%02x", s2);
 			debug("\n");
 		} else if ((iw & 0x0000f800) == 0x0000c000) {
-			debug("xcr\tr%i,r%i,%s\n", d, s1,
+			debug("xcr\tr%i,r%i,%s", d, s1,
 			    m88k_cr_name(cpu, cr6));
+			if (s1 != s2)
+				debug("\t\t; NOTE: weird encoding: "
+				    "low 5 bits = 0x%02x", s2);
+			debug("\n");
 		} else if ((iw & 0x0000f800) == 0x0000c800) {
-			debug("fxcr\tr%i,r%i,%s\n", d, s1,
+			debug("fxcr\tr%i,r%i,%s", d, s1,
 			    m88k_fcr_name(cpu, cr6));
+			if (s1 != s2)
+				debug("\t\t; NOTE: weird encoding: "
+				    "low 5 bits = 0x%02x", s2);
+			debug("\n");
 		} else {
 			debug("UNIMPLEMENTED 0x20\n");
 		}

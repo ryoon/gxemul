@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_vme.c,v 1.1 2007-05-15 12:35:14 debug Exp $
+ *  $Id: dev_vme.c,v 1.2 2007-05-20 01:27:48 debug Exp $
  *
  *  VME bus.
  */
@@ -80,7 +80,7 @@ DEVICE_ACCESS(vme)
 
 /*  TODO: HAhahaha, quick hack!  */
 
-			d->reg[relative_addr / sizeof(uint32_t)] ++;
+			d->reg[relative_addr / sizeof(uint32_t)] += 10;
 		break;
 
 	case VME2_TCTL:

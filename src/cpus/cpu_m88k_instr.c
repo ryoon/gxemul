@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.25 2007-05-17 03:49:59 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.26 2007-05-20 01:27:48 debug Exp $
  *
  *  M88K instructions.
  *
@@ -784,10 +784,34 @@ X(fstcr)
 
 
 /*
+ *  xcr:   Exchange (load + store) control register.
+ *
+ *  arg[0] = pointer to register d
+ *  arg[1] = pointer to register s1
+ *  arg[2] = 6-bit control register number
+ */
+X(xcr)
+{
+	uint32_t tmp, tmp2;
+	SYNCH_PC;
+
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE) {
+		tmp = reg(ic->arg[1]);
+		m88k_ldcr(cpu, &tmp2, ic->arg[2]);
+		m88k_stcr(cpu, tmp, ic->arg[2], 0);
+		reg(ic->arg[0]) = tmp2;
+	} else
+		m88k_exception(cpu, M88K_EXCEPTION_PRIVILEGE_VIOLATION, 0);
+}
+
+
+/*
  *  rte:  Return from exception
  */
 X(rte)
 {
+	uint32_t fip;
+
 	/*  If executed from user mode, then cause an exception:  */
 	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)) {
 		SYNCH_PC;
@@ -796,7 +820,19 @@ X(rte)
 	}
 
 	m88k_stcr(cpu, cpu->cd.m88k.cr[M88K_CR_EPSR], M88K_CR_PSR, 1);
-	cpu->pc = cpu->cd.m88k.cr[M88K_CR_SNIP];
+	cpu->pc = cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR;
+	if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_E ||
+	    cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_E) {
+		fatal("rte: TODO: single-step support\n");
+		exit(1);
+	}
+
+	fip = cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_NIP_ADDR;
+	if (fip != (uint32_t) (cpu->pc + 4)) {
+		fatal("rte: fip != nip + 4: TODO. Branch delay?\n");
+		exit(1);
+	}
+
 	quick_pc_to_pointers(cpu);
 }
 
@@ -818,6 +854,8 @@ X(xmem_slow)
 	int scaled = iword & 0x200;
 	int size   = iword & 0x400;
 	int user   = iword & 0x80;
+
+	SYNCH_PC;
 
 	if (user) {
 		fatal("xmem_slow: user: not yet (TODO)\n");
@@ -846,18 +884,24 @@ X(xmem_slow)
 		else
 			x = BE32_TO_HOST(x);
 		*((uint32_t *)&tmp[0]) = x;
+
+		if (addr & 3) {
+			m88k_exception(cpu,
+			    M88K_EXCEPTION_MISALIGNED_ACCESS, 0);
+			return;
+		}
 	} else
 		tmp[0] = cpu->cd.m88k.r[d];
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, (uint8_t *) &data,
 	    size? 4 : 1, MEM_READ, CACHE_DATA)) {
-		/*  Exception?  */
+		/*  Exception.  */
 		return;
 	}
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, (uint8_t *) &tmp,
 	    size? 4 : 1, MEM_WRITE, CACHE_DATA)) {
-		/*  Exception?  */
+		/*  Exception.  */
 		return;
 	}
 
@@ -1235,6 +1279,13 @@ X(to_be_translated)
 			ic->f = instr(fstcr);
 			ic->arg[0] = (size_t) &cpu->cd.m88k.r[s1];
 			ic->arg[1] = cr6;
+			if (s1 != s2)
+				goto bad;
+		} else if ((iword & 0x0000f800) == 0x0000c000) {
+			ic->f = instr(xcr);
+			ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
+			ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
+			ic->arg[2] = cr6;
 			if (s1 != s2)
 				goto bad;
 		} else

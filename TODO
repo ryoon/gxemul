@@ -1,4 +1,4 @@
-$Id: TODO,v 1.508 2007-05-20 01:27:48 debug Exp $
+$Id: TODO,v 1.509 2007-05-20 10:49:10 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -184,10 +184,6 @@ ARM:
 	o)  try to get netbsd/evbarm 3.x or 4.x running (iq80321)
 	o)  make the xscale counter registers (ccnt) work
 	o)  make the ata controller usable for FreeBSD!
-	o)  Zaurus emulation:
-		x)  OpenBSD/zaurus
-		x)  NetBSD/zaurus? See the following URL:
-		    http://mail-index.netbsd.org/port-arm/2006/11/19/0000.html
 	o)  Debian/cats crashes because of unimplemented coproc stuff.
 	    fix this?
 

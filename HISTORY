@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1572 2007-05-20 10:41:13 debug Exp $
+$Id: HISTORY,v 1.1573 2007-05-20 10:49:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3519,5 +3519,5 @@ Changelog for GXemul:
 		Implementing m88k_cpu_tlbdump().
 		Beginning on the implementation of a separate address space
 		for M88K .usr loads/stores.
-20070520	Removing the non-working (skeleton) Sandpoint, SonyNEWS, and
-		SHARK Dnard machine modes.
+20070520	Removing the non-working (skeleton) Sandpoint, SonyNEWS, SHARK
+		Dnard, and Zaurus machine modes.

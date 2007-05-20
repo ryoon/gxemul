@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.166 2007-05-20 10:40:43 debug Exp $
+ *  $Id: machine.h,v 1.167 2007-05-20 10:49:11 debug Exp $
  */
 
 #include <sys/types.h>
@@ -266,11 +266,10 @@ struct machine {
 #define	MACHINE_TESTARM		5001
 #define	MACHINE_CATS		5002
 #define	MACHINE_HPCARM		5003
-#define	MACHINE_ZAURUS		5004
-#define	MACHINE_NETWINDER	5005
-#define	MACHINE_IQ80321		5006
-#define	MACHINE_IYONIX		5007
-#define	MACHINE_QEMU_ARM	5008
+#define	MACHINE_NETWINDER	5004
+#define	MACHINE_IQ80321		5005
+#define	MACHINE_IYONIX		5006
+#define	MACHINE_QEMU_ARM	5007
 
 /*  SH:  */
 #define	MACHINE_BARESH		6000

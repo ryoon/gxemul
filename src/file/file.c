@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.3 2007-05-22 09:32:01 debug Exp $
+ *  $Id: file.c,v 1.4 2007-05-22 09:49:31 debug Exp $
  *
  *  This module contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -310,6 +310,10 @@ void file_load(struct machine *machine, struct memory *mem,
 		    "0x8c010000:%s.descrambled", filename);
 		debug("loading descrambled Dreamcast binary\n");
 		file_load_raw(machine, mem, tmp_filename, entrypointp);
+
+		snprintf(tmp_filename, strlen(filename) + 100,
+		    "%s.descrambled", filename);
+		remove(tmp_filename);
 		free(tmp_filename);
 
 		/*  Hack: Start a "boot from CDROM" sequence:  */

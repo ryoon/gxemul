@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.19 2007-04-16 15:11:31 debug Exp $
+ *  $Id: memory_sh.c,v 1.20 2007-05-22 09:32:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -153,7 +153,11 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 	if (flags & FLAG_INSTR) {
 		/*
 		 *  Instruction access:
-		 *
+		 */
+#if 0
+		/*  NOTE: Emulating the ITLB as exact as this is not
+			necessary... so I'm disabling it for now.  */
+		/*
 		 *  If a matching entry wasn't found in the ITLB, but in the
 		 *  UTLB, then copy it to a random place in the ITLB.
 		 */
@@ -171,6 +175,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 			cpu->cd.sh.itlb_hi[r] = cpu->cd.sh.utlb_hi[i];
 			cpu->cd.sh.itlb_lo[r] = cpu->cd.sh.utlb_lo[i];
 		}
+#endif
 
 		/*  Permission checks:  */
 		if (cpu->cd.sh.sr & SH_SR_MD)

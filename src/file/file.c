@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.2 2007-04-19 15:18:16 debug Exp $
+ *  $Id: file.c,v 1.3 2007-05-22 09:32:01 debug Exp $
  *
  *  This module contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -340,6 +340,9 @@ void file_load(struct machine *machine, struct memory *mem,
 			fprintf(stderr, "\n\nPossible explanations:\n\n"
 			    "  o)  If this is a disk image, you forgot '-d' "
 			    "on the command line.\n"
+			    "  o)  You are attempting to load a raw binary "
+			    "into emulated memory,\n"
+			    "      but forgot to add the address prefix.\n"
 			    "  o)  This is an unsupported binary format.\n\n");
 			exit(1);
 		}

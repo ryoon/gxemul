@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.58 2007-05-22 13:11:24 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.59 2007-05-22 13:29:26 debug Exp $
  *
  *  SH instructions.
  *
@@ -3601,8 +3601,7 @@ X(to_be_translated)
 		}
 
 		/*  samepage branches:  */
-		if (samepage_function != NULL &&
-		    ic->arg[0] >= 0 && ic->arg[0] < 0x1000 &&
+		if (samepage_function != NULL && ic->arg[0] < 0x1000 &&
 		    (addr & 0xfff) < 0xffe) {
 			ic->arg[1] = (size_t) (cpu->cd.sh.cur_ic_page +
 			    (ic->arg[0] >> SH_INSTR_ALIGNMENT_SHIFT));
@@ -3656,8 +3655,7 @@ X(to_be_translated)
 		    (((int32_t)(int16_t)((iword & 0xfff) << 4)) >> 3) );
 
 		/*  samepage branches:  */
-		if (samepage_function != NULL &&
-		    ic->arg[0] >= 0 && ic->arg[0] < 0x1000 &&
+		if (samepage_function != NULL && ic->arg[0] < 0x1000 &&
 		    (addr & 0xfff) < 0xffe) {
 			ic->arg[0] = (size_t) (cpu->cd.sh.cur_ic_page +
 			    (ic->arg[0] >> SH_INSTR_ALIGNMENT_SHIFT));

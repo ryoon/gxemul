@@ -1,8 +1,9 @@
-$Id: TODO,v 1.511 2007-05-20 13:22:44 debug Exp $
+$Id: TODO,v 1.512 2007-05-22 09:33:03 debug Exp $
 
 -------------------------------------------------------------------------------
 
-o) M88K stuff, perhaps native code generation as well.
+o) M88K stuff!
+o) Experiment/think more about native code generation.
 o) Look at incorporating the testmachine interrupt controller.
 
 -------------------------------------------------------------------------------
@@ -15,6 +16,9 @@ M88K:
 	o)  CMMUs:
 		o)  Exceptions: set the PFSR and other registers!
 		o)  Translation invalidations.
+		o)  Bitmap of mapped pages (one for user, one for supervisor),
+		    to speed up searches. (Immediate stop search if the
+		    page isn't mapped at all.)
 		o)  Move initialization from dev_mvme187 to somewhere
 		    more reasonable?
 	o)  Exceptions:
@@ -27,6 +31,8 @@ M88K:
 	    to get some guest OS running. OpenBSD/mvme88k on MVME187
 	    seems to be the smartest path to follow for now.
 	o)  Instruction disassembly, and implementation:
+		o)  See http://www.panggih.staff.ugm.ac.id/download/GCC/info/gcc.i5
+		    for some strange cases of when "div" can fail (?)
 		o)  Floating point stuff
 		o)  "Graphics" instructions (M88110-specific)
 
@@ -68,10 +74,11 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 SuperH:
-	x)  SH4 performance is VERY low when running user-space instructions,
-	    because I actually simulate the 4-entry ITLB as being separate
-	    from the 64-entry DTLB. This is correct, but VERY slow. I need
-	    to experiment with _not_ simulating it in too much detail.
+	x)  samepage branches!
+	x)  Auto-generation of loads/stores! This should get rid of at least
+	    the endianness check in each load/store.
+	x)  Experiment with whether or not correct ITLB emulation is
+	    actually needed. (20070522: I'm turning it off today.)
 	x)  SH4 interrupt controller:
 		x)  MASKING should be possible!
 	x)  SH4 DMA (0xffa00000)

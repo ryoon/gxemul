@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.120 2007-05-20 11:11:02 debug Exp $
+ *  $Id: cpu.h,v 1.121 2007-05-22 09:33:04 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -284,6 +284,8 @@ struct cpu_family {
 #define	N_SAFE_DYNTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_DYNTRANS_LIMIT	((1 << (N_SAFE_DYNTRANS_LIMIT_SHIFT - 1)) - 1)
 
+#define	MAX_DYNTRANS_READAHEAD		64
+
 #define	DEFAULT_DYNTRANS_CACHE_SIZE	(40*1048576)
 #define	DYNTRANS_CACHE_MARGIN		200000
 
@@ -385,6 +387,9 @@ struct cpu {
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
+
+	/*  Non-zero when translating ahead of the current instruction:  */
+	int		translation_readahead;
 
 	/*
 	 *  CPU-family dependent:

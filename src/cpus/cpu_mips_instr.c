@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.128 2007-05-09 11:03:41 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.129 2007-05-22 09:33:04 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3369,9 +3369,6 @@ void COMBINE(b_daddiu)(struct cpu *cpu, struct mips_instr_call *ic,
  */
 X(to_be_translated)
 {
-#ifdef NATIVE_CODE_GENERATION
-	int native = 0;
-#endif
 	uint64_t addr, low_pc;
 	uint32_t iword, imm;
 	unsigned char *page;
@@ -3652,7 +3649,8 @@ X(to_be_translated)
 					}
 				}
 				if (rd != MIPS_GPR_ZERO) {
-					fatal("TODO: rd NON-zero\n");
+					if (!cpu->translation_readahead)
+						fatal("TODO: rd NON-zero\n");
 					goto bad;
 				}
 				/*  These instructions don't use rd.  */
@@ -3692,7 +3690,9 @@ X(to_be_translated)
 				break;
 			}
 			if (cpu->delay_slot) {
-				fatal("TODO: branch in delay slot? (1)\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: branch in delay "
+					    "slot? (1)\n");
 				goto bad;
 			}
 			break;
@@ -3790,7 +3790,8 @@ X(to_be_translated)
 			ic->f = samepage_function;
 		}
 		if (cpu->delay_slot) {
-			fatal("TODO: branch in delay slot? (2)\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: branch in delay slot? (2)\n");
 			goto bad;
 		}
 		break;
@@ -3873,9 +3874,10 @@ X(to_be_translated)
 		ic->arg[0] = (iword & 0x03ffffff) << 2;
 		ic->arg[1] = (addr & 0xffc) + 8;
 		if (cpu->delay_slot) {
-			fatal("TODO: branch in delay slot (=%i)? (3); addr=%016"
-			    PRIx64" iword=%08"PRIx32"\n", cpu->delay_slot,
-			    (uint64_t)addr, iword);
+			if (!cpu->translation_readahead)
+				fatal("TODO: branch in delay slot (=%i)? (3);"
+				    " addr=%016"PRIx64" iword=%08"PRIx32"\n",
+				    cpu->delay_slot, (uint64_t)addr, iword);
 			goto bad;
 		}
 		break;
@@ -3912,7 +3914,8 @@ X(to_be_translated)
 				    cpu->cd.mips.cpu_type.isa_level < 32) {
 					static int warned = 0;
 					ic->f = instr(reserved);
-					if (!warned) {
+					if (!warned &&
+					    !cpu->translation_readahead) {
 						fatal("{ WARNING: Attempt to "
 						    "execute the WAIT instruct"
 					            "ion, but the emulated CPU "
@@ -3928,7 +3931,8 @@ X(to_be_translated)
 				if (cpu->cd.mips.cpu_type.rev != MIPS_R4100) {
 					static int warned = 0;
 					ic->f = instr(reserved);
-					if (!warned) {
+					if (!warned &&
+					    !cpu->translation_readahead) {
 						fatal("{ WARNING: Attempt to "
 						    "execute a R41xx instruct"
 					            "ion, but the emulated CPU "
@@ -3957,8 +3961,9 @@ X(to_be_translated)
 				} else
 					goto bad;
 				break;
-			default:fatal("UNIMPLEMENTED cop0 (func 0x%02x)\n",
-				    iword & 0xff);
+			default:if (!cpu->translation_readahead)
+					fatal("UNIMPLEMENTED cop0 (func "
+					    "0x%02x)\n", iword & 0xff);
 				goto bad;
 			}
 			break;
@@ -4006,12 +4011,14 @@ X(to_be_translated)
 				/*  R2020 DECstation write-loop thingy.  */
 				ic->f = instr(nop);
 			} else {
-				fatal("Unimplemented blah blah zzzz...\n");
+				if (!cpu->translation_readahead)
+					fatal("Unimplemented blah zzzz...\n");
 				goto bad;
 			}
 			break;
 		
-		default:fatal("UNIMPLEMENTED cop0 (rs = %i)\n", rs);
+		default:if (!cpu->translation_readahead)
+				fatal("UNIMPLEMENTED cop0 (rs = %i)\n", rs);
 			goto bad;
 		}
 		break;
@@ -4038,15 +4045,18 @@ X(to_be_translated)
 			ic->arg[2] = (int32_t) ((imm <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT) + (addr & 0xffc) + 4);
 			if (cpu->delay_slot) {
-				fatal("TODO: branch in delay slot? (4)\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: branch in delay slot 4\n");
 				goto bad;
 			}
 			if (cpu->cd.mips.cpu_type.isa_level <= 3 &&
 			    ic->arg[0] != 0) {
-				fatal("Attempt to execute a non-cc-0 BC*"
-				    " instruction on an isa level %i cpu. "
-				    "TODO: How should this be handled?\n",
-				    cpu->cd.mips.cpu_type.isa_level);
+				if (!cpu->translation_readahead)
+					fatal("Attempt to execute a non-cc-0 "
+					    "BC* instruction on an isa level "
+					    "%i cpu. TODO: How should this be "
+					    "handled?\n",
+					    cpu->cd.mips.cpu_type.isa_level);
 				goto bad;
 			}
 
@@ -4071,7 +4081,8 @@ X(to_be_translated)
 			ic->arg[0] = (uint32_t)iword & ((1 << 26) - 1);
 			break;
 
-		default:fatal("COP1 floating point opcode = 0x%02x\n", rs);
+		default:if (!cpu->translation_readahead)
+			    fatal("COP1 floating point opcode = 0x%02x\n", rs);
 			goto bad;
 		}
 		break;
@@ -4084,7 +4095,8 @@ X(to_be_translated)
 			ic->arg[0] = 2;
 			break;
 		}
-		fatal("COP2 functionality not yet implemented\n");
+		if (!cpu->translation_readahead)
+			fatal("COP2 functionality not yet implemented\n");
 		goto bad;
 		break;
 
@@ -4102,7 +4114,8 @@ X(to_be_translated)
 			    on MIPSMATE.  */
 			ic->f = instr(nop);
 		} else {
-			fatal("COP3 iword=0x%08x\n", iword);
+			if (!cpu->translation_readahead)
+				fatal("COP3 iword=0x%08x\n", iword);
 			goto bad;
 		}
 		break;
@@ -4286,11 +4299,14 @@ X(to_be_translated)
 				ic->f = samepage_function;
 			}
 			if (cpu->delay_slot) {
-				fatal("TODO: branch in delay slot? (5)\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: branch in delay slot:5\n");
 				goto bad;
 			}
 			break;
-		default:fatal("UNIMPLEMENTED regimm rt=%i\n", rt);
+
+		default:if (!cpu->translation_readahead)
+				fatal("UNIMPLEMENTED regimm rt=%i\n", rt);
 			goto bad;
 		}
 		break;
@@ -4370,7 +4386,8 @@ X(to_be_translated)
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;
 		if (!store && rt == MIPS_GPR_ZERO) {
-			fatal("HM... unusual load linked\n");
+			if (!cpu->translation_readahead)
+				fatal("HM... unusual load linked\n");
 			goto bad;
 		}
 		break;
@@ -4440,31 +4457,36 @@ X(to_be_translated)
 			/*  Treat as nop for now:  */
 			ic->f = instr(nop);
 		} else {
-			fatal("TODO: lwc3 not implemented yet\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: lwc3 not implemented yet\n");
 			goto bad;
 		}
 		break;
 
 	case HI6_LQ_MDMX:
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
-			fatal("TODO: R5900 128-bit loads\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: R5900 128-bit loads\n");
 			goto bad;
 		}
 
-		fatal("TODO: MDMX\n");
+		if (!cpu->translation_readahead)
+			fatal("TODO: MDMX\n");
+
 		goto bad;
 		/*  break  */
 
 	case HI6_SQ_SPECIAL3:
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
-			fatal("TODO: R5900 128-bit stores\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: R5900 128-bit stores\n");
 			goto bad;
 		}
 
 		if (cpu->cd.mips.cpu_type.isa_level < 32 ||
 		    cpu->cd.mips.cpu_type.isa_revision < 2) {
 			static int warning = 0;
-			if (!warning) {
+			if (!warning && !cpu->translation_readahead) {
 				fatal("[ WARNING! SPECIAL3 opcode used, but"
 				    " the %s processor does not implement "
 				    "such instructions. Only printing this "
@@ -4532,8 +4554,9 @@ X(to_be_translated)
 					ic->f = instr(nop);
 				break;
 
-			default:fatal("unimplemented rdhwr register rd=%i\n",
-				    rd);
+			default:if (!cpu->translation_readahead)
+					fatal("unimplemented rdhwr "
+					    "register rd=%i\n", rd);
 				goto bad;
 			}
 			break;
@@ -4560,15 +4583,6 @@ X(to_be_translated)
 			    "pc=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc);
 		has_warned = 1;
 		ic->f = instr(reserved);
-	}
-#endif
-
-
-#ifdef NATIVE_CODE_GENERATION
-	if (native == 0 || (addr & 0xffc) == 0xffc ||
-	    ic[1].f != instr(to_be_translated)) {
-		/*  TODO  */
-		/*  flush etc.  */
 	}
 #endif
 

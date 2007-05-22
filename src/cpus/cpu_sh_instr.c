@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.56 2007-04-19 15:49:39 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.57 2007-05-22 09:33:04 debug Exp $
  *
  *  SH instructions.
  *
@@ -2962,7 +2962,9 @@ X(to_be_translated)
 			case 0x09:	/*  NOP  */
 				ic->f = instr(nop);
 				if (iword & 0x0f00) {
-					fatal("Unimplemented NOP variant?\n");
+					if (!cpu->translation_readahead)
+						fatal("Unimplemented NOP"
+						    " variant?\n");
 					goto bad;
 				}
 				break;
@@ -3042,8 +3044,10 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.dbr;
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];
 				break;
-			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
-				    main_opcode, iword & 0xfff);
+			default:if (!cpu->translation_readahead)
+					fatal("Unimplemented opcode 0x%x,"
+					    "0x%03x\n", main_opcode,
+					    iword & 0xfff);
 				goto bad;
 			}
 		}
@@ -3101,8 +3105,9 @@ X(to_be_translated)
 		case 0xf:	/*  MULS.W Rm,Rn  */
 			ic->f = instr(muls_w_rm_rn);
 			break;
-		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
-			    main_opcode, lo4);
+		default:if (!cpu->translation_readahead)
+				fatal("Unimplemented opcode 0x%x,0x%x\n",
+				    main_opcode, lo4);
 			goto bad;
 		}
 		break;
@@ -3145,8 +3150,9 @@ X(to_be_translated)
 		case 0xe:	/*  ADDC Rm,Rn  */
 			ic->f = instr(addc_rm_rn);
 			break;
-		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
-			    main_opcode, lo4);
+		default:if (!cpu->translation_readahead)
+				fatal("Unimplemented opcode 0x%x,0x%x\n",
+				    main_opcode, lo4);
 			goto bad;
 		}
 		break;
@@ -3369,8 +3375,9 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];
 				ic->arg[1] = (size_t)&cpu->cd.sh.dbr;
 				break;
-			default:fatal("Unimplemented opcode 0x%x,0x%02x\n",
-				    main_opcode, lo8);
+			default:if (!cpu->translation_readahead)
+					fatal("Unimplemented opcode 0x%x,"
+					    "0x%02x\n", main_opcode, lo8);
 				goto bad;
 			}
 		}
@@ -3440,8 +3447,9 @@ X(to_be_translated)
 		case 0xf:	/*  EXTS.W Rm,Rn  */
 			ic->f = instr(exts_w_rm_rn);
 			break;
-		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
-			    main_opcode, lo4);
+		default:if (!cpu->translation_readahead)
+				fatal("Unimplemented opcode 0x%x,0x%x\n",
+				    main_opcode, lo4);
 			goto bad;
 		}
 		break;
@@ -3494,8 +3502,9 @@ X(to_be_translated)
 		case 0xf:	/*  BF/S (disp,PC)  */
 			ic->f = instr(bf_s);
 			break;
-		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
-			    main_opcode, r8);
+		default:if (!cpu->translation_readahead)
+				fatal("Unimplemented opcode 0x%x,0x%x\n",
+				    main_opcode, r8);
 			goto bad;
 		}
 		break;
@@ -3579,8 +3588,9 @@ X(to_be_translated)
 			ic->f = instr(or_b_imm_r0_gbr);
 			ic->arg[0] = lo8;
 			break;
-		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
-			    main_opcode, r8);
+		default:if (!cpu->translation_readahead)
+				fatal("Unimplemented opcode 0x%x,0x%x\n",
+				    main_opcode, r8);
 			goto bad;
 		}
 		break;
@@ -3731,13 +3741,15 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
 			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
 		} else {
-			fatal("Unimplemented opcode 0x%x,0x%02x\n",
-			    main_opcode, lo8);
+			if (!cpu->translation_readahead)
+				fatal("Unimplemented opcode 0x%x,0x%02x\n",
+				    main_opcode, lo8);
 			goto bad;
 		}
 		break;
 
-	default:fatal("Unimplemented main opcode 0x%x\n", main_opcode);
+	default:if (!cpu->translation_readahead)
+			fatal("Unimplemented main opcode 0x%x\n", main_opcode);
 		goto bad;
 	}
 

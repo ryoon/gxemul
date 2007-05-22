@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.71 2007-04-20 13:47:53 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.72 2007-05-22 09:33:04 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2504,8 +2504,9 @@ X(to_be_translated)
 			goto okay;
 		}
 
-		fatal("TODO: ARM condition code 0x%x\n",
-		    condition_code);
+		if (!cpu->translation_readahead)
+			fatal("TODO: ARM condition code 0x%x\n",
+			    condition_code);
 		goto bad;
 	}
 
@@ -2547,7 +2548,8 @@ X(to_be_translated)
 		if ((iword & 0x0f8000f0) == 0x00800090) {
 			/*  Long multiplication:  */
 			if (s_bit) {
-				fatal("TODO: sbit mull\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: sbit mull\n");
 				goto bad;
 			}
 			ic->f = cond_instr(mull);
@@ -2555,7 +2557,8 @@ X(to_be_translated)
 			break;
 		}
 		if ((iword & 0x0f900ff0) == 0x01000050) {
-			fatal("TODO: q{,d}{add,sub}\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: q{,d}{add,sub}\n");
 			goto bad;
 		}
 		if ((iword & 0x0ff000d0) == 0x01200010) {
@@ -2628,7 +2631,8 @@ X(to_be_translated)
 					ic->f = cond_instr(msr_imm);
 			} else {
 				if (rm == ARM_PC) {
-					fatal("msr PC?\n");
+					if (!cpu->translation_readahead)
+						fatal("msr PC?\n");
 					goto bad;
 				}
 				if (iword & 0x00400000)
@@ -2645,7 +2649,8 @@ X(to_be_translated)
 			case 1:	ic->arg[1] = 0x000000ff; break;
 			case 8:	ic->arg[1] = 0xff000000; break;
 			case 9:	ic->arg[1] = 0xff0000ff; break;
-			default:fatal("unimpl a: msr regform\n");
+			default:if (!cpu->translation_readahead)
+					fatal("unimpl a: msr regform\n");
 				goto bad;
 			}
 			break;
@@ -2653,7 +2658,8 @@ X(to_be_translated)
 		if ((iword & 0x0fbf0fff) == 0x010f0000) {
 			/*  mrs: move from CPSR/SPSR to a register:  */
 			if (rd == ARM_PC) {
-				fatal("mrs PC?\n");
+				if (!cpu->translation_readahead)
+					fatal("mrs PC?\n");
 				goto bad;
 			}
 			if (iword & 0x00400000)
@@ -2699,7 +2705,8 @@ X(to_be_translated)
 		}
 
 		if (iword & 0x80 && !(main_opcode & 2) && iword & 0x10) {
-			fatal("reg form blah blah\n");
+			if (!cpu->translation_readahead)
+				fatal("reg form blah blah\n");
 			goto bad;
 		}
 
@@ -2821,7 +2828,8 @@ X(to_be_translated)
 		else
 			ic->arg[1] = (size_t)(void *)arm_r[iword & 0xfff];
 		if ((iword & 0x0e000010) == 0x06000010) {
-			fatal("Not a Load/store TODO\n");
+			if (!cpu->translation_readahead)
+				fatal("Not a Load/store TODO\n");
 			goto bad;
 		}
 		/*  Special case: pc-relative load within the same page:  */
@@ -2850,8 +2858,9 @@ X(to_be_translated)
 				} else {
 					if (!cpu->memory_rw(cpu, cpu->mem, a,
 					    c, len, MEM_READ, CACHE_DATA)) {
-						fatal("to_be_translated(): "
-						    "read failed X: TODO\n");
+						if (!cpu->translation_readahead)
+							fatal("read failed X:"
+							    " TODO\n");
 						goto bad;
 					}
 				}
@@ -2910,7 +2919,8 @@ X(to_be_translated)
 		}
 #endif
 		if (rn == ARM_PC) {
-			fatal("TODO: bdt with PC as base\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: bdt with PC as base\n");
 			goto bad;
 		}
 		break;
@@ -3003,13 +3013,15 @@ X(to_be_translated)
 		 */
 		if ((iword & 0x0fe00fff) == 0x0c400000) {
 			/*  Special case: mar/mra DSP instructions  */
-			fatal("TODO: mar/mra DSP instructions!\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: mar/mra DSP instructions!\n");
 			/*  Perhaps these are actually identical to MCRR/MRRC */
 			goto bad;
 		}
 
 		if ((iword & 0x0fe00000) == 0x0c400000) {
-			fatal("MCRR/MRRC: TODO\n");
+			if (!cpu->translation_readahead)
+				fatal("MCRR/MRRC: TODO\n");
 			goto bad;
 		}
 
@@ -3023,7 +3035,8 @@ X(to_be_translated)
 		ic->f = cond_instr(und);
 		ic->arg[0] = addr & 0xfff;
 #else
-		fatal("LDC/STC: TODO\n");
+		if (!cpu->translation_readahead)
+			fatal("LDC/STC: TODO\n");
 		goto bad;
 #endif
 		break;
@@ -3032,7 +3045,8 @@ X(to_be_translated)
 		if ((iword & 0x0ff00ff0) == 0x0e200010) {
 			/*  Special case: mia* DSP instructions  */
 			/*  See Intel's 27343601.pdf, page 16-20  */
-			fatal("TODO: mia* DSP instructions!\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: mia* DSP instructions!\n");
 			goto bad;
 		}
 		if (iword & 0x10) {
@@ -3065,7 +3079,8 @@ X(to_be_translated)
 				ic->arg[0] = iword & 0x00ffffff;
 				ic->f = cond_instr(swi_useremul);
 			} else {
-				fatal("Bad userland SWI?\n");
+				if (!cpu->translation_readahead)
+					fatal("Bad userland SWI?\n");
 				goto bad;
 			}
 		}

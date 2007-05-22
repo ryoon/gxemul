@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.150 2007-05-20 11:11:02 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.151 2007-05-22 09:33:04 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1680,7 +1680,7 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	 *  be converted into a single function call.
 	 *
 	 *  Note: Single-stepping or instruction tracing doesn't work with
-	 *  instruction combination. For architectures with delay slots,
+	 *  instruction combinations. For architectures with delay slots,
 	 *  we also ignore combinations if the delay slot is across a page
 	 *  boundary.
 	 */
@@ -1745,6 +1745,48 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 		}
 #endif
 
+
+		/*
+		 *  Translation readahead:
+		 */
+#if 0
+		if (cpu->translation_readahead) {
+			return;
+		} else {
+			/*  Do readahead:  */
+			int i = 1;
+			uint64_t pagenr = DYNTRANS_ADDR_TO_PAGENR(cpu->pc);
+			uint64_t baseaddr = cpu->pc;
+			cpu->translation_readahead = MAX_DYNTRANS_READAHEAD;
+
+			while (DYNTRANS_ADDR_TO_PAGENR(baseaddr +
+			    (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr &&
+			    cpu->translation_readahead > 0) {
+				void *old_f = ic[i].f;
+
+				/*  Already translated? Then abort:  */
+				if (old_f != (
+#ifdef DYNTRANS_DUALMODE_32
+				    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+				    instr(to_be_translated)))
+					break;
+
+				/*  Translate the instruction:  */
+				ic[i].f(cpu, ic+i);
+
+				/*  Translation failed? Then abort.  */
+				if (ic[i].f == old_f)
+					break;
+
+				cpu->translation_readahead --;
+				++i;
+			}
+
+			cpu->translation_readahead = 0;
+		}
+#endif
+
 		/*  Finally finally :-), execute the instruction:  */
 		ic->f(cpu, ic);
 	}
@@ -1755,6 +1797,19 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 bad:	/*
 	 *  Nothing was translated. (Unimplemented or illegal instruction.)
 	 */
+
+	/*  Clear the translation, in case it was "half-way" done:  */
+	ic->f =
+#ifdef DYNTRANS_DUALMODE_32
+	    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+	    instr(to_be_translated);
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+	ic->arg[0] = 0;
+#endif
+
+	if (cpu->translation_readahead)
+		return;
 
 	quiet_mode = 0;
 	fatal("to_be_translated(): TODO: unimplemented instruction");

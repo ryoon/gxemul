@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1573 2007-05-20 10:49:11 debug Exp $
+$Id: HISTORY,v 1.1574 2007-05-22 09:33:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3521,3 +3521,9 @@ Changelog for GXemul:
 		for M88K .usr loads/stores.
 20070520	Removing the non-working (skeleton) Sandpoint, SonyNEWS, SHARK
 		Dnard, and Zaurus machine modes.
+		Experimenting with dyntrans to_be_translated read-ahead. It
+		seems to give a very small performance increase for MIPS
+		emulation, but a large performance degradation for SuperH. Hm.
+20070522	Disabling correct SuperH ITLB emulation; it does not seem to be
+		necessary in order to let SH4 guest OSes run, and it slows down
+		userspace code.

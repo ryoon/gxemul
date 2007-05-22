@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.276 2007-05-22 13:11:23 debug Exp $
+$Id: RELEASE,v 1.277 2007-05-22 13:20:16 debug Exp $
 
 Currently working on what will become 0.4.6.
 
@@ -27,16 +27,7 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 The changes between release 0.4.5.1 and 0.4.6 include, among other things:
 
-    o)	SuperH emulation is slightly faster than before:
-
-	  x)  The 4-entry SH4 ITLB array does not need to be simulated in
-	      complete detail; guest operating systems (e.g. OpenBSD/landisk)
-	      still work when the ITLB simulation is simplified. This makes
-	      especially userland code run more efficient.
-
-	  x)  Branches within the same translated page now use the same
-	      construct as other processor emulation modes do, resulting in
-	      a small speedup.
+    o)	SuperH emulation is slightly faster than before.
 
 Please read the HISTORY file for more details.
 

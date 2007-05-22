@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bootblock.c,v 1.1 2007-03-16 14:45:30 debug Exp $
+ *  $Id: bootblock.c,v 1.2 2007-05-22 13:05:43 debug Exp $
  *
  *  Bootblock handling:
  *
@@ -183,8 +183,8 @@ int load_bootblock(struct machine *m, struct cpu *cpu,
 		bootblock_pc |= 0xffffffffa0000000ULL;
 		cpu->pc = bootblock_pc;
 
-		debug("DEC boot: loadaddr=0x%08x, pc=0x%08x",
-		    (int)bootblock_loadaddr, (int)bootblock_pc);
+		debug("DEC boot: loadaddr=0x%08"PRIx32", pc=0x%08"PRIx32,
+		    (uint32_t) bootblock_loadaddr, (uint32_t) bootblock_pc);
 
 		readofs = 0x18;
 

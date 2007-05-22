@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.16 2007-04-28 01:46:07 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.17 2007-05-22 13:05:43 debug Exp $
  */
 
 
@@ -70,7 +70,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 #ifdef V2P_MMU3K
 	const int x_64 = 0;
 	const int n_tlbs = 64;
-	const int pmask = 0xfff;
+	const uint32_t pmask = 0xfff;
 	uint64_t xuseg_top;		/*  Well, useg actually.  */
 #else
 #ifdef V2P_MMU10K
@@ -86,7 +86,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 #endif
 	int x_64;	/*  non-zero for 64-bit address space accesses  */
 	int pageshift, n_tlbs;
-	int pmask;
+	uint32_t pmask;
 #ifdef V2P_MMU4100
 	const int pagemask_mask = PAGEMASK_MASK_R4100;
 	const int pagemask_shift = PAGEMASK_SHIFT_R4100;
@@ -297,7 +297,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 				case 0x07fffff:	pageshift = 22; break;
 				case 0x1ffffff:	pageshift = 24; break;
 				case 0x7ffffff:	pageshift = 26; break;
-				default:fatal("pmask=%08x\n", pmask);
+				default:fatal("pmask=%08"PRIx32"\n", pmask);
 					exit(1);
 				}
 

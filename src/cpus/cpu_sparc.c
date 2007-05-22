@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.44 2007-03-26 02:18:44 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.45 2007-05-22 13:05:43 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -267,7 +267,8 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					continue;
 				}
 				debug("%s=", sparc_regnames[i]);
-				debug("0x%08x", (int) cpu->cd.sparc.r[i]);
+				debug("0x%08"PRIx32,
+				    (uint32_t) cpu->cd.sparc.r[i]);
 				if ((i & 3) < 3)
 					debug("  ");
 				else
@@ -459,7 +460,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	iword = *(uint32_t *)&instr[0];
 	iword = BE32_TO_HOST(iword);
 
-	debug(": %08x", iword);
+	debug(": %08"PRIx32, iword);
 
 	if (running && cpu->delay_slot)
 		debug(" (d)");

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1574 2007-05-22 09:33:03 debug Exp $
+$Id: HISTORY,v 1.1575 2007-05-22 13:11:23 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3527,3 +3527,5 @@ Changelog for GXemul:
 20070522	Disabling correct SuperH ITLB emulation; it does not seem to be
 		necessary in order to let SH4 guest OSes run, and it slows down
 		userspace code.
+		Implementing "samepage" branches for SuperH emulation, and some
+		other minor speed hacks.

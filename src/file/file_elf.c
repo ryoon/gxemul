@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_elf.c,v 1.3 2007-05-11 07:51:57 debug Exp $
+ *  $Id: file_elf.c,v 1.4 2007-05-22 13:11:24 debug Exp $
  *
  *  ELF file support.
  */
@@ -320,9 +320,10 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	 *  SH64: 32-bit instruction encoding?
 	 */
 	if (arch == ARCH_SH && (eentry & 1)) {
-		debug("SH64: 32-bit instruction encoding\n");
-		m->cpus[0]->cd.sh.compact = 0;
+		fatal("SH64: 32-bit instruction encoding: TODO\n");
+		/*  m->cpus[0]->cd.sh.compact = 0;  */
 		m->cpus[0]->cd.sh.cpu_type.bits = 64;
+		exit(1);
 	}
 
 	/*  Read the program headers:  */

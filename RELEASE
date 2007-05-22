@@ -1,9 +1,6 @@
-$Id: RELEASE,v 1.275 2007-05-15 09:40:29 debug Exp $
+$Id: RELEASE,v 1.276 2007-05-22 13:11:23 debug Exp $
 
 Currently working on what will become 0.4.6.
-
-Perhaps I will have enough time to make M88K emulation work
-with a guess OS? (OpenBSD/mvme88k, in that case.)
 
 ------------------------------------------------------------------------------
 
@@ -30,7 +27,16 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 The changes between release 0.4.5.1 and 0.4.6 include, among other things:
 
-    o)	TODO ...
+    o)	SuperH emulation is slightly faster than before:
+
+	  x)  The 4-entry SH4 ITLB array does not need to be simulated in
+	      complete detail; guest operating systems (e.g. OpenBSD/landisk)
+	      still work when the ITLB simulation is simplified. This makes
+	      especially userland code run more efficient.
+
+	  x)  Branches within the same translated page now use the same
+	      construct as other processor emulation modes do, resulting in
+	      a small speedup.
 
 Please read the HISTORY file for more details.
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.42 2007-05-01 05:26:48 debug Exp $
+ *  $Id: cpu_sh.h,v 1.43 2007-05-22 13:11:24 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -89,9 +89,6 @@ DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 
 struct sh_cpu {
 	struct sh_cpu_type_def cpu_type;
-
-	/*  compact = 1 if currently executing 16-bit long opcodes  */
-	int		compact;
 
 	/*  General Purpose Registers:  */
 	uint32_t	r[SH_N_GPRS];

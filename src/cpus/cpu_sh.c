@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.72 2007-04-28 09:44:35 debug Exp $
+ *  $Id: cpu_sh.c,v 1.73 2007-05-22 13:11:24 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -92,7 +92,6 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.sh.cpu_type = cpu_type_defs[i];
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	cpu->is_32bit = cpu->cd.sh.cpu_type.bits == 32;
-	cpu->cd.sh.compact = 1;		/*  Default to 16-bit opcode mode  */
 
 	if (!cpu->is_32bit) {
 		fatal("SH64 emulation not implemented. Sorry.\n");
@@ -423,7 +422,7 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
-	int i, x = cpu->cpu_id, nregs = cpu->cd.sh.compact? 16 : 64;
+	int i, x = cpu->cpu_id;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
@@ -454,7 +453,7 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    "  gbr = 0x%08"PRIx32"\n", x, (uint32_t)cpu->cd.sh.mach,
 		    (uint32_t)cpu->cd.sh.macl, (uint32_t)cpu->cd.sh.gbr);
 
-		for (i=0; i<nregs; i++) {
+		for (i=0; i<SH_N_GPRS; i++) {
 			if ((i % 4) == 0)
 				debug("cpu%i:", x);
 			debug(" r%-2i = 0x%08x ", i, (int)cpu->cd.sh.r[i]);
@@ -724,19 +723,41 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr)
 
 
 /*
- *  sh_cpu_disassemble_instr_compact():
+ *  sh_cpu_disassemble_instr():
  *
  *  SHcompact instruction disassembly. The top 4 bits of each 16-bit
  *  instruction word is used as the main opcode. For most instructions, the
  *  lowest 4 or 8 bits then select sub-opcode.
+ *
+ *  This function convert an instruction word into human readable format,
+ *  for instruction tracing.
+ *
+ *  If running is 1, cpu->pc should be the address of the instruction.
+ *
+ *  If running is 0, things that depend on the runtime environment (eg.
+ *  register contents) will not be shown, and addr will be used instead of
+ *  cpu->pc for relative addresses.
  */
-int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
+int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr)
 {
 	char *symbol;
 	uint64_t offset, addr;
 	uint16_t iword;
 	int hi4, lo4, lo8, r8, r4;
+
+	if (running)
+		dumpaddr = cpu->pc;
+
+	symbol = get_symbol_name(&cpu->machine->symbol_context,
+	    dumpaddr, &offset);
+	if (symbol != NULL && offset==0)
+		debug("<%s>\n", symbol);
+
+	if (cpu->machine->ncpus > 1 && running)
+		debug("cpu%i: ", cpu->cpu_id);
+
+	debug("%08"PRIx32, (uint32_t) dumpaddr);
 
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
 		iword = (instr[0] << 8) + instr[1];
@@ -746,6 +767,7 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	debug(":  %04x %s\t", iword, cpu->delay_slot? "(d)" : "");
 	hi4 = iword >> 12; lo4 = iword & 15; lo8 = iword & 255;
 	r8 = (iword >> 8) & 15; r4 = (iword >> 4) & 15;
+
 
 	/*
 	 *  Decode the instruction:
@@ -1333,64 +1355,6 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		break;
 	default:debug("UNIMPLEMENTED hi4=0x%x\n", hi4);
 	}
-
-	return sizeof(iword);
-}
-
-
-/*
- *  sh_cpu_disassemble_instr():
- *
- *  Convert an instruction word into human readable format, for instruction
- *  tracing.
- *
- *  If running is 1, cpu->pc should be the address of the instruction.
- *
- *  If running is 0, things that depend on the runtime environment (eg.
- *  register contents) will not be shown, and addr will be used instead of
- *  cpu->pc for relative addresses.
- */
-int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr)
-{
-	uint64_t offset;
-	uint32_t iword;
-	char *symbol;
-
-	if (running)
-		dumpaddr = cpu->pc;
-
-	symbol = get_symbol_name(&cpu->machine->symbol_context,
-	    dumpaddr, &offset);
-	if (symbol != NULL && offset==0)
-		debug("<%s>\n", symbol);
-
-	if (cpu->machine->ncpus > 1 && running)
-		debug("cpu%i: ", cpu->cpu_id);
-
-	if (cpu->cd.sh.cpu_type.bits == 32)
-		debug("%08x", (int)dumpaddr);
-	else
-		debug("%016llx", (long long)dumpaddr);
-
-	if (cpu->cd.sh.compact)
-		return sh_cpu_disassemble_instr_compact(cpu, instr,
-		    running, dumpaddr);
-
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		iword = (instr[0] << 24) + (instr[1] << 16) + (instr[2] << 8)
-		    + instr[3];
-	else
-		iword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8)
-		    + instr[0];
-
-	debug(": %08x\t", iword);
-
-	/*
-	 *  Decode the instruction:
-	 */
-
-	debug("TODO\n");
 
 	return sizeof(iword);
 }

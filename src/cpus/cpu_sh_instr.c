@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.57 2007-05-22 09:33:04 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.58 2007-05-22 13:11:24 debug Exp $
  *
  *  SH instructions.
  *
@@ -173,6 +173,9 @@ X(exts_b_rm_rn) { reg(ic->arg[1]) = (int8_t)reg(ic->arg[0]); }
 X(extu_b_rm_rn) { reg(ic->arg[1]) = (uint8_t)reg(ic->arg[0]); }
 X(exts_w_rm_rn) { reg(ic->arg[1]) = (int16_t)reg(ic->arg[0]); }
 X(extu_w_rm_rn) { reg(ic->arg[1]) = (uint16_t)reg(ic->arg[0]); }
+/*  Note: rm and rn are the same on these:  */
+X(extu_b_rm)    { reg(ic->arg[1]) = (uint8_t)reg(ic->arg[1]); }
+X(extu_w_rm)    { reg(ic->arg[1]) = (uint16_t)reg(ic->arg[1]); }
 
 
 /*
@@ -280,8 +283,13 @@ X(and_b_imm_r0_gbr)
  *  arg[0] = int8_t imm, extended to at least int32_t
  *  arg[1] = ptr to rn
  */
-X(mov_imm_rn) { reg(ic->arg[1]) = (int32_t)ic->arg[0]; }
-X(add_imm_rn) { reg(ic->arg[1]) += (int32_t)ic->arg[0]; }
+X(mov_imm_rn) { reg(ic->arg[1]) = ic->arg[0]; }
+X(mov_0_rn)   { reg(ic->arg[1]) = 0; }
+X(add_imm_rn) { reg(ic->arg[1]) += ic->arg[0]; }
+X(inc_rn)     { reg(ic->arg[1]) ++; }
+X(add_4_rn)   { reg(ic->arg[1]) += 4; }
+X(sub_4_rn)   { reg(ic->arg[1]) -= 4; }
+X(dec_rn)     { reg(ic->arg[1]) --; }
 
 
 /*
@@ -1371,6 +1379,7 @@ X(mov_w_r0_disp_rn)
  *  sub_rm_rn:  rn = rn - rm
  *  subc_rm_rn: rn = rn - rm - t; t = borrow
  *  tst_rm_rn:  t = ((rm & rn) == 0)
+ *  tst_rm:     t = (rm == 0)
  *  xtrct_rm_rn:  rn = (rn >> 16) | (rm << 16)
  *
  *  arg[0] = ptr to rm
@@ -1408,6 +1417,13 @@ X(subc_rm_rn)
 X(tst_rm_rn)
 {
 	if (reg(ic->arg[1]) & reg(ic->arg[0]))
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	else
+		cpu->cd.sh.sr |= SH_SR_T;
+}
+X(tst_rm)
+{
+	if (reg(ic->arg[0]))
 		cpu->cd.sh.sr &= ~SH_SR_T;
 	else
 		cpu->cd.sh.sr |= SH_SR_T;
@@ -1745,7 +1761,8 @@ X(shld)
  *  braf:  Like bra, but using a register instead of an immediate
  *  bsrf:  Like braf, but also sets PR to the return address
  *
- *  arg[0] = immediate offset relative to start of page
+ *  arg[0] = immediate offset relative to start of page,
+ *           or ptr to target instruction, for samepage branches
  *  arg[1] = ptr to Rn  (for braf/bsrf)
  */
 X(bra)
@@ -1762,6 +1779,15 @@ X(bra)
 		quick_pc_to_pointers(cpu);
 	} else
 		cpu->delay_slot = NOT_DELAYED;
+}
+X(bra_samepage)
+{
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT))
+		cpu->cd.sh.next_ic = (struct sh_instr_call *) ic->arg[0];
+	cpu->delay_slot = NOT_DELAYED;
 }
 X(bsr)
 {
@@ -1781,6 +1807,20 @@ X(bsr)
 		quick_pc_to_pointers(cpu);
 	} else
 		cpu->delay_slot = NOT_DELAYED;
+}
+X(bsr_samepage)
+{
+	uint32_t old_pc;
+	SYNCH_PC;
+	old_pc = cpu->pc;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->cd.sh.pr = old_pc + 4;
+		cpu->cd.sh.next_ic = (struct sh_instr_call *) ic->arg[0];
+	}
+	cpu->delay_slot = NOT_DELAYED;
 }
 X(braf_rn)
 {
@@ -1825,6 +1865,7 @@ X(bsrf_rn)
  *  bf/s: Branch if false (with delay-slot)
  *
  *  arg[0] = immediate offset relative to start of page
+ *  arg[1] = for samepage functions, the new instruction pointer
  */
 X(bt)
 {
@@ -1843,6 +1884,16 @@ X(bf)
 		cpu->pc += ic->arg[0];
 		quick_pc_to_pointers(cpu);
 	}
+}
+X(bt_samepage)
+{
+	if (cpu->cd.sh.sr & SH_SR_T)
+		cpu->cd.sh.next_ic = (struct sh_instr_call *) ic->arg[1];
+}
+X(bf_samepage)
+{
+	if (!(cpu->cd.sh.sr & SH_SR_T))
+		cpu->cd.sh.next_ic = (struct sh_instr_call *) ic->arg[1];
 }
 X(bt_s)
 {
@@ -1878,6 +1929,38 @@ X(bf_s)
 			cpu->pc = target;
 			quick_pc_to_pointers(cpu);
 		} else
+			cpu->cd.sh.next_ic ++;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bt_s_samepage)
+{
+	int cond = cpu->cd.sh.sr & SH_SR_T;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond)
+			cpu->cd.sh.next_ic =
+			    (struct sh_instr_call *) ic->arg[1];
+		else
+			cpu->cd.sh.next_ic ++;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bf_s_samepage)
+{
+	int cond = !(cpu->cd.sh.sr & SH_SR_T);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond)
+			cpu->cd.sh.next_ic =
+			    (struct sh_instr_call *) ic->arg[1];
+		else
 			cpu->cd.sh.next_ic ++;
 	} else
 		cpu->delay_slot = NOT_DELAYED;
@@ -2795,10 +2878,10 @@ X(to_be_translated)
 	uint64_t addr, low_pc;
 	uint32_t iword;
 	unsigned char *page;
-	unsigned char ib[4];
-	int main_opcode, isize = cpu->cd.sh.compact? 2 : sizeof(ib);
+	unsigned char ib[2];
+	int main_opcode, isize = sizeof(ib);
 	int in_crosspage_delayslot = 0, r8, r4, lo4, lo8;
-	/*  void (*samepage_function)(struct cpu *, struct sh_instr_call *);  */
+	void (*samepage_function)(struct cpu *, struct sh_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.sh.cur_ic_page)
@@ -2847,27 +2930,16 @@ X(to_be_translated)
 		}
 	}
 
-	if (cpu->cd.sh.compact) {
-		iword = *((uint16_t *)&ib[0]);
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-			iword = LE16_TO_HOST(iword);
-		else
-			iword = BE16_TO_HOST(iword);
-		main_opcode = iword >> 12;
-		r8 = (iword >> 8) & 0xf;
-		r4 = (iword >> 4) & 0xf;
-		lo8 = iword & 0xff;
-		lo4 = iword & 0xf;
-	} else {
-		iword = *((uint32_t *)&ib[0]);
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-			iword = LE32_TO_HOST(iword);
-		else
-			iword = BE32_TO_HOST(iword);
-		main_opcode = -1;	/*  TODO  */
-		fatal("SH5/SH64 isn't implemented yet. Sorry.\n");
-		goto bad;
-	}
+	iword = *((uint16_t *)&ib[0]);
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iword = LE16_TO_HOST(iword);
+	else
+		iword = BE16_TO_HOST(iword);
+	main_opcode = iword >> 12;
+	r8 = (iword >> 8) & 0xf;
+	r4 = (iword >> 4) & 0xf;
+	lo8 = iword & 0xff;
+	lo4 = iword & 0xf;
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -3083,6 +3155,8 @@ X(to_be_translated)
 			break;
 		case 0x8:	/*  TST Rm,Rn  */
 			ic->f = instr(tst_rm_rn);
+			if (r8 == r4)
+				ic->f = instr(tst_rm);
 			break;
 		case 0x9:	/*  AND Rm,Rn  */
 			ic->f = instr(and_rm_rn);
@@ -3437,9 +3511,13 @@ X(to_be_translated)
 			break;
 		case 0xc:	/*  EXTU.B Rm,Rn  */
 			ic->f = instr(extu_b_rm_rn);
+			if (r8 == r4)
+				ic->f = instr(extu_b_rm);
 			break;
 		case 0xd:	/*  EXTU.W Rm,Rn  */
 			ic->f = instr(extu_w_rm_rn);
+			if (r8 == r4)
+				ic->f = instr(extu_w_rm);
 			break;
 		case 0xe:	/*  EXTS.B Rm,Rn  */
 			ic->f = instr(exts_b_rm_rn);
@@ -3457,7 +3535,15 @@ X(to_be_translated)
 	case 0x7:	/*  ADD #imm,Rn  */
 		ic->f = instr(add_imm_rn);
 		ic->arg[0] = (int8_t)lo8;
-		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];		/* n */
+		if (lo8 == 1)
+			ic->f = instr(inc_rn);
+		if (lo8 == 4)
+			ic->f = instr(add_4_rn);
+		if (lo8 == 0xfc)
+			ic->f = instr(sub_4_rn);
+		if (lo8 == 0xff)
+			ic->f = instr(dec_rn);
 		break;
 
 	case 0x8:
@@ -3465,6 +3551,8 @@ X(to_be_translated)
 		ic->arg[0] = (int8_t)lo8 * 2 +
 		    (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4;
+		samepage_function = NULL;
+
 		switch (r8) {
 		case 0x0:	/*  MOV.B R0,@(disp,Rn)  */
 			ic->f = instr(mov_b_r0_disp_rn);
@@ -3492,36 +3580,89 @@ X(to_be_translated)
 			break;
 		case 0x9:	/*  BT (disp,PC)  */
 			ic->f = instr(bt);
+			samepage_function = instr(bt_samepage);
 			break;
 		case 0xb:	/*  BF (disp,PC)  */
 			ic->f = instr(bf);
+			samepage_function = instr(bf_samepage);
 			break;
 		case 0xd:	/*  BT/S (disp,PC)  */
 			ic->f = instr(bt_s);
+			samepage_function = instr(bt_s_samepage);
 			break;
 		case 0xf:	/*  BF/S (disp,PC)  */
 			ic->f = instr(bf_s);
+			samepage_function = instr(bf_s_samepage);
 			break;
 		default:if (!cpu->translation_readahead)
 				fatal("Unimplemented opcode 0x%x,0x%x\n",
 				    main_opcode, r8);
 			goto bad;
 		}
+
+		/*  samepage branches:  */
+		if (samepage_function != NULL &&
+		    ic->arg[0] >= 0 && ic->arg[0] < 0x1000 &&
+		    (addr & 0xfff) < 0xffe) {
+			ic->arg[1] = (size_t) (cpu->cd.sh.cur_ic_page +
+			    (ic->arg[0] >> SH_INSTR_ALIGNMENT_SHIFT));
+			ic->f = samepage_function;
+		}
+
 		break;
 
 	case 0x9:	/*  MOV.W @(disp,PC),Rn  */
 		ic->f = instr(mov_w_disp_pc_rn);
 		ic->arg[0] = lo8 * 2 + (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4;
-		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+
+		/*  If the word is reachable from the same page as the
+		    current address, then optimize it as a mov_imm_rn:  */
+		if (ic->arg[0] < 0x1000) {
+			uint16_t data;
+			if (!cpu->memory_rw(cpu, cpu->mem, (addr & ~1) + 4
+			    + lo8 * 2, (unsigned char *)&data, sizeof(data),
+			    MEM_READ, CACHE_DATA)) {
+				/*  Exception.  */
+			} else {
+				if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+					data = LE16_TO_HOST(data);
+				else
+					data = BE16_TO_HOST(data);
+
+				ic->f = instr(mov_imm_rn);
+				ic->arg[0] = (int16_t) data;
+			}
+		}
 		break;
 
 	case 0xa:	/*  BRA disp  */
 	case 0xb:	/*  BSR disp  */
-		ic->f = main_opcode == 0xa? instr(bra) : instr(bsr);
+		samepage_function = NULL;
+
+		switch (main_opcode) {
+		case 0xa:
+			ic->f = instr(bra);
+			samepage_function = instr(bra_samepage);
+			break;
+		case 0xb:
+			ic->f = instr(bsr);
+			samepage_function = instr(bsr_samepage);
+			break;
+		}
+
 		ic->arg[0] = (int32_t) ( (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4 +
 		    (((int32_t)(int16_t)((iword & 0xfff) << 4)) >> 3) );
+
+		/*  samepage branches:  */
+		if (samepage_function != NULL &&
+		    ic->arg[0] >= 0 && ic->arg[0] < 0x1000 &&
+		    (addr & 0xfff) < 0xffe) {
+			ic->arg[0] = (size_t) (cpu->cd.sh.cur_ic_page +
+			    (ic->arg[0] >> SH_INSTR_ALIGNMENT_SHIFT));
+			ic->f = samepage_function;
+		}
 		break;
 
 	case 0xc:
@@ -3599,12 +3740,33 @@ X(to_be_translated)
 		ic->f = instr(mov_l_disp_pc_rn);
 		ic->arg[0] = lo8 * 4 + (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~3) + 4;
+
+		/*  If the word is reachable from the same page as the
+		    current address, then optimize it as a mov_imm_rn:  */
+		if (ic->arg[0] < 0x1000) {
+			uint32_t data;
+			if (!cpu->memory_rw(cpu, cpu->mem, (addr & ~3) + 4
+			    + lo8 * 4, (unsigned char *)&data, sizeof(data),
+			    MEM_READ, CACHE_DATA)) {
+				/*  Exception.  */
+			} else {
+				if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+					data = LE32_TO_HOST(data);
+				else
+					data = BE32_TO_HOST(data);
+
+				ic->f = instr(mov_imm_rn);
+				ic->arg[0] = data;
+			}
+		}
 		break;
 
 	case 0xe:	/*  MOV #imm,Rn  */
 		ic->f = instr(mov_imm_rn);
 		ic->arg[0] = (int8_t)lo8;
 		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+		if (lo8 == 0)
+			ic->f = instr(mov_0_rn);
 		break;
 
 	case 0xf:

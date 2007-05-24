@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iyonix.c,v 1.8 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_iyonix.c,v 1.9 2007-05-24 22:36:55 debug Exp $
+ *
+ *  A Iyonix machine mode. Not yet working.
  */
 
 #include <stdio.h>

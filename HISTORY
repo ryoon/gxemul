@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1576 2007-05-25 06:08:52 debug Exp $
+$Id: HISTORY,v 1.1577 2007-05-25 06:38:53 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3532,3 +3532,4 @@ Changelog for GXemul:
 20070525	Continuing on M88K memory-related stuff: exceptions, memory
 		transaction register contents, etc.
 		Implementing the M88K subu.ci instruction.
+		Removing the non-working (skeleton) Iyonix machine mode.

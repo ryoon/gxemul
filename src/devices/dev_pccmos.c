@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.29 2007-05-20 10:41:14 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.30 2007-05-25 06:38:54 debug Exp $
  *  
  *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
  *
@@ -145,7 +145,6 @@ DEVINIT(pccmos)
 	case MACHINE_BEBOX:
 	case MACHINE_PREP:
 	case MACHINE_MVMEPPC:
-	case MACHINE_IYONIX:
 	case MACHINE_ALPHA:
 		break;
 	default:fatal("devinit_pccmos(): unimplemented machine type"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.9 2007-05-16 23:29:16 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.10 2007-05-25 12:19:07 debug Exp $
  *
  *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
  *
@@ -92,8 +92,9 @@ MACHINE_SETUP(mvme88k)
 
 		/*  Cirrus Logic serial console at 0xfff45000:  */
 		snprintf(tmpstr, sizeof(tmpstr),
-		    "clmpcc addr=0x%x", 0xfff45000);
-		device_add(machine, tmpstr);
+		    "clmpcc addr=0x%x name2=cl0", 0xfff45000);
+		machine->main_console_handle =
+		    (size_t) device_add(machine, tmpstr);
 
 		/*  MK48T08 clock/nvram at 0xfffc0000:  */
 		snprintf(tmpstr, sizeof(tmpstr),

@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_clmpcc.c,v 1.3 2007-05-25 12:06:12 debug Exp $
+ *  $Id: dev_clmpcc.c,v 1.4 2007-05-25 12:19:07 debug Exp $
  *
  *  Cirrus Logic Four Channel Multi-Protocol Communications Controller
  *  (CD2400/CD2401)
+ *
+ *  TODO
  */
 
 #include <stdio.h>
@@ -39,6 +41,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "emul.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -52,6 +55,9 @@
 
 struct clmpcc_data {
 	unsigned char	reg[CLMPCC_LEN];
+
+	int		console_handle;
+	struct interrupt irq;
 };
 
 
@@ -72,7 +78,7 @@ DEVICE_ACCESS(clmpcc)
 		break;
 
 	case CLMPCC_REG_SCHR3:
-		console_putchar(cpu->machine->main_console_handle, idata);
+		console_putchar(d->console_handle, idata);
 		break;
 
 	default:if (writeflag == MEM_READ)
@@ -100,9 +106,21 @@ DEVINIT(clmpcc)
 	}
 	memset(d, 0, sizeof(struct clmpcc_data));
 
+	d->console_handle =
+	    console_start_slave(devinit->machine, devinit->name2 != NULL?
+	    devinit->name2 : devinit->name, devinit->in_use);
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
+
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, CLMPCC_LEN, dev_clmpcc_access, (void *)d,
 	    DM_DEFAULT, NULL);
+
+	/*
+	 *  NOTE:  Ugly cast into a pointer, because this is a convenient way
+	 *         to return the console handle to code in src/machines/.
+	 */
+	devinit->return_ptr = (void *)(size_t)d->console_handle;
 
 	return 1;
 }

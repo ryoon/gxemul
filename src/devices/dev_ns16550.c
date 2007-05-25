@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.59 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.60 2007-05-25 12:19:07 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -368,7 +368,7 @@ DEVINIT(ns16550)
 
 	/*
 	 *  NOTE:  Ugly cast into a pointer, because this is a convenient way
-	 *         to return the console handle to code in src/machine.c.
+	 *         to return the console handle to code in src/machines/.
 	 */
 	devinit->return_ptr = (void *)(size_t)d->console_handle;
 

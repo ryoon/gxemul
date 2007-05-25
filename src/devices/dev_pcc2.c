@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_pcc2.c,v 1.1 2007-05-16 23:29:16 debug Exp $
+ *  $Id: dev_pcc2.c,v 1.2 2007-05-25 12:19:07 debug Exp $
  *
  *  PCC2 bus (used in e.g. the MVME187 machine).
+ *
+ *  TODO
  */
 
 #include <stdio.h>
@@ -44,6 +46,8 @@
 
 #include "mvme_pcctworeg.h"
 
+
+/*  #define	debug fatal  */
 
 struct pcc2_data {
 	uint8_t			pcctwo_reg[PCC2_SIZE];
@@ -84,13 +88,13 @@ DEVICE_ACCESS(pcc2)
 		}
 		break;
 
-	default:fatal("[ pcc2: unimplemented %s offset 0x%x",
+	default:debug("[ pcc2: unimplemented %s offset 0x%x",
 		    writeflag == MEM_WRITE? "write to" : "read from",
 		    (int) relative_addr);
 		if (writeflag == MEM_WRITE)
-			fatal(": 0x%x", (int)idata);
-		fatal(" ]\n");
-//		exit(1);
+			debug(": 0x%x", (int)idata);
+		debug(" ]\n");
+		/*  exit(1);  */
 	}
 
 	if (writeflag == MEM_READ)

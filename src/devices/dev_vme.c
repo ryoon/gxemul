@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_vme.c,v 1.2 2007-05-20 01:27:48 debug Exp $
+ *  $Id: dev_vme.c,v 1.3 2007-05-25 12:19:07 debug Exp $
  *
  *  VME bus.
+ *
+ *  TODO
  */
 
 #include <stdio.h>
@@ -43,6 +45,9 @@
 
 
 #include "mvme88k_vme.h"
+
+
+/*  #define debug fatal  */
 
 
 #define	VME_LEN			0x1000
@@ -90,12 +95,12 @@ DEVICE_ACCESS(vme)
 		break;
 
 	default:if (writeflag == MEM_READ)
-			fatal("[ vme: unimplemented READ from offset 0x%x ]"
+			debug("[ vme: unimplemented READ from offset 0x%x ]"
 			    "\n", (int)relative_addr);
 		else
-			fatal("[ vme: unimplemented WRITE to offset 0x%x: "
+			debug("[ vme: unimplemented WRITE to offset 0x%x: "
 			    "0x%x ]\n", (int)relative_addr, (int)idata);
-//		exit(1);
+		/*  exit(1);  */
 	}
 
 	if (writeflag == MEM_READ)

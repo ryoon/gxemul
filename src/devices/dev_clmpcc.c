@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_clmpcc.c,v 1.2 2007-05-16 23:29:16 debug Exp $
+ *  $Id: dev_clmpcc.c,v 1.3 2007-05-25 12:06:12 debug Exp $
  *
  *  Cirrus Logic Four Channel Multi-Protocol Communications Controller
  *  (CD2400/CD2401)
@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
 #include "cpu.h"
 #include "device.h"
 #include "emul.h"
@@ -68,6 +69,10 @@ DEVICE_ACCESS(clmpcc)
 	switch (relative_addr) {
 
 	case 0:	/*  Used by OpenBSD/mvme88k when probing...  */
+		break;
+
+	case CLMPCC_REG_SCHR3:
+		console_putchar(cpu->machine->main_console_handle, idata);
 		break;
 
 	default:if (writeflag == MEM_READ)

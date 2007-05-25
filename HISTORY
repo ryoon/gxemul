@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1577 2007-05-25 06:38:53 debug Exp $
+$Id: HISTORY,v 1.1578 2007-05-25 12:06:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3533,3 +3533,6 @@ Changelog for GXemul:
 		transaction register contents, etc.
 		Implementing the M88K subu.ci instruction.
 		Removing the non-working (skeleton) Iyonix machine mode.
+		OpenBSD/mvme88k reaches userland :-), starts executing
+		/sbin/init's instructions, and issues a few syscalls, before
+		crashing.

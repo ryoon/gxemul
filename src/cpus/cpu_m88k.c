@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.30 2007-05-25 11:51:35 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.31 2007-05-25 12:06:12 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -696,11 +696,12 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 	}
 
 
-	cpu->cd.m88k.cr[M88K_CR_PSR] |=
-	      M88K_PSR_SFRZ	/*  Freeze shadow registers,          */
+	m88k_stcr(cpu, cpu->cd.m88k.cr[M88K_CR_PSR]
+	    | M88K_PSR_SFRZ	/*  Freeze shadow registers,          */
 	    | M88K_PSR_IND	/*  disable interrupts,               */
 	    | M88K_PSR_SFD1	/*  disable the floating point unit,  */
-	    | M88K_PSR_MODE;	/*  and switch to supervisor mode.    */
+	    | M88K_PSR_MODE,	/*  and switch to supervisor mode.    */
+	    M88K_CR_PSR, 0);
 
 	if (update_shadow_regs) {
 		cpu->cd.m88k.cr[M88K_CR_SSBR] = 0;
@@ -862,10 +863,10 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				case 1:	debug("0x%08"PRIx32,
 					    (uint32_t) cpu->cd.m88k.r[d]);
 					break;
-				case 2:	debug("0x%08"PRIx16,
+				case 2:	debug("0x%04"PRIx16,
 					    (uint16_t) cpu->cd.m88k.r[d]);
 					break;
-				case 3:	debug("0x%08"PRIx8,
+				case 3:	debug("0x%02"PRIx8,
 					    (uint8_t) cpu->cd.m88k.r[d]);
 					break;
 				}

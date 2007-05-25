@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.9 2007-05-25 12:28:57 debug Exp $
+ *  $Id: interrupt.c,v 1.10 2007-05-25 21:16:40 debug Exp $
  *
  *  The interrupt subsystem.
  *
@@ -47,6 +47,9 @@
 
 #include "interrupt.h"
 #include "misc.h"
+
+
+/*  #define INTERRUPT_DEBUG  */
 
 
 struct interrupt_handler {
@@ -81,7 +84,7 @@ void interrupt_handler_register(struct interrupt *template)
 {
 	int i;
 
-#ifdef UNSTABLE_DEVEL
+#ifdef INTERRUPT_DEBUG
 	printf("interrupt_handler_register(\"%s\")\n", template->name);
 #endif
 
@@ -123,7 +126,7 @@ void interrupt_handler_remove(char *name)
 {
 	int i;
 
-#ifdef UNSTABLE_DEVEL
+#ifdef INTERRUPT_DEBUG
 	printf("interrupt_handler_remove(\"%s\")\n", name);
 #endif
 
@@ -170,7 +173,7 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 {
 	int i;
 
-#ifdef UNSTABLE_DEVEL
+#ifdef INTERRUPT_DEBUG
 	printf("interrupt_handler_lookup(\"%s\")\n", name);
 #endif
 
@@ -205,7 +208,7 @@ void interrupt_connect(struct interrupt *in, int exclusive)
 {
 	int i;
 
-#ifdef UNSTABLE_DEVEL
+#ifdef INTERRUPT_DEBUG
 	printf("interrupt_connect(\"%s\")\n", in->name);
 #endif
 

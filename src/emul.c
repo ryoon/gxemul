@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.286 2007-05-15 09:40:29 debug Exp $
+ *  $Id: emul.c,v 1.287 2007-05-25 21:16:40 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -114,6 +114,7 @@ static void add_dump_points(struct machine *m)
 				    "ERROR! Breakpoint '%s' could not be"
 					" parsed\n",
 				    m->breakpoint_string[i]);
+				exit(1);
 			} else {
 				dp = addr;
 				string_flag = 1;

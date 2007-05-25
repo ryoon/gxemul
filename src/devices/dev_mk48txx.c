@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mk48txx.c,v 1.6 2007-05-17 02:47:58 debug Exp $
+ *  $Id: dev_mk48txx.c,v 1.7 2007-05-25 21:17:30 debug Exp $
  *
  *  Mostek MK48Txx Real Time Clock.
  *
@@ -52,7 +52,7 @@
 
 #define	MK48TXX_LEN		MK48T08_CLKSZ
 
-#define	BCD(x)	(((x / 10) << 4) + (x % 10))
+#define	BCD(x)	((((x) / 10) << 4) + ((x) % 10))
 
 struct mk48txx_data {
 	uint8_t		reg[MK48TXX_LEN];
@@ -94,7 +94,7 @@ DEVICE_ACCESS(mk48txx)
 		    the clock registers, are OK:  */
 		if (writeflag == MEM_WRITE)
 			d->reg[relative_addr] = idata;
-		return 1;
+		goto ret;
 	}
 
 	switch (relative_addr) {
@@ -122,6 +122,7 @@ DEVICE_ACCESS(mk48txx)
 		exit(1);
 	}
 
+ret:
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1578 2007-05-25 12:06:11 debug Exp $
+$Id: HISTORY,v 1.1579 2007-05-25 21:17:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3536,3 +3536,5 @@ Changelog for GXemul:
 		OpenBSD/mvme88k reaches userland :-), starts executing
 		/sbin/init's instructions, and issues a few syscalls, before
 		crashing.
+20070526	Fixing bugs in dev_mk48txx, so that OpenBSD/mvme88k detects
+		the correct time-of-day.

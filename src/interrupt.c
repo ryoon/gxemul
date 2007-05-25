@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.8 2007-05-25 11:57:56 debug Exp $
+ *  $Id: interrupt.c,v 1.9 2007-05-25 12:28:57 debug Exp $
  *
  *  The interrupt subsystem.
  *
@@ -192,7 +192,7 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 	printf("interrupt_handler_lookup(\"%s\") failed. Aborting.\n", name);
 	abort();
 
-/*	return 0; */
+	return 0;
 }
 
 

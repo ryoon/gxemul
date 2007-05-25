@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_m8820x.c,v 1.6 2007-05-25 11:51:36 debug Exp $
+ *  $Id: dev_m8820x.c,v 1.7 2007-05-25 22:22:56 debug Exp $
  *
  *  M88200/M88204 CMMU (Cache/Memory Management Unit)
  */
@@ -43,6 +43,7 @@
 
 
 #include "m8820x.h"
+#include "m8820x_pte.h"
 
 struct m8820x_data {
 	int		cmmu_nr;
@@ -58,6 +59,8 @@ static void m8820x_command(struct cpu *cpu, struct m8820x_data *d)
 {
 	uint32_t *regs = cpu->cd.m88k.cmmu[d->cmmu_nr]->reg;
 	int cmd = regs[CMMU_SCR];
+	uint32_t sar = regs[CMMU_SAR];
+	int i, super, all;
 
 	switch (cmd) {
 
@@ -75,14 +78,43 @@ static void m8820x_command(struct cpu *cpu, struct m8820x_data *d)
 	case CMMU_FLUSH_USER_PAGE:
 	case CMMU_FLUSH_SUPER_ALL:
 	case CMMU_FLUSH_SUPER_PAGE:
-cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-{
-int i;
-for (i=0; i<N_M88200_PATC_ENTRIES; i++) {
-	cpu->cd.m88k.cmmu[0]->patc_v_and_control[i] = 0;
-	cpu->cd.m88k.cmmu[1]->patc_v_and_control[i] = 0;
-}
-}
+		/*  TODO: Segment invalidation.  */
+
+		all = super = 0;
+		if (cmd == CMMU_FLUSH_USER_ALL ||
+		    cmd == CMMU_FLUSH_SUPER_ALL)
+			all = 1;
+		if (cmd == CMMU_FLUSH_SUPER_ALL ||
+		    cmd == CMMU_FLUSH_SUPER_PAGE)
+			super = M8820X_PATC_SUPERVISOR_BIT;
+
+		/*  TODO: Don't invalidate EVERYTHING like this!  */
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+		for (i=0; i<N_M88200_PATC_ENTRIES; i++) {
+			uint32_t v = cpu->cd.m88k.cmmu[d->cmmu_nr]
+			    ->patc_v_and_control[i];
+			uint32_t p = cpu->cd.m88k.cmmu[d->cmmu_nr]
+			    ->patc_p_and_supervisorbit[i];
+
+			/*  Already invalid? Then skip this entry.  */
+			if (!(v & PG_V))
+				continue;
+
+			/*  Super/user mismatch? Then skip the entry.  */
+			if ((p & M8820X_PATC_SUPERVISOR_BIT) != super)
+				continue;
+
+			/*  If not all pages are to be invalidated, there
+			    must be a virtual address match:  */
+			if (!all && (sar & 0xfffff000) != (v & 0xfffff000))
+				continue;
+
+			/*  Finally, invalidate the entry:  */
+			cpu->cd.m88k.cmmu[d->cmmu_nr]->patc_v_and_control[i]
+			    = v & ~PG_V;
+		}
+
 		break;
 
 	default:
@@ -138,7 +170,8 @@ DEVICE_ACCESS(m8820x)
 	case CMMU_SCTR:
 	case CMMU_SAPR:		/*  TODO: Invalidate something for  */
 	case CMMU_UAPR:		/*  SAPR and UAPR writes?  */
-cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+		/*  TODO: Don't invalidate everything.  */
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 		if (writeflag == MEM_WRITE)
 			regs[relative_addr / sizeof(uint32_t)] = idata;
 		break;
@@ -162,6 +195,7 @@ cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 			batc[(relative_addr / sizeof(uint32_t)) - CMMU_BWP0]
 			    = idata;
 			if (old != idata) {
+				/*  TODO: Don't invalidate everything?  */
 				cpu->invalidate_translation_caches(
 				    cpu, 0, INVALIDATE_ALL);
 			}

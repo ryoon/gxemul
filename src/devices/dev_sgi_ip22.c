@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.31 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.32 2007-05-25 11:57:56 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -325,8 +325,8 @@ fatal("TODO: ip22 legacy interrupt rewrite!\n");
 abort();
 
 //			cpu_interrupt_ack(cpu, 8 + 63);
-			debug("[ sgi_ip22: write to local0 IRQ MASK, "
-			    "data=0x%llx ]\n", (long long)idata);
+//			debug("[ sgi_ip22: write to local0 IRQ MASK, "
+//			    "data=0x%llx ]\n", (long long)idata);
 		} else {
 			debug("[ sgi_ip22: read from local0 IRQ MASK, "
 			    "data=0x%llx ]\n", (long long)odata);
@@ -348,8 +348,8 @@ abort();
 fatal("TODO: ip22 legacy interrupt rewrite!\n");
 abort();
 //			cpu_interrupt_ack(cpu, 8 + 63);
-			debug("[ sgi_ip22: write to local1 IRQ MASK, "
-			    "data=0x%llx ]\n", (long long)idata);
+//			debug("[ sgi_ip22: write to local1 IRQ MASK, "
+//			    "data=0x%llx ]\n", (long long)idata);
 		} else {
 			debug("[ sgi_ip22: read from local1 IRQ MASK, "
 			    "data=0x%llx ]\n", (long long)odata);

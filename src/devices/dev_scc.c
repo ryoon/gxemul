@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.38 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_scc.c,v 1.39 2007-05-25 11:57:56 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -409,8 +409,8 @@ fatal("TODO: legacy rewrite!\n");
 abort();
 //			cpu_interrupt_ack(cpu, d->irq_nr);
 
-			debug("[ scc: (port %i) read from 0x%08lx: 0x%02x ]\n",
-			    port, (long)relative_addr, (int)odata);
+//			debug("[ scc: (port %i) read from 0x%08lx: 0x%02x ]\n",
+//			    port, (long)relative_addr, (int)odata);
 		} else {
 			/*  debug("[ scc: (port %i) write to  0x%08lx: "
 			    "0x%08x ]\n", port, (long)relative_addr,

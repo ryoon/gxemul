@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.40 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_rd94.c,v 1.41 2007-05-25 11:57:56 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -142,9 +142,11 @@ abort();
 
 fatal("TODO: rd94 legacy interrupt rewrite\n");
 abort();
+#if 0
 //		cpu_interrupt_ack(cpu, 5);
 		d->interval = d->interval_start;
 		break;
+#endif
 
 	case RD94_SYS_INTSTAT4:		/*  IPI  */
 		if (writeflag == MEM_WRITE) {

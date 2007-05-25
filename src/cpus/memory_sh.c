@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.20 2007-05-22 09:32:27 debug Exp $
+ *  $Id: memory_sh.c,v 1.21 2007-05-25 11:57:56 debug Exp $
  */
 
 #include <stdio.h>
@@ -312,7 +312,5 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr64, uint64_t *return_paddr,
 	/*  TODO  */
 	fatal("Unimplemented SH vaddr 0x%08"PRIx32"\n", (uint32_t)vaddr);
 	exit(1);
-
-	return 0;
 }
 

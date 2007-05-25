@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_m8820x.c,v 1.4 2007-05-20 01:27:48 debug Exp $
+ *  $Id: dev_m8820x.c,v 1.5 2007-05-25 06:08:52 debug Exp $
  *
  *  M88200/M88204 CMMU (Cache/Memory Management Unit)
  */
@@ -126,6 +126,7 @@ DEVICE_ACCESS(m8820x)
 		break;
 
 	case CMMU_PFSR:
+	case CMMU_PFAR:
 	case CMMU_SAR:
 	case CMMU_SCTR:
 	case CMMU_SAPR:		/*  TODO: Invalidate something for  */

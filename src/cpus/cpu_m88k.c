@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.28 2007-05-20 01:27:48 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.29 2007-05-25 06:08:52 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -45,6 +45,7 @@
 #include "symbol.h"
 
 #include "m8820x_pte.h"
+#include "m88k_dmt.h"
 
 #define DYNTRANS_32
 #define DYNTRANS_DELAYSLOT
@@ -427,19 +428,53 @@ void m88k_ldcr(struct cpu *cpu, uint32_t *r32ptr, int cr)
 	case M88K_CR_SNIP:
 	case M88K_CR_SFIP:
 	case M88K_CR_VBR:
-	case M88K_CR_DMT0:
 	case M88K_CR_DMD0:
-	case M88K_CR_DMA0:
-	case M88K_CR_DMT1:
 	case M88K_CR_DMD1:
-	case M88K_CR_DMA1:
-	case M88K_CR_DMT2:
 	case M88K_CR_DMD2:
-	case M88K_CR_DMA2:
 	case M88K_CR_SR0:
 	case M88K_CR_SR1:
 	case M88K_CR_SR2:
 	case M88K_CR_SR3:
+		break;
+
+	case M88K_CR_DMT0:
+	case M88K_CR_DMT1:
+	case M88K_CR_DMT2:
+		/*
+		 *  Catch some possible internal errors in the emulator:
+		 *
+		 *  For valid memory Load transactions, the Destination Register
+		 *  should not be zero.
+		 *
+		 *  The Byte Order bit should be the same as the CPU's.
+		 */
+		if (retval & DMT_VALID && !(retval & DMT_WRITE)) {
+			if (DMT_DREGBITS(retval) == M88K_ZERO_REG) {
+				fatal("DMT DREG = zero? Internal error.\n");
+				exit(1);
+			}
+		}
+		if (!!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_BO)
+		    != !!(retval & DMT_BO) && retval & DMT_VALID) {
+			fatal("DMT byte order not same as CPUs?\n");
+			exit(1);
+		}
+
+		break;
+
+	case M88K_CR_DMA0:
+	case M88K_CR_DMA1:
+	case M88K_CR_DMA2:
+		/*
+		 *  Catch some possible internal errors in the emulator:
+		 *  The lowest 2 bits of the transaction address registers
+		 *  should always be zero.
+		 */
+		if (retval & 3) {
+			fatal("DMAx not word-aligned? Internal error.\n");
+			exit(1);
+		}
+
 		break;
 
 	default:fatal("m88k_ldcr: UNIMPLEMENTED cr = 0x%02x (%s)\n",
@@ -512,6 +547,12 @@ void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte)
 		cpu->cd.m88k.cr[cr] = value;
 		break;
 
+	case M88K_CR_DMT0:
+	case M88K_CR_DMT1:
+	case M88K_CR_DMT2:
+		cpu->cd.m88k.cr[cr] = value;
+		break;
+
 	case M88K_CR_SR0:	/*  Supervisor Storage Registers 0..3  */
 	case M88K_CR_SR1:
 	case M88K_CR_SR2:
@@ -545,6 +586,45 @@ void m88k_fstcr(struct cpu *cpu, uint32_t value, int fcr)
 #else
 	cpu->cd.m88k.cr[fcr] = value;
 #endif
+}
+
+
+/*
+ *  m88k_memory_transaction_debug_dump():
+ *
+ *  Debug dump of the memory transaction registers of a cpu.
+ */
+static void m88k_memory_transaction_debug_dump(struct cpu *cpu, int n)
+{
+	uint32_t dmt = cpu->cd.m88k.dmt[n];
+
+	debug("[ DMT%i: ", n);
+	if (dmt & DMT_VALID) {
+		if (dmt & DMT_BO)
+			debug("Little-Endian, ");
+		else
+			debug("Big-Endian, ");
+		if (dmt & DMT_DAS)
+			debug("Supervisor, ");
+		else
+			debug("User, ");
+		if (dmt & DMT_DOUB1)
+			debug("DOUB1, ");
+		if (dmt & DMT_LOCKBAR)
+			debug("LOCKBAR, ");
+		if (dmt & DMT_WRITE)
+			debug("store, ");
+		else {
+			debug("load.%c(r%i), ",
+			    dmt & DMT_SIGNED? 's' : 'c',
+			    DMT_DREGBITS(dmt));
+		}
+		debug("bytebits=0x%x ]\n", DMT_ENBITS(dmt));
+
+		debug("[ DMD%i: 0x%08"PRIx32"; ", n, cpu->cd.m88k.dmd[n]);
+		debug("DMA%i: 0x%08"PRIx32" ]\n", n, cpu->cd.m88k.dma[n]);
+	} else
+		debug("not valid ]\n");
 }
 
 
@@ -623,22 +703,11 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 
 		/*  SNIP is the address to return to, when executing rte:  */
 		cpu->cd.m88k.cr[M88K_CR_SXIP] = cpu->pc | M88K_XIP_V;
-		cpu->cd.m88k.cr[M88K_CR_SNIP] = cpu->pc | M88K_NIP_V;
-		cpu->cd.m88k.cr[M88K_CR_SFIP] = (cpu->pc + 4) | M88K_FIP_V;
+		cpu->cd.m88k.cr[M88K_CR_SNIP] = (cpu->pc + 4) | M88K_NIP_V;
+		cpu->cd.m88k.cr[M88K_CR_SFIP] = (cpu->pc + 8) | M88K_FIP_V;
 
-		/*
-		 *  Trap instructions return to the address after the trap.
-		 *  Instruction access exceptions also cause the SNIP and SFIP
-		 *  registers to point to the instructions following the
-		 *  faulting address, and the E bit is also set in SXIP.
-		 */
-		if (is_trap || vector == M88K_EXCEPTION_INSTRUCTION_ACCESS) {
-			cpu->cd.m88k.cr[M88K_CR_SNIP] += 4;
-			cpu->cd.m88k.cr[M88K_CR_SFIP] += 4;
-
-			if (vector == M88K_EXCEPTION_INSTRUCTION_ACCESS)
-				cpu->cd.m88k.cr[M88K_CR_SXIP] |= M88K_XIP_E;
-		}
+		if (vector == M88K_EXCEPTION_INSTRUCTION_ACCESS)
+			cpu->cd.m88k.cr[M88K_CR_SXIP] |= M88K_XIP_E;
 	}
 
 	cpu->pc = cpu->cd.m88k.cr[M88K_CR_VBR] + 8 * vector;
@@ -656,7 +725,22 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 			fatal("[ m88k_exception: reset ]\n");
 			exit(1);
 
+		case M88K_EXCEPTION_INSTRUCTION_ACCESS:
+			break;
+
 		case M88K_EXCEPTION_DATA_ACCESS:
+			/*  Update the memory transaction registers:  */
+			cpu->cd.m88k.cr[M88K_CR_DMT0] = cpu->cd.m88k.dmt[0];
+			cpu->cd.m88k.cr[M88K_CR_DMD0] = cpu->cd.m88k.dmd[0];
+			cpu->cd.m88k.cr[M88K_CR_DMA0] = cpu->cd.m88k.dma[0];
+			cpu->cd.m88k.cr[M88K_CR_DMT1] = cpu->cd.m88k.dmt[1];
+			cpu->cd.m88k.cr[M88K_CR_DMD1] = cpu->cd.m88k.dmd[1];
+			cpu->cd.m88k.cr[M88K_CR_DMA1] = cpu->cd.m88k.dma[1];
+			cpu->cd.m88k.cr[M88K_CR_DMT2] = 0;
+			cpu->cd.m88k.cr[M88K_CR_DMD2] = 0;
+			cpu->cd.m88k.cr[M88K_CR_DMA2] = 0;
+			m88k_memory_transaction_debug_dump(cpu, 0);
+			m88k_memory_transaction_debug_dump(cpu, 1);
 			break;
 
 		default:fatal("m88k_exception(): 0x%x: TODO\n", vector);
@@ -992,11 +1076,13 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	case 0x3c:
 		if ((iw & 0x0000f000)==0x1000 || (iw & 0x0000f000)==0x2000) {
+			int scale = 0;
+
 			/*  Load/store:  */
 			debug("%s", (iw & 0x0000f000) == 0x1000? "ld" : "st");
 			switch (iw & 0x00000c00) {
-			case 0x000: debug(".d"); break;
-			case 0x400: break;
+			case 0x000: scale = 8; debug(".d"); break;
+			case 0x400: scale = 4; break;
 			case 0x800: debug(".x"); break;
 			default: debug(".UNIMPLEMENTED");
 			}
@@ -1009,6 +1095,21 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				debug("[r%i]", s2);
 			else
 				debug(",r%i", s2);
+
+			if (running && scale >= 1) {
+				uint32_t tmpaddr = cpu->cd.m88k.r[s1];
+				if (iw & 0x200)
+					tmpaddr += scale * cpu->cd.m88k.r[s2];
+				else
+					tmpaddr += cpu->cd.m88k.r[s2];
+				symbol = get_symbol_name(&cpu->machine->
+				    symbol_context, tmpaddr, &offset);
+				if (symbol != NULL)
+					debug("\t; [<%s>]", symbol);
+				else
+					debug("\t; [0x%08"PRIx32"]", tmpaddr);
+			}
+
 			debug("\n");
 		} else switch (op10) {
 		case 0x20:	/*  clr  */
@@ -1046,6 +1147,8 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	case 0x3d:
 		if ((iw & 0xf000) <= 0x3fff) {
+			int scale = 0;
+
 			/*  Load, Store, xmem, and lda:  */
 			switch (iw & 0xf000) {
 			case 0x2000: debug("st"); break;
@@ -1055,12 +1158,23 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				     else
 					  debug("xmem");
 			}
-			if ((iw & 0xf000) >= 0x1000)	/*  ld, st, lda  */
+			if ((iw & 0xf000) >= 0x1000) {
+				/*  ld, st, lda  */
+				scale = 1 << (3 - ((iw >> 10) & 3));
 				debug("%s", memop[(iw >> 10) & 3]);
-			else if ((iw & 0xf800) == 0x0000)/*  xmem  */
-				debug("%s", (iw & 0x800) <= 0x300? ".bu" : "");
-			else				/*  ld  */
-				debug("%s", (iw & 0xf00) < 0xc00? ".hu":".bu");
+			} else if ((iw & 0xf800) == 0x0000) {
+				/*  xmem  */
+				if ((iw & 0x800) <= 0x300)
+					debug(".bu"), scale = 1;
+				else
+					scale = 4;
+			} else {
+				/*  ld  */
+				if ((iw & 0xf00) < 0xc00)
+					debug(".hu"), scale = 2;
+				else
+					debug(".bu"), scale = 1;
+			}
 			if (iw & 0x100)
 				debug(".usr");
 			if (iw & 0x80)
@@ -1070,6 +1184,21 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				debug("[r%i]", s2);
 			else
 				debug(",r%i", s2);
+
+			if (running && scale >= 1) {
+				uint32_t tmpaddr = cpu->cd.m88k.r[s1];
+				if (iw & 0x200)
+					tmpaddr += scale * cpu->cd.m88k.r[s2];
+				else
+					tmpaddr += cpu->cd.m88k.r[s2];
+				symbol = get_symbol_name(&cpu->machine->
+				    symbol_context, tmpaddr, &offset);
+				if (symbol != NULL)
+					debug("\t; [<%s>]", symbol);
+				else
+					debug("\t; [0x%08"PRIx32"]", tmpaddr);
+			}
+
 			debug("\n");
 		} else switch ((iw >> 8) & 0xff) {
 		case 0x40:	/*  and  */

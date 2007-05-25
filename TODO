@@ -1,8 +1,7 @@
-$Id: TODO,v 1.512 2007-05-22 09:33:03 debug Exp $
+$Id: TODO,v 1.513 2007-05-25 06:08:52 debug Exp $
 
 -------------------------------------------------------------------------------
 
-o) M88K stuff!
 o) Experiment/think more about native code generation.
 o) Look at incorporating the testmachine interrupt controller.
 
@@ -13,18 +12,15 @@ Some things, in no specific order, that I'd like to fix:
 
 M88K:
 	o)  cpu_dyntrans.c: MEMORY_USER_ACCESS implementation!
+	o)  64-bit load/stores: set transaction registers!
+	o)  xmem: set transaction registers!
 	o)  CMMUs:
-		o)  Exceptions: set the PFSR and other registers!
 		o)  Translation invalidations.
 		o)  Bitmap of mapped pages (one for user, one for supervisor),
 		    to speed up searches. (Immediate stop search if the
 		    page isn't mapped at all.)
 		o)  Move initialization from dev_mvme187 to somewhere
 		    more reasonable?
-	o)  Exceptions:
-		o)  Details about which save registers are set
-		    to which values, on which exceptions!
-		o)  DMxy - memory transaction registers on Data exceptions
 	o)  Instruction trace by using bits of ??IP control regs
 	o)  Interrupts (these are machine dependent, though).
 	o)  Implement devices etc. for one or more machine modes,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.5 2007-05-17 08:37:01 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.6 2007-05-25 06:08:52 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  
@@ -80,6 +80,54 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 	    / sizeof(struct m88k_instr_call);
 	cpu->pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1)<<M88K_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << M88K_INSTR_ALIGNMENT_SHIFT);
+
+	/*
+	 *  Update the memory transaction registers:
+	 */
+	cpu->cd.m88k.dmt[1] = 0;
+
+	cpu->cd.m88k.dmt[0] = DMT_VALID;
+#ifdef LS_STORE
+	cpu->cd.m88k.dmt[0] |= DMT_WRITE;
+#else
+	{
+		int dreg = (((uint32_t *)ic->arg[0]) - &cpu->cd.m88k.r[0]);
+		if (dreg < 1 || dreg > 31) {
+			fatal("HUH? dreg = %i in cpu_m88k_instr_loadstore.c."
+			    " Internal error.\n", dreg);
+			exit(1);
+		}
+		cpu->cd.m88k.dmt[0] |= dreg << DMT_DREGSHIFT;
+	}
+#ifdef LS_SIGNED
+	cpu->cd.m88k.dmt[0] |= DMT_SIGNED;
+#endif
+#endif
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		cpu->cd.m88k.dmt[0] |= DMT_BO;
+
+#ifndef LS_USR
+	if (cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)
+		cpu->cd.m88k.dmt[0] |= DMT_DAS;		/*  supervisor  */
+#endif
+
+#ifdef LS_8
+	cpu->cd.m88k.dmt[0] |= DMT_DOUB1;
+	/*  TODO: dmt[1] = second part of the load or store!  */
+#endif
+
+	/*  EN bits:  */
+#ifdef LS_1
+	/*  TODO: Is the EN offset only valid for Big-Endian?  */
+	cpu->cd.m88k.dmt[0] |= 1 << DMT_ENSHIFT << (3 - (addr & 3));
+#endif
+#ifdef LS_2
+	cpu->cd.m88k.dmt[0] |= 3 << DMT_ENSHIFT << (2 - (addr & 2));
+#endif
+
+	cpu->cd.m88k.dma[0] = addr & ~0x3;
+	cpu->cd.m88k.dmd[0] = 0;
+
 
 #ifdef LS_USR
 	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)) {
@@ -152,6 +200,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 #else
 	x = reg(ic->arg[0]);
 #endif
+	cpu->cd.m88k.dmd[0] = x;
 	memory_writemax64(cpu, data, LS_SIZE, x);
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, memory_rw_flags)) {

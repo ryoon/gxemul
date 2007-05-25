@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m88k.c,v 1.6 2007-05-17 09:26:05 debug Exp $
+ *  $Id: memory_m88k.c,v 1.7 2007-05-25 06:08:52 debug Exp $
  *
  *  Virtual to physical memory translation for M88K emulation.
  *
@@ -34,7 +34,6 @@
  *
  *  TODO:
  *	M88204 stuff, where it differs from the M88200.
- *	Exceptions.
  */
 
 #include <stdio.h>
@@ -119,6 +118,8 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	uint32_t *seg_base, *page_base;
 	sdt_entry_t seg_descriptor;
 	pt_entry_t page_descriptor;
+	int pfsr_status = CMMU_PFSR_SUCCESS;
+	uint32_t pfar = 0;
 	int accumulated_flags;
 	int i, seg_nr = vaddr >> 22, page_nr = (vaddr >> 12) & 0x3ff;
 
@@ -170,8 +171,8 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 		/*  Is it write protected?  */
 		if ((batc & BATC_PROT) && writeflag) {
-			fatal("TODO: batc write protection exception\n");
-			exit(1);
+			pfsr_status = CMMU_PFSR_WRITE;
+			goto exception;
 		}
 
 		*return_paddr = ((batc & 0x0007ffc0) << 13)
@@ -210,8 +211,8 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 		/*  Is it write protected?  */
 		if ((vaddr_and_control & PG_PROT) && writeflag) {
-			fatal("TODO: page write protection exception\n");
-			exit(1);
+			pfsr_status = CMMU_PFSR_WRITE;
+			goto exception;
 		}
 
 		/*  On writes: Is the page not yet marked as modified?  */
@@ -262,22 +263,18 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 	/*  Segment descriptor invalid? Then cause a segfault exception.  */
 	if (!(seg_descriptor & SG_V)) {
-		if (no_exceptions)
-			return 0;
-
-		/*  TODO: UPDATE PFSR!  */
-		m88k_exception(cpu, exception_type, 0);
-		return 0;
+		/*  PFAR = physical address of faulting segment descriptor:  */
+		pfar = (apr & 0xfffff000) + seg_nr * sizeof(uint32_t);
+		pfsr_status = CMMU_PFSR_SFAULT;
+		goto exception;
 	}
 
 	/*  Usermode attempted to access a supervisor segment?  */
 	if ((seg_descriptor & SG_SO) && !supervisor) {
-		if (no_exceptions)
-			return 0;
-
-		fatal("user access of supervisor segment: TODO exception\n");
-		/*  UPDATE PFSR!  */
-		exit(1);
+		/*  PFAR = physical address of faulting segment descriptor:  */
+		pfar = (apr & 0xfffff000) + seg_nr * sizeof(uint32_t);
+		pfsr_status = CMMU_PFSR_SUPER;
+		goto exception;
 	}
 
 	accumulated_flags = seg_descriptor & SG_RO;
@@ -298,22 +295,20 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 	/*  Page descriptor invalid? Then cause a page fault exception.  */
 	if (!(page_descriptor & PG_V)) {
-		if (no_exceptions)
-			return 0;
-
-		fatal("page descriptor not valid: TODO exception\n");
-		/*  UPDATE PFSR!  */
-		exit(1);
+		/*  PFAR = physical address of faulting page descriptor:  */
+		pfar = (seg_descriptor & 0xfffff000)
+		    + page_nr * sizeof(uint32_t);
+		pfsr_status = CMMU_PFSR_PFAULT;
+		goto exception;
 	}
 
 	/*  Usermode attempted to access a supervisor page?  */
 	if ((page_descriptor & PG_SO) && !supervisor) {
-		if (no_exceptions)
-			return 0;
-
-		fatal("user access of supervisor page: TODO exception\n");
-		/*  UPDATE PFSR!  */
-		exit(1);
+		/*  PFAR = physical address of faulting page descriptor:  */
+		pfar = (seg_descriptor & 0xfffff000)
+		    + page_nr * sizeof(uint32_t);
+		pfsr_status = CMMU_PFSR_SUPER;
+		goto exception;
 	}
 
 	accumulated_flags |= (page_descriptor & PG_RO);
@@ -345,27 +340,23 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 
 	/*  Check for writes to read-only pages:  */
 	if (writeflag && (accumulated_flags & PG_RO)) {
-		if (no_exceptions)
-			return 0;
-
-		fatal("page write protection: TODO exception\n");
-		/*  UPDATE PFSR!  */
-		exit(1);
+		pfsr_status = CMMU_PFSR_WRITE;
+		goto exception;
 	}
 
-	if (no_exceptions)
-		goto ret;
+	if (!no_exceptions) {
+		uint32_t tmp;
 
-	/*  We now know that we are using the page:  */
-	cmmu->patc_v_and_control[i] |= PG_U;
-	if (writeflag)
-		cmmu->patc_v_and_control[i] |= PG_M;
+		/*  We now know that the page is in use.  */
+		cmmu->patc_v_and_control[i] |= PG_U;
+		if (writeflag)
+			cmmu->patc_v_and_control[i] |= PG_M;
 
-	/*  Write back the U and possibly the M bit to the page descriptor
-	    in emulated memory:  */
-	{
-		uint32_t tmp = page_descriptor;
-		tmp |= PG_U;
+		/*
+		 *  Write back the U bit (and possibly the M bit) to the page
+		 *  descriptor in emulated memory:
+		 */
+		tmp = page_descriptor | PG_U;
 		if (writeflag)
 			tmp |= PG_M;
 
@@ -377,9 +368,51 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		page_base[page_nr] = tmp;
 	}
 
-ret:
 	/*  Now finally return with the translated page address:  */
 	*return_paddr = (page_descriptor & 0xfffff000) | (vaddr & 0xfff);
 	return (accumulated_flags & PG_RO)? 1 : 2;
+
+
+exception:
+	if (no_exceptions)
+		return 0;
+
+	/*
+	 *  Update the Page Fault Status Register of the CMMU which this fault
+	 *  was associated with, but also clear the PFSR of the _other_ CMMU:
+	 */
+
+	cmmu->reg[CMMU_PFSR] = pfsr_status << 16;
+	cpu->cd.m88k.cmmu[instr? 1 : 0]->reg[CMMU_PFSR] =
+	    CMMU_PFSR_SUCCESS << 16;
+
+	/*  ... and (if necessary) update the Page Fault Address Register:  */
+
+	switch (pfsr_status) {
+
+	case CMMU_PFSR_SUCCESS:
+		break;
+
+	case CMMU_PFSR_WRITE:
+		/*  Note: The PFAR is "destroyed"/undefined on write faults.  */
+		cmmu->reg[CMMU_PFAR] = 0;
+		break;
+
+	case CMMU_PFSR_SUPER:
+	case CMMU_PFSR_SFAULT:
+	case CMMU_PFSR_PFAULT:
+		cmmu->reg[CMMU_PFAR] = pfar;
+		break;
+
+	default:
+		fatal("Internal error in memory_m88k? pfsr_status = %i\n",
+		    pfsr_status);
+		exit(1);
+	}
+
+	/*  ... and finally cause the exception:  */
+	m88k_exception(cpu, exception_type, 0);
+
+	return 0;
 }
 

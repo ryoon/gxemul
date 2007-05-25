@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.17 2007-05-17 08:37:01 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.18 2007-05-25 06:08:52 debug Exp $
  */
 
 #include "misc.h"
@@ -241,6 +241,11 @@ struct m88k_cpu {
 
 	/*  CMMUs (Cache/Memory Management Units):  */
 	struct m8820x_cmmu	*cmmu[MAX_M8820X_CMMUS];
+
+	/*  Current memory transaction fault registers:  */
+	uint32_t	dmt[2];
+	uint32_t	dmd[2];
+	uint32_t	dma[2];
 
 
 	/*

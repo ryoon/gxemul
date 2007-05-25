@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.26 2007-05-20 01:27:48 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.27 2007-05-25 06:08:39 debug Exp $
  *
  *  M88K instructions.
  *
@@ -645,6 +645,7 @@ X(sub_imm)
  *  lda_reg_X:	same as addu, but s2 is scaled by 2, 4, or 8
  *  subu:   	d = s1 - s2
  *  subu_co:   	d = s1 - s2		carry/borrow out
+ *  subu_ci:   	d = s1 - s2 - (carry? 0 : 1)	carry in
  *  mul:    	d = s1 * s2
  *  divu:   	d = s1 / s2		(unsigned)
  *  div:    	d = s1 / s2		(signed)
@@ -720,6 +721,13 @@ X(subu_co)
 	cpu->cd.m88k.cr[M88K_CR_PSR] |= M88K_PSR_C;
 	if ((a >> 32) & 1)
 		cpu->cd.m88k.cr[M88K_CR_PSR] &= ~M88K_PSR_C;
+}
+X(subu_ci)
+{
+	uint32_t result = reg(ic->arg[1]) - reg(ic->arg[2]);
+	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_C))
+		result --;
+	reg(ic->arg[0]) = result;
 }
 
 
@@ -810,7 +818,9 @@ X(xcr)
  */
 X(rte)
 {
+#if 0
 	uint32_t fip;
+#endif
 
 	/*  If executed from user mode, then cause an exception:  */
 	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)) {
@@ -827,12 +837,13 @@ X(rte)
 		exit(1);
 	}
 
+#if 0
 	fip = cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_NIP_ADDR;
 	if (fip != (uint32_t) (cpu->pc + 4)) {
 		fatal("rte: fip != nip + 4: TODO. Branch delay?\n");
 		exit(1);
 	}
-
+#endif
 	quick_pc_to_pointers(cpu);
 }
 
@@ -1556,6 +1567,7 @@ X(to_be_translated)
 		case 0x62:	/*  addu.ci  */
 		case 0x64:	/*  subu   */
 		case 0x65:	/*  subu.co  */
+		case 0x66:	/*  subu.ci  */
 		case 0x68:	/*  divu   */
 		case 0x6c:	/*  mul    */
 		case 0x78:	/*  div    */
@@ -1581,6 +1593,7 @@ X(to_be_translated)
 			case 0x62: ic->f = instr(addu_ci); break;
 			case 0x64: ic->f = instr(subu);  break;
 			case 0x65: ic->f = instr(subu_co); break;
+			case 0x66: ic->f = instr(subu_ci); break;
 			case 0x68: ic->f = instr(divu);  break;
 			case 0x6c: ic->f = instr(mul);   break;
 			case 0x78: ic->f = instr(div);   break;

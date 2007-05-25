@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.151 2007-05-22 09:33:04 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.152 2007-05-25 11:51:35 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1384,6 +1384,12 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		writeflag &= ~MEMORY_USER_ACCESS;
 		useraccess = 1;
 	}
+
+#ifdef DYNTRANS_M88K
+	/*  TODO  */
+	if (useraccess)
+		return;
+#endif
 
 	/*  Scan the current TLB entries:  */
 

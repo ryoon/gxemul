@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mvme187.c,v 1.4 2007-05-17 02:00:30 debug Exp $
+ *  $Id: dev_mvme187.c,v 1.5 2007-05-25 11:51:36 debug Exp $
  *
  *  MVME187-specific devices and control registers.
  */
@@ -141,8 +141,6 @@ DEVINIT(mvme187)
 	    cd.m88k.cmmu[0] = cmmu;
 	/*  This is a 88200, revision 9:  */
 	cmmu->reg[CMMU_IDR] = (M88200_ID << 21) | (9 << 16);
-	cmmu->batc[8] = BATC8;
-	cmmu->batc[9] = BATC9;
 	snprintf(tmpstr, sizeof(tmpstr),
 	    "m8820x addr=0x%x addr2=0", MVME187_SBC_CMMU_I);
 	device_add(devinit->machine, tmpstr);

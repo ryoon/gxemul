@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.29 2007-05-25 06:08:52 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.30 2007-05-25 11:51:35 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -520,6 +520,10 @@ void m88k_stcr(struct cpu *cpu, uint32_t value, int cr, int rte)
 			exit(1);
 		}
 
+		if ((old & M88K_PSR_MODE) != (value & M88K_PSR_MODE))
+			cpu->invalidate_translation_caches(
+			    cpu, 0, INVALIDATE_ALL);
+
 		cpu->cd.m88k.cr[cr] = value;
 		break;
 
@@ -616,7 +620,7 @@ static void m88k_memory_transaction_debug_dump(struct cpu *cpu, int n)
 			debug("store, ");
 		else {
 			debug("load.%c(r%i), ",
-			    dmt & DMT_SIGNED? 's' : 'c',
+			    dmt & DMT_SIGNED? 's' : 'u',
 			    DMT_DREGBITS(dmt));
 		}
 		debug("bytebits=0x%x ]\n", DMT_ENBITS(dmt));
@@ -1164,10 +1168,10 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				debug("%s", memop[(iw >> 10) & 3]);
 			} else if ((iw & 0xf800) == 0x0000) {
 				/*  xmem  */
-				if ((iw & 0x800) <= 0x300)
-					debug(".bu"), scale = 1;
-				else
+				if (iw & 0x400)
 					scale = 4;
+				else
+					debug(".bu"), scale = 1;
 			} else {
 				/*  ld  */
 				if ((iw & 0xf00) < 0xc00)

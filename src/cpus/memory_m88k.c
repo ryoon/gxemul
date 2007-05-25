@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m88k.c,v 1.7 2007-05-25 06:08:52 debug Exp $
+ *  $Id: memory_m88k.c,v 1.8 2007-05-25 11:51:36 debug Exp $
  *
  *  Virtual to physical memory translation for M88K emulation.
  *
@@ -50,7 +50,7 @@
 #include "m8820x_pte.h"
 
 
-/*  #define	M8820X_TABLE_SEARCH_DEBUG  */
+/*  #define M8820X_TABLE_SEARCH_DEBUG  */
 
 
 /*
@@ -138,6 +138,7 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 		apr = cmmu->reg[CMMU_SAPR];
 	else
 		apr = cmmu->reg[CMMU_UAPR];
+
 
 	/*
 	 *  Address translation not enabled? Then return physical = virtual.
@@ -319,16 +320,15 @@ int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	 */
 
 	if (!no_exceptions) {
+		i = cmmu->patc_update_index;
+
 		/*  Invalidate the current entry, if it is valid:  */
-		if (cmmu->patc_v_and_control[cmmu->patc_update_index] & PG_V) {
-			uint32_t vaddr_to_invalidate = cmmu->patc_v_and_control[
-			    cmmu->patc_update_index] & 0xfffff000;
+		if (cmmu->patc_v_and_control[i] & PG_V)
 			cpu->invalidate_translation_caches(cpu,
-			    vaddr_to_invalidate, INVALIDATE_VADDR);
-		}
+			    cmmu->patc_v_and_control[i] & 0xfffff000,
+			    INVALIDATE_VADDR);
 
 		/*  ... and write the new one:  */
-		i = cmmu->patc_update_index;
 		cmmu->patc_update_index ++;
 		cmmu->patc_update_index %= N_M88200_PATC_ENTRIES;
 		cmmu->patc_v_and_control[i] =

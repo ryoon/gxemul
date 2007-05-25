@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_m8820x.c,v 1.5 2007-05-25 06:08:52 debug Exp $
+ *  $Id: dev_m8820x.c,v 1.6 2007-05-25 11:51:36 debug Exp $
  *
  *  M88200/M88204 CMMU (Cache/Memory Management Unit)
  */
@@ -75,7 +75,14 @@ static void m8820x_command(struct cpu *cpu, struct m8820x_data *d)
 	case CMMU_FLUSH_USER_PAGE:
 	case CMMU_FLUSH_SUPER_ALL:
 	case CMMU_FLUSH_SUPER_PAGE:
-		/*  TODO: Invalidate translation caches.  */
+cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+{
+int i;
+for (i=0; i<N_M88200_PATC_ENTRIES; i++) {
+	cpu->cd.m88k.cmmu[0]->patc_v_and_control[i] = 0;
+	cpu->cd.m88k.cmmu[1]->patc_v_and_control[i] = 0;
+}
+}
 		break;
 
 	default:
@@ -131,6 +138,7 @@ DEVICE_ACCESS(m8820x)
 	case CMMU_SCTR:
 	case CMMU_SAPR:		/*  TODO: Invalidate something for  */
 	case CMMU_UAPR:		/*  SAPR and UAPR writes?  */
+cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 		if (writeflag == MEM_WRITE)
 			regs[relative_addr / sizeof(uint32_t)] = idata;
 		break;
@@ -154,8 +162,8 @@ DEVICE_ACCESS(m8820x)
 			batc[(relative_addr / sizeof(uint32_t)) - CMMU_BWP0]
 			    = idata;
 			if (old != idata) {
-				fatal("TODO: invalidate batc translations\n");
-				exit(1);
+				cpu->invalidate_translation_caches(
+				    cpu, 0, INVALIDATE_ALL);
 			}
 		}
 		break;

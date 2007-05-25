@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.6 2007-05-25 06:08:52 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.7 2007-05-25 11:51:35 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  
@@ -120,9 +120,12 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 #ifdef LS_1
 	/*  TODO: Is the EN offset only valid for Big-Endian?  */
 	cpu->cd.m88k.dmt[0] |= 1 << DMT_ENSHIFT << (3 - (addr & 3));
-#endif
+#else
 #ifdef LS_2
 	cpu->cd.m88k.dmt[0] |= 3 << DMT_ENSHIFT << (2 - (addr & 2));
+#else
+	cpu->cd.m88k.dmt[0] |= 0xf << DMT_ENSHIFT;
+#endif
 #endif
 
 	cpu->cd.m88k.dma[0] = addr & ~0x3;
@@ -145,7 +148,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 		m88k_exception(cpu, M88K_EXCEPTION_MISALIGNED_ACCESS, 0);
 #else
 		fatal("{ m88k dyntrans alignment exception, size = %i,"
-		    " addr = %016"PRIx32", pc = %016"PRIx32" }\n", LS_SIZE,
+		    " addr = %08"PRIx32", pc = %08"PRIx32" }\n", LS_SIZE,
 		    (uint32_t) addr, (uint32_t) cpu->pc);
 
 		/*  TODO: Generalize this into a abort_call, or similar:  */
@@ -164,6 +167,10 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_READ, memory_rw_flags)) {
 		/*  Exception.  */
+#ifdef LS_8
+		fatal("EXCEPTION for 64-bit load: TODO\n");
+		exit(1);
+#endif
 		return;
 	}
 	x = memory_readmax64(cpu, data, LS_SIZE);
@@ -205,6 +212,10 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, memory_rw_flags)) {
 		/*  Exception.  */
+#ifdef LS_8
+		fatal("EXCEPTION for 64-bit store: TODO\n");
+		exit(1);
+#endif
 		return;
 	}
 #endif

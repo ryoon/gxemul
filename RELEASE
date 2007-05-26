@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.279 2007-05-26 09:01:45 debug Exp $
+$Id: RELEASE,v 1.280 2007-05-26 20:32:05 debug Exp $
 
 Currently working on what will become 0.4.6.
 
@@ -27,7 +27,7 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 The changes between release 0.4.5.1 and 0.4.6 include, among other things:
 
-    o)	Some minor SuperH emulation speed fixes.
+    o)	Some minor SuperH emulation speed improvements.
 
     o)	Some more cleanup: Several non-working (skeleton) emulation modes
 	have been removed, to make it easier to maintain the source code

@@ -1,9 +1,7 @@
-$Id: TODO,v 1.513 2007-05-25 06:08:52 debug Exp $
+$Id: TODO,v 1.514 2007-05-26 03:47:34 debug Exp $
 
--------------------------------------------------------------------------------
 
-o) Experiment/think more about native code generation.
-o) Look at incorporating the testmachine interrupt controller.
+minska ner mängden kod i tmp_arm_loadstore.c, dvs dela upp i flera delar
 
 -------------------------------------------------------------------------------
 
@@ -11,7 +9,7 @@ Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
 
 M88K:
-	o)  cpu_dyntrans.c: MEMORY_USER_ACCESS implementation!
+	o)  cpu_dyntrans.c: MEMORY_USER_ACCESS implementation for M88K!
 	o)  64-bit load/stores: set transaction registers!
 	o)  xmem: set transaction registers!
 	o)  CMMUs:
@@ -26,6 +24,9 @@ M88K:
 	o)  Implement devices etc. for one or more machine modes,
 	    to get some guest OS running. OpenBSD/mvme88k on MVME187
 	    seems to be the smartest path to follow for now.
+		o)  VME bus device
+		o)  PCC2
+		o)  Cirrus Logic serial port controller
 	o)  Instruction disassembly, and implementation:
 		o)  See http://www.panggih.staff.ugm.ac.id/download/GCC/info/gcc.i5
 		    for some strange cases of when "div" can fail (?)

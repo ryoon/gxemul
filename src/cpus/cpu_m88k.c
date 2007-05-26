@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.32 2007-05-25 22:22:56 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.33 2007-05-26 03:47:34 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -160,14 +160,14 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 		char name[50];
 		snprintf(name, sizeof(name), "%s", cpu->path);
 
-                memset(&template, 0, sizeof(template));
-                template.line = 0;
-                template.name = name;
-                template.extra = cpu;
-                template.interrupt_assert = m88k_irq_interrupt_assert;
-                template.interrupt_deassert = m88k_irq_interrupt_deassert;
-                interrupt_handler_register(&template);
-        }
+		memset(&template, 0, sizeof(template));
+		template.line = 0;
+		template.name = name;
+		template.extra = cpu;
+		template.interrupt_assert = m88k_irq_interrupt_assert;
+		template.interrupt_deassert = m88k_irq_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
 
 	/*  Set the Processor ID:  */
 	cpu->cd.m88k.cr[M88K_CR_PID] = cpu->cd.m88k.cpu_type.pid | M88K_PID_MC;

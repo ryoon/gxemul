@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.45 2006-12-30 13:31:00 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.46 2007-05-26 03:47:34 debug Exp $
  */
 
 #include "misc.h"
@@ -133,6 +133,8 @@ struct alpha_cpu {
 	uint64_t		ipl;
 	uint64_t		load_linked_addr;
 	int			ll_flag;
+
+	int			irq_asserted;
 
 	/*  OSF1 PALcode specific:  */
 	uint64_t		vptptr;		/*  Virtual Page Table Ptr  */

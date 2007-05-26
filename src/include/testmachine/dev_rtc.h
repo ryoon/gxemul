@@ -4,7 +4,7 @@
 /*
  *  Definitions used by the "rtc" device in GXemul.
  *
- *  $Id: dev_rtc.h,v 1.2 2006-10-07 01:40:33 debug Exp $
+ *  $Id: dev_rtc.h,v 1.3 2007-05-26 03:47:34 debug Exp $
  *  This file is in the public domain.
  */
 
@@ -19,4 +19,4 @@
 #define	    DEV_RTC_HZ			    0x0100
 #define	    DEV_RTC_INTERRUPT_ACK	    0x0110
 
-#endif	/*  TESTMACHINE_CONS_H  */
+#endif	/*  TESTMACHINE_RTC_H  */

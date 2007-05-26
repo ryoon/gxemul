@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.25 2007-03-26 02:01:35 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.26 2007-05-26 03:47:34 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -41,6 +41,7 @@
 #include <ctype.h>
 
 #include "cpu.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -54,6 +55,9 @@
 
 /*  Alpha symbolic register names:  */
 static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES; 
+
+void alpha_irq_interrupt_assert(struct interrupt *interrupt);
+void alpha_irq_interrupt_deassert(struct interrupt *interrupt);
 
 
 /*
@@ -112,6 +116,19 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	for (i=0; i<N_ALPHA_REGS; i++)
 		CPU_SETTINGS_ADD_REGISTER64(alpha_regname[i],
 		    cpu->cd.alpha.r[i]);
+
+	/*  Register the CPU interrupt pin:  */
+	{
+		struct interrupt template;
+
+		memset(&template, 0, sizeof(template));
+		template.line = 0;
+		template.name = cpu->path;
+		template.extra = cpu;
+		template.interrupt_assert = alpha_irq_interrupt_assert; 
+		template.interrupt_deassert = alpha_irq_interrupt_deassert; 
+		interrupt_handler_register(&template);
+	}
 
 	return 1;
 }
@@ -192,6 +209,22 @@ void alpha_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void alpha_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
+}
+
+
+/*
+ *  alpha_irq_interrupt_assert():
+ *  alpha_irq_interrupt_deassert():
+ */
+void alpha_irq_interrupt_assert(struct interrupt *interrupt)
+{
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
+	cpu->cd.alpha.irq_asserted = 1;
+}
+void alpha_irq_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
+	cpu->cd.alpha.irq_asserted = 0;
 }
 
 

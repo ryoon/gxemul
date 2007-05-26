@@ -25,8 +25,8 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.10 2007-01-29 19:03:16 debug Exp $
- *  
+ *  $Id: dev_cpc700.c,v 1.11 2007-05-26 03:47:34 debug Exp $
+ *
  *  IBM CPC700 bridge; PCI and interrupt controller.
  */
 
@@ -37,6 +37,7 @@
 #include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1579 2007-05-25 21:17:30 debug Exp $
+$Id: HISTORY,v 1.1580 2007-05-26 03:47:33 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3538,3 +3538,5 @@ Changelog for GXemul:
 		crashing.
 20070526	Fixing bugs in dev_mk48txx, so that OpenBSD/mvme88k detects
 		the correct time-of-day.
+		Implementing a generic IRQ controller for the test machines
+		(dev_irqc), similar to a proposed patch from Petr Stepan.

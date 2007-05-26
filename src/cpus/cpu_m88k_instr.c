@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.27 2007-05-25 06:08:39 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.28 2007-05-26 03:47:34 debug Exp $
  *
  *  M88K instructions.
  *
@@ -818,10 +818,6 @@ X(xcr)
  */
 X(rte)
 {
-#if 0
-	uint32_t fip;
-#endif
-
 	/*  If executed from user mode, then cause an exception:  */
 	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE)) {
 		SYNCH_PC;
@@ -837,13 +833,6 @@ X(rte)
 		exit(1);
 	}
 
-#if 0
-	fip = cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_NIP_ADDR;
-	if (fip != (uint32_t) (cpu->pc + 4)) {
-		fatal("rte: fip != nip + 4: TODO. Branch delay?\n");
-		exit(1);
-	}
-#endif
 	quick_pc_to_pointers(cpu);
 }
 
@@ -907,12 +896,22 @@ X(xmem_slow)
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, (uint8_t *) &data,
 	    size? 4 : 1, MEM_READ, CACHE_DATA)) {
 		/*  Exception.  */
+
+		fatal("XMEM exception: TODO: update the transaction"
+		    " registers!\n");
+		exit(1);
+
 		return;
 	}
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, (uint8_t *) &tmp,
 	    size? 4 : 1, MEM_WRITE, CACHE_DATA)) {
 		/*  Exception.  */
+
+		fatal("XMEM exception: TODO: update the transaction"
+		    " registers!\n");
+		exit(1);
+
 		return;
 	}
 

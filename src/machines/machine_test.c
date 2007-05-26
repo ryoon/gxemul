@@ -25,10 +25,25 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.34 2007-05-11 01:31:21 debug Exp $
+ *  $Id: machine_test.c,v 1.35 2007-05-26 03:47:34 debug Exp $
  *
- *  Various "test" machines (bare machines with just a CPU, or a bare machine
- *  plus some experimental devices).
+ *  Various test machines. Generally, the machines are as follows:
+ *
+ *	bareXYZ:	A bare machine using an XYZ processor.
+ *
+ *	testXYZ:	A machine with an XYZ processor, and some experimental
+ *			devices connected to it.
+ *
+ *  The experimental devices in the test machines are:
+ *
+ *	cons		A serial I/O console device.
+ *	disk		A device for reading/writing (emulated) disk sectors.
+ *	ether		An ethernet device, for sending/receiving ethernet
+ *			frames on an emulated network.
+ *	fb		Framebuffer (24-bit RGB per pixel).
+ *	irqc		A generic interrupt controller.
+ *	mp		A multiprocessor controller.
+ *	rtc		A real-time clock device.
  */
 
 #include <stdio.h>
@@ -44,23 +59,53 @@
 #include "testmachine/dev_disk.h"
 #include "testmachine/dev_ether.h"
 #include "testmachine/dev_fb.h"
+#include "testmachine/dev_irqc.h"
 #include "testmachine/dev_mp.h"
 #include "testmachine/dev_rtc.h"
 
 
+/*
+ *  default_test():
+ *
+ *  Initializes devices for most test machines. (Note: MIPS is different,
+ *  because of legacy reasons.)
+ */
 static void default_test(struct machine *machine, struct cpu *cpu)
 {
 	char tmpstr[1000];
+	char base_irq[1000];
+	char end_of_base_irq[50];
 
-	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64,
-	    (uint64_t) DEV_CONS_ADDRESS);
+	/*
+	 *  First add the interrupt controller. Most processor architectures
+	 *  in GXemul have only 1 interrupt pin on the CPU, and it is simply
+	 *  called "emul[x].machine[y].cpu[z]". The two exceptions are MIPS
+	 *  (dealt with in the specific testmips setup routine), and ARM.
+	 *  ARM has normal and fast interrupts. The normals interrupts are
+	 *  called "emul[x].machine[y].cpu[z].irq".
+	 */
+	end_of_base_irq[0] = '\0';
+
+	if (machine->arch == ARCH_ARM)
+		snprintf(end_of_base_irq, sizeof(end_of_base_irq), ".irq");
+
+	snprintf(base_irq, sizeof(base_irq), "%s.cpu[%i]%s",
+	    machine->path, machine->bootstrap_cpu, end_of_base_irq);
+
+	snprintf(tmpstr, sizeof(tmpstr), "irqc addr=0x%"PRIx64
+	    " irq=%s", (uint64_t) DEV_IRQC_ADDRESS, base_irq);
+	device_add(machine, tmpstr);
+
+
+	/*  Now, add the other devices:  */
+
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=%s.irqc.2",
+	    (uint64_t) DEV_CONS_ADDRESS, base_irq);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-#if 0
-	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64,
-	    (uint64_t) DEV_MP_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64" irq=%sirqc.6",
+	    (uint64_t) DEV_MP_ADDRESS, machine->arch == ARCH_ARM? "irq." : "");
 	device_add(machine, tmpstr);
-#endif
 
 	snprintf(tmpstr, sizeof(tmpstr), "fbctrl addr=0x%"PRIx64,
 	    (uint64_t) DEV_FBCTRL_ADDRESS);
@@ -70,12 +115,12 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 	    (uint64_t) DEV_DISK_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64,
-	    (uint64_t) DEV_ETHER_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=%s.irqc.3",
+	    (uint64_t) DEV_ETHER_ADDRESS, base_irq);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64,
-	    (uint64_t) DEV_RTC_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=%s.irqc.4",
+	    (uint64_t) DEV_RTC_ADDRESS, base_irq);
 	device_add(machine, tmpstr);
 }
 
@@ -91,8 +136,6 @@ MACHINE_SETUP(testalpha)
 {
 	machine->machine_name = "Alpha test machine";
 	machine->stable = 1;
-
-	/*  TODO: interrupt for Alpha?  */
 
 	default_test(machine, cpu);
 }
@@ -139,8 +182,6 @@ MACHINE_SETUP(testarm)
 {
 	machine->machine_name = "ARM test machine";
 	machine->stable = 1;
-
-	/*  TODO: interrupt for ARM?  */
 
 	default_test(machine, cpu);
 
@@ -198,8 +239,6 @@ MACHINE_SETUP(testm88k)
 {
 	machine->machine_name = "M88K test machine";
 	machine->stable = 1;
-
-	/*  TODO: interrupt for M88K?  */
 
 	default_test(machine, cpu);
 }
@@ -271,7 +310,7 @@ MACHINE_SETUP(testmips)
 	    machine->bootstrap_cpu);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "mp irq=6 addr=0x%"PRIx64,
+	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64" irq=6",
 	    (uint64_t) DEV_MP_ADDRESS);
 	device_add(machine, tmpstr);
 
@@ -337,8 +376,6 @@ MACHINE_SETUP(testppc)
 	machine->machine_name = "PPC test machine";
 	machine->stable = 1;
 
-	/*  TODO: interrupt for PPC?  */
-
 	default_test(machine, cpu);
 }
 
@@ -384,8 +421,6 @@ MACHINE_SETUP(testsh)
 	machine->machine_name = "SH test machine";
 	machine->stable = 1;
 
-	/*  TODO: interrupt for SH?  */
-
 	default_test(machine, cpu);
 }
 
@@ -430,8 +465,6 @@ MACHINE_SETUP(testsparc)
 {
 	machine->machine_name = "SPARC test machine";
 	machine->stable = 1;
-
-	/*  TODO: interrupt for SPARC?  */
 
 	default_test(machine, cpu);
 }

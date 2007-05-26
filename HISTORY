@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1581 2007-05-26 07:15:49 debug Exp $
+$Id: HISTORY,v 1.1582 2007-05-26 09:04:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3541,3 +3541,5 @@ Changelog for GXemul:
 		Implementing a generic IRQ controller for the test machines
 		(dev_irqc), similar to a proposed patch from Petr Stepan.
 		Experimenting some more with translation read-ahead.
+		Adding an "expect" script for automated OpenBSD/landisk
+		install regression/performance tests.

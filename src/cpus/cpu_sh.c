@@ -25,12 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.73 2007-05-22 13:11:24 debug Exp $
+ *  $Id: cpu_sh.c,v 1.74 2007-05-26 22:26:31 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
  *  TODO: It would be nice if this could encompass both 64-bit SH5, and
  *        32-bit SH encodings. Right now, it only really supports 32-bit mode.
+ *
+ *  TODO: This actually only works or SH4 so far, not SH3.
  */
 
 #include <stdio.h>
@@ -61,6 +63,9 @@
 extern int quiet_mode;
 
 void sh_pc_to_pointers(struct cpu *);
+
+void sh3_cpu_interrupt_assert(struct interrupt *interrupt);
+void sh3_cpu_interrupt_deassert(struct interrupt *interrupt);
 
 
 /*
@@ -170,16 +175,28 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	}
 
 	/*  Register the CPU's interrupts:  */
-	for (i=SH_INTEVT_NMI; i<0x1000; i+=0x20) {
+	if (cpu->cd.sh.cpu_type.arch == 4) {
+		for (i=SH_INTEVT_NMI; i<0x1000; i+=0x20) {
+			struct interrupt template;
+			char name[100];
+			snprintf(name, sizeof(name), "%s.irq[0x%x]",
+			    cpu->path, i);
+			memset(&template, 0, sizeof(template));
+			template.line = i;
+			template.name = name;
+			template.extra = cpu;
+			template.interrupt_assert = sh_cpu_interrupt_assert;
+			template.interrupt_deassert = sh_cpu_interrupt_deassert;
+			interrupt_handler_register(&template);
+		}
+	} else {
 		struct interrupt template;
-		char name[100];
-		snprintf(name, sizeof(name), "%s.irq[0x%x]", cpu->path, i);
 		memset(&template, 0, sizeof(template));
 		template.line = i;
-		template.name = name;
+		template.name = cpu->path;
 		template.extra = cpu;
-		template.interrupt_assert = sh_cpu_interrupt_assert;
-		template.interrupt_deassert = sh_cpu_interrupt_deassert;
+		template.interrupt_assert = sh3_cpu_interrupt_assert;
+		template.interrupt_deassert = sh3_cpu_interrupt_deassert;
 		interrupt_handler_register(&template);
 	}
 
@@ -265,6 +282,20 @@ void sh_update_interrupt_priorities(struct cpu *cpu)
 		    ((cpu->cd.sh.intc_intpri08 >> 16) & 0xf);
 	}
 }
+
+
+/*
+ *  sh3_cpu_interrupt_assert():
+ *  sh3_cpu_interrupt_deassert():
+ */
+void sh3_cpu_interrupt_assert(struct interrupt *interrupt)
+{
+	/*  TODO  */
+}
+void sh3_cpu_interrupt_deassert(struct interrupt *interrupt)
+{
+	/*  TODO  */
+}       
 
 
 /*

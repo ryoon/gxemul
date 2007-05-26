@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1582 2007-05-26 09:04:03 debug Exp $
+$Id: HISTORY,v 1.1583 2007-05-26 22:26:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3543,3 +3543,4 @@ Changelog for GXemul:
 		Experimenting some more with translation read-ahead.
 		Adding an "expect" script for automated OpenBSD/landisk
 		install regression/performance tests.
+20070527	Adding a dummy mmEye (SH3) machine mode skeleton.

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.259 2007-05-20 10:13:39 debug Exp $
+#  $Id: configure,v 1.260 2007-05-26 04:07:05 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -158,7 +158,16 @@ fi
 if [ z$ENABLEARM = zYES ]; then
 	printf "#define ENABLE_ARM\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_arm.o cpu_arm_coproc.o memory_arm.o "
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_loadstore.o tmp_arm_r.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u0_w0.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u0_w1.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u1_w0.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u1_w1.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u0_w0.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u0_w1.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u1_w0.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u1_w1.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_r.o"
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_r0.o tmp_arm_r1.o"
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_r2.o tmp_arm_r3.o"
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_r4.o tmp_arm_r5.o"

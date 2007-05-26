@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.36 2007-05-11 09:28:35 debug Exp $
+#  $Id: Makefile.skel,v 1.37 2007-05-26 04:07:05 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -45,8 +45,26 @@ cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c ../memory_rw.c \
 
 cpu_arm_instr.c: cpu_arm_instr_misc.c
 
+generate_arm_loadstore: generate_arm_loadstore.c
+	$(CC) generate_arm_loadstore.c -o generate_arm_loadstore
 tmp_arm_loadstore.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
 	./generate_arm_loadstore > tmp_arm_loadstore.c
+tmp_arm_loadstore_p0_u0_w0.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 0 0 0 > tmp_arm_loadstore_p0_u0_w0.c
+tmp_arm_loadstore_p0_u0_w1.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 0 0 1 > tmp_arm_loadstore_p0_u0_w1.c
+tmp_arm_loadstore_p0_u1_w0.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 0 1 0 > tmp_arm_loadstore_p0_u1_w0.c
+tmp_arm_loadstore_p0_u1_w1.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 0 1 1 > tmp_arm_loadstore_p0_u1_w1.c
+tmp_arm_loadstore_p1_u0_w0.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 1 0 0 > tmp_arm_loadstore_p1_u0_w0.c
+tmp_arm_loadstore_p1_u0_w1.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 1 0 1 > tmp_arm_loadstore_p1_u0_w1.c
+tmp_arm_loadstore_p1_u1_w0.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 1 1 0 > tmp_arm_loadstore_p1_u1_w0.c
+tmp_arm_loadstore_p1_u1_w1.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
+	./generate_arm_loadstore 1 1 1 > tmp_arm_loadstore_p1_u1_w1.c
 
 tmp_arm_multi.c: generate_arm_multi cpu_arm_multi.txt
 	./generate_arm_multi `cat cpu_arm_multi.txt` > tmp_arm_multi.c

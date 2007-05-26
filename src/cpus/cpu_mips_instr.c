@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.129 2007-05-22 09:33:04 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.130 2007-05-26 07:15:50 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3681,6 +3681,8 @@ X(to_be_translated)
 				} else {
 					ic->f = instr(jr);
 				}
+				if (cpu->translation_readahead > 2)
+					cpu->translation_readahead = 2;
 				break;
 			case SPECIAL_JALR:
 				if (cpu->machine->show_trace_tree)
@@ -3863,6 +3865,8 @@ X(to_be_translated)
 		switch (main_opcode) {
 		case HI6_J:
 			ic->f = instr(j);
+			if (cpu->translation_readahead > 2)
+				cpu->translation_readahead = 2;
 			break;
 		case HI6_JAL:
 			if (cpu->machine->show_trace_tree)

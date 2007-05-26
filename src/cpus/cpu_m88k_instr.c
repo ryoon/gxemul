@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.28 2007-05-26 03:47:34 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.29 2007-05-26 07:15:50 debug Exp $
  *
  *  M88K instructions.
  *
@@ -1137,6 +1137,10 @@ X(to_be_translated)
 	 *  as NOPs, except those that access memory (they should use the
 	 *  scratch register instead).
 	 */
+	if (cpu->cd.m88k.r[M88K_ZERO_REG] != 0) {
+		fatal("INTERNAL ERROR! M88K_ZERO_REG != 0?\n");
+		exit(1);
+	}
 
 	op26   = (iword >> 26) & 0x3f;
 	op11   = (iword >> 11) & 0x1f;
@@ -1159,6 +1163,8 @@ X(to_be_translated)
 		ic->arg[0] = iword;
 		if (d == M88K_ZERO_REG)
 			ic->f = instr(nop);
+		if (iword == 0)
+			goto bad;
 		break;
 
 	case 0x02:	/*  ld.hu  */
@@ -1310,10 +1316,14 @@ X(to_be_translated)
 		case 0x30:
 			ic->f = instr(br);
 			samepage_function = instr(br_samepage);
+			if (cpu->translation_readahead > 1)
+				cpu->translation_readahead = 1;
 			break;
 		case 0x31:
 			ic->f = instr(br_n);
 			samepage_function = instr(br_n_samepage);
+			if (cpu->translation_readahead > 2)
+				cpu->translation_readahead = 2;
 			break;
 		case 0x32:
 			ic->f = instr(bsr);
@@ -1617,8 +1627,14 @@ X(to_be_translated)
 		case 0xc8:	/*  jsr    */
 		case 0xcc:	/*  jsr.n  */
 			switch ((iword >> 8) & 0xff) {
-			case 0xc0: ic->f = instr(jmp); break;
-			case 0xc4: ic->f = instr(jmp_n); break;
+			case 0xc0: ic->f = instr(jmp);
+				   if (cpu->translation_readahead > 1)
+					cpu->translation_readahead = 1;
+				   break;
+			case 0xc4: ic->f = instr(jmp_n);
+				   if (cpu->translation_readahead > 2)
+					cpu->translation_readahead = 2;
+				   break;
 			case 0xc8: ic->f = instr(jsr); break;
 			case 0xcc: ic->f = instr(jsr_n); break;
 			}

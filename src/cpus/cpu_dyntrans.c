@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.152 2007-05-25 11:51:35 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.153 2007-05-26 07:15:49 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1752,13 +1752,14 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 #endif
 
 
+#if 1
 		/*
 		 *  Translation readahead:
 		 */
-#if 0
 		if (cpu->translation_readahead) {
+			/*  Don't recurse when already doing read-ahead!  */
 			return;
-		} else {
+		} else if (!single_step && !cpu->machine->instruction_trace) {
 			/*  Do readahead:  */
 			int i = 1;
 			uint64_t pagenr = DYNTRANS_ADDR_TO_PAGENR(cpu->pc);

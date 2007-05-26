@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.72 2007-05-22 09:33:04 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.73 2007-05-26 07:15:49 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2930,6 +2930,12 @@ X(to_be_translated)
 		if (main_opcode == 0x0a) {
 			ic->f = cond_instr(b);
 			samepage_function = cond_instr(b_samepage);
+
+			/*  Abort read-ahead on unconditional branches:  */
+			if (condition_code == 0xe &&
+			    cpu->translation_readahead > 1)
+                                cpu->translation_readahead = 1;
+
 			if (iword == 0xcaffffed)
 				cpu->cd.arm.combination_check =
 				    COMBINE(netbsd_memset);

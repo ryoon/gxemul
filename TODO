@@ -1,7 +1,4 @@
-$Id: TODO,v 1.514 2007-05-26 03:47:34 debug Exp $
-
-
-minska ner mängden kod i tmp_arm_loadstore.c, dvs dela upp i flera delar
+$Id: TODO,v 1.515 2007-05-26 04:34:39 debug Exp $
 
 -------------------------------------------------------------------------------
 

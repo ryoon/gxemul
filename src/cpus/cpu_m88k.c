@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.33 2007-05-26 03:47:34 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.34 2007-05-26 05:24:41 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -670,7 +670,7 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 	case M88K_EXCEPTION_SFU1_IMPRECISE:
 		debug("SFU1_IMPRECISE"); break;
 	case 0x80:
-		debug("syscall"); break;
+		debug("syscall, r13=%i", cpu->cd.m88k.r[13]); break;
 	case MVMEPROM_VECTOR:
 		debug("MVMEPROM_VECTOR"); break;
 	default:debug("unknown"); break;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.18 2007-05-25 06:08:52 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.19 2007-05-27 03:01:28 debug Exp $
  */
 
 #include "misc.h"
@@ -246,6 +246,9 @@ struct m88k_cpu {
 	uint32_t	dmt[2];
 	uint32_t	dmd[2];
 	uint32_t	dma[2];
+
+	/*  Delayed-branch target (for exception handling):  */
+	uint32_t	delay_target;
 
 
 	/*

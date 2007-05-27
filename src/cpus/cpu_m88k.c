@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.35 2007-05-26 07:15:50 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.36 2007-05-27 03:01:28 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -710,8 +710,17 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 
 		/*  SNIP is the address to return to, when executing rte:  */
 		cpu->cd.m88k.cr[M88K_CR_SXIP] = cpu->pc | M88K_XIP_V;
-		cpu->cd.m88k.cr[M88K_CR_SNIP] = (cpu->pc + 4) | M88K_NIP_V;
-		cpu->cd.m88k.cr[M88K_CR_SFIP] = (cpu->pc + 8) | M88K_FIP_V;
+
+		if (cpu->delay_slot) {
+			cpu->cd.m88k.cr[M88K_CR_SXIP] += 4;
+			cpu->cd.m88k.cr[M88K_CR_SNIP] =
+			    cpu->cd.m88k.delay_target | M88K_NIP_V;
+		} else {
+			cpu->cd.m88k.cr[M88K_CR_SNIP] =
+			    (cpu->pc + 4) | M88K_NIP_V;
+		}
+
+		cpu->cd.m88k.cr[M88K_CR_SFIP] = cpu->cd.m88k.cr[M88K_CR_SNIP]+4;
 
 		if (vector == M88K_EXCEPTION_INSTRUCTION_ACCESS)
 			cpu->cd.m88k.cr[M88K_CR_SXIP] |= M88K_XIP_E;
@@ -791,7 +800,9 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i:\t", cpu->cpu_id);
 
-	debug("%08"PRIx32":  ", (uint32_t) dumpaddr);
+	debug("%c%08"PRIx32": ",
+	    cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE? 's' : 'u',
+	    (uint32_t) dumpaddr);
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);

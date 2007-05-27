@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1583 2007-05-26 22:26:31 debug Exp $
+$Id: HISTORY,v 1.1584 2007-05-27 03:01:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3544,3 +3544,7 @@ Changelog for GXemul:
 		Adding an "expect" script for automated OpenBSD/landisk
 		install regression/performance tests.
 20070527	Adding a dummy mmEye (SH3) machine mode skeleton.
+		FINALLY found the strange M88K bug I have been hunting: I had
+		not emulated the SNIP value for exceptions occurring in
+		branch delay slots correctly.
+		Implementing correct exceptions for 64-bit M88K loads/stores.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_m88k_bcnd.c,v 1.2 2007-05-11 09:28:35 debug Exp $
+ *  $Id: generate_m88k_bcnd.c,v 1.3 2007-05-27 03:01:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -68,6 +68,9 @@ void print_operator(int m5)
 
 void bcnd(int samepage, int n_bit, int m5)
 {
+	if (samepage && n_bit)
+		return;
+
 	printf("\nX(");
 	print_function_name(samepage, n_bit, m5);
 	printf(")\n{\n");
@@ -93,8 +96,10 @@ void bcnd(int samepage, int n_bit, int m5)
 		print_operator(m5);
 		printf(" 0;\n");
 
-		if (!samepage)
-			printf("\tMODE_uint_t old_pc = cpu->pc;\n");
+		printf("\tcpu->cd.m88k.delay_target = (cpu->pc\n");
+		printf("\t\t& ~((M88K_IC_ENTRIES_PER_PAGE-1)"
+		    " << M88K_INSTR_ALIGNMENT_SHIFT))\n");
+		printf("\t\t+ ic->arg[2];\n");
 
 		printf("\tcpu->delay_slot = TO_BE_DELAYED;\n");
 		printf("\tic[1].f(cpu, ic+1);\n");
@@ -105,15 +110,8 @@ void bcnd(int samepage, int n_bit, int m5)
 		printf("\t\tcpu->delay_slot = NOT_DELAYED;\n");
 		printf("\t\tif (cond) {\n");
 
-		if (samepage)
-			printf("\t\t\tcpu->cd.m88k.next_ic = (struct "
-			    "m88k_instr_call *) ic->arg[2];\n");
-		else {
-			printf("\t\t\told_pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1)"
-			    " << M88K_INSTR_ALIGNMENT_SHIFT);\n");
-			printf("\t\t\tcpu->pc = old_pc + ic->arg[2];\n");
-			printf("\t\t\tquick_pc_to_pointers(cpu);\n");
-		}
+		printf("\t\t\tcpu->pc = cpu->cd.m88k.delay_target;\n");
+		printf("\t\t\tquick_pc_to_pointers(cpu);\n");
 
 		printf("\t\t} else\n");
 		printf("\t\t\tcpu->cd.m88k.next_ic ++;\n");
@@ -151,9 +149,13 @@ int main(int argc, char *argv[])
 
 				if (m5 == 1 || m5 == 2 || m5 == 3 ||
 				    m5 == 0xc || m5 == 0xd || m5 == 0xe) {
-					printf("m88k_instr_");
-					print_function_name(
-					    samepage, n_bit, m5);
+					if (samepage && n_bit)
+						printf("NULL");
+					else {
+						printf("m88k_instr_");
+						print_function_name(
+						    samepage, n_bit, m5);
+					}
 				} else
 					printf("NULL");
 			}

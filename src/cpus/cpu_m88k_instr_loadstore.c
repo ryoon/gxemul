@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.7 2007-05-25 11:51:35 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.8 2007-05-27 03:01:28 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  
@@ -111,11 +111,6 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 		cpu->cd.m88k.dmt[0] |= DMT_DAS;		/*  supervisor  */
 #endif
 
-#ifdef LS_8
-	cpu->cd.m88k.dmt[0] |= DMT_DOUB1;
-	/*  TODO: dmt[1] = second part of the load or store!  */
-#endif
-
 	/*  EN bits:  */
 #ifdef LS_1
 	/*  TODO: Is the EN offset only valid for Big-Endian?  */
@@ -130,6 +125,26 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 
 	cpu->cd.m88k.dma[0] = addr & ~0x3;
 	cpu->cd.m88k.dmd[0] = 0;
+
+#ifdef LS_8
+	cpu->cd.m88k.dmt[1] = cpu->cd.m88k.dmt[0];
+	cpu->cd.m88k.dmt[0] |= DMT_DOUB1;
+	cpu->cd.m88k.dma[1] = cpu->cd.m88k.dma[0] + sizeof(uint32_t);
+	cpu->cd.m88k.dmd[0] = 0;
+#ifdef LS_LOAD
+	{
+		int dreg = (((uint32_t *)ic->arg[0]) - &cpu->cd.m88k.r[0]);
+		dreg ++;
+		if (dreg < 1 || dreg > 31) {
+			fatal("HUH? dreg = %i in cpu_m88k_instr_loadstore.c."
+			    " Internal error.\n", dreg);
+			exit(1);
+		}
+		cpu->cd.m88k.dmt[1] &= ~((0x1f) << DMT_DREGSHIFT);
+		cpu->cd.m88k.dmt[1] |= dreg << DMT_DREGSHIFT;
+	}
+#endif
+#endif
 
 
 #ifdef LS_USR
@@ -167,10 +182,6 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_READ, memory_rw_flags)) {
 		/*  Exception.  */
-#ifdef LS_8
-		fatal("EXCEPTION for 64-bit load: TODO\n");
-		exit(1);
-#endif
 		return;
 	}
 	x = memory_readmax64(cpu, data, LS_SIZE);
@@ -204,18 +215,16 @@ void LS_GENERIC_N(struct cpu *cpu, struct m88k_instr_call *ic)
 		x = ((uint64_t)reg(ic->arg[0]) << 32) + reg(ic->arg[0] + 4);
 	else
 		x = ((uint64_t)reg(ic->arg[0] + 4) << 32) + reg(ic->arg[0]);
+	cpu->cd.m88k.dmd[0] = reg(ic->arg[0]);
+	cpu->cd.m88k.dmd[1] = reg(ic->arg[0] + 4);
 #else
 	x = reg(ic->arg[0]);
-#endif
 	cpu->cd.m88k.dmd[0] = x;
+#endif
 	memory_writemax64(cpu, data, LS_SIZE, x);
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, memory_rw_flags)) {
 		/*  Exception.  */
-#ifdef LS_8
-		fatal("EXCEPTION for 64-bit store: TODO\n");
-		exit(1);
-#endif
 		return;
 	}
 #endif

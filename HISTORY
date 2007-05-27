@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1584 2007-05-27 03:01:27 debug Exp $
+$Id: HISTORY,v 1.1585 2007-05-27 03:24:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3548,3 +3548,6 @@ Changelog for GXemul:
 		not emulated the SNIP value for exceptions occurring in
 		branch delay slots correctly.
 		Implementing correct exceptions for 64-bit M88K loads/stores.
+		Address to symbol lookups are now disabled when M88K is
+		running in usermode (because usermode addresses don't have
+		anything to do with supervisor addresses).

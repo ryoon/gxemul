@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.153 2007-05-26 07:15:49 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.154 2007-05-27 03:24:01 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -435,6 +435,7 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
  */
 void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 {
+	int show_symbolic_function_name = 1;
         char strbuf[50];
 	char *symbol;
 	uint64_t ot;
@@ -454,6 +455,12 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		print_dots = 0;
 		n_args_to_print = n_args;
 	}
+
+#ifdef DYNTRANS_M88K
+	/*  Special hack for M88K userspace:  */
+	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE))
+		show_symbolic_function_name = 0;
+#endif
 
 	/*
 	 *  TODO: The type of each argument should be taken from the symbol
@@ -504,7 +511,8 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
 			fatal("\"%s\"", memory_conv_to_string(cpu,
 			    cpu->mem, d, strbuf, sizeof(strbuf)));
-		else if (symbol != NULL && ot == 0)
+		else if (symbol != NULL && ot == 0 &&
+		    show_symbolic_function_name)
 			fatal("&%s", symbol);
 		else {
 			if (cpu->is_32bit)

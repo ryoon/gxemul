@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.36 2007-05-27 03:01:28 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.37 2007-05-27 03:24:01 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -783,6 +783,7 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap)
 int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
         int running, uint64_t dumpaddr)
 {
+	int supervisor = cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE;
 	uint32_t iw;
 	char *symbol, *mnem = NULL;
 	uint64_t offset;
@@ -794,7 +795,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    dumpaddr, &offset);
-	if (symbol != NULL && offset == 0)
+	if (symbol != NULL && offset == 0 && supervisor)
 		debug("<%s>\n", symbol);
 
 	if (cpu->machine->ncpus > 1 && running)
@@ -860,7 +861,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			uint32_t tmpaddr = cpu->cd.m88k.r[s1] + imm16;
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    tmpaddr, &offset);
-			if (symbol != NULL)
+			if (symbol != NULL && supervisor)
 				debug("\t; [<%s>]", symbol);
 			else
 				debug("\t; [0x%08"PRIx32"]", tmpaddr);
@@ -913,7 +914,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				symbol = get_symbol_name(
 				    &cpu->machine->symbol_context,
 				    tmpaddr, &offset);
-				if (symbol != NULL)
+				if (symbol != NULL && supervisor)
 					debug("\t; [<%s>]", symbol);
 				else
 					debug("\t; [0x%08"PRIx32"]", tmpaddr);
@@ -969,7 +970,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				    &cpu->machine->symbol_context,
 				    tmpaddr, &offset);
 				debug("\t; ");
-				if (symbol != NULL)
+				if (symbol != NULL && supervisor)
 					debug("<%s>", symbol);
 				else
 					debug("0x%08"PRIx32, tmpaddr);
@@ -1050,7 +1051,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("0x%08"PRIx32, (uint32_t) (dumpaddr + d26));
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    dumpaddr + d26, &offset);
-		if (symbol != NULL)
+		if (symbol != NULL && supervisor)
 			debug("\t; <%s>", symbol);
 		debug("\n");
 		break;
@@ -1087,7 +1088,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug(",r%i,0x%08"PRIx32, s1, (uint32_t) (dumpaddr + d16));
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    dumpaddr + d16, &offset);
-		if (symbol != NULL)
+		if (symbol != NULL && supervisor)
 			debug("\t; <%s>", symbol);
 		debug("\n");
 		break;
@@ -1122,7 +1123,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 					tmpaddr += cpu->cd.m88k.r[s2];
 				symbol = get_symbol_name(&cpu->machine->
 				    symbol_context, tmpaddr, &offset);
-				if (symbol != NULL)
+				if (symbol != NULL && supervisor)
 					debug("\t; [<%s>]", symbol);
 				else
 					debug("\t; [0x%08"PRIx32"]", tmpaddr);
@@ -1211,7 +1212,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 					tmpaddr += cpu->cd.m88k.r[s2];
 				symbol = get_symbol_name(&cpu->machine->
 				    symbol_context, tmpaddr, &offset);
-				if (symbol != NULL)
+				if (symbol != NULL && supervisor)
 					debug("\t; [<%s>]", symbol);
 				else
 					debug("\t; [0x%08"PRIx32"]", tmpaddr);
@@ -1307,7 +1308,7 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				symbol = get_symbol_name(&cpu->machine->
 				    symbol_context, tmpaddr, &offset);
 				debug("\t\t; ");
-				if (symbol != NULL)
+				if (symbol != NULL && supervisor)
 					debug("<%s>", symbol);
 				else
 					debug("0x%08"PRIx32, tmpaddr);

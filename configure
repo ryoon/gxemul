@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.260 2007-05-26 04:07:05 debug Exp $
+#  $Id: configure,v 1.261 2007-05-27 03:24:00 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -95,23 +95,13 @@ if [ z"$*" != z ]; then
 fi
 
 
-#  These architectures are included in the stable release of GXemul.
-#  (Generally, I only include those architectures that are emulated well
-#  enough for at least one unmodified guest OS for that architecture to
-#  run in the emulator.)
+ENABLEALPHA=YES
 ENABLEARM=YES
+ENABLEM88K=YES
 ENABLEMIPS=YES
 ENABLEPPC=YES
 ENABLESH=YES
-
-if [ z"$UNSTABLE" = zYES ]; then
-	#  Development:
-	printf "###\n###  DEVELOPMENT (UNSTABLE)\n###\n### "
-	printf "(Enabling some archs that are not working yet.)\n###\n\n"
-	ENABLEALPHA=YES
-	ENABLEM88K=YES
-	ENABLESPARC=YES
-fi
+ENABLESPARC=YES
 
 
 ###############################################################################

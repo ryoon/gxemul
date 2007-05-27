@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.378 2007-05-20 11:11:01 debug Exp $
+ *  $Id: cpu.c,v 1.379 2007-05-27 03:24:00 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -229,9 +229,15 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
  */
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 {
+	int show_symbolic_function_name = 1;
 	int i, n_args = -1;
 	char *symbol;
 	uint64_t offset;
+
+	/*  Special hack for M88K userspace:  */
+	if (cpu->machine->arch == ARCH_M88K &&
+	    !(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE))
+		show_symbolic_function_name = 0;
 
 	if (cpu->machine->ncpus > 1)
 		fatal("cpu%i:\t", cpu->cpu_id);
@@ -245,7 +251,7 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 	fatal("<");
 	symbol = get_symbol_name_and_n_args(&cpu->machine->symbol_context,
 	    f, &offset, &n_args);
-	if (symbol != NULL)
+	if (symbol != NULL && show_symbolic_function_name)
 		fatal("%s", symbol);
 	else {
 		if (cpu->is_32bit)

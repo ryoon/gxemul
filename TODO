@@ -1,8 +1,13 @@
-$Id: TODO,v 1.518 2007-05-27 03:24:00 debug Exp $
+$Id: TODO,v 1.519 2007-05-31 16:54:02 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Update the documentation regarding the testmachine interrupts.
+	o Update the documentation regarding the testmachine interrupts.
+
+	o cvs remove machine_mmeye.c och native_alpha.c!
+
+	o Native-kod:
+		o  Read-ahead => emitta OPCODES till en array
 
 -------------------------------------------------------------------------------
 
@@ -10,6 +15,8 @@ Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
 
 M88K:
+	o)  Neither NIP nor FIP valid in rte?
+	o)  FIP != NIP + 4, in rte! (Simulate delayed branch stuff.)
 	o)  cpu_dyntrans.c: MEMORY_USER_ACCESS implementation for M88K!
 	o)  xmem: set transaction registers!
 	o)  CMMUs:
@@ -86,7 +93,7 @@ SuperH:
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on, to make the output more human readable.
 	x)  SH3-specific devices: Pretty much everything!
-	x)  NetBSD/evbsh3, mmeye, hpcsh! Linux?
+	x)  NetBSD/evbsh3, hpcsh! Linux?
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
 	x)  Floating point speed!

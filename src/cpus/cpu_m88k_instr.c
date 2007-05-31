@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.30 2007-05-27 03:01:28 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.31 2007-05-31 16:54:03 debug Exp $
  *
  *  M88K instructions.
  *
@@ -767,14 +767,50 @@ X(rte)
 	}
 
 	m88k_stcr(cpu, cpu->cd.m88k.cr[M88K_CR_EPSR], M88K_CR_PSR, 1);
-	cpu->pc = cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR;
-	if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_E ||
-	    cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_E) {
-		fatal("rte: TODO: single-step support\n");
-		exit(1);
+
+	/*  First try the NIP, if it is Valid:  */
+	if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_V) {
+		cpu->pc = cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR;
+		if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_E) {
+			fatal("rte: NIP: TODO: single-step support\n");
+			goto abort_dump;
+		}
+	} else {
+		/*  The FIP must be valid...  */
+		if (!(cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_NIP_V)) {
+			fatal("rte: neither FIP nor NIP valid? TODO\n");
+			goto abort_dump;
+		}
+		cpu->pc = cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_ADDR;
+	}
+
+	if (cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_E) {
+		fatal("rte: TODO: FIP single-step support\n");
+		goto abort_dump;
+	}
+
+	if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_FIP_V &&
+	    cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_V &&
+	    (cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_ADDR)
+	    != (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR) + 4) {
+		/*
+		 *  The NIP instruction should first be executed (this
+		 *  is the one the exception handler choose to return to),
+		 *  and then the FIP instruction should run (the target
+		 *  of a delayed branch).
+		 */
+
+		fatal("FIP != NIP + 4: TODO\n");
+		goto abort_dump;
 	}
 
 	quick_pc_to_pointers(cpu);
+	return;
+
+abort_dump:
+	fatal("NIP=0x%08"PRIx32", FIP=0x%08"PRIx32"\n",
+	    cpu->cd.m88k.cr[M88K_CR_SNIP], cpu->cd.m88k.cr[M88K_CR_SFIP]);
+	exit(1);
 }
 
 

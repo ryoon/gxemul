@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.261 2007-05-27 03:24:00 debug Exp $
+#  $Id: configure,v 1.262 2007-05-31 16:54:03 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1079,13 +1079,6 @@ rm -f _test_end*
 
 if [ z$UNSTABLE = zYES ]; then
 	printf "detecting native code generation ABI... "
-
-	if [ z"`uname -m`" = zalpha ]; then
-		NATIVE_CODE_GENERATION=YES
-		printf "Alpha\n"
-		printf "#define NATIVE_CODE_GENERATION\n" >> config.h
-		printf "#define HOST_ARCH_ALPHA\n" >> config.h
-	fi
 
 	if [ z"`uname -m`" = zamd64 ]; then
 		NATIVE_CODE_GENERATION=YES

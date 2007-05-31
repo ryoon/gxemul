@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1585 2007-05-27 03:24:00 debug Exp $
+$Id: HISTORY,v 1.1586 2007-05-31 16:53:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3551,3 +3551,4 @@ Changelog for GXemul:
 		Address to symbol lookups are now disabled when M88K is
 		running in usermode (because usermode addresses don't have
 		anything to do with supervisor addresses).
+20070531	Removing the mmEye machine mode skeleton.

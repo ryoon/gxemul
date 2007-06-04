@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.35 2007-05-26 03:47:34 debug Exp $
+ *  $Id: machine_test.c,v 1.36 2007-06-04 06:11:59 debug Exp $
  *
  *  Various test machines. Generally, the machines are as follows:
  *
@@ -55,6 +55,8 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "sh4_exception.h"
+
 #include "testmachine/dev_cons.h"
 #include "testmachine/dev_disk.h"
 #include "testmachine/dev_ether.h"
@@ -79,32 +81,46 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 	/*
 	 *  First add the interrupt controller. Most processor architectures
 	 *  in GXemul have only 1 interrupt pin on the CPU, and it is simply
-	 *  called "emul[x].machine[y].cpu[z]". The two exceptions are MIPS
-	 *  (dealt with in the specific testmips setup routine), and ARM.
-	 *  ARM has normal and fast interrupts. The normals interrupts are
-	 *  called "emul[x].machine[y].cpu[z].irq".
+	 *  called "emul[x].machine[y].cpu[z]".
+	 *
+	 *  MIPS is an exception, dealt with in a separate setup function.
+	 *  ARM and SH are dealt with here.
 	 */
-	end_of_base_irq[0] = '\0';
 
-	if (machine->arch == ARCH_ARM)
+	switch (machine->arch) {
+
+	case ARCH_ARM:
 		snprintf(end_of_base_irq, sizeof(end_of_base_irq), ".irq");
+		break;
+
+	case ARCH_SH:
+		snprintf(end_of_base_irq, sizeof(end_of_base_irq),
+		    ".irq[0x%x]", SH4_INTEVT_IRQ15);
+		break;
+
+	default:
+		end_of_base_irq[0] = '\0';
+	}
 
 	snprintf(base_irq, sizeof(base_irq), "%s.cpu[%i]%s",
 	    machine->path, machine->bootstrap_cpu, end_of_base_irq);
 
-	snprintf(tmpstr, sizeof(tmpstr), "irqc addr=0x%"PRIx64
-	    " irq=%s", (uint64_t) DEV_IRQC_ADDRESS, base_irq);
+	snprintf(tmpstr, sizeof(tmpstr), "irqc addr=0x%"PRIx64" irq=%s",
+	    (uint64_t) DEV_IRQC_ADDRESS, base_irq);
 	device_add(machine, tmpstr);
 
 
 	/*  Now, add the other devices:  */
 
-	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=%s.irqc.2",
-	    (uint64_t) DEV_CONS_ADDRESS, base_irq);
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64
+	    " irq=%s.irqc.2 in_use=%i",
+	    (uint64_t) DEV_CONS_ADDRESS, base_irq, machine->arch != ARCH_SH);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64" irq=%sirqc.6",
-	    (uint64_t) DEV_MP_ADDRESS, machine->arch == ARCH_ARM? "irq." : "");
+	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64" irq=%s%sirqc.6",
+	    (uint64_t) DEV_MP_ADDRESS,
+	    end_of_base_irq[0]? end_of_base_irq + 1 : "",
+	    end_of_base_irq[0]? "." : "");
 	device_add(machine, tmpstr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "fbctrl addr=0x%"PRIx64,

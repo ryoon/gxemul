@@ -1,13 +1,10 @@
-$Id: TODO,v 1.519 2007-05-31 16:54:02 debug Exp $
+$Id: TODO,v 1.520 2007-06-04 06:11:59 debug Exp $
 
 -------------------------------------------------------------------------------
 
-	o Update the documentation regarding the testmachine interrupts.
-
-	o cvs remove machine_mmeye.c och native_alpha.c!
-
 	o Native-kod:
 		o  Read-ahead => emitta OPCODES till en array
+			x  Avbryt direkt om backendet inte stödjer opcoden!
 
 -------------------------------------------------------------------------------
 
@@ -357,6 +354,7 @@ Cache simulation:
 	    is another option (easier to implement, but very very slow).
 
 Documentation:
+	x)  Update the documentation regarding the testmachine interrupts.
 	x)  Note about sandboxing/security:
 		Not all emulated instructions fail in the way they would
 		do on real hardware (e.g. a userspace program writing to

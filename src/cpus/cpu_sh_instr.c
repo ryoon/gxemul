@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.59 2007-05-22 13:29:26 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.60 2007-06-04 06:11:59 debug Exp $
  *
  *  SH instructions.
  *
@@ -3617,21 +3617,15 @@ X(to_be_translated)
 
 		/*  If the word is reachable from the same page as the
 		    current address, then optimize it as a mov_imm_rn:  */
-		if (ic->arg[0] < 0x1000) {
-			uint16_t data;
-			if (!cpu->memory_rw(cpu, cpu->mem, (addr & ~1) + 4
-			    + lo8 * 2, (unsigned char *)&data, sizeof(data),
-			    MEM_READ, CACHE_DATA)) {
-				/*  Exception.  */
-			} else {
-				if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-					data = LE16_TO_HOST(data);
-				else
-					data = BE16_TO_HOST(data);
-
-				ic->f = instr(mov_imm_rn);
-				ic->arg[0] = (int16_t) data;
-			}
+		if (ic->arg[0] < 0x1000 && page != NULL) {
+			uint16_t *p = (uint16_t *) page;
+			uint16_t data = p[ic->arg[0] >> 1];
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				data = LE16_TO_HOST(data);
+			else
+				data = BE16_TO_HOST(data);
+			ic->f = instr(mov_imm_rn);
+			ic->arg[0] = (int16_t) data;
 		}
 		break;
 
@@ -3741,21 +3735,15 @@ X(to_be_translated)
 
 		/*  If the word is reachable from the same page as the
 		    current address, then optimize it as a mov_imm_rn:  */
-		if (ic->arg[0] < 0x1000) {
-			uint32_t data;
-			if (!cpu->memory_rw(cpu, cpu->mem, (addr & ~3) + 4
-			    + lo8 * 4, (unsigned char *)&data, sizeof(data),
-			    MEM_READ, CACHE_DATA)) {
-				/*  Exception.  */
-			} else {
-				if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-					data = LE32_TO_HOST(data);
-				else
-					data = BE32_TO_HOST(data);
-
-				ic->f = instr(mov_imm_rn);
-				ic->arg[0] = data;
-			}
+		if (ic->arg[0] < 0x1000 && page != NULL) {
+			uint32_t *p = (uint32_t *) page;
+			uint32_t data = p[ic->arg[0] >> 2];
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				data = LE32_TO_HOST(data);
+			else
+				data = BE32_TO_HOST(data);
+			ic->f = instr(mov_imm_rn);
+			ic->arg[0] = data;
 		}
 		break;
 

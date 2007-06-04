@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.287 2007-05-25 21:16:40 debug Exp $
+ *  $Id: emul.c,v 1.288 2007-06-04 06:11:59 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -498,21 +498,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 	cpu = m->cpus[m->bootstrap_cpu];
 
-	/*  Only allow native code generation to be used for those
-	    emulated architectures that really support it:  */
-	if (native_code_translation_enabled) {
-		switch (m->arch) {
-		case ARCH_M88K:
-			break;
-		default:fprintf(stderr, "Sorry, native code generation (-b)"
-			    " cannot be used to emulate this specific\n"
-			    "architecture yet. Aborting.\n");
-			exit(1);
-		}
-
+	if (native_code_translation_enabled)
 		debug("***\n***  Enabling experimental native "
 		    "code generation.\n***\n");
-	}
 
 	/*  Set cpu->useremul_syscall, and use userland_memory_rw:  */
 	if (m->userland_emul != NULL) {

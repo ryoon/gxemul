@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.31 2007-05-31 16:54:03 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.32 2007-06-04 06:41:06 debug Exp $
  *
  *  M88K instructions.
  *
@@ -1056,7 +1056,7 @@ X(to_be_translated)
 	uint32_t addr, low_pc, iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	uint32_t op26, op10, op11, d, s1, s2, w5, cr6, imm16;
+	uint32_t op26, op10, d, s1, s2, cr6, imm16;
 	int32_t d16, d26, simm16;
 	int offset, shift;
 	int in_crosspage_delayslot = 0;
@@ -1120,7 +1120,6 @@ X(to_be_translated)
 	}
 
 	op26   = (iword >> 26) & 0x3f;
-	op11   = (iword >> 11) & 0x1f;
 	op10   = (iword >> 10) & 0x3f;
 	d      = (iword >> 21) & 0x1f;
 	s1     = (iword >> 16) & 0x1f;
@@ -1128,7 +1127,6 @@ X(to_be_translated)
 	imm16  =  iword        & 0xffff;
 	simm16 = (int16_t) (iword & 0xffff);
 	cr6    = (iword >>  5) & 0x3f;
-	w5     = (iword >>  5) & 0x1f;
 	d16    = ((int16_t) (iword & 0xffff)) * 4;
 	d26    = ((int32_t)((iword & 0x03ffffff) << 6)) >> 4;
 

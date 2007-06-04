@@ -1,10 +1,4 @@
-$Id: TODO,v 1.520 2007-06-04 06:11:59 debug Exp $
-
--------------------------------------------------------------------------------
-
-	o Native-kod:
-		o  Read-ahead => emitta OPCODES till en array
-			x  Avbryt direkt om backendet inte stödjer opcoden!
+$Id: TODO,v 1.521 2007-06-04 06:41:06 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -276,13 +270,13 @@ Dyntrans:
 		    "peep-hole optimized", etc. and then as a separate step
 		    this list of almost native opcodes is written out
 		    as native code.
-		o)  think about delay slots at the end of a block!
-		o)  x86/amd64 code generator can be very similar... perhaps
+		o)  load/store and delay branches are the most important to
+		    think about!
+		o)  x86 and amd64 code generators can be very similar... perhaps
 		o)  NOTE that generation is per _ABI_, not per host arch!
 		    the configure script must detect ABI!!!
 		o)  branches to already translated code blocks can
 			link the blocks together
-		o)  load/store are the most important to optimize
 
 Simple Valgrind-like checks?
 	o)  Mark every address with bits which tell whether or not the address

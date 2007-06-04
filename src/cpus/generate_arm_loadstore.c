@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_loadstore.c,v 1.8 2007-05-26 04:07:05 debug Exp $
+ *  $Id: generate_arm_loadstore.c,v 1.9 2007-06-04 06:59:01 debug Exp $
  */
 
 #include <stdio.h>
@@ -130,28 +130,29 @@ int main(int argc, char *argv[])
 			for (w=0; w<=1; w++)
 			  for (l=0; l<=1; l++)
 			    for (c=0; c<16; c++) {
-				if (c != 15) {
-					printf("void arm_instr_%s_%s_%s"
-					    "_%s_%s_%s%s%s(struct cpu *, struct "
-					    "arm_instr_call *);",
-					    l? "load" : "store",
-					    w? "w1" : "w0",
-					    b? "byte" : "word",
-					    u? "u1" : "u0",
-					    p? "p1" : "p0",
-					    reg? "reg" : "imm",
-					    c!=14? "__" : "", cond[c]);
-					printf("void arm_instr_%s_%s_%s_%s_%s_%s_pc%s%s"
-					    "(struct cpu *, struct "
-					    "arm_instr_call *);\n",
-					    l? "load" : "store",
-					    w? "w1" : "w0",
-					    b? "byte" : "word",
-					    u? "u1" : "u0",
-					    p? "p1" : "p0",
-					    reg? "reg" : "imm",
-					    c!=14? "__" : "", cond[c]);
-				}
+				if (c == 15)
+					continue;
+
+				printf("void arm_instr_%s_%s_%s"
+				    "_%s_%s_%s%s%s(struct cpu *, struct "
+				    "arm_instr_call *);",
+				    l? "load" : "store",
+				    w? "w1" : "w0",
+				    b? "byte" : "word",
+				    u? "u1" : "u0",
+				    p? "p1" : "p0",
+				    reg? "reg" : "imm",
+				    c!=14? "__" : "", cond[c]);
+				printf("void arm_instr_%s_%s_%s_%s_%s_%s_pc%s%s"
+				    "(struct cpu *, struct "
+				    "arm_instr_call *);\n",
+				    l? "load" : "store",
+				    w? "w1" : "w0",
+				    b? "byte" : "word",
+				    u? "u1" : "u0",
+				    p? "p1" : "p0",
+				    reg? "reg" : "imm",
+				    c!=14? "__" : "", cond[c]);
 			  }
 
 		printf("\n\tvoid (*arm_load_store_instr[1024])(struct cpu *,\n"
@@ -167,7 +168,8 @@ int main(int argc, char *argv[])
 				if (c == 15)
 					printf("\tarm_instr_nop");
 				else
-					printf("\tarm_instr_%s_%s_%s_%s_%s_%s%s%s",
+					printf("\tarm_instr_%s_%s_%s"
+					    "_%s_%s_%s%s%s",
 					    l? "load" : "store",
 					    w? "w1" : "w0",
 					    b? "byte" : "word",
@@ -184,8 +186,8 @@ int main(int argc, char *argv[])
 		printf("};\n\n");
 
 		/*  Load/store with the pc register:  */
-		printf("\n\tvoid (*arm_load_store_instr_pc[1024])(struct cpu *,\n"
-		    "\t\tstruct arm_instr_call *) = {\n");
+		printf("\n\tvoid (*arm_load_store_instr_pc[1024])"
+		    "(struct cpu *,\n\t\tstruct arm_instr_call *) = {\n");
 		n = 0;
 		for (reg=0; reg<=1; reg++)
 		  for (p=0; p<=1; p++)
@@ -197,7 +199,8 @@ int main(int argc, char *argv[])
 				if (c == 15)
 					printf("\tarm_instr_nop");
 				else
-					printf("\tarm_instr_%s_%s_%s_%s_%s_%s_pc%s%s",
+					printf("\tarm_instr_%s_%s_%s_"
+					    "%s_%s_%s_pc%s%s",
 					    l? "load" : "store",
 					    w? "w1" : "w0",
 					    b? "byte" : "word",
@@ -301,7 +304,7 @@ int main(int argc, char *argv[])
 					continue;
 
 				printf("void arm_instr_%s_%s_%s_%s_%s_%s_%s%s%s"
-				    "(struct cpu *, struct arm_instr_call *);\n",
+				   "(struct cpu *, struct arm_instr_call *);\n",
 				    l? "load" : "store",
 				    w? "w1" : "w0",
 				    s? "signed" : "unsigned",
@@ -309,8 +312,9 @@ int main(int argc, char *argv[])
 				    u? "u1" : "u0", p? "p1" : "p0",
 				    reg? "reg" : "imm",
 				    c!=14? "__" : "", cond[c]);
-				printf("void arm_instr_%s_%s_%s_%s_%s_%s_%s_pc%s%s"
-				    "(struct cpu *, struct arm_instr_call *);\n",
+				printf("void arm_instr_%s_%s_%s_%s_%s_%s_"
+				    "%s_pc%s%s(struct cpu *, struct "
+				    "arm_instr_call *);\n",
 				    l? "load" : "store",
 				    w? "w1" : "w0",
 				    s? "signed" : "unsigned",
@@ -320,8 +324,8 @@ int main(int argc, char *argv[])
 				    c!=14? "__" : "", cond[c]);
 			  }
 
-		printf("\n\tvoid (*arm_load_store_instr_3[2048])(struct cpu *,\n"
-		    "\t\tstruct arm_instr_call *) = {\n");
+		printf("\n\tvoid (*arm_load_store_instr_3[2048])"
+		    "(struct cpu *,\n\t\tstruct arm_instr_call *) = {\n");
 		n = 0;
 		for (reg=0; reg<=1; reg++)
 		  for (p=0; p<=1; p++)
@@ -336,7 +340,8 @@ int main(int argc, char *argv[])
 				else if (s==0 && h==0)
 					printf("\tarm_instr_invalid");
 				else
-					printf("\tarm_instr_%s_%s_%s_%s_%s_%s_%s%s%s",
+					printf("\tarm_instr_%s_%s_%s_%s_"
+					    "%s_%s_%s%s%s",
 					    l? "load" : "store",
 					    w? "w1" : "w0",
 					    s? "signed" : "unsigned",
@@ -353,8 +358,8 @@ int main(int argc, char *argv[])
 		printf("};\n\n");
 
 		/*  Load/store with the pc register:  */
-		printf("\n\tvoid (*arm_load_store_instr_3_pc[2048])(struct cpu *,\n"
-		    "\t\tstruct arm_instr_call *) = {\n");
+		printf("\n\tvoid (*arm_load_store_instr_3_pc[2048])"
+		    "(struct cpu *,\n\t\tstruct arm_instr_call *) = {\n");
 		n = 0;
 		for (reg=0; reg<=1; reg++)
 		  for (p=0; p<=1; p++)

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.121 2007-05-22 09:33:04 debug Exp $
+ *  $Id: cpu.h,v 1.122 2007-06-04 06:59:01 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -383,13 +383,19 @@ struct cpu {
 	 *  The translation cache is a relative large chunk of memory (say,
 	 *  32 MB) which is used for translations. When it has been used up,
 	 *  everything restarts from scratch.
+	 *
+	 *  translation_readahead is non-zero when translating instructions
+	 *  ahead of the current (emulated) instruction pointer.
 	 */
+
+	/*  Non-zero when translating ahead of the current instruction:  */
+	int		translation_readahead;
+
+	/*  Instruction translation cache:  */
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
 
-	/*  Non-zero when translating ahead of the current instruction:  */
-	int		translation_readahead;
 
 	/*
 	 *  CPU-family dependent:

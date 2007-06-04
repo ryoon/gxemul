@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.10 2007-04-29 13:44:14 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.11 2007-06-04 08:22:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -50,7 +50,6 @@ MACHINE_SETUP(cobalt)
 
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	machine->machine_name = "Cobalt";
-	machine->stable = 1;
 
 	/*
 	 *  Interrupts seem to be the following:

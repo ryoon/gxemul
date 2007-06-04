@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.13 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_cats.c,v 1.14 2007-06-04 08:22:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,7 +52,6 @@ MACHINE_SETUP(cats)
 	int boot_id = machine->bootdev_id >= 0? machine->bootdev_id : 0;
 
 	machine->machine_name = "CATS evaluation board";
-	machine->stable = 1;
 
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 50000000;

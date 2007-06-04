@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.21 2007-05-06 02:14:13 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.22 2007-06-04 08:22:07 debug Exp $
  *
  *  Emulation of MIPS evaluation boards, such as the MIPS Malta board.
  */
@@ -61,7 +61,6 @@ MACHINE_SETUP(evbmips)
 			machine->emulated_hz = 33000000;
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 		machine->machine_name = "MALTA (evbmips, little endian)";
-		machine->stable = 1;
 
 		if (machine->machine_subtype == MACHINE_EVBMIPS_MALTA_BE) {
 			machine->machine_name = "MALTA (evbmips, big endian)";

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.19 2007-05-27 03:01:28 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.20 2007-06-04 08:22:07 debug Exp $
  */
 
 #include "misc.h"
@@ -259,8 +259,8 @@ struct m88k_cpu {
 	 */
 	DYNTRANS_ITC(m88k)
 	VPH_TLBS(m88k,M88K)
-	VPH32(m88k,M88K,uint32_t,uint8_t)
-	VPH32EXTENDED(m88k,M88K,uint32_t,uint8_t,usr)
+	VPH32(m88k,M88K)
+	VPH32EXTENDED(m88k,M88K,usr)
 };
 
 

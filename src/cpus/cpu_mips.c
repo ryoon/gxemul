@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.79 2007-04-28 09:19:51 debug Exp $
+ *  $Id: cpu_mips.c,v 1.80 2007-06-04 08:22:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -80,30 +80,6 @@ static char *cop0_names[] = COP0_NAMES;
 
 void mips_pc_to_pointers(struct cpu *);
 void mips32_pc_to_pointers(struct cpu *);
-
-
-/*
- *  regname():
- *
- *  Convert a register number into either 'r0', 'r31' etc, or a symbolic
- *  name, depending on machine->show_symbolic_register_names.
- *
- *  NOTE: This helper function is _NOT_ reentrant.
- */
-static char *regname(struct machine *machine, int r)
-{
-	static char ch[4];
-	ch[3] = ch[2] = '\0';
-
-	if (r<0 || r>=32)
-		strlcpy(ch, "xx", sizeof(ch));
-	else if (machine->show_symbolic_register_names)
-		strlcpy(ch, regnames[r], sizeof(ch));
-	else
-		snprintf(ch, sizeof(ch), "r%i", r);
-
-	return ch;
-}
 
 
 /*
@@ -182,35 +158,35 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	x = DEFAULT_PCACHE_SIZE;
 	if (cpu->cd.mips.cpu_type.pdcache)
 		x = cpu->cd.mips.cpu_type.pdcache;
-	if (machine->cache_pdcache == 0)
-		machine->cache_pdcache = x;
+	if (cpu->cd.mips.cache_pdcache == 0)
+		cpu->cd.mips.cache_pdcache = x;
 
 	x = DEFAULT_PCACHE_SIZE;
 	if (cpu->cd.mips.cpu_type.picache)
 		x = cpu->cd.mips.cpu_type.picache;
-	if (machine->cache_picache == 0)
-		machine->cache_picache = x;
+	if (cpu->cd.mips.cache_picache == 0)
+		cpu->cd.mips.cache_picache = x;
 
-	if (machine->cache_secondary == 0)
-		machine->cache_secondary = cpu->cd.mips.cpu_type.scache;
+	if (cpu->cd.mips.cache_secondary == 0)
+		cpu->cd.mips.cache_secondary = cpu->cd.mips.cpu_type.scache;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
 	if (cpu->cd.mips.cpu_type.pdlinesize)
 		linesize = cpu->cd.mips.cpu_type.pdlinesize;
-	if (machine->cache_pdcache_linesize == 0)
-		machine->cache_pdcache_linesize = linesize;
+	if (cpu->cd.mips.cache_pdcache_linesize == 0)
+		cpu->cd.mips.cache_pdcache_linesize = linesize;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
 	if (cpu->cd.mips.cpu_type.pilinesize)
 		linesize = cpu->cd.mips.cpu_type.pilinesize;
-	if (machine->cache_picache_linesize == 0)
-		machine->cache_picache_linesize = linesize;
+	if (cpu->cd.mips.cache_picache_linesize == 0)
+		cpu->cd.mips.cache_picache_linesize = linesize;
 
 	linesize = 0;
 	if (cpu->cd.mips.cpu_type.slinesize)
 		linesize = cpu->cd.mips.cpu_type.slinesize;
-	if (machine->cache_secondary_linesize == 0)
-		machine->cache_secondary_linesize = linesize;
+	if (cpu->cd.mips.cache_secondary_linesize == 0)
+		cpu->cd.mips.cache_secondary_linesize = linesize;
 
 
 	/*
@@ -219,12 +195,12 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
 		switch (i) {
 		case CACHE_DATA:
-			x = 1 << machine->cache_pdcache;
-			linesize = 1 << machine->cache_pdcache_linesize;
+			x = 1 << cpu->cd.mips.cache_pdcache;
+			linesize = 1 << cpu->cd.mips.cache_pdcache_linesize;
 			break;
 		case CACHE_INSTRUCTION:
-			x = 1 << machine->cache_picache;
-			linesize = 1 << machine->cache_picache_linesize;
+			x = 1 << cpu->cd.mips.cache_picache;
+			linesize = 1 << cpu->cd.mips.cache_picache_linesize;
 			break;
 		}
 
@@ -282,8 +258,8 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	 *  Secondary cache:
 	 */
 	secondary_cache_size = 0;
-	if (machine->cache_secondary)
-		secondary_cache_size = 1 << machine->cache_secondary;
+	if (cpu->cd.mips.cache_secondary)
+		secondary_cache_size = 1 << cpu->cd.mips.cache_secondary;
 	/*  TODO: linesize...  */
 
 	if (cpu_id == 0) {
@@ -814,16 +790,15 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 			switch (sub) {
 			case 0x00:
-				debug("%s\t%s,",
-				    special_names[special6],
-				    regname(cpu->machine, rd));
-				debug("%s,%i", regname(cpu->machine, rt), sa);
+				debug("%s\t%s,", special_names[special6],
+				    regnames[rd]);
+				debug("%s,%i", regnames[rt], sa);
 				break;
 			case 0x01:
 				debug("%s\t%s,",
 				    special_rot_names[special6],
-				    regname(cpu->machine, rd));
-				debug("%s,%i", regname(cpu->machine, rt), sa);
+				    regnames[rd]);
+				debug("%s,%i", regnames[rt], sa);
 				break;
 			default:debug("UNIMPLEMENTED special, sub=0x%02x\n",
 				    sub);
@@ -843,15 +818,15 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			switch (sub) {
 			case 0x00:
 				debug("%s\t%s", special_names[special6],
-				    regname(cpu->machine, rd));
-				debug(",%s", regname(cpu->machine, rt));
-				debug(",%s", regname(cpu->machine, rs));
+				    regnames[rd]);
+				debug(",%s", regnames[rt]);
+				debug(",%s", regnames[rs]);
 				break;
 			case 0x01:
 				debug("%s\t%s", special_rot_names[special6],
-				    regname(cpu->machine, rd));
-				debug(",%s", regname(cpu->machine, rt));
-				debug(",%s", regname(cpu->machine, rs));
+				    regnames[rd]);
+				debug(",%s", regnames[rt]);
+				debug(",%s", regnames[rs]);
 				break;
 			default:debug("UNIMPLEMENTED special, sub=0x%02x\n",
 				    sub);
@@ -864,7 +839,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			/*  .hb = hazard barrier hint on MIPS32/64 rev 2  */
 			debug("jr%s\t%s",
 			    (instr[1] & 0x04) ? ".hb" : "",
-			    regname(cpu->machine, rs));
+			    regnames[rs]);
 			if (running && symbol != NULL)
 				debug("\t<%s>", symbol);
 			break;
@@ -876,22 +851,20 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			/*  .hb = hazard barrier hint on MIPS32/64 rev 2  */
 			debug("jalr%s\t%s",
 			    (instr[1] & 0x04) ? ".hb" : "",
-			    regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
+			    regnames[rd]);
+			debug(",%s", regnames[rs]);
 			if (running && symbol != NULL)
 				debug("\t<%s>", symbol);
 			break;
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
 			rd = (instr[1] >> 3) & 31;
-			debug("%s\t%s", special_names[special6],
-			    regname(cpu->machine, rd));
+			debug("%s\t%s", special_names[special6], regnames[rd]);
 			break;
 		case SPECIAL_MTLO:
 		case SPECIAL_MTHI:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			debug("%s\t%s", special_names[special6],
-			    regname(cpu->machine, rs));
+			debug("%s\t%s", special_names[special6], regnames[rs]);
 			break;
 		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
@@ -916,19 +889,19 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			    special6 == SPECIAL_SUBU) && rt == 0) {
 				/*  Special case 1: addu/subu with
 				    rt = the zero register ==> move  */
-				debug("move\t%s", regname(cpu->machine, rd));
-				debug(",%s", regname(cpu->machine, rs));
+				debug("move\t%s", regnames[rd]);
+				debug(",%s", regnames[rs]);
 			} else if (special6 == SPECIAL_ADDU && cpu->is_32bit
 			    && rs == 0) {
 				/*  Special case 2: addu with
 				    rs = the zero register ==> move  */
-				debug("move\t%s", regname(cpu->machine, rd));
-				debug(",%s", regname(cpu->machine, rt));
+				debug("move\t%s", regnames[rd]);
+				debug(",%s", regnames[rt]);
 			} else {
 				debug("%s\t%s", special_names[special6],
-				    regname(cpu->machine, rd));
-				debug(",%s", regname(cpu->machine, rs));
-				debug(",%s", regname(cpu->machine, rt));
+				    regnames[rd]);
+				debug(",%s", regnames[rs]);
+				debug(",%s", regnames[rt]);
 			}
 			break;
 		case SPECIAL_MULT:
@@ -953,16 +926,15 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 					if (special6 == SPECIAL_MULT ||
 					    special6 == SPECIAL_MULTU)
-						debug("%s,",
-						    regname(cpu->machine, rd));
+						debug("%s,", regnames[rd]);
 					else
 						debug("WEIRD_R5900_RD,");
 				} else {
 					debug("WEIRD_RD_NONZERO,");
 				}
 			}
-			debug("%s", regname(cpu->machine, rs));
-			debug(",%s", regname(cpu->machine, rt));
+			debug("%s", regnames[rs]);
+			debug(",%s", regnames[rt]);
 			break;
 		case SPECIAL_SYNC:
 			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
@@ -987,7 +959,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		case SPECIAL_MFSA:
 			if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 				rd = (instr[1] >> 3) & 31;
-				debug("mfsa\t%s", regname(cpu->machine, rd));
+				debug("mfsa\t%s", regnames[rd]);
 			} else {
 				debug("unimplemented special 0x28");
 			}
@@ -996,7 +968,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 				rs = ((instr[3] & 3) << 3) +
 				    ((instr[2] >> 5) & 7);
-				debug("mtsa\t%s", regname(cpu->machine, rs));
+				debug("mtsa\t%s", regnames[rs]);
 			} else {
 				debug("unimplemented special 0x29");
 			}
@@ -1030,9 +1002,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			case HI6_BEQL:
 			case HI6_BNE:
 			case HI6_BNEL:
-				debug("%s,", regname(cpu->machine, rt));
+				debug("%s,", regnames[rt]);
 			}
-			debug("%s,", regname(cpu->machine, rs));
+			debug("%s,", regnames[rs]);
 		}
 
 		if (cpu->is_32bit)
@@ -1059,8 +1031,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)
 			imm -= 65536;
-		debug("%s\t%s,", hi6_names[hi6], regname(cpu->machine, rt));
-		debug("%s,", regname(cpu->machine, rs));
+		debug("%s\t%s,", hi6_names[hi6], regnames[rt]);
+		debug("%s,", regnames[rs]);
 		if (hi6 == HI6_ANDI || hi6 == HI6_ORI || hi6 == HI6_XORI)
 			debug("0x%04x", imm & 0xffff);
 		else
@@ -1069,7 +1041,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	case HI6_LUI:
 		rt = instr[2] & 31;
 		imm = (instr[1] << 8) + instr[0];
-		debug("lui\t%s,0x%x", regname(cpu->machine, rt), imm);
+		debug("lui\t%s,0x%x", regnames[rt], imm);
 		break;
 	case HI6_LB:
 	case HI6_LBU:
@@ -1132,8 +1104,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 					msbd += 32;
 				if (special6 == SPECIAL3_DEXTU)
 					lsb += 32;
-				debug("\t%s", regname(cpu->machine, rt));
-				debug(",%s", regname(cpu->machine, rs));
+				debug("\t%s", regnames[rt]);
+				debug(",%s", regnames[rs]);
 				debug(",%i,%i", lsb, msbd + 1);
 				break;
 
@@ -1149,8 +1121,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 					msbd += 32;
 				}
 				msbd -= lsb;
-				debug("\t%s", regname(cpu->machine, rt));
-				debug(",%s", regname(cpu->machine, rs));
+				debug("\t%s", regnames[rt]);
+				debug(",%s", regnames[rs]);
 				debug(",%i,%i", lsb, msbd + 1);
 				break;
 
@@ -1164,8 +1136,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 					case BSHFL_SEB:  debug("seb"); break;
 					case BSHFL_SEH:  debug("seh"); break;
 					}
-					debug("\t%s", regname(cpu->machine,rd));
-					debug(",%s", regname(cpu->machine,rt));
+					debug("\t%s", regnames[rd]);
+					debug(",%s", regnames[rt]);
 					break;
 				default:debug("%s", special3_names[special6]);
 					debug("\t(UNIMPLEMENTED)");
@@ -1180,8 +1152,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 					case BSHFL_DSBH: debug("dsbh"); break;
 					case BSHFL_DSHD: debug("dshd"); break;
 					}
-					debug("\t%s", regname(cpu->machine,rd));
-					debug(",%s", regname(cpu->machine,rt));
+					debug("\t%s", regnames[rd]);
+					debug(",%s", regnames[rt]);
 					break;
 				default:debug("%s", special3_names[special6]);
 					debug("\t(UNIMPLEMENTED)");
@@ -1190,7 +1162,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 			case SPECIAL3_RDHWR:
 				debug("%s", special3_names[special6]);
-				debug("\t%s", regname(cpu->machine, rt));
+				debug("\t%s", regnames[rt]);
 				debug(",hwr%i", rd);
 				break;
 
@@ -1212,7 +1184,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		/*  TODO: Which ISAs? IV? V? 32? 64?  */
 		if (cpu->cd.mips.cpu_type.isa_level >= 4 && hi6 == HI6_LWC3) {
 			debug("pref\t0x%x,%i(%s)",
-			    rt, imm, regname(cpu->machine, rs));
+			    rt, imm, regnames[rs]);
 
 			if (running) {
 				debug("\t[0x%016"PRIx64" = %s]",
@@ -1232,9 +1204,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		    hi6 == HI6_LDC1 || hi6 == HI6_LDC2)
 			debug("r%i", rt);
 		else
-			debug("%s", regname(cpu->machine, rt));
+			debug("%s", regnames[rt]);
 
-		debug(",%i(%s)", imm, regname(cpu->machine, rs));
+		debug(",%i(%s)", imm, regnames[rs]);
 
 		if (running) {
 			debug("\t[");
@@ -1294,8 +1266,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		cache_op    = copz >> 2;
 		which_cache = copz & 3;
 		showtag = 0;
-		debug("cache\t0x%02x,0x%04x(%s)", copz, imm,
-		    regname(cpu->machine, rt));
+		debug("cache\t0x%02x,0x%04x(%s)", copz, imm, regnames[rt]);
 		if (which_cache==0)	debug("  [ primary I-cache");
 		if (which_cache==1)	debug("  [ primary D-cache");
 		if (which_cache==2)	debug("  [ secondary I-cache");
@@ -1338,10 +1309,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			case MMI_MADD:
 			case MMI_MADDU:
 				if (rd != MIPS_GPR_ZERO) {
-					debug("%s,", regname(cpu->machine, rd));
+					debug("%s,", regnames[rd]);
 				}
-				debug("%s", regname(cpu->machine, rs));
-				debug(",%s", regname(cpu->machine, rt));
+				debug("%s,%s", regnames[rs], regnames[rt]);
 				break;
 
 			case MMI_MMI0:
@@ -1356,9 +1326,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				case MMI0_PPACB:
 				case MMI0_PPACH:
 				case MMI0_PPACW:
-					debug("%s", regname(cpu->machine, rd));
-					debug(",%s", regname(cpu->machine, rs));
-					debug(",%s", regname(cpu->machine, rt));
+					debug("%s,%s,%s", regnames[rd],
+					    regnames[rs], regnames[rt]);
 					break;
 
 				default:debug("(UNIMPLEMENTED)");
@@ -1374,9 +1343,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				case MMI1_PEXTUW:
 				case MMI1_PMINH:
 				case MMI1_PMINW:
-					debug("%s", regname(cpu->machine, rd));
-					debug(",%s", regname(cpu->machine, rs));
-					debug(",%s", regname(cpu->machine, rt));
+					debug("%s,%s,%s", regnames[rd],
+					    regnames[rs], regnames[rt]);
 					break;
 
 				default:debug("(UNIMPLEMENTED)");
@@ -1389,7 +1357,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 				case MMI2_PMFHI:
 				case MMI2_PMFLO:
-					debug("%s", regname(cpu->machine, rd));
+					debug("%s", regnames[rd]);
 					break;
 
 				case MMI2_PHMADH:
@@ -1402,9 +1370,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				case MMI2_PMULTH:
 				case MMI2_PMULTW:
 				case MMI2_PSLLVW:
-					debug("%s", regname(cpu->machine, rd));
-					debug(",%s", regname(cpu->machine, rs));
-					debug(",%s", regname(cpu->machine, rt));
+					debug("%s,%s,%s", regnames[rd],
+					    regnames[rs], regnames[rt]);
 					break;
 
 				default:debug("(UNIMPLEMENTED)");
@@ -1417,7 +1384,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 				case MMI3_PMTHI:
 				case MMI3_PMTLO:
-					debug("%s", regname(cpu->machine, rs));
+					debug("%s", regnames[rs]);
 					break;
 
 				case MMI3_PINTEH:
@@ -1426,9 +1393,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				case MMI3_PNOR:
 				case MMI3_POR:
 				case MMI3_PSRAVW:
-					debug("%s", regname(cpu->machine, rd));
-					debug(",%s", regname(cpu->machine, rs));
-					debug(",%s", regname(cpu->machine, rt));
+					debug("%s,%s,%s", regnames[rd],
+					    regnames[rs], regnames[rt]);
 					break;
 
 				default:debug("(UNIMPLEMENTED)");
@@ -1451,25 +1417,22 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		case SPECIAL2_MSUBU:
 			if (rd != MIPS_GPR_ZERO) {
 				debug("WEIRD_NONZERO_RD(%s),",
-				    regname(cpu->machine, rd));
+				    regnames[rd]);
 			}
-			debug("%s", regname(cpu->machine, rs));
-			debug(",%s", regname(cpu->machine, rt));
+			debug("%s,%s", regnames[rs], regnames[rt]);
 			break;
 
 		case SPECIAL2_MUL:
 			/*  Apparently used both on R5900 and MIPS32:  */
-			debug("%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-			debug(",%s", regname(cpu->machine, rt));
+			debug("%s,%s,%s", regnames[rd],
+			    regnames[rs], regnames[rt]);
 			break;
 
 		case SPECIAL2_CLZ:
 		case SPECIAL2_CLO:
 		case SPECIAL2_DCLZ:
 		case SPECIAL2_DCLO:
-			debug("%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
+			debug("%s,%s", regnames[rd], regnames[rs]);
 			break;
 
 		default:
@@ -1494,8 +1457,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		case REGIMM_BLTZALL:
 		case REGIMM_BGEZAL:
 		case REGIMM_BGEZALL:
-			debug("%s\t%s,", regimm_names[regimm5],
-			    regname(cpu->machine, rs));
+			debug("%s\t%s,", regimm_names[regimm5], regnames[rs]);
 
 			addr = (dumpaddr + 4) + (imm << 2);
 
@@ -1507,7 +1469,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 		case REGIMM_SYNCI:
 			debug("%s\t%i(%s)", regimm_names[regimm5],
-			    imm, regname(cpu->machine, rs));
+			    imm, regnames[rs]);
 			break;
 
 		default:
@@ -1587,7 +1549,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					    "          ");
 				else
 					debug(" %3s=%016"PRIx64"%016"PRIx64,
-					    regname(cpu->machine, r), (uint64_t)
+					    regnames[r], (uint64_t)
 					    cpu->cd.mips.gpr_quadhi[r],
 					    (uint64_t)cpu->cd.mips.gpr[r]);
 				if ((i & 1) == 1)
@@ -1601,8 +1563,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if (i == MIPS_GPR_ZERO)
 					debug("               ");
 				else
-					debug(" %3s = %08"PRIx32,
-					    regname(cpu->machine, i),
+					debug(" %3s = %08"PRIx32, regnames[i],
 					    (uint32_t)cpu->cd.mips.gpr[i]);
 				if ((i & 3) == 3)
 					debug("\n");
@@ -1617,7 +1578,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					debug("                           ");
 				else
 					debug("   %3s = 0x%016"PRIx64,
-					    regname(cpu->machine, r),
+					    regnames[r],
 					    (uint64_t)cpu->cd.mips.gpr[r]);
 				if ((i & 1) == 1)
 					debug("\n");
@@ -1645,8 +1606,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i & nm1) == 0)
 				debug("cpu%i:", cpu->cpu_id);
 
-			if (cpu->machine->show_symbolic_register_names &&
-			    coprocnr == 0)
+			if (coprocnr == 0)
 				debug(" %8s", cop0_names[i]);
 			else
 				debug(" c%i,%02i", coprocnr, i);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.56 2007-04-28 09:19:52 debug Exp $
+ *  $Id: cpu_mips.h,v 1.57 2007-06-04 08:22:07 debug Exp $
  */
 
 #include "interrupt.h"
@@ -205,6 +205,7 @@ struct r4000_cache_line {
 #define	MIPS_L3N		18
 
 #define	MIPS_MAX_VPH_TLB_ENTRIES	128
+
 DYNTRANS_MISC_DECLARATIONS(mips,MIPS,uint64_t)
 DYNTRANS_MISC64_DECLARATIONS(mips,MIPS,uint8_t)
 
@@ -255,7 +256,20 @@ struct mips_cpu {
 	uint64_t	lo1;
 	uint32_t	r5900_sa;
 
-	/*  Data and Instruction caches:  */
+
+	/*
+	 *  Data and Instruction caches:
+	 */
+
+	/*  Cache sizes: (1 << x) x=0 for default values  */
+	/*  This is legacy stuff. TODO: Clean up!  */
+	int		cache_picache;
+	int		cache_pdcache;
+	int		cache_secondary;
+	int		cache_picache_linesize;
+	int		cache_pdcache_linesize;
+	int		cache_secondary_linesize;
+
 	unsigned char	*cache[2];
 	void		*cache_tags[2];
 	uint64_t	cache_last_paddr[2];
@@ -271,8 +285,8 @@ struct mips_cpu {
 	 */
 	DYNTRANS_ITC(mips)
 	VPH_TLBS(mips,MIPS)
-	VPH32(mips,MIPS,uint64_t,uint8_t)
-	VPH64(mips,MIPS,uint8_t)
+	VPH32(mips,MIPS)
+	VPH64(mips,MIPS)
 };
 
 

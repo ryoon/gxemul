@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.69 2007-02-16 19:57:56 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.70 2007-06-04 08:22:07 debug Exp $
  */
 
 #include "misc.h"
@@ -143,8 +143,8 @@ struct ppc_cpu {
 	 */
 	DYNTRANS_ITC(ppc)
 	VPH_TLBS(ppc,PPC)
-	VPH32(ppc,PPC,uint64_t,uint8_t)
-	VPH64(ppc,PPC,uint8_t)
+	VPH32(ppc,PPC)
+	VPH64(ppc,PPC)
 };
 
 

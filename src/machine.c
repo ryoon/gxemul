@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.695 2007-05-12 01:13:59 debug Exp $
+ *  $Id: machine.c,v 1.696 2007-06-04 08:22:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -106,7 +106,6 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	m->x11_scaleup = 1;
 	m->n_gfx_cards = 1;
 	m->dbe_on_nonexistant_memaccess = 1;
-	m->show_symbolic_register_names = 1;
 	symbol_init(&m->symbol_context);
 
 	/*  Settings:  */
@@ -129,9 +128,6 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	settings_add(m->settings, "n_gfx_cards", 0,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_DECIMAL,
 	    (void *) &m->n_gfx_cards);
-	settings_add(m->settings, "show_symbolic_register_names", 1,
-	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
-	    (void *) &m->show_symbolic_register_names);
 	settings_add(m->settings, "statistics_enabled", 1,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
 	    (void *) &m->statistics_enabled);
@@ -581,10 +577,6 @@ int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 {
 	unsigned char data[4];
 
-	/*  TODO: REMOVE THIS once everything is more stable!  */
-	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
-		addr = (int64_t)(int32_t)addr;
-
 	data[0] = (data32 >> 24) & 255;
 	data[1] = (data32 >> 16) & 255;
 	data[2] = (data32 >> 8) & 255;
@@ -609,10 +601,6 @@ int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
 {
 	unsigned char data[2];
 
-	/*  TODO: REMOVE THIS once everything is more stable!  */
-	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
-		addr = (int64_t)(int32_t)addr;
-
 	data[0] = (data16 >> 8) & 255;
 	data[1] = (data16) & 255;
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
@@ -631,10 +619,6 @@ int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
 	size_t psize = 1024;	/*  1024 256 64 16 4 1  */
-
-	/*  TODO: REMOVE THIS once everything is more stable!  */
-	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
-		addr = (int64_t)(int32_t)addr;
 
 	while (len != 0) {
 		if ((addr & (psize-1)) == 0) {
@@ -712,10 +696,6 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[4];
 
-	/*  TODO: REMOVE THIS once everything is more stable!  */
-	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
-		addr = (int64_t)(int32_t)addr;
-
 	cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
 
@@ -736,10 +716,6 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[2];
-
-	/*  TODO: REMOVE THIS once everything is more stable!  */
-	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
-		addr = (int64_t)(int32_t)addr;
 
 	cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
@@ -892,13 +868,6 @@ void machine_setup(struct machine *machine)
 			debug(" %s", machine->bootarg);
 		debug("\n");
 	}
-
-	if (!machine->stable)
-		fatal("!\n!  NOTE: This machine type is not implemented well"
-		    " enough yet to run\n!  any real-world code!"
-		    " (At least, it hasn't been verified to do so.)\n!\n"
-		    "!  Please read the GXemul documentation for information"
-		    " about which\n!  machine types that actually work.\n!\n");
 }
 
 

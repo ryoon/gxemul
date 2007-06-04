@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.30 2007-01-28 16:59:06 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.31 2007-06-04 08:22:07 debug Exp $
  *
  *  Dreamcast.
  */
@@ -45,7 +45,6 @@
 MACHINE_SETUP(dreamcast)
 {
 	machine->machine_name = "Dreamcast";
-	machine->stable = 1;
 
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 200000000;

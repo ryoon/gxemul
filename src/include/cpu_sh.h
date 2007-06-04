@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.44 2007-05-26 22:26:31 debug Exp $
+ *  $Id: cpu_sh.h,v 1.45 2007-06-04 08:22:07 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -171,7 +171,7 @@ struct sh_cpu {
 	 */
 	DYNTRANS_ITC(sh)
 	VPH_TLBS(sh,SH)
-	VPH32(sh,SH,uint32_t,uint8_t)
+	VPH32(sh,SH)
 };
 
 

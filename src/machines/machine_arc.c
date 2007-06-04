@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.14 2007-03-24 06:40:15 debug Exp $
+ *  $Id: machine_arc.c,v 1.15 2007-06-04 08:22:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -229,7 +229,6 @@ i = 0;
 			strlcat(machine->machine_name,
 			    " (Microsoft Jazz, Acer PICA-61)",
 			    MACHINE_NAME_MAXBUF);
-			machine->stable = 1;
 			break;
 		case MACHINE_ARC_JAZZ_MAGNUM:
 			strlcat(machine->machine_name,

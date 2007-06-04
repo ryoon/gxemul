@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.46 2007-03-16 18:49:06 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.47 2007-06-04 08:22:07 debug Exp $
  */
 
 #include "misc.h"
@@ -248,8 +248,8 @@ struct sparc_cpu {
 	 */
 	DYNTRANS_ITC(sparc)
 	VPH_TLBS(sparc,SPARC)
-	VPH32(sparc,SPARC,uint64_t,uint8_t)
-	VPH64(sparc,SPARC,uint8_t)
+	VPH32(sparc,SPARC)
+	VPH64(sparc,SPARC)
 };
 
 

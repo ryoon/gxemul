@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.13 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.14 2007-06-04 08:22:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,7 +47,6 @@ MACHINE_SETUP(netwinder)
 	struct pci_data *pci_bus;
 
 	machine->machine_name = "NetWinder";
-	machine->stable = 1;
 
 	if (machine->physical_ram_in_mb > 256)
 		fprintf(stderr, "WARNING! Real NetWinders cannot"

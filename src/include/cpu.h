@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.122 2007-06-04 06:59:01 debug Exp $
+ *  $Id: cpu.h,v 1.123 2007-06-04 08:22:07 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -146,13 +146,13 @@
  *  full-size tables can fit in virtual memory on modern hosts (both 32-bit
  *  and 64-bit hosts). :-)
  *
- *  Usage: e.g. VPH32(arm,ARM,uint32_t,uint8_t)
- *           or VPH32(sparc,SPARC,uint64_t,uint16_t)
+ *  Usage: e.g. VPH32(arm,ARM)
+ *           or VPH32(sparc,SPARC)
  *
  *  The vph_tlb_entry entries are cpu dependent tlb entries.
  *
  *  The host_load and host_store entries point to host pages; the phys_addr
- *  entries are uint32_t or uint64_t (emulated physical addresses).
+ *  entries are uint32_t (emulated physical addresses).
  *
  *  phys_page points to translation cache physpages.
  *
@@ -165,26 +165,26 @@
  *  names. Used so far only for usermode addresses in M88K emulation.
  */
 #define	N_VPH32_ENTRIES		1048576
-#define	VPH32(arch,ARCH,paddrtype,tlbindextype)				\
+#define	VPH32(arch,ARCH)						\
 	unsigned char		*host_load[N_VPH32_ENTRIES];		\
 	unsigned char		*host_store[N_VPH32_ENTRIES];		\
-	paddrtype		phys_addr[N_VPH32_ENTRIES];		\
+	uint32_t		phys_addr[N_VPH32_ENTRIES];		\
 	struct arch ## _tc_physpage  *phys_page[N_VPH32_ENTRIES];	\
-	tlbindextype		vaddr_to_tlbindex[N_VPH32_ENTRIES];
-#define	VPH32EXTENDED(arch,ARCH,paddrtype,tlbindextype,ex)		\
+	uint8_t			vaddr_to_tlbindex[N_VPH32_ENTRIES];
+#define	VPH32EXTENDED(arch,ARCH,ex)					\
 	unsigned char		*host_load_ ## ex[N_VPH32_ENTRIES];	\
 	unsigned char		*host_store_ ## ex[N_VPH32_ENTRIES];	\
-	paddrtype		phys_addr_ ## ex[N_VPH32_ENTRIES];	\
+	uint32_t		phys_addr_ ## ex[N_VPH32_ENTRIES];	\
 	struct arch ## _tc_physpage  *phys_page_ ## ex[N_VPH32_ENTRIES];\
-	tlbindextype		vaddr_to_tlbindex_ ## ex[N_VPH32_ENTRIES];
+	uint8_t			vaddr_to_tlbindex_ ## ex[N_VPH32_ENTRIES];
 
 
 /*
  *  64-bit dyntrans emulated Virtual -> physical -> host address translation:
  *  -------------------------------------------------------------------------
  *
- *  Usage: e.g. VPH64(alpha,ALPHA,uint8_t)
- *           or VPH64(sparc,SPARC,uint16_t)
+ *  Usage: e.g. VPH64(alpha,ALPHA)
+ *           or VPH64(sparc,SPARC)
  *
  *  l1_64 is an array containing poiners to l2 tables.
  *
@@ -193,7 +193,7 @@
  *  used.
  */
 #define	DYNTRANS_L1N		17
-#define	VPH64(arch,ARCH,tlbindextype)					\
+#define	VPH64(arch,ARCH)						\
 	struct arch ## _l3_64_table	*l3_64_dummy;			\
 	struct arch ## _l3_64_table	*next_free_l3;			\
 	struct arch ## _l2_64_table	*l2_64_dummy;			\
@@ -311,16 +311,19 @@ struct cpu {
 	char		*path;
 
 	/*  EMUL_LITTLE_ENDIAN or EMUL_BIG_ENDIAN.  */
-	int		byte_order;
+	uint8_t		byte_order;
+
+	/*  0 for emulated 64-bit CPUs, 1 for 32-bit.  */
+	uint8_t		is_32bit;
+
+	/*  1 while running, 0 when paused/stopped.  */
+	uint8_t		running;
+
+	/*  See comment further up.  */
+	uint8_t		delay_slot;
 
 	/*  0-based CPU id, in an emulated SMP system.  */
 	int		cpu_id;
-
-	/*  0 for emulated 64-bit CPUs, 1 for 32-bit.  */
-	int		is_32bit;
-
-	/*  1 while running, 0 when paused/stopped.  */
-	int		running;
 
 	/*  A pointer to the main memory connected to this CPU.  */
 	struct memory	*mem;
@@ -346,9 +349,6 @@ struct cpu {
 	/*  The program counter. (For 32-bit modes, not all bits are used.)  */
 	uint64_t	pc;
 
-	/*  See comment further up.  */
-	int		delay_slot;
-
 	/*  The current depth of function call tracing.  */
 	int		trace_tree_depth;
 
@@ -361,8 +361,8 @@ struct cpu {
 	 *  instructions per second, "idling" is printed instead. (The number
 	 *  of instrs per second when idling is meaningless anyway.)
 	 */
-	int		is_halted;
-	int		has_been_idling;
+	char		is_halted;
+	char		has_been_idling;
 
 	/*
 	 *  Dynamic translation:

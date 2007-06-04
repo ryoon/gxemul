@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.262 2007-05-31 16:54:03 debug Exp $
+#  $Id: configure,v 1.263 2007-06-04 08:22:05 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -131,6 +131,8 @@ fi
 
 if [ z"$UNSTABLE" = zYES ]; then
 	printf "#define UNSTABLE_DEVEL\n" >> config.h
+else
+	CFLAGS="-DNDEBUG $CFLAGS"
 fi
 
 

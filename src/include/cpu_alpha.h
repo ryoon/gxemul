@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.46 2007-05-26 03:47:34 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.47 2007-06-04 08:22:07 debug Exp $
  */
 
 #include "misc.h"
@@ -151,7 +151,7 @@ struct alpha_cpu {
 	 */
 	DYNTRANS_ITC(alpha)
 	VPH_TLBS(alpha,ALPHA)
-	VPH64(alpha,ALPHA,uint8_t)
+	VPH64(alpha,ALPHA)
 };
 
 

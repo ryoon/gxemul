@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.17 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_prep.c,v 1.18 2007-06-04 08:22:07 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -57,7 +57,6 @@ MACHINE_SETUP(prep)
 	case MACHINE_PREP_IBM6050:
 		machine->machine_name =
 		    "PowerPC Reference Platform, IBM 6050/6070";
-		machine->stable = 1;
 		model_name = "IBM PPS Model 6050/6070 (E)";
 
 		if (machine->emulated_hz == 0)

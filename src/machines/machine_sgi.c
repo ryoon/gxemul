@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.18 2007-03-24 06:40:16 debug Exp $
+ *  $Id: machine_sgi.c,v 1.19 2007-06-04 08:22:07 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -412,7 +412,6 @@ abort();
 
 	case 32:
 		strlcat(machine->machine_name, " (O2)", MACHINE_NAME_MAXBUF);
-		machine->stable = 1;
 
 		/*  TODO: Find out where the phys ram is actually located.  */
 		dev_ram_init(machine, 0x07ffff00ULL,           256,

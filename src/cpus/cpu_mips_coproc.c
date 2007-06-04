@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.64 2007-04-28 09:19:51 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.65 2007-06-04 08:22:06 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -99,14 +99,14 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 		    ;
 		/*  Config select 1: caches etc. TODO: Don't use
 			cpu->machine for this stuff!  */
-		IB = cpu->machine->cache_picache_linesize - 1;
+		IB = cpu->cd.mips.cache_picache_linesize - 1;
 		IB = IB < 0? 0 : (IB > 7? 7 : IB);
-		DB = cpu->machine->cache_pdcache_linesize - 1;
+		DB = cpu->cd.mips.cache_pdcache_linesize - 1;
 		DB = DB < 0? 0 : (DB > 7? 7 : DB);
-		IC = cpu->machine->cache_picache -
-		    cpu->machine->cache_picache_linesize - 7;
-		DC = cpu->machine->cache_pdcache -
-		    cpu->machine->cache_pdcache_linesize - 7;
+		IC = cpu->cd.mips.cache_picache -
+		    cpu->cd.mips.cache_picache_linesize - 7;
+		DC = cpu->cd.mips.cache_pdcache -
+		    cpu->cd.mips.cache_pdcache_linesize - 7;
 		IA = cpu->cd.mips.cpu_type.piways - 1;
 		DA = cpu->cd.mips.cpu_type.pdways - 1;
 		cpu->cd.mips.cop0_config_select1 =
@@ -134,17 +134,17 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 		break;
 	case MIPS_R4000:	/*  according to the R4000 manual  */
 	case MIPS_R4600:
-		IB = cpu->machine->cache_picache_linesize - 4;
+		IB = cpu->cd.mips.cache_picache_linesize - 4;
 		IB = IB < 0? 0 : (IB > 1? 1 : IB);
-		DB = cpu->machine->cache_pdcache_linesize - 4;
+		DB = cpu->cd.mips.cache_pdcache_linesize - 4;
 		DB = DB < 0? 0 : (DB > 1? 1 : DB);
-		SB = cpu->machine->cache_secondary_linesize - 4;
+		SB = cpu->cd.mips.cache_secondary_linesize - 4;
 		SB = SB < 0? 0 : (SB > 3? 3 : SB);
-		IC = cpu->machine->cache_picache - 12;
+		IC = cpu->cd.mips.cache_picache - 12;
 		IC = IC < 0? 0 : (IC > 7? 7 : IC);
-		DC = cpu->machine->cache_pdcache - 12;
+		DC = cpu->cd.mips.cache_pdcache - 12;
 		DC = DC < 0? 0 : (DC > 7? 7 : DC);
-		SC = cpu->machine->cache_secondary? 0 : 1;
+		SC = cpu->cd.mips.cache_secondary? 0 : 1;
 		c->reg[COP0_CONFIG] =
 		      (   0 << 31)	/*  Master/Checker present bit  */
 		    | (0x00 << 28)	/*  EC: system clock divisor,
@@ -176,13 +176,13 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 		    ;
 		break;
 	case MIPS_R4100:	/*  According to the VR4131 manual:  */
-		IB = cpu->machine->cache_picache_linesize - 4;
+		IB = cpu->cd.mips.cache_picache_linesize - 4;
 		IB = IB < 0? 0 : (IB > 1? 1 : IB);
-		DB = cpu->machine->cache_pdcache_linesize - 4;
+		DB = cpu->cd.mips.cache_pdcache_linesize - 4;
 		DB = DB < 0? 0 : (DB > 1? 1 : DB);
-		IC = cpu->machine->cache_picache - 10;
+		IC = cpu->cd.mips.cache_picache - 10;
 		IC = IC < 0? 0 : (IC > 7? 7 : IC);
-		DC = cpu->machine->cache_pdcache - 10;
+		DC = cpu->cd.mips.cache_pdcache - 10;
 		DC = DC < 0? 0 : (DC > 7? 7 : DC);
 		c->reg[COP0_CONFIG] =
 		      (   0 << 31)	/*  IS: Instruction Streaming bit  */
@@ -247,11 +247,11 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 	case MIPS_R10000:
 	case MIPS_R12000:
 	case MIPS_R14000:
-		IC = cpu->machine->cache_picache - 12;
+		IC = cpu->cd.mips.cache_picache - 12;
 		IC = IC < 0? 0 : (IC > 7? 7 : IC);
-		DC = cpu->machine->cache_pdcache - 12;
+		DC = cpu->cd.mips.cache_pdcache - 12;
 		DC = DC < 0? 0 : (DC > 7? 7 : DC);
-		SC = cpu->machine->cache_secondary - 19;
+		SC = cpu->cd.mips.cache_secondary - 19;
 		SC = SC < 0? 0 : (SC > 7? 7 : SC);
 		/*  According to the R10000 User's Manual:  */
 		c->reg[COP0_CONFIG] =

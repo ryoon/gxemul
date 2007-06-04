@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.11 2006-12-30 13:31:02 debug Exp $
+ *  $Id: arcbios.c,v 1.12 2007-06-04 08:22:07 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -2764,14 +2764,14 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 			    NULL, 0);
 
 		cache_size = DEFAULT_PCACHE_SIZE - 12;
-		if (machine->cache_picache)
-			cache_size = machine->cache_picache - 12;
+		if (cpu->cd.mips.cache_picache)
+			cache_size = cpu->cd.mips.cache_picache - 12;
 		if (cache_size < 0)
 			cache_size = 0;
 
 		cache_line_size = DEFAULT_PCACHE_LINESIZE;
-		if (machine->cache_picache_linesize)
-			cache_line_size = machine->cache_picache_linesize;
+		if (cpu->cd.mips.cache_picache_linesize)
+			cache_line_size = cpu->cd.mips.cache_picache_linesize;
 		if (cache_line_size < 0)
 			cache_line_size = 0;
 
@@ -2789,14 +2789,14 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		    0xffffffff, NULL, cpuaddr, NULL, 0);
 
 		cache_size = DEFAULT_PCACHE_SIZE - 12;
-		if (machine->cache_pdcache)
-			cache_size = machine->cache_pdcache - 12;
+		if (cpu->cd.mips.cache_pdcache)
+			cache_size = cpu->cd.mips.cache_pdcache - 12;
 		if (cache_size < 0)
 			cache_size = 0;
 
 		cache_line_size = DEFAULT_PCACHE_LINESIZE;
-		if (machine->cache_pdcache_linesize)
-			cache_line_size = machine->cache_pdcache_linesize;
+		if (cpu->cd.mips.cache_pdcache_linesize)
+			cache_line_size = cpu->cd.mips.cache_pdcache_linesize;
 		if (cache_line_size < 0)
 			cache_line_size = 0;
 
@@ -2812,12 +2812,12 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 			/*  32 bytes per line, default = 32 KB total  */
 		    0xffffffff, NULL, cpuaddr, NULL, 0);
 
-		if (machine->cache_secondary >= 12) {
-			cache_size = machine->cache_secondary - 12;
+		if (cpu->cd.mips.cache_secondary >= 12) {
+			cache_size = cpu->cd.mips.cache_secondary - 12;
 
 			cache_line_size = 6;	/*  64 bytes default  */
-			if (machine->cache_secondary_linesize)
-				cache_line_size = machine->
+			if (cpu->cd.mips.cache_secondary_linesize)
+				cache_line_size = cpu->cd.mips.
 				    cache_secondary_linesize;
 			if (cache_line_size < 0)
 				cache_line_size = 0;
@@ -2845,7 +2845,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		debug("    picache @ 0x%"PRIx64", pdcache @ 0x%"PRIx64"\n",
 		    (uint64_t) picache, (uint64_t) pdcache);
 
-		if (machine->cache_secondary >= 12)
+		if (cpu->cd.mips.cache_secondary >= 12)
 			debug("    sdcache @ 0x%"PRIx64"\n",
 			    (uint64_t) sdcache);
 

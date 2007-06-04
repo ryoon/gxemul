@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.23 2007-02-18 09:19:48 debug Exp $
+ *  $Id: machine_pmax.c,v 1.24 2007-06-04 08:22:07 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -153,7 +153,6 @@ MACHINE_SETUP(pmax)
 		/*  Supposed to have 25MHz R3000 CPU, R3010 FPC,  */
 		/*  and a R3220 Memory coprocessor  */
 		machine->machine_name = "DECstation 5000/200 (3MAX, KN02)";
-		machine->stable = 1;
 
 		if (machine->emulated_hz == 0)
 			machine->emulated_hz = 25000000;

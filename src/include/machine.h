@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.170 2007-05-31 16:53:46 debug Exp $
+ *  $Id: machine.h,v 1.171 2007-06-04 08:22:07 debug Exp $
  */
 
 #include <sys/types.h>
@@ -84,9 +84,6 @@ struct machine {
 
 	/*  Name set by code in src/machines/machine_*.c:  */
 	char	*machine_name;
-
-	int	stable;			/*  startup warning for non-stable
-					    emulation modes.  */
 
 	/*  The serial number is mostly used when emulating multiple machines
 	    in a network. nr_of_nics is the current nr of network cards, which
@@ -155,21 +152,11 @@ struct machine {
 	uint64_t breakpoint_addr[MAX_BREAKPOINTS];
 	int	breakpoint_flags[MAX_BREAKPOINTS];
 
-	/*  Cache sizes: (1 << x) x=0 for default values  */
-	/*  TODO: these should be _PER CPU_!  */
-	int	cache_picache;
-	int	cache_pdcache;
-	int	cache_secondary;
-	int	cache_picache_linesize;
-	int	cache_pdcache_linesize;
-	int	cache_secondary_linesize;
-
 	int	dbe_on_nonexistant_memaccess;
 	int	halt_on_nonexistant_memaccess;
 	int	instruction_trace;
 	int	show_nr_of_instructions;
 	int	show_trace_tree;
-	int	show_symbolic_register_names;
 	int	emulated_hz;
 	int	allow_instruction_combinations;
 	char	*userland_emul;		/*  NULL for no userland emulation  */
@@ -187,17 +174,6 @@ struct machine {
 	int	statistics_enabled;
 	char	*statistics_fields;	/*  "vpi" etc.  */
 
-	/*  Machine-dependent: (PROM stuff, etc.)  */
-	union {
-		struct machine_arcbios	arc;
-		struct machine_pmax	pmax;
-		struct of_data		*of_data;
-	} md;
-
-	/*  Bus-specific interrupt data:  */
-	/*  TODO: Remove!  */
-	struct isa_pic_data isa_pic_data;
-
 	/*  X11/framebuffer stuff:  */
 	int	use_x11;
 	int	x11_scaledown;
@@ -208,6 +184,17 @@ struct machine {
 
 	int	n_fb_windows;
 	struct fb_window **fb_windows;
+
+	/*  Machine-dependent: (PROM stuff, etc.)  */
+	union {
+		struct machine_arcbios	arc;
+		struct machine_pmax	pmax;
+		struct of_data		*of_data;
+	} md;
+
+	/*  Bus-specific interrupt data:  */
+	/*  TODO: Remove!  */
+	struct isa_pic_data isa_pic_data;
 };
 
 

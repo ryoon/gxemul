@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.130 2007-05-26 07:15:50 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.131 2007-06-04 08:22:06 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -4581,12 +4581,16 @@ X(to_be_translated)
 #ifdef MODE32
 	if (x64) {
 		static int has_warned = 0;
-		if (!has_warned)
+		if (!has_warned && !cpu->translation_readahead) {
 			fatal("[ WARNING/NOTE: attempt to execute a 64-bit"
 			    " instruction on an emulated 32-bit processor; "
 			    "pc=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc);
-		has_warned = 1;
-		ic->f = instr(reserved);
+			has_warned = 1;
+		}
+		if (cpu->translation_readahead)
+			goto bad;
+		else
+			ic->f = instr(reserved);
 	}
 #endif
 

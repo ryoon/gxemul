@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcmips.c,v 1.6 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_hpcmips.c,v 1.7 2007-06-04 08:22:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -131,7 +131,6 @@ MACHINE_SETUP(hpcmips)
 	case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
 		/*  131 MHz VR4121  */
 		machine->machine_name = "NEC MobilePro 770";
-		machine->stable = 1;
 		hpc_fb_addr = 0xa000000;
 		hpc_fb_xsize = 640;
 		hpc_fb_ysize = 240;
@@ -155,7 +154,6 @@ MACHINE_SETUP(hpcmips)
 	case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
 		/*  166 (or 168) MHz VR4121  */
 		machine->machine_name = "NEC MobilePro 780";
-		machine->stable = 1;
 		hpc_fb_addr = 0xa180100;
 		hpc_fb_xsize = 640;
 		hpc_fb_ysize = 240;
@@ -179,7 +177,6 @@ MACHINE_SETUP(hpcmips)
 	case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
 		/*  131 MHz VR4121  */
 		machine->machine_name = "NEC MobilePro 800";
-		machine->stable = 1;
 		hpc_fb_addr = 0xa000000;
 		hpc_fb_xsize = 800;
 		hpc_fb_ysize = 600;
@@ -203,7 +200,6 @@ MACHINE_SETUP(hpcmips)
 	case MACHINE_HPCMIPS_NEC_MOBILEPRO_880:
 		/*  168 MHz VR4121  */
 		machine->machine_name = "NEC MobilePro 880";
-		machine->stable = 1;
 		hpc_fb_addr = 0xa0ea600;
 		hpc_fb_xsize = 800;
 		hpc_fb_ysize = 600;

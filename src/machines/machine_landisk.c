@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.16 2007-05-04 09:30:43 debug Exp $
+ *  $Id: machine_landisk.c,v 1.17 2007-06-04 08:22:07 debug Exp $
  *
  *  I-O DATA LANDISK USL-5P.
  *
@@ -74,7 +74,6 @@ MACHINE_SETUP(landisk)
 	char tmpstr[300];
 
 	machine->machine_name = "Landisk USL-5P";
-	machine->stable = 1;
 
 	/*  266.67 MHz SH4 CPU clock:  */
 	if (machine->emulated_hz == 0)

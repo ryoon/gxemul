@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.36 2007-06-04 06:11:59 debug Exp $
+ *  $Id: machine_test.c,v 1.37 2007-06-04 08:22:07 debug Exp $
  *
  *  Various test machines. Generally, the machines are as follows:
  *
@@ -144,14 +144,12 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 MACHINE_SETUP(barealpha)
 {
 	machine->machine_name = "Generic \"bare\" Alpha machine";
-	machine->stable = 1;
 }
 
 
 MACHINE_SETUP(testalpha)
 {
 	machine->machine_name = "Alpha test machine";
-	machine->stable = 1;
 
 	default_test(machine, cpu);
 }
@@ -190,14 +188,12 @@ MACHINE_REGISTER(testalpha)
 MACHINE_SETUP(barearm)
 {
 	machine->machine_name = "Generic \"bare\" ARM machine";
-	machine->stable = 1;
 }
 
 
 MACHINE_SETUP(testarm)
 {
 	machine->machine_name = "ARM test machine";
-	machine->stable = 1;
 
 	default_test(machine, cpu);
 
@@ -247,14 +243,12 @@ MACHINE_REGISTER(testarm)
 MACHINE_SETUP(barem88k)
 {
 	machine->machine_name = "Generic \"bare\" M88K machine";
-	machine->stable = 1;
 }
 
 
 MACHINE_SETUP(testm88k)
 {
 	machine->machine_name = "M88K test machine";
-	machine->stable = 1;
 
 	default_test(machine, cpu);
 }
@@ -293,7 +287,6 @@ MACHINE_REGISTER(testm88k)
 MACHINE_SETUP(baremips)
 {
 	machine->machine_name = "Generic \"bare\" MIPS machine";
-	machine->stable = 1;
 	cpu->byte_order = EMUL_BIG_ENDIAN;
 }
 
@@ -318,7 +311,6 @@ MACHINE_SETUP(testmips)
 	char tmpstr[300];
 
 	machine->machine_name = "MIPS test machine";
-	machine->stable = 1;
 	cpu->byte_order = EMUL_BIG_ENDIAN;
 
 	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=%s."
@@ -383,14 +375,12 @@ MACHINE_REGISTER(testmips)
 MACHINE_SETUP(bareppc)
 {
 	machine->machine_name = "Generic \"bare\" PPC machine";
-	machine->stable = 1;
 }
 
 
 MACHINE_SETUP(testppc)
 {
 	machine->machine_name = "PPC test machine";
-	machine->stable = 1;
 
 	default_test(machine, cpu);
 }
@@ -428,14 +418,12 @@ MACHINE_REGISTER(testppc)
 MACHINE_SETUP(baresh)
 {
 	machine->machine_name = "Generic \"bare\" SH machine";
-	machine->stable = 1;
 }
 
 
 MACHINE_SETUP(testsh)
 {
 	machine->machine_name = "SH test machine";
-	machine->stable = 1;
 
 	default_test(machine, cpu);
 }
@@ -473,14 +461,12 @@ MACHINE_REGISTER(testsh)
 MACHINE_SETUP(baresparc)
 {
 	machine->machine_name = "Generic \"bare\" SPARC machine";
-	machine->stable = 1;
 }
 
 
 MACHINE_SETUP(testsparc)
 {
 	machine->machine_name = "SPARC test machine";
-	machine->stable = 1;
 
 	default_test(machine, cpu);
 }

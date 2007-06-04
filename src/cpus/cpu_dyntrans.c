@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.155 2007-06-04 06:32:25 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.156 2007-06-04 08:22:06 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1354,7 +1354,14 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #ifdef MODE32
 	uint32_t index;
 	vaddr_page &= 0xffffffffULL;
-	paddr_page &= 0xffffffffULL;
+
+	if (paddr_page > 0xffffffffULL) {
+		fatal("update_translation_table(): v=0x%016"PRIx64", h=%p w=%i"
+		    " p=0x%016"PRIx64"\n", vaddr_page, host_page, writeflag,
+		    paddr_page);
+		exit(1);
+	}
+
 	/*  fatal("update_translation_table(): v=0x%x, h=%p w=%i"
 	    " p=0x%x\n", (int)vaddr_page, host_page, writeflag,
 	    (int)paddr_page);  */

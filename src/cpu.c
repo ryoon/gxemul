@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.379 2007-05-27 03:24:00 debug Exp $
+ *  $Id: cpu.c,v 1.380 2007-06-04 08:22:06 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -103,7 +103,7 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 
 	settings_add(cpu->settings, "name", 0, SETTINGS_TYPE_STRING,
 	    SETTINGS_FORMAT_STRING, (void *) &cpu->name);
-	settings_add(cpu->settings, "running", 0, SETTINGS_TYPE_INT,
+	settings_add(cpu->settings, "running", 0, SETTINGS_TYPE_UINT8,
 	    SETTINGS_FORMAT_YESNO, (void *) &cpu->running);
 
 	cpu_create_or_reset_tc(cpu);

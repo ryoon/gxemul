@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.60 2007-06-04 06:11:59 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.61 2007-06-04 06:32:25 debug Exp $
  *
  *  SH instructions.
  *
@@ -1449,14 +1449,16 @@ X(div0u)
 }
 X(div0s_rm_rn)
 {
-	int q = reg(ic->arg[1]) >> 31, m = reg(ic->arg[0]) >> 31;
-	cpu->cd.sh.sr &= ~(SH_SR_Q | SH_SR_M | SH_SR_T);
+	int q = reg(ic->arg[1]) & 0x80000000;
+	int m = reg(ic->arg[0]) & 0x80000000;
+	uint32_t new_sr = cpu->cd.sh.sr & ~(SH_SR_Q | SH_SR_M | SH_SR_T);
 	if (q)
-		cpu->cd.sh.sr |= SH_SR_Q;
+		new_sr |= SH_SR_Q;
 	if (m)
-		cpu->cd.sh.sr |= SH_SR_M;
+		new_sr |= SH_SR_M;
 	if (m ^ q)
-		cpu->cd.sh.sr |= SH_SR_T;
+		new_sr |= SH_SR_T;
+	cpu->cd.sh.sr = new_sr;
 }
 X(div1_rm_rn)
 {
@@ -1629,7 +1631,7 @@ X(cmp_str_rm_rn)
 X(shll_rn)
 {
 	uint32_t rn = reg(ic->arg[1]);
-	if (rn >> 31)
+	if (rn & 0x80000000)
 		cpu->cd.sh.sr |= SH_SR_T;
 	else
 		cpu->cd.sh.sr &= ~SH_SR_T;
@@ -1646,12 +1648,15 @@ X(shlr_rn)
 }
 X(rotl_rn)
 {
-	uint32_t rn = reg(ic->arg[1]);
-	if (rn >> 31)
+	uint32_t rn = reg(ic->arg[1]), x;
+	if (rn & 0x80000000) {
+		x = 1;
 		cpu->cd.sh.sr |= SH_SR_T;
-	else
+	} else {
+		x = 0;
 		cpu->cd.sh.sr &= ~SH_SR_T;
-	reg(ic->arg[1]) = (rn << 1) | (rn >> 31);
+	}
+	reg(ic->arg[1]) = (rn << 1) | x;
 }
 X(rotr_rn)
 {

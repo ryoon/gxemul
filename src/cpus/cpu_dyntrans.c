@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.154 2007-05-27 03:24:01 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.155 2007-06-04 06:32:25 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -109,12 +109,6 @@ static void gather_statistics(struct cpu *cpu)
 #define S		gather_statistics(cpu)
 
 
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic;		\
-			cpu->cd.DYNTRANS_ARCH.next_ic += ic->arg[0];	\
-			ic->f(cpu, ic);
-#else
-
 /*  The normal instruction execution core:  */
 #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
 
@@ -161,7 +155,6 @@ static void gather_statistics(struct cpu *cpu)
 	}						\
 	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic); }
 */
-#endif
 #endif	/*  STATIC STUFF  */
 
 
@@ -901,9 +894,6 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 		    cpu->is_32bit? instr32(to_be_translated) :
 #endif
 		    instr(to_be_translated);
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-		ppp->ics[i].arg[0] = 0;
-#endif
 	}
 
 	/*  End-of-page:  */
@@ -912,10 +902,6 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 	    cpu->is_32bit? instr32(end_of_page) :
 #endif
 	    instr(end_of_page);
-
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].arg[0] = 0;
-#endif
 
 	/*  End-of-page-2, for delay-slot architectures:  */
 #ifdef DYNTRANS_DELAYSLOT
@@ -1736,33 +1722,15 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 		 *  directly afterwards.
 		 */
 		single_step_breakpoint = 0;
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-		cpu->cd.DYNTRANS_ARCH.next_ic = ic + ic->arg[0];
-#endif
 		ic->f(cpu, ic);
 		ic->f =
 #ifdef DYNTRANS_DUALMODE_32
 		    cpu->is_32bit? instr32(to_be_translated) :
 #endif
 		    instr(to_be_translated);
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-		ic->arg[0] = 0;
-#endif
 	} else {
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-		cpu->cd.DYNTRANS_ARCH.next_ic = ic + ic->arg[0];
-
-		/*  Additional check, for variable length ISAs:  */
-		if (ic->arg[0] == 0) {
-			fatal("INTERNAL ERROR: instr len = 0!\n");
-			goto bad;
-		}
-#endif
-
-
-#if 1
 		/*
-		 *  Translation readahead:
+		 *  Translation read-ahead:
 		 */
 		if (cpu->translation_readahead) {
 			/*  Don't recurse when already doing read-ahead!  */
@@ -1800,7 +1768,6 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 
 			cpu->translation_readahead = 0;
 		}
-#endif
 
 		/*  Finally finally :-), execute the instruction:  */
 		ic->f(cpu, ic);
@@ -1819,9 +1786,6 @@ bad:	/*
 	    cpu->is_32bit? instr32(to_be_translated) :
 #endif
 	    instr(to_be_translated);
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-	ic->arg[0] = 0;
-#endif
 
 	if (cpu->translation_readahead)
 		return;

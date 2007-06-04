@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1586 2007-05-31 16:53:46 debug Exp $
+$Id: HISTORY,v 1.1587 2007-06-04 06:32:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3552,3 +3552,4 @@ Changelog for GXemul:
 		running in usermode (because usermode addresses don't have
 		anything to do with supervisor addresses).
 20070531	Removing the mmEye machine mode skeleton.
+20070604	Minor updates.

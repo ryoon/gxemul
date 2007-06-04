@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.380 2007-06-04 08:22:06 debug Exp $
+ *  $Id: cpu.c,v 1.381 2007-06-04 08:59:50 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -467,6 +467,11 @@ void cpu_show_cycles(struct machine *machine, int forced)
 		else
 			printf("; pc=0x%016"PRIx64, (uint64_t) pc);
 	}
+
+	/*  Special hack for M88K userland:  (Don't show symbols.)  */
+	if (cpu->machine->arch == ARCH_M88K &&
+	    !(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE))
+		symbol = NULL;
 
 	if (symbol != NULL)
 		printf(" <%s>", symbol);

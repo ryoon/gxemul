@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.171 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine.h,v 1.172 2007-06-04 08:53:21 debug Exp $
  */
 
 #include <sys/types.h>
@@ -152,7 +152,6 @@ struct machine {
 	uint64_t breakpoint_addr[MAX_BREAKPOINTS];
 	int	breakpoint_flags[MAX_BREAKPOINTS];
 
-	int	dbe_on_nonexistant_memaccess;
 	int	halt_on_nonexistant_memaccess;
 	int	instruction_trace;
 	int	show_nr_of_instructions;

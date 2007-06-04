@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.104 2007-05-17 08:37:01 debug Exp $
+ *  $Id: memory_rw.c,v 1.105 2007-06-04 08:53:21 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -307,14 +307,12 @@ not just the device in question.
 				 *  For real data/instruction accesses, cause
 				 *  an exceptions on an illegal read:
 				 */
-				if (cache != CACHE_NONE && cpu->machine->
-				    dbe_on_nonexistant_memaccess &&
-				    !no_exceptions) {
-					if (paddr >= mem->physical_max &&
-					    paddr < mem->physical_max+1048576)
-						mips_cpu_exception(cpu,
-						    EXCEPTION_DBE, 0, vaddr, 0,
-						    0, 0, 0);
+				if (cache != CACHE_NONE && !no_exceptions &&
+				    paddr >= mem->physical_max &&
+				    paddr < mem->physical_max+1048576) {
+					mips_cpu_exception(cpu,
+					    EXCEPTION_DBE, 0, vaddr, 0,
+					    0, 0, 0);
 				}
 #endif  /*  MEM_MIPS  */
 			}

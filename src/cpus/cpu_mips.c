@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.80 2007-06-04 08:22:06 debug Exp $
+ *  $Id: cpu_mips.c,v 1.81 2007-06-04 08:53:21 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -214,11 +214,10 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 			size_per_cache_line = sizeof(struct r3000_cache_line);
 			break;
 		default:
-			size_per_cache_line = sizeof(struct r4000_cache_line);
+			size_per_cache_line = 32;	/*  TODO  */
 		}
 
 		cpu->cd.mips.cache_mask[i] = cpu->cd.mips.cache_size[i] - 1;
-		cpu->cd.mips.cache_miss_penalty[i] = 10;	/*  TODO ?  */
 
 		cpu->cd.mips.cache[i] = malloc(cpu->cd.mips.cache_size[i]);
 		if (cpu->cd.mips.cache[i] == NULL) {

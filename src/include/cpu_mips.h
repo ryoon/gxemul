@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.57 2007-06-04 08:22:07 debug Exp $
+ *  $Id: cpu_mips.h,v 1.58 2007-06-04 08:53:21 debug Exp $
  */
 
 #include "interrupt.h"
@@ -182,16 +182,8 @@ struct r3000_cache_line {
 #define	R3000_TAG_VALID		1
 #define	R3000_TAG_DIRTY		2
 
-struct r4000_cache_line {
-	char		dummy;
-};
 
-
-#ifdef ONEKPAGE
-#define	MIPS_IC_ENTRIES_SHIFT		8
-#else
 #define	MIPS_IC_ENTRIES_SHIFT		10
-#endif
 
 #define	MIPS_N_IC_ARGS			3
 #define	MIPS_INSTR_ALIGNMENT_SHIFT	2
@@ -276,7 +268,6 @@ struct mips_cpu {
 	int		cache_size[2];
 	int		cache_linesize[2];
 	int		cache_mask[2];
-	int		cache_miss_penalty[2];
 
 
 	/*

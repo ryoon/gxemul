@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.696 2007-06-04 08:22:06 debug Exp $
+ *  $Id: machine.c,v 1.697 2007-06-04 08:53:20 debug Exp $
  */
 
 #include <stdio.h>
@@ -105,7 +105,6 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	m->x11_scaledown = 1;
 	m->x11_scaleup = 1;
 	m->n_gfx_cards = 1;
-	m->dbe_on_nonexistant_memaccess = 1;
 	symbol_init(&m->symbol_context);
 
 	/*  Settings:  */
@@ -398,8 +397,6 @@ void machine_dumpinfo(struct machine *m)
 		debug(" (offset by %i MB)", m->memory_offset_in_mb);
 	if (m->random_mem_contents)
 		debug(", randomized contents");
-	if (m->dbe_on_nonexistant_memaccess)
-		debug(", dbe_on_nonexistant_memaccess");
 	debug("\n");
 
 	if (!m->prom_emulation)
@@ -894,11 +891,6 @@ void machine_memsize_fix(struct machine *m)
 			}
 			me = me->next;
 		}
-	}
-
-	/*  Special hack for hpcmips machines:  */
-	if (m->machine_type == MACHINE_HPCMIPS) {
-		m->dbe_on_nonexistant_memaccess = 0;
 	}
 
 	/*  Special SGI memory offsets:  (TODO: move this somewhere else)  */

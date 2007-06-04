@@ -1,4 +1,4 @@
-$Id: TODO,v 1.521 2007-06-04 06:41:06 debug Exp $
+$Id: TODO,v 1.522 2007-06-04 08:53:20 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -69,7 +69,6 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 SuperH:
-	x)  samepage branches!
 	x)  Auto-generation of loads/stores! This should get rid of at least
 	    the endianness check in each load/store.
 	x)  Experiment with whether or not correct ITLB emulation is
@@ -85,8 +84,6 @@ SuperH:
 	    and so on, to make the output more human readable.
 	x)  SH3-specific devices: Pretty much everything!
 	x)  NetBSD/evbsh3, hpcsh! Linux?
-	x)  Replace pc-relative loads with immediate load, if within the
-	    same page. (Similar to the same optimization for ARM.)
 	x)  Floating point speed!
 	x)  Floating point exception correctness.
 	x)  NetBSD HEAD (as of April 2007) hangs during bootup, because it

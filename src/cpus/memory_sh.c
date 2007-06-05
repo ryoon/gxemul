@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.22 2007-05-25 12:28:57 debug Exp $
+ *  $Id: memory_sh.c,v 1.23 2007-06-05 06:41:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -310,8 +310,12 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr64, uint64_t *return_paddr,
 	}
 
 	/*  TODO  */
-	fatal("Unimplemented SH vaddr 0x%08"PRIx32"\n", (uint32_t)vaddr);
-	exit(1);
+
+	/*  The ugly 'if' is just here to fool Compaq CC.  */
+	if (!(flags & FLAG_NOEXCEPTIONS)) {
+		fatal("Unimplemented SH vaddr 0x%08"PRIx32"\n", vaddr);
+		exit(1);
+	}
 
 	return 0;
 }

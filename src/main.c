@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.298 2007-06-05 05:40:24 debug Exp $
+ *  $Id: main.c,v 1.299 2007-06-05 06:41:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,7 +47,7 @@
 #include "timer.h"
 
 
-extern volatile int single_step;
+extern int single_step;
 extern int force_debugger_at_exit;
 
 extern int optind;

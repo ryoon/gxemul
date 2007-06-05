@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.32 2007-06-04 06:41:06 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.33 2007-06-05 06:41:30 debug Exp $
  *
  *  M88K instructions.
  *
@@ -877,8 +877,7 @@ X(xmem_slow)
 		fatal("XMEM exception: TODO: update the transaction"
 		    " registers!\n");
 		exit(1);
-
-		return;
+		/*  return;  */
 	}
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, (uint8_t *) &tmp,
@@ -888,8 +887,7 @@ X(xmem_slow)
 		fatal("XMEM exception: TODO: update the transaction"
 		    " registers!\n");
 		exit(1);
-
-		return;
+		/*  return;  */
 	}
 
 	if (size) {

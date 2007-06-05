@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.265 2007-06-05 06:17:20 debug Exp $
+#  $Id: configure,v 1.266 2007-06-05 18:07:21 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -244,38 +244,65 @@ printf "#
 #\n\n" >> _Makefile.header
 
 
-echo 'int main(int argc, char *argv[]) { return 0; }' > _testprog.c
+#  Try with the simplest possible test program. Actually, test static variables
+#  as well, because GXemul uses things like NULL-initialized global pointers,
+#  and it is important that they work. (GCC on Solaris is known to be completely
+#  broken, for instance.)
+
+echo '#include <stdio.h>
+
+int main(int argc, char *argv[])
+{
+        static int x = 0;
+        static int y = 1;
+        printf("%i,%i", x, y);
+        return 0;
+}
+' > _testprog.c
 
 
 #  Try to detect which C compiler to use, if CC is not set:
 printf "checking which C compiler to use... "
-
+rm -f _testprog
 if [ z"$CC" = z ]; then
-	CC=cc
-
 	#  Try gcc first:
-	printf "#!/bin/sh\ngcc _testprog.c -o _testprog >" > _test.sh
+	printf "#!/bin/sh\ngcc $CFLAGS _testprog.c -o _testprog >" > _test.sh
 	printf " /dev/null 2> /dev/null\n" >> _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
-		CC=gcc
+		if [ z`./_testprog` = z0,1 ]; then
+			CC=gcc
+		else
+			printf "broken gcc detected\n"
+			printf "The test program:\n\n"
+			cat _testprog.c
+			printf "\nshould have resulted in 0,1, but the"
+			printf " result was: "
+			./_testprog
+			printf "\n\nchecking for other C compilers... "
+		fi
 	fi
 	rm -f _testprog
 
 	#  If both gcc and cc exist, then cc might be a vendor specific
 	#  compiler which produces faster code than gcc (eg on Solaris):
-	printf "#!/bin/sh\ncc _testprog.c -o _testprog >" > _test.sh
+	printf "#!/bin/sh\ncc $CFLAGS _testprog.c -o _testprog >" > _test.sh
 	printf " /dev/null 2> /dev/null\n" >> _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
-		CC=cc
+		if [ z`./_testprog` = z0,1 ]; then
+			CC=cc
+		else
+			printf "broken cc detected\n"
+			printf "checking for other C compilers... "
+		fi
 	fi
 	rm -f _testprog
 
 #	#  Try ccc (FreeBSD/Alpha):
-#	printf "#!/bin/sh\nccc _testprog.c -o _testprog >" > _test.sh
+#	printf "#!/bin/sh\nccc $CFLAGS _testprog.c -o _testprog >" > _test.sh
 #	printf " /dev/null 2> /dev/null\n" >> _test.sh
 #	chmod 755 _test.sh
 #	./_test.sh > /dev/null 2> /dev/null
@@ -289,6 +316,16 @@ fi
 
 
 rm -f _testprog
+
+if [ z$CC = z ]; then
+	printf "no working compiler detected\n"
+	printf "\nPlease set the CC environment variable to a working C "
+	printf "compiler before running\nthe configure script, and make"
+	printf " sure that the CFLAGS environment variable is\nalso valid"
+	printf " for that compiler.\n"
+	exit
+fi
+
 printf "$CC $CFLAGS"
 
 

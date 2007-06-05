@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.10 2007-05-25 21:16:40 debug Exp $
+ *  $Id: interrupt.c,v 1.11 2007-06-05 06:17:26 debug Exp $
  *
  *  The interrupt subsystem.
  *
@@ -192,8 +192,12 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 		return 1;
 	}
 
-	printf("interrupt_handler_lookup(\"%s\") failed. Aborting.\n", name);
-	abort();
+	/*  The 'if' is an ugly hack to prevent a Compaq CC warning.  */
+	if (i >= nr_of_interrupt_handlers) {
+		printf("interrupt_handler_lookup(\"%s\") failed. "
+		    "Aborting.\n", name);
+		abort();
+	}
 
 	return 0;
 }

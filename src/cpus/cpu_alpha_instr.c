@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.15 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.16 2007-06-05 03:15:01 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -953,8 +953,9 @@ X(to_be_translated)
 		case 0xcd: ic->f = instr(cmplt_imm); break;
 		case 0xed: ic->f = instr(cmple_imm); break;
 
-		default:fatal("[ Alpha: unimplemented function 0x%03x for"
-			    " opcode 0x%02x ]\n", func, opcode);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimplemented function 0x%03x "
+				    "for opcode 0x%02x ]\n", func, opcode);
 			goto bad;
 		}
 		break;
@@ -1005,8 +1006,9 @@ X(to_be_translated)
 		case 0xe4: ic->f = instr(cmovle_imm); break;
 		case 0xe6: ic->f = instr(cmovgt_imm); break;
 		case 0xec: ic->f = instr(implver); break;
-		default:fatal("[ Alpha: unimplemented function 0x%03x for"
-			    " opcode 0x%02x ]\n", func, opcode);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimplemented function 0x%03x "
+				    "for opcode 0x%02x ]\n", func, opcode);
 			goto bad;
 		}
 		break;
@@ -1074,8 +1076,9 @@ X(to_be_translated)
 		case 0xf2: ic->f = instr(mskqh_imm); break;
 		case 0xf7: ic->f = instr(insqh_imm); break;
 		case 0xfa: ic->f = instr(extqh_imm); break;
-		default:fatal("[ Alpha: unimplemented function 0x%03x for"
-			    " opcode 0x%02x ]\n", func, opcode);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimplemented function 0x%03x "
+				    "for opcode 0x%02x ]\n", func, opcode);
 			goto bad;
 		}
 		break;
@@ -1094,8 +1097,9 @@ X(to_be_translated)
 		case 0x00: ic->f = instr(mull); break;
 		case 0x20: ic->f = instr(mulq); break;
 		case 0x30: ic->f = instr(umulh); break;
-		default:fatal("[ Alpha: unimplemented function 0x%03x for"
-			    " opcode 0x%02x ]\n", func, opcode);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimplemented function 0x%03x "
+				    "for opcode 0x%02x ]\n", func, opcode);
 			goto bad;
 		}
 		break;
@@ -1117,8 +1121,9 @@ X(to_be_translated)
 		case 0x0a6: ic->f = instr(cmptlt); break;
 		case 0x0a7: ic->f = instr(cmptle); break;
 		case 0x0be: ic->f = instr(cvtqt); break;
-		default:fatal("[ Alpha: unimplemented function 0x%03x for"
-			    " opcode 0x%02x ]\n", func, opcode);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimplemented function 0x%03x "
+				    "for opcode 0x%02x ]\n", func, opcode);
 			goto bad;
 		}
 		break;
@@ -1141,8 +1146,9 @@ X(to_be_translated)
 		case 0x021:
 			ic->f = instr(fneg);
 			break;
-		default:fatal("[ Alpha: unimplemented function 0x%03x for"
-			    " opcode 0x%02x ]\n", func, opcode);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimplemented function 0x%03x "
+				    "for opcode 0x%02x ]\n", func, opcode);
 			goto bad;
 		}
 		break;
@@ -1160,8 +1166,9 @@ X(to_be_translated)
 			ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
 			ic->f = instr(rdcc);
 			break;
-		default:fatal("[ Alpha: unimplemented function 0x%03x for"
-			    " opcode 0x%02x ]\n", func, opcode);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimplemented function 0x%03x "
+				    "for opcode 0x%02x ]\n", func, opcode);
 			goto bad;
 		}
 		break;
@@ -1185,8 +1192,9 @@ X(to_be_translated)
 					ic->f = instr(jsr);
 			}
 			break;
-		default:fatal("[ Alpha: unimpl JSR type %i, ra=%i rb=%i ]\n",
-			    ((iword >> 14) & 3), ra, rb);
+		default:if (!cpu->translation_readahead)
+				fatal("[ Alpha: unimpl JSR type %i, ra=%i "
+				    "rb=%i ]\n", ((iword >> 14) & 3), ra, rb);
 			goto bad;
 		}
 		break;
@@ -1277,7 +1285,8 @@ X(to_be_translated)
 			}
 		}
 		break;
-	default:fatal("[ UNIMPLEMENTED Alpha opcode 0x%x ]\n", opcode);
+	default:if (!cpu->translation_readahead)
+			fatal("[ UNIMPLEMENTED Alpha opcode 0x%x ]\n", opcode);
 		goto bad;
 	}
 

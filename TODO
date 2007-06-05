@@ -1,4 +1,4 @@
-$Id: TODO,v 1.522 2007-06-04 08:53:20 debug Exp $
+$Id: TODO,v 1.523 2007-06-05 03:15:01 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -32,6 +32,15 @@ M88K:
 		o)  "Graphics" instructions (M88110-specific)
 
 MIPS:
+	o)  For 32-bit emulation modes: bitmap of mapped pages? Things
+	    to think about:
+		x)  Only 32-bit mode! (64-bit => too much code)
+		x)  One array for global pages.
+		x)  One array _PER ASID_.
+		x)  Larger-than-4K-pages must fill several bits in the array.
+		x)  If a bit is 0, it is a guarantee that the page is
+		    not in the tlb => no tlb search is necessary.
+		x)  Total host space used: 1048576/8*65 = approx 8 MB.
 	o)  Nicer MIPS status bits in register dumps.
 	o)  Floating point exception correctness.
 	o)  Fix this? Triggered by NetBSD/sgimips? Hm:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.156 2007-06-04 08:22:06 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.157 2007-06-05 05:58:10 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -353,6 +353,11 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+/*{
+struct DYNTRANS_TC_PHYSPAGE *ppp = (struct DYNTRANS_TC_PHYSPAGE *)
+	cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+printf("v=%08x p=%08x\n", (int)cpu->pc, (int)ppp->physaddr);
+}*/
 	} else if (low_pc == DYNTRANS_IC_ENTRIES_PER_PAGE) {
 		/*  Switch to next page:  */
 		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<

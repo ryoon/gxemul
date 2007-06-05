@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.40 2007-01-28 13:45:46 debug Exp $
+ *  $Id: dev_mp.c,v 1.41 2007-06-05 07:27:29 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -236,14 +236,11 @@ DEVICE_ACCESS(mp)
 	case DEV_MP_NCYCLES:
 		/*
 		 *  Return _approximately_ the number of cycles executed
-		 *  in this machine.
-		 *
-		 *  Note: At the moment, this is actually the number of
-		 *  instructions executed on CPU 0.
+		 *  on this CPU.
 		 *
 		 *  (This value is not updated for each instruction.)
 		 */
-		odata = cpu->machine->ninstrs;
+		odata = cpu->ninstrs;
 		break;
 
 	default:

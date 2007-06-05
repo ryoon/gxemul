@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.289 2007-06-05 05:40:24 debug Exp $
+ *  $Id: emul.c,v 1.290 2007-06-05 07:27:28 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1003,29 +1003,27 @@ void emul_run(struct emul **emuls, int n_emuls)
 	/*
 	 *  MAIN LOOP:
 	 *
-	 *  Run all emulations in parallel, running each machine in
-	 *  each emulation.
+	 *  Run all emulations in parallel, running instructions from each
+	 *  cpu in each machine in each emulation.
 	 */
 	while (go) {
+		struct cpu *bootcpu = emuls[0]->machines[0]->cpus[
+		    emuls[0]->machines[0]->bootstrap_cpu];
+
 		go = 0;
 
 		/*  Flush X11 and serial console output every now and then:  */
-		if (emuls[0]->machines[0]->ninstrs >
-		    emuls[0]->machines[0]->ninstrs_flush + (1<<19)) {
+		if (bootcpu->ninstrs > bootcpu->ninstrs_flush + (1<<19)) {
 			x11_check_event(emuls, n_emuls);
 			console_flush();
-			emuls[0]->machines[0]->ninstrs_flush =
-			    emuls[0]->machines[0]->ninstrs;
+			bootcpu->ninstrs_flush = bootcpu->ninstrs;
 		}
 
-		if (emuls[0]->machines[0]->ninstrs >
-		    emuls[0]->machines[0]->ninstrs_show + (1<<25)) {
-			emuls[0]->machines[0]->ninstrs_since_gettimeofday +=
-			    (emuls[0]->machines[0]->ninstrs -
-			     emuls[0]->machines[0]->ninstrs_show);
+		if (bootcpu->ninstrs > bootcpu->ninstrs_show + (1<<25)) {
+			bootcpu->ninstrs_since_gettimeofday +=
+			    (bootcpu->ninstrs - bootcpu->ninstrs_show);
 			cpu_show_cycles(emuls[0]->machines[0], 0);
-			emuls[0]->machines[0]->ninstrs_show =
-			    emuls[0]->machines[0]->ninstrs;
+			bootcpu->ninstrs_show = bootcpu->ninstrs;
 		}
 
 		if (single_step == ENTER_SINGLE_STEPPING) {

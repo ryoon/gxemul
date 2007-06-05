@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.382 2007-06-05 05:40:24 debug Exp $
+ *  $Id: cpu.c,v 1.383 2007-06-05 07:27:28 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -427,8 +427,8 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	pc = cpu->pc;
 
 	gettimeofday(&tv, NULL);
-	mseconds = (tv.tv_sec - machine->starttime.tv_sec) * 1000
-	         + (tv.tv_usec - machine->starttime.tv_usec) / 1000;
+	mseconds = (tv.tv_sec - cpu->starttime.tv_sec) * 1000
+	         + (tv.tv_usec - cpu->starttime.tv_usec) / 1000;
 
 	if (mseconds == 0)
 		mseconds = 1;
@@ -436,13 +436,13 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = machine->ninstrs_since_gettimeofday;
+	ninstrs = cpu->ninstrs_since_gettimeofday;
 
 	/*  RETURN here, unless show_nr_of_instructions (-N) is turned on:  */
 	if (!machine->show_nr_of_instructions && !forced)
 		goto do_return;
 
-	printf("[ %"PRIi64" instrs", (int64_t)machine->ninstrs);
+	printf("[ %"PRIi64" instrs", (int64_t) cpu->ninstrs);
 
 	/*  Instructions per second, and average so far:  */
 	is = 1000 * (ninstrs-ninstrs_last) / (mseconds-mseconds_last);
@@ -490,13 +490,18 @@ do_return:
  */
 void cpu_run_init(struct machine *machine)
 {
-	machine->ninstrs_flush = 0;
-	machine->ninstrs = 0;
-	machine->ninstrs_show = 0;
+	int i;
+	for (i=0; i<machine->ncpus; i++) {
+		struct cpu *cpu = machine->cpus[i];
 
-	/*  For performance measurement:  */
-	gettimeofday(&machine->starttime, NULL);
-	machine->ninstrs_since_gettimeofday = 0;
+		cpu->ninstrs_flush = 0;
+		cpu->ninstrs = 0;
+		cpu->ninstrs_show = 0;
+
+		/*  For performance measurement:  */
+		gettimeofday(&cpu->starttime, NULL);
+		cpu->ninstrs_since_gettimeofday = 0;
+	}
 }
 
 

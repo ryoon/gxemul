@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.698 2007-06-05 05:40:24 debug Exp $
+ *  $Id: machine.c,v 1.699 2007-06-05 07:27:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -622,8 +622,6 @@ int machine_run(struct machine *machine)
 	 *
 	 *  TODO: This should be redesigned into some "mainbus" stuff instead!
 	 */
-
-	machine->ninstrs += cpu0instrs;
 
 	for (te=0; te<machine->n_tick_entries; te++) {
 		machine->ticks_till_next[te] -= cpu0instrs;

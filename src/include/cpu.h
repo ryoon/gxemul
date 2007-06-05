@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.124 2007-06-05 05:58:10 debug Exp $
+ *  $Id: cpu.h,v 1.125 2007-06-05 07:27:29 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -310,6 +310,13 @@ struct cpu {
 	/*  Full "path" to the CPU, e.g. "emul[0].machine[0].cpu[0]":  */
 	char		*path;
 
+	/*  Nr of instructions executed, etc.:  */
+	int64_t		ninstrs;
+	int64_t		ninstrs_show;
+	int64_t		ninstrs_flush;
+	int64_t		ninstrs_since_gettimeofday;
+	struct timeval	starttime;
+
 	/*  EMUL_LITTLE_ENDIAN or EMUL_BIG_ENDIAN.  */
 	uint8_t		byte_order;
 
@@ -400,8 +407,9 @@ struct cpu {
 	/*
 	 *  CPU-family dependent:
 	 *
-	 *  These contain everything ranging from registers, memory management,
-	 *  status words, etc.
+	 *  These contain everything ranging from general purpose registers,
+	 *  control registers, memory management, status words, interrupt
+	 *  specifics, etc.
 	 */
 	union {
 		struct alpha_cpu      alpha;

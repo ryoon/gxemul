@@ -28,11 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.174 2007-06-05 07:00:54 debug Exp $
+ *  $Id: machine.h,v 1.175 2007-06-05 07:27:29 debug Exp $
  */
 
 #include <sys/types.h>
-#include <sys/time.h>
 
 #include "symbol.h"
 
@@ -120,14 +119,6 @@ struct machine {
 	int	start_paused;
 	int	ncpus;
 	struct cpu **cpus;
-
-	/*  These are used by stuff in cpu.c, mostly:  */
-	/*  TODO: Move to cpu.h!  */
-	int64_t ninstrs;
-	int64_t	ninstrs_show;
-	int64_t	ninstrs_flush;
-	int64_t	ninstrs_since_gettimeofday;
-	struct timeval starttime;
 
 	struct diskimage *first_diskimage;
 

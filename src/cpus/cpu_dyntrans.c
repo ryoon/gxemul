@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.158 2007-06-05 07:09:01 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.159 2007-06-05 07:27:29 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -415,6 +415,8 @@ printf("v=%08x p=%08x\n", (int)cpu->pc, (int)ppp->physaddr);
 			cpu->cd.ppc.spr[SPR_TBU] ++;
 	}
 #endif
+
+	cpu->ninstrs += n_instrs;
 
 	/*  Return the nr of instructions executed:  */
 	return n_instrs;

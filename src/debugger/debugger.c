@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.22 2007-03-26 02:01:36 debug Exp $
+ *  $Id: debugger.c,v 1.23 2007-06-05 07:27:29 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -700,8 +700,10 @@ void debugger(void)
 
 	/*  ... and reset starttime, so that nr of instructions per second
 	    can be calculated correctly:  */
-	gettimeofday(&debugger_machine->starttime, NULL);
-	debugger_machine->ninstrs_since_gettimeofday = 0;
+	for (i=0; i<debugger_machine->ncpus; i++) {
+		gettimeofday(&debugger_machine->cpus[i]->starttime, NULL);
+		debugger_machine->cpus[i]->ninstrs_since_gettimeofday = 0;
+	}
 
 	single_step = NOT_SINGLE_STEPPING;
 	debugger_machine->instruction_trace = old_instruction_trace;

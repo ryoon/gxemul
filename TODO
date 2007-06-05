@@ -1,4 +1,4 @@
-$Id: TODO,v 1.523 2007-06-05 03:15:01 debug Exp $
+$Id: TODO,v 1.524 2007-06-05 18:06:58 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -388,14 +388,6 @@ Documentation:
 	    that use 3MAX into using CATS or hpcmips? (To remove the need
 	    to use a raw ffs partition, using up all of the disk image.)
 
-More generic out_of_memory error reporting, and check everywhere!
-	Causes:	OpenBSD has low default limits for normal users.
-		Host is 32-bit? (32-bit hosts are limited to 4 GB or less
-		of userspace memory.)
-		You are actually low on RAM. (As trivial as this might sound,
-		Unix systems usually allow processes to allocate virtual
-		memory beyond the amount of RAM in the machine.)
-
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
 	    minimum size, etc, or up to a max size); if there is a collision,
@@ -429,7 +421,6 @@ PCI:
 Clocks and timers:
 	x)  Fix the PowerPC DECR interrupt speed! (MacPPC and PReP speed, etc.)
 	x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
-	x)  Test the 8253? Right now it doesn't seem to be used?
 	x)  NetWinder timeofday is incorrect! Huh? grep -R for ta_rtc_read in
 	    NetBSD sources; it doesn't seem to be initialized _AT ALL_?!
 	x)  Cobalt TOD is incorrect!
@@ -456,7 +447,7 @@ Userland emulation:
 	x)  Return value (from main).
 	x)  mmap emulation layer
 	x)  errno emulation layer
-	x)  struct conversions for may syscalls
+	x)  struct conversions for many syscalls
 
 Sound:
 	x)  generic sound framework

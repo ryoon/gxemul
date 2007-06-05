@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.24 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_pmax.c,v 1.25 2007-06-05 07:00:54 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -39,6 +39,7 @@
 #include "devices.h"
 #include "diskimage.h"
 #include "machine.h"
+#include "machine_pmax.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -856,22 +857,29 @@ abort();
 
 	store_buf(cpu, BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
 
+	machine->md.pmax = malloc(sizeof(struct machine_pmax));
+	if (machine->md.pmax == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(machine->md.pmax, 0, sizeof(struct machine_pmax));
+
 	/*  The system's memmap:  */
-	machine->md.pmax.memmap = malloc(sizeof(struct dec_memmap));
-	if (machine->md.pmax.memmap == NULL) {
+	machine->md.pmax->memmap = malloc(sizeof(struct dec_memmap));
+	if (machine->md.pmax->memmap == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	store_32bit_word_in_host(cpu,
-	    (unsigned char *)&machine->md.pmax.memmap->pagesize, 4096);
+	    (unsigned char *)&machine->md.pmax->memmap->pagesize, 4096);
 	{
 		unsigned int i;
-		for (i=0; i<sizeof(machine->md.pmax.memmap->bitmap); i++)
-			machine->md.pmax.memmap->bitmap[i] = ((int)i * 4096*8 <
+		for (i=0; i<sizeof(machine->md.pmax->memmap->bitmap); i++)
+			machine->md.pmax->memmap->bitmap[i] = ((int)i * 4096*8 <
 			    1048576*machine->physical_ram_in_mb)? 0xff : 0x00;
 	}
 	store_buf(cpu, DEC_MEMMAP_ADDR,
-	    (char *)machine->md.pmax.memmap, sizeof(struct dec_memmap));
+	    (char *)machine->md.pmax->memmap, sizeof(struct dec_memmap));
 
 	/*  Environment variables:  */
 	addr = DEC_PROM_STRINGS;

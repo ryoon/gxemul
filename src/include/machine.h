@@ -28,16 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.173 2007-06-05 05:40:24 debug Exp $
+ *  $Id: machine.h,v 1.174 2007-06-05 07:00:54 debug Exp $
  */
 
 #include <sys/types.h>
 #include <sys/time.h>
 
 #include "symbol.h"
-
-#include "machine_arc.h"
-#include "machine_pmax.h"
 
 
 #define	MAX_BREAKPOINTS		8
@@ -50,6 +47,8 @@ struct cpu_family;
 struct diskimage;
 struct emul;
 struct fb_window;
+struct machine_arcbios;
+struct machine_pmax;
 struct memory;
 struct of_data;
 struct settings;
@@ -186,8 +185,8 @@ struct machine {
 
 	/*  Machine-dependent: (PROM stuff, etc.)  */
 	union {
-		struct machine_arcbios	arc;
-		struct machine_pmax	pmax;
+		struct machine_arcbios	*arc;
+		struct machine_pmax	*pmax;
 		struct of_data		*of_data;
 	} md;
 

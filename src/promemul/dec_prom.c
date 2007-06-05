@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.11 2006-12-30 13:31:02 debug Exp $
+ *  $Id: dec_prom.c,v 1.12 2007-06-05 07:00:54 debug Exp $
  *
  *  DECstation PROM emulation.
  *
@@ -45,6 +45,7 @@
 #include "cpu_mips.h"
 #include "diskimage.h"
 #include "machine.h"
+#include "machine_pmax.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -592,10 +593,10 @@ int decstation_prom_emul(struct cpu *cpu)
 		debug("[ DEC PROM getbitmap(0x%08x) ]\n",
 		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		store_buf(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0],
-		    (char *)cpu->machine->md.pmax.memmap,
+		    (char *)cpu->machine->md.pmax->memmap,
 		    sizeof(struct dec_memmap));
 		cpu->cd.mips.gpr[MIPS_GPR_V0] =
-		    sizeof(cpu->machine->md.pmax.memmap->bitmap);
+		    sizeof(cpu->machine->md.pmax->memmap->bitmap);
 		break;
 	case 0x88:		/*  disableintr()  */
 		debug("[ DEC PROM disableintr(): TODO ]\n");

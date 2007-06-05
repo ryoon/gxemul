@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1590 2007-06-05 05:58:09 debug Exp $
+$Id: HISTORY,v 1.1591 2007-06-05 06:17:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3555,3 +3555,5 @@ Changelog for GXemul:
 20070604	Some minor code cleanup.
 20070605	Moving src/useremul.c into a subdir (src/useremul/), and
 		cleaning up some more legacy constructs.
+		Adding -Wstrict-aliasing and -fstrict-aliasing detection to
+		the configure script.

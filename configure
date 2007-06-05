@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.264 2007-06-05 05:40:23 debug Exp $
+#  $Id: configure,v 1.265 2007-06-05 06:17:20 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -568,6 +568,26 @@ fi
 rm -f _testprog
 
 
+#  -Wstrict-aliasing
+if [ ! z"$DEBUG" = zYES ]; then
+	printf "checking whether -Wstrict-aliasing can be used... "
+	$CC $CFLAGS -Wstrict-aliasing _testprog.c -o \
+	    _testprog 1> _testprog.stdout 2>&1
+	cat _testprog.stdout >> _testprog.error
+	if grep frame _testprog.error > /dev/null 2>&1; then
+		printf "no\n"
+	else
+		if [ -x _testprog ]; then
+			CWARNINGS="-Wstrict-aliasing $CWARNINGS"
+			printf "yes\n"
+		else
+			printf "no\n"
+		fi
+	fi
+	rm -f _testprog _testprog.error _testprog.stdout
+fi
+
+
 if [ z"$COMPAQCC" = zYES ]; then
 	#  -O4 is possible, but sometimes -O3 is better?
 	if [ ! z"$DEBUG" = zYES ]; then
@@ -627,12 +647,16 @@ if [ ! z"$DEBUG" = zYES ]; then
 	fi
 	rm -f _testprog
 
-#	#  -intrinsics
-#	$CC $CFLAGS _testprog.c -o _testprog -intrinsics 2> /dev/null
-#	if [ -x _testprog ]; then
-#		CFLAGS="-intrinsics $CFLAGS"
-#	fi
-#	rm -f _testprog
+	#  -intrinsics
+	printf "checking whether -intrinsics can be used... "
+	$CC $CFLAGS _testprog.c -o _testprog -intrinsics 2> /dev/null
+	if [ -x _testprog ]; then
+		CFLAGS="-intrinsics $CFLAGS"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+	rm -f _testprog
 
 	#  -fast
 	printf "checking whether -fast can be used... "
@@ -677,6 +701,26 @@ if [ ! z"$DEBUG" = zYES ]; then
 	else
 		if [ -x _testprog ]; then
 			CFLAGS="-fomit-frame-pointer $CFLAGS"
+			printf "yes\n"
+		else
+			printf "no\n"
+		fi
+	fi
+	rm -f _testprog _testprog.error _testprog.stdout
+fi
+
+
+#  -fstrict-aliasing
+if [ ! z"$DEBUG" = zYES ]; then
+	printf "checking whether -fstrict-aliasing can be used... "
+	$CC $CFLAGS -fstrict-aliasing _testprog.c -o \
+	    _testprog 1> _testprog.stdout 2>&1
+	cat _testprog.stdout >> _testprog.error
+	if grep frame _testprog.error > /dev/null 2>&1; then
+		printf "no\n"
+	else
+		if [ -x _testprog ]; then
+			CFLAGS="-fstrict-aliasing $CFLAGS"
 			printf "yes\n"
 		else
 			printf "no\n"

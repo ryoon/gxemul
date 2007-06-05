@@ -28,18 +28,20 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.20 2006-12-30 13:31:00 debug Exp $
+ *  $Id: device.h,v 1.21 2007-06-05 07:49:42 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
 
 #include "misc.h"
-#include "bus_pci.h"
 
 struct machine;
+struct pci_device;
+
 
 struct devinit {
 	struct machine	*machine;
+
 	char		*name;		/*  e.g. "cons"  */
 	char		*name2;		/*  e.g. "secondary serial port"  */
 
@@ -47,10 +49,7 @@ struct devinit {
 	uint64_t	addr2;		/*  Secondary address (optional)  */
 	uint64_t	len;
 
-	/*  Old-style IRQ:  */
-	int		irq_nr;
-
-	char		*interrupt_path;/*  Interrupt path:  */
+	char		*interrupt_path;
 
 	int		in_use;
 	int		addr_mult;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.12 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_macppc.c,v 1.13 2007-06-05 07:49:42 debug Exp $
  *
  *  See also:
  *
@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"

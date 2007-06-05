@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.32 2006-12-30 13:30:51 debug Exp $
+ *  $Id: device.c,v 1.33 2007-06-05 07:49:42 debug Exp $
  *
  *  Device registry framework.
  */
@@ -351,15 +351,9 @@ void *device_add(struct machine *machine, char *name_and_params)
 				exit(1);
 			}
 		} else if (strncmp(s2, "irq=", 4) == 0) {
-			devinit.irq_nr = mystrtoull(s3, NULL, 0);
-
-			/*  New-style interrupt path:  */
 			snprintf(devinit.interrupt_path, interrupt_path_len,s3);
 			if (strchr(devinit.interrupt_path, ' ') != NULL)
 				*strchr(devinit.interrupt_path, ' ') = '\0';
-
-			if (strncmp(s3, "none", 4) == 0)
-				devinit.interrupt_path[0] = '\0';
 		} else if (strncmp(s2, "in_use=", 7) == 0) {
 			devinit.in_use = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "name2=", 6) == 0) {

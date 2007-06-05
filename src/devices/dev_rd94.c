@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.41 2007-05-25 11:57:56 debug Exp $
+ *  $Id: dev_rd94.c,v 1.42 2007-06-05 07:49:42 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -223,7 +223,11 @@ DEVINIT(rd94)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct rd94_data));
-	d->pciirq   = devinit->irq_nr;
+
+	fatal("TODO: rd94 legacy rewrite\n");
+	exit(1);
+
+	/*  d->pciirq   = devinit->irq_nr;  */
 	d->pci_data = bus_pci_init(devinit->machine, "TODO irq",
 	    0,0, 0,0,0, 0,0,0);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.12 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_lpt.c,v 1.13 2007-06-05 07:49:42 debug Exp $
  *
  *  LPT (parallel printer) controller.
  */
@@ -37,6 +37,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -50,12 +51,12 @@
 #define	DEV_LPT_LENGTH		3
 
 struct lpt_data {
-	int		irqnr;
-	char		*name;
-	int		console_handle;
+	char			*name;
+	struct interrupt	irq;
+	int			console_handle;
 
-	unsigned char	data;
-	unsigned char	control;
+	uint8_t			data;
+	uint8_t			control;
 };
 
 
@@ -120,7 +121,9 @@ DEVINIT(lpt)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct lpt_data));
-	d->irqnr	= devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
+
 	d->name		= devinit->name2 != NULL? devinit->name2 : "";
 	d->console_handle = console_start_slave(devinit->machine, devinit->name,
 	    CONSOLE_OUTPUT_ONLY);

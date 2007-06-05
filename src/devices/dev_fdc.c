@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.19 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_fdc.c,v 1.20 2007-06-05 07:49:42 debug Exp $
  *  
  *  PC-style floppy controller.
  *
@@ -42,6 +42,7 @@
 #include <string.h>
 
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -51,8 +52,8 @@
 
 
 struct fdc_data {
-	unsigned char	reg[DEV_FDC_LENGTH];
-	int		irqnr;
+	uint8_t			reg[DEV_FDC_LENGTH];
+	struct interrupt	irq;
 };
 
 
@@ -101,7 +102,8 @@ DEVINIT(fdc)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct fdc_data));
-	d->irqnr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_FDC_LENGTH, dev_fdc_access, d,

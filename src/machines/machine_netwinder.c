@@ -25,14 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.14 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.15 2007-06-05 07:49:42 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "bus_isa.h"
+#include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"

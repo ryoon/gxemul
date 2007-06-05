@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.18 2007-01-21 21:02:57 debug Exp $
+ *  $Id: dev_pcic.c,v 1.19 2007-06-05 07:49:42 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -39,6 +39,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "emul.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -52,14 +53,11 @@
 #define	DEV_PCIC_LENGTH		2
 
 struct pcic_data {
-	int		irq_nr;
-	int		regnr;
+	struct interrupt	irq;
+	int			regnr;
 };
 
 
-/*
- *  dev_pcic_cis_access():
- */
 DEVICE_ACCESS(pcic_cis)
 {
 	/*  struct pcic_data *d = (struct pcic_data *) extra;  */
@@ -140,9 +138,6 @@ DEVICE_ACCESS(pcic_cis)
 }
 
 
-/*
- *  dev_pcic_access():
- */
 DEVICE_ACCESS(pcic)
 {
 	struct pcic_data *d = (struct pcic_data *) extra;
@@ -220,7 +215,8 @@ DEVINIT(pcic)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pcic_data));
-	d->irq_nr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_PCIC_LENGTH,

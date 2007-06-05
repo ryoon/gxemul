@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.381 2007-06-04 08:59:50 debug Exp $
+ *  $Id: cpu.c,v 1.382 2007-06-05 05:40:24 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -39,7 +39,6 @@
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
-#include "misc.h"
 #include "settings.h"
 
 

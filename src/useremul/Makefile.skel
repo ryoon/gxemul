@@ -1,0 +1,22 @@
+#
+#  $Id: Makefile.skel,v 1.1 2007-06-05 05:40:25 debug Exp $
+#
+#  Makefile for GXemul src/useremul
+#
+
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
+
+OBJS=useremul.o
+
+all: $(OBJS)
+
+$(OBJS): Makefile
+
+useremul.o: useremul.c
+
+clean:
+	rm -f $(OBJS) *core
+
+clean_all: clean
+	rm -f Makefile
+

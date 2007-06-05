@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.288 2007-06-04 06:11:59 debug Exp $
+ *  $Id: emul.c,v 1.289 2007-06-05 05:40:24 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -52,7 +52,6 @@
 #include "misc.h"
 #include "net.h"
 #include "settings.h"
-#include "sgi_arcbios.h"
 #include "timer.h"
 #include "x11.h"
 

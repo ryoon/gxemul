@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.297 2007-05-15 09:40:29 debug Exp $
+ *  $Id: main.c,v 1.298 2007-06-05 05:40:24 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,10 +45,6 @@
 #include "misc.h"
 #include "settings.h"
 #include "timer.h"
-
-#ifdef TEST_NATIVE_X86
-#include "native_x86.h"
-#endif
 
 
 extern volatile int single_step;
@@ -740,29 +736,6 @@ int main(int argc, char *argv[])
 	int n_emuls;
 	int i;
 
-
-/*
- *  Experimental profil() code, which works on my laptop.
- *  Don't use it for anything else.
- */
-#ifdef USE_PROFIL
-	uint16_t samples[0x100000];
-	memset(samples, 0, sizeof(samples));
-	profil((char *)samples, sizeof(samples), (vm_offset_t) 0x400000, 8192);
-#endif
-
-#ifndef NATIVE_CODE_GENERATION
-	native_code_translation_enabled = 0;
-#endif
-
-
-/*  Experimental test code:  */
-#ifdef TEST_NATIVE_X86
-	test_native_x86();
-#endif
-
-
-
 	progname = argv[0];
 
 
@@ -930,18 +903,6 @@ int main(int argc, char *argv[])
 
 	settings_remove_all(global_settings);
 	settings_destroy(global_settings);
-
-#ifdef USE_PROFIL
-{
-	int i;
-	FILE *f = fopen("output.txt", "w");
-	for (i=0; i<sizeof(samples) / sizeof(uint16_t); ++i) {
-		if (samples[i] != 0)
-			fprintf(f, "%i %p\n", samples[i],
-			    (void *) (size_t) (0x400000 + i * 16));
-	}
-}
-#endif
 
 	return 0;
 }

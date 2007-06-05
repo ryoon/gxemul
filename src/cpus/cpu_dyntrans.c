@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.157 2007-06-05 05:58:10 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.158 2007-06-05 07:09:01 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1757,7 +1757,8 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 			while (DYNTRANS_ADDR_TO_PAGENR(baseaddr +
 			    (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr &&
 			    cpu->translation_readahead > 0) {
-				void *old_f = ic[i].f;
+				void (*old_f)(struct cpu *,
+				    struct DYNTRANS_IC *) = ic[i].f;
 
 				/*  Already translated? Then abort:  */
 				if (old_f != (

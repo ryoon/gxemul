@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.16 2007-06-05 07:49:42 debug Exp $
+ *  $Id: machine_arc.c,v 1.17 2007-06-06 00:40:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -66,116 +66,6 @@ MACHINE_SETUP(arc)
 	snprintf(machine->machine_name, MACHINE_NAME_MAXBUF, "ARC");
 
 	switch (machine->machine_subtype) {
-
-	case MACHINE_ARC_NEC_RD94:
-	case MACHINE_ARC_NEC_R94:
-	case MACHINE_ARC_NEC_R96:
-		/*
-		 *  "NEC-RD94" (NEC RISCstation 2250)
-		 *  "NEC-R94" (NEC RISCstation 2200)
-		 *  "NEC-R96" (NEC Express RISCserver)
-		 *
-		 *  http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out
-		 *  (NEC-R96)
-		 */
-
-		switch (machine->machine_subtype) {
-		case MACHINE_ARC_NEC_RD94:
-			strlcat(machine->machine_name,
-			    " (NEC-RD94, NEC RISCstation 2250)",
-			    MACHINE_NAME_MAXBUF);
-			break;
-		case MACHINE_ARC_NEC_R94:
-			strlcat(machine->machine_name,
-			    " (NEC-R94; NEC RISCstation 2200)",
-			    MACHINE_NAME_MAXBUF);
-			break;
-		case MACHINE_ARC_NEC_R96:
-			strlcat(machine->machine_name,
-			    " (NEC-R96; NEC Express RISCserver)",
-			    MACHINE_NAME_MAXBUF);
-			break;
-		}
-
-		/*  TODO: interrupt controller!  */
-
-		pci_data = device_add(machine,
-		    "rd94 addr=0x80000000, irq=0");
-
-		device_add(machine, "sn addr=0x80001000 irq=0");
-		dev_mc146818_init(machine, mem, 0x80004000ULL, 0,
-		    MC146818_ARC_NEC, 1);
-
-fatal("TODO: legacy rewrite\n");
-abort();
-//		i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042,
-//		    0, 0, machine->use_x11, 0);
-i = 0;
-
-		snprintf(tmpstr, sizeof(tmpstr),
-		    "ns16550 irq=3 addr=0x80006000 in_use=%i name2=tty0",
-		    machine->use_x11? 0 : 1);
-		j = (size_t)device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr),
-		    "ns16550 irq=0 addr=0x80007000 in_use=%i name2=tty1", 0);
-		device_add(machine, tmpstr);
-
-		if (machine->use_x11)
-			machine->main_console_handle = i;
-		else
-			machine->main_console_handle = j;
-
-		/*  lpt at 0x80008000  */
-
-		device_add(machine, "fdc addr=0x8000c000, irq=0");
-
-		switch (machine->machine_subtype) {
-		case MACHINE_ARC_NEC_RD94:
-		case MACHINE_ARC_NEC_R94:
-			/*  PCI devices:  (NOTE: bus must be 0, device must be
-			    3, 4, or 5, for NetBSD to accept interrupts)  */
-			bus_pci_add(machine, pci_data, mem, 0, 3, 0,
-			    "dec21030");	/*  tga graphics  */
-			break;
-		case MACHINE_ARC_NEC_R96:
-			dev_fb_init(machine, mem, 0x100e00000ULL,
-			    VFB_GENERIC, 640,480, 1024,480,
-			    8, "necvdfrb");
-			break;
-		}
-		break;
-
-	case MACHINE_ARC_NEC_R98:
-		/*
-		 *  "NEC-R98" (NEC RISCserver 4200)
-		 *
-		 *  According to http://mail-index.netbsd.org/port-arc/
-		 *	2004/02/01/0001.html:
-		 *
-		 *  Network adapter at "start: 0x 0 18600000, length:
-		 *	0x1000, level: 4, vector: 9"
-		 *  Disk at "start: 0x 0 18c103f0, length: 0x1000, level:
-		 *	5, vector: 6"
-		 *  Keyboard at "start: 0x 0 18c20060, length: 0x1000,
-		 *	level: 5, vector: 3"
-		 *  Serial at "start: 0x 0 18c103f8, length: 0x1000,
-		 *	level: 5, vector: 4"
-		 *  Serial at "start: 0x 0 18c102f8, length: 0x1000,
-		 *	level: 5, vector: 4"
-		 *  Parallel at "start: 0x 0 18c10278, length: 0x1000,
-		 *	level: 5, vector: 5"
-		 */
-
-		strlcat(machine->machine_name,
-		    " (NEC-R98; NEC RISCserver 4200)", MACHINE_NAME_MAXBUF);
-
-		/*
-		 *  Windows NT access stuff at these addresses:
-		 *
-		 *  19980308, 18000210, 18c0a008,
-		 *  19022018, 19026010, andso on.
-		 */
-		break;
 
 	case MACHINE_ARC_JAZZ_PICA:
 	case MACHINE_ARC_JAZZ_MAGNUM:
@@ -371,26 +261,7 @@ MACHINE_REGISTER(arc)
 	machine_entry_add_subtype(me, "Acer PICA-61", MACHINE_ARC_JAZZ_PICA,
 	    "pica-61", "acer pica", "pica", NULL);
 
-	machine_entry_add_subtype(me, "Deskstation Tyne",
-	    MACHINE_ARC_DESKTECH_TYNE,
-	    "deskstation tyne", "desktech", "tyne", NULL);
-
 	machine_entry_add_subtype(me, "Jazz Magnum", MACHINE_ARC_JAZZ_MAGNUM,
 	    "magnum", "jazz magnum", NULL);
-
-	machine_entry_add_subtype(me, "NEC-R94", MACHINE_ARC_NEC_R94,
-	    "nec-r94", "r94", NULL);
-
-	machine_entry_add_subtype(me, "NEC-RD94", MACHINE_ARC_NEC_RD94,
-	    "nec-rd94", "rd94", NULL);
-
-	machine_entry_add_subtype(me, "NEC-R96", MACHINE_ARC_NEC_R96,
-	    "nec-r96", "r96", NULL);
-
-	machine_entry_add_subtype(me, "NEC-R98", MACHINE_ARC_NEC_R98,
-	    "nec-r98", "r98", NULL);
-
-	machine_entry_add_subtype(me, "Olivetti M700", MACHINE_ARC_JAZZ_M700,
-	    "olivetti", "m700", NULL);
 }
 

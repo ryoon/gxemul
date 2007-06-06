@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.175 2007-06-05 07:27:29 debug Exp $
+ *  $Id: machine.h,v 1.176 2007-06-06 00:40:34 debug Exp $
  */
 
 #include <sys/types.h>
@@ -299,18 +299,12 @@ struct machine {
 #define	MACHINE_HPCSH_JORNADA690		2
 
 /*  SGI and ARC:  */
-#define	MACHINE_ARC_NEC_RD94		1
-#define	MACHINE_ARC_JAZZ_PICA		2
-#define	MACHINE_ARC_NEC_R94		3
-#define	MACHINE_ARC_DESKTECH_TYNE	4
-#define	MACHINE_ARC_JAZZ_MAGNUM		5
-#define	MACHINE_ARC_NEC_R98		6
-#define	MACHINE_ARC_JAZZ_M700		7
-#define	MACHINE_ARC_NEC_R96		8
+#define	MACHINE_ARC_JAZZ_PICA		1
+#define	MACHINE_ARC_JAZZ_MAGNUM		2
 
 /*  Algor:  */
-#define	MACHINE_ALGOR_P4032		4
-#define	MACHINE_ALGOR_P5064		5
+#define	MACHINE_ALGOR_P4032		1
+#define	MACHINE_ALGOR_P5064		2
 
 /*  EVBMIPS:  */
 #define	MACHINE_EVBMIPS_MALTA		1

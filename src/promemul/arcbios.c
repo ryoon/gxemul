@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.13 2007-06-05 07:00:54 debug Exp $
+ *  $Id: arcbios.c,v 1.14 2007-06-06 00:40:34 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -1912,63 +1912,6 @@ static void arcbios_add_other_components(struct machine *machine,
 	struct cpu *cpu = machine->cpus[0];
 
 	if (machine->machine_type == MACHINE_ARC &&
-	    ( machine->machine_subtype == MACHINE_ARC_NEC_RD94 ||
-	    machine->machine_subtype == MACHINE_ARC_NEC_R94 ||
-	    machine->machine_subtype == MACHINE_ARC_NEC_R96 )) {
-		uint64_t jazzbus, eisa, other;
-
-		jazzbus = arcbios_addchild_manual(cpu,
-		    COMPONENT_CLASS_AdapterClass,
-		    COMPONENT_TYPE_MultiFunctionAdapter,
-		    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
-		    system, NULL, 0);
-
-		switch (machine->machine_subtype) {
-		case MACHINE_ARC_NEC_RD94:
-		case MACHINE_ARC_NEC_R94:
-			if (machine->use_x11)
-				arcbios_addchild_manual(cpu,
-				    COMPONENT_CLASS_ControllerClass,
-				    COMPONENT_TYPE_DisplayController,
-		    0, 1, 2, 0, 0x0, "10110004",
-				    system, NULL, 0);
-			break;
-		case MACHINE_ARC_NEC_R96:
-			if (machine->use_x11) {
-				uint64_t x;
-				x = arcbios_addchild_manual(cpu,
-				    COMPONENT_CLASS_ControllerClass,
-			    COMPONENT_TYPE_DisplayController,
-				    COMPONENT_FLAG_ConsoleOut |
-				      COMPONENT_FLAG_Output,
-				    1, 2, 0, 0x0, "necvdfrb",
-				    jazzbus, NULL, 0);
-				arcbios_addchild_manual(cpu,
-				    COMPONENT_CLASS_PeripheralClass,
-				    COMPONENT_TYPE_MonitorPeripheral,
-				    COMPONENT_FLAG_ConsoleOut |
-					COMPONENT_FLAG_Output,
-				    1, 2, 0, 0xffffffff, "640x480",
-				    x, NULL, 0);
-			}
-
-			/*  TODO: R[D]94 too?  */
-			eisa = arcbios_addchild_manual(cpu,
-			    COMPONENT_CLASS_AdapterClass,
-			    COMPONENT_TYPE_EISAAdapter,
-			    0, 1, 2, 0, 0xffffffff, "EISA",
-			    system, NULL, 0);
-
-			other = arcbios_addchild_manual(cpu,
-			    COMPONENT_CLASS_ControllerClass,
-			    COMPONENT_TYPE_OtherController,
-			    0, 1, 2, 0, 0xffffffff, "NEC1C01",
-			    eisa, NULL, 0);
-			break;
-		}
-	}
-
-	if (machine->machine_type == MACHINE_ARC &&
 	    (machine->machine_subtype == MACHINE_ARC_JAZZ_PICA
 	    || machine->machine_subtype == MACHINE_ARC_JAZZ_MAGNUM)) {
 		uint64_t jazzbus, ali_s3, vxl;
@@ -2572,36 +2515,12 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		}
 	} else {
 		switch (machine->machine_subtype) {
-		case MACHINE_ARC_NEC_RD94:
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);
-			strncpy(arcbios_sysid.ProductId, "RD94", 4);
-			break;
-		case MACHINE_ARC_NEC_R94:
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
-			break;
-		case MACHINE_ARC_NEC_R96:
-			strncpy(arcbios_sysid.VendorId,  "MIPS DUO", 8);
-			strncpy(arcbios_sysid.ProductId, "blahblah", 8);
-			break;
-		case MACHINE_ARC_NEC_R98:
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);
-			strncpy(arcbios_sysid.ProductId, "R98", 4);
-			break;
 		case MACHINE_ARC_JAZZ_PICA:
 			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);
 			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
 			break;
 		case MACHINE_ARC_JAZZ_MAGNUM:
 			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
-			break;
-		case MACHINE_ARC_JAZZ_M700:
-			strncpy(arcbios_sysid.VendorId,  "OLI00000", 8);
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
-			break;
-		case MACHINE_ARC_DESKTECH_TYNE:
-			strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);
 			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
 			break;
 		default:
@@ -2704,27 +2623,11 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 	case MACHINE_ARC:
 		/*  ARC:  */
 		switch (machine->machine_subtype) {
-		case MACHINE_ARC_NEC_RD94:
-			name = "NEC-RD94";
-			break;
-		case MACHINE_ARC_NEC_R94:
-			name = "NEC-R94";
-			break;
-		case MACHINE_ARC_NEC_R96:
-			name = "NEC-R96";
-			break;
-		case MACHINE_ARC_NEC_R98:
-			name = "NEC-R98";
-			break;
 		case MACHINE_ARC_JAZZ_PICA:
 			name = "PICA-61";
 			break;
 		case MACHINE_ARC_JAZZ_MAGNUM:
-		case MACHINE_ARC_JAZZ_M700:
 			name = "Microsoft-Jazz";
-			break;
-		case MACHINE_ARC_DESKTECH_TYNE:
-			name = "DESKTECH-TYNE";
 			break;
 		default:
 			fatal("Unimplemented ARC machine type %i\n",
@@ -2755,11 +2658,6 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 
 		snprintf(arc_cpu_name, sizeof(arc_cpu_name),
 		    "MIPS-%s", machine->cpu_name);
-
-		if (machine->machine_type == MACHINE_ARC &&
-		    machine->machine_subtype == MACHINE_ARC_NEC_R96)
-			snprintf(arc_cpu_name, sizeof(arc_cpu_name),
-			    "MIPS-%s - Pr 4/5.0, Fp 5/0", machine->cpu_name);
 
 		arc_cpu_name[sizeof(arc_cpu_name)-1] = 0;
 		for (jj=0; jj<strlen(arc_cpu_name); jj++)

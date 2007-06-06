@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1592 2007-06-05 18:07:21 debug Exp $
+$Id: HISTORY,v 1.1593 2007-06-06 00:40:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3560,3 +3560,6 @@ Changelog for GXemul:
 20070606	Adding a check for broken GCC on Solaris to the configure
 		script. (GCC 3.4.3 on Solaris cannot handle static variables
 		which are initialized to 0 or NULL. :-/)
+		Removing the old (non-working) ARC emulation modes: NEC RD94,
+		R94, R96, and R98, and the last traces of Olivetti M700 and
+		Deskstation Tyne.

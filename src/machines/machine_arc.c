@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.17 2007-06-06 00:40:34 debug Exp $
+ *  $Id: machine_arc.c,v 1.18 2007-06-06 00:43:15 debug Exp $
  */
 
 #include <stdio.h>
@@ -33,8 +33,6 @@
 #include <string.h>
 
 #include "arcbios.h"
-#include "bus_isa.h"
-#include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
@@ -47,7 +45,6 @@
 
 MACHINE_SETUP(arc)
 {
-	struct pci_data *pci_data;
 	void *jazz_data;
 	struct memory *mem = machine->memory;
 	char tmpstr[1000];

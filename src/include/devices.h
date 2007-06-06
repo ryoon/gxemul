@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.241 2007-02-10 14:21:10 debug Exp $
+ *  $Id: devices.h,v 1.242 2007-06-06 00:46:35 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -461,12 +461,6 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 /*  dev_vr41xx.c:  */
 struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	struct memory *mem, int cpumodel);
-
-/*  dev_wdsc.c:  */
-#define	DEV_WDSC_NREGS			0x100		/*  8-bit register select  */
-#define	DEV_WDSC_LENGTH			0x10
-int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_wdsc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int controller_nr, int irq_nr);
 
 /*  lk201.c:  */
 struct lk201_data {

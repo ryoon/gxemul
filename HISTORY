@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1593 2007-06-06 00:40:34 debug Exp $
+$Id: HISTORY,v 1.1594 2007-06-06 00:46:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3563,3 +3563,4 @@ Changelog for GXemul:
 		Removing the old (non-working) ARC emulation modes: NEC RD94,
 		R94, R96, and R98, and the last traces of Olivetti M700 and
 		Deskstation Tyne.
+		Removing the non-working skeleton WDSC device (dev_wdsc).

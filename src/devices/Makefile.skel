@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.143 2007-06-06 00:40:34 debug Exp $
+#  $Id: Makefile.skel,v 1.144 2007-06-06 00:46:35 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -26,7 +26,7 @@ OBJS=bus_isa.o bus_pci.o lk201.o \
 	dev_sgi_ip22.o dev_sgi_ip30.o dev_sgi_ip32.o dev_sgi_mardigras.o \
 	dev_sh4.o dev_sii.o dev_sn.o dev_ssc.o dev_turbochannel.o \
 	dev_uninorth.o dev_unreadable.o dev_v3.o dev_vga.o dev_vme.o \
-	dev_vr41xx.o dev_wdc.o dev_wdsc.o dev_z8530.o dev_zero.o \
+	dev_vr41xx.o dev_wdc.o dev_z8530.o dev_zero.o \
 	autodev.o
 
 all:

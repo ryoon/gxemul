@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.19 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_sgi.c,v 1.20 2007-06-06 00:46:35 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -187,7 +187,7 @@ abort();
 		    "z8530 addr=0x1fb80d00 irq=0 addr_mult=4");
 
 		/*  WDSC SCSI controller:  */
-		dev_wdsc_init(machine, mem, 0x1fb8011f, 0, 0);
+/*		dev_wdsc_init(machine, mem, 0x1fb8011f, 0, 0);  */
 
 		/*  Return memory read errors so that hpc1
 		    and hpc2 are not detected:  */
@@ -286,10 +286,10 @@ j = 0;
 		/*  dev_sq_init...  */
 
 		/*  wdsc0: SCSI  */
-		dev_wdsc_init(machine, mem, 0x1fbc4000, 0, 8 + 1);
+/*		dev_wdsc_init(machine, mem, 0x1fbc4000, 0, 8 + 1);  */
 
 		/*  wdsc1: SCSI  TODO: irq nr  */
-		dev_wdsc_init(machine, mem, 0x1fbcc000, 1, 8 + 1);
+/*		dev_wdsc_init(machine, mem, 0x1fbcc000, 1, 8 + 1);  */
 
 		/*  dsclock0: TODO:  possibly irq 8 + 33  */
 

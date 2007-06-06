@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.20 2007-05-15 12:35:14 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.21 2007-06-06 01:03:04 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -62,12 +62,6 @@ MACHINE_SETUP(mvmeppc)
 	case MACHINE_MVMEPPC_1600:
 		machine->machine_name = "MVME1600";
 
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = isa32_interrupt;
-//		machine->md_int.prep_data = device_add(machine, "prep");
-//		machine->isa_pic_data.native_irq = 1;   /*  Semi-bogus  */
-
 		snprintf(tmpstr, sizeof(tmpstr), "eagle irq=%s.cpu[%i]",
 		    machine->path, machine->bootstrap_cpu);
 		device_add(machine, tmpstr);
@@ -75,7 +69,7 @@ abort();
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 14, 0, "dec21143");
 
-//		device_add(machine, "nvram addr=0x80000074 name2=mvme1600");
+		device_add(machine, "nvram addr=0x80000074 name2=mvme1600");
 
 		/*
 		 *  "DRAM size register": TODO: turn this into a device?

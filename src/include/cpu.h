@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.126 2007-06-07 04:00:53 debug Exp $
+ *  $Id: cpu.h,v 1.127 2007-06-07 15:36:24 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -40,6 +40,9 @@
 
 /*  This is needed for undefining 'mips', 'ppc' etc. on weird systems:  */
 #include "../../config.h"
+
+#include "timer.h"
+
 
 /*
  *  Dyntrans misc declarations, used throughout the dyntrans code.
@@ -286,11 +289,14 @@ struct cpu_family {
 
 #define	MAX_DYNTRANS_READAHEAD		1024
 
-#define	DEFAULT_DYNTRANS_CACHE_SIZE	(64*1048576)
+#define	DEFAULT_DYNTRANS_CACHE_SIZE	(48*1048576)
 #define	DYNTRANS_CACHE_MARGIN		200000
 
 #define	N_BASE_TABLE_ENTRIES		65536
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
+
+#define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
+#define	N_PADDR_SAMPLES			64
 
 
 /*
@@ -316,6 +322,18 @@ struct cpu {
 	int64_t		ninstrs_flush;
 	int64_t		ninstrs_since_gettimeofday;
 	struct timeval	starttime;
+
+	/*
+	 *  Periodic sampling of the physical address corresponding to the
+	 *  emulated program counter:
+	 *
+	 *  (Used to decide whether or not native code generation is worth
+	 *  the effort.)
+	 */
+	struct timer	*sampling_timer;
+	uint8_t		sampling;	/*  1 = turned on  */
+	int16_t		sampling_curindex;
+	uint64_t	*sampling_paddr;
 
 	/*  EMUL_LITTLE_ENDIAN or EMUL_BIG_ENDIAN.  */
 	uint8_t		byte_order;

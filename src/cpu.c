@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.383 2007-06-05 07:27:28 debug Exp $
+ *  $Id: cpu.c,v 1.384 2007-06-07 15:36:24 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -40,6 +40,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "settings.h"
+#include "timer.h"
 
 
 extern size_t dyntrans_cache_size;
@@ -93,6 +94,8 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	cpu->cpu_id     = cpu_id;
 	cpu->byte_order = EMUL_UNDEFINED_ENDIAN;
 	cpu->running    = 0;
+
+	cpu->sampling_paddr = zeroed_alloc(N_PADDR_SAMPLES * sizeof(uint64_t));
 
 	/*  Create settings, and attach to the machine:  */
 	cpu->settings = settings_new();
@@ -149,6 +152,9 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
  */
 void cpu_destroy(struct cpu *cpu)
 {
+	if (cpu->sampling_timer != NULL)
+		timer_remove(cpu->sampling_timer);
+
 	settings_remove(cpu->settings, "name");
 	settings_remove(cpu->settings, "running");
 

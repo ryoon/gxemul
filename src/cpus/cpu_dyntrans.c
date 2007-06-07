@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.159 2007-06-05 07:27:29 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.160 2007-06-07 15:36:24 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -317,8 +317,14 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 				break;
 		}
 	} else {
-		/*  Execute multiple instructions:  */
+		/*
+		 *  Execute multiple instructions:
+		 *
+		 *  (This is the core dyntrans loop.)
+		 */
 		n_instrs = 0;
+		cpu->sampling = 1;
+
 		for (;;) {
 			struct DYNTRANS_IC *ic;
 
@@ -342,6 +348,8 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 			if (cpu->n_translated_instrs >= N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
+
+		cpu->sampling = 0;
 	}
 
 	n_instrs += cpu->n_translated_instrs;
@@ -353,11 +361,6 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
-/*{
-struct DYNTRANS_TC_PHYSPAGE *ppp = (struct DYNTRANS_TC_PHYSPAGE *)
-	cpu->cd.DYNTRANS_ARCH.cur_ic_page;
-printf("v=%08x p=%08x\n", (int)cpu->pc, (int)ppp->physaddr);
-}*/
 	} else if (low_pc == DYNTRANS_IC_ENTRIES_PER_PAGE) {
 		/*  Switch to next page:  */
 		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
@@ -417,6 +420,16 @@ printf("v=%08x p=%08x\n", (int)cpu->pc, (int)ppp->physaddr);
 #endif
 
 	cpu->ninstrs += n_instrs;
+
+	/*
+	 *  Check if there are enough samples to decide whether or not to
+	 *  perform native code generation:
+	 */
+	if (cpu->sampling_curindex == N_PADDR_SAMPLES) {
+		/*  TODO: Check against known blocks, etc.  */
+
+		cpu->sampling_curindex = 0;
+	}
 
 	/*  Return the nr of instructions executed:  */
 	return n_instrs;
@@ -529,6 +542,57 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		fatal(",..");
 }
 #endif
+
+
+
+#ifdef DYNTRANS_TIMER_SAMPLE_TICK
+/*
+ *  XXX_timer_sample_tick():
+ *
+ *  Gathers statistics about which translation blocks are being executed.
+ *  This can then be used to calculate if it is worth the effort to perform
+ *  native code generation (which is assumed to have a large overhead, but
+ *  will result in faster code).
+ */
+void DYNTRANS_TIMER_SAMPLE_TICK(struct timer *timer, void *extra)
+{
+	struct cpu *cpu = extra;
+	struct DYNTRANS_IC *next_ic;
+	size_t low_pc;
+	uint64_t paddr;
+
+	/*
+	 *  Don't sample if:
+	 *
+	 *  1)  Sampling is not enabled. It should only be enabled during
+	 *      the core dyntrans loop.
+	 *  2)  Enough samples have already been gathered.
+	 */
+
+	if (!cpu->sampling || cpu->sampling_curindex == N_PADDR_SAMPLES)
+		return;
+
+	/*  Get the physical address of the program counter:  */
+
+	next_ic = cpu->cd.DYNTRANS_ARCH.next_ic;
+	low_pc = ((size_t)next_ic - (size_t)cpu->cd.DYNTRANS_ARCH.cur_ic_page)
+	    / sizeof(struct DYNTRANS_IC);
+
+	/*  Not possible to represent as a physical address? Then abort.  */
+	if (low_pc > DYNTRANS_IC_ENTRIES_PER_PAGE)
+		return;
+
+	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+	paddr = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
+	paddr &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+	    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+	paddr += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
+
+	/*  ... and finally add the sample to the sampling array:  */
+	cpu->sampling_paddr[cpu->sampling_curindex ++] = paddr;
+}
+#endif	/*  DYNTRANS_TIMER_SAMPLE_TICK  */
 
 
 

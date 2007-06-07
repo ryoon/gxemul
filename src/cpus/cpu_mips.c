@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.81 2007-06-04 08:53:21 debug Exp $
+ *  $Id: cpu_mips.c,v 1.82 2007-06-07 15:36:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -52,9 +52,10 @@
 #include "opcodes_mips.h"
 #include "settings.h"
 #include "symbol.h"
+#include "timer.h"
 
 
-extern volatile int single_step;
+extern int native_code_translation_enabled;
 
 static char *exception_names[] = EXCEPTION_NAMES;
 
@@ -339,6 +340,10 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	for (i=0; i<N_MIPS_COPROC_REGS; i++)
 		CPU_SETTINGS_ADD_REGISTER64(cop0_names[i],
 		    cpu->cd.mips.coproc[0]->reg[i]);
+
+	if (native_code_translation_enabled)
+		cpu->sampling_timer = timer_add(CPU_SAMPLE_TIMER_HZ,
+		    mips_timer_sample_tick, cpu);
 
 	return 1;
 }

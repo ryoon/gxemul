@@ -28,12 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.47 2007-06-04 08:22:07 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.48 2007-06-07 15:36:24 debug Exp $
  */
 
 #include "misc.h"
 
 #include "alpha_cpu.h"
+
+struct timer;
 
 
 /*  ALPHA CPU types:  */
@@ -161,6 +163,7 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 void alpha_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void alpha_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 void alpha_init_64bit_dummy_tables(struct cpu *cpu);
+void alpha_timer_sample_tick(struct timer *, void *);
 int alpha_run_instr(struct cpu *cpu);
 int alpha_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);

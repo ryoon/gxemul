@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.68 2007-03-26 02:01:35 debug Exp $
+ *  $Id: cpu_arm.c,v 1.69 2007-06-07 15:36:24 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -49,10 +49,13 @@
 #include "of.h"
 #include "settings.h"
 #include "symbol.h"
+#include "timer.h"
 
 #define DYNTRANS_32
 #include "tmp_arm_head.c"
 
+
+extern int native_code_translation_enabled;
 
 /*  ARM symbolic register names and condition strings:  */
 static char *arm_regname[N_ARM_REGS] = ARM_REG_NAMES;
@@ -190,6 +193,9 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		/*  FIQ: TODO  */
         }
 
+	if (native_code_translation_enabled)
+		cpu->sampling_timer = timer_add(CPU_SAMPLE_TIMER_HZ,
+		    arm_timer_sample_tick, cpu);
 
 	return 1;
 }

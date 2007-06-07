@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.9 2006-09-07 11:44:42 debug Exp $
+# $Id: Makefile,v 1.10 2007-06-07 15:36:24 debug Exp $
 
 BINS=cp_removeblocks bintrans_eval try_runlen udp_snoop \
 	sgiprom_to_bin decprom_dump_txt_to_bin hex_to_bin \
@@ -10,7 +10,7 @@ new_test_loadstore: new_test_loadstore_a.o new_test_loadstore_b.o
 	$(CC) new_test_loadstore_a.o new_test_loadstore_b.o -o new_test_loadstore
 
 clean:
-	rm -f $(BINS) *.o *core
+	rm -f $(BINS) *.o *core native_cc_ld_test native_cc_ld_test.o
 
 clean_all:
 	$(MAKE) clean

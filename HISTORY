@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1594 2007-06-06 00:46:35 debug Exp $
+$Id: HISTORY,v 1.1595 2007-06-07 15:36:23 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3564,3 +3564,8 @@ Changelog for GXemul:
 		R94, R96, and R98, and the last traces of Olivetti M700 and
 		Deskstation Tyne.
 		Removing the non-working skeleton WDSC device (dev_wdsc).
+20070607	Thinking about how to use the host's cc + ld at runtime to
+		generate native code. (See experiments/	native_cc_ld_test.i
+		for an example.)
+20070608	Adding a program counter sampling timer, which could be useful
+		for native code generation experiments.

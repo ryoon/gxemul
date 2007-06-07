@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.74 2007-05-26 22:26:31 debug Exp $
+ *  $Id: cpu_sh.c,v 1.75 2007-06-07 15:36:24 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -50,6 +50,7 @@
 #include "misc.h"
 #include "settings.h"
 #include "symbol.h"
+#include "timer.h"
 
 #include "sh4_exception.h"
 #include "sh4_mmu.h"
@@ -61,6 +62,7 @@
 
 
 extern int quiet_mode;
+extern int native_code_translation_enabled;
 
 void sh_pc_to_pointers(struct cpu *);
 
@@ -221,6 +223,10 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	}
 
 	sh_update_interrupt_priorities(cpu);
+
+	if (native_code_translation_enabled)
+		cpu->sampling_timer = timer_add(CPU_SAMPLE_TIMER_HZ,
+		    sh_timer_sample_tick, cpu);
 
 	return 1;
 }

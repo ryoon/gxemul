@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.45 2007-05-22 13:05:43 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.46 2007-06-07 15:36:24 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -41,12 +41,15 @@
 #include "misc.h"
 #include "settings.h"
 #include "symbol.h"
+#include "timer.h"
 
 
 #define	DYNTRANS_DUALMODE_32
 #define	DYNTRANS_DELAYSLOT
 #include "tmp_sparc_head.c"
 
+
+extern int native_code_translation_enabled;
 
 static char *sparc_regnames[N_SPARC_REG] = SPARC_REG_NAMES;
 static char *sparc_pregnames[N_SPARC_PREG] = SPARC_PREG_NAMES;
@@ -167,6 +170,10 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		CPU_SETTINGS_ADD_REGISTER64(sparc_regnames[i],
 		    cpu->cd.sparc.r[i]);
 	/*  TODO: Handler for writes to the zero register!  */
+
+	if (native_code_translation_enabled)
+		cpu->sampling_timer = timer_add(CPU_SAMPLE_TIMER_HZ,
+		    sparc_timer_sample_tick, cpu);
 
 	return 1;
 }

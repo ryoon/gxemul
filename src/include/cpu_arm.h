@@ -28,13 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.72 2007-06-04 08:53:21 debug Exp $
+ *  $Id: cpu_arm.h,v 1.73 2007-06-07 15:36:24 debug Exp $
  */
 
 #include "misc.h"
 #include "interrupt.h"
 
 struct cpu_family;
+struct timer;
 
 /*  ARM CPU types:  */
 struct arm_cpu_type_def {
@@ -289,6 +290,7 @@ void arm_translation_table_set_l1_b(struct cpu *cpu, uint32_t vaddr,
 	uint32_t paddr);
 void arm_exception(struct cpu *, int);
 int arm_run_instr(struct cpu *cpu);
+void arm_timer_sample_tick(struct timer *, void *);
 void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void arm_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

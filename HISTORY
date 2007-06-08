@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1596 2007-06-08 01:36:27 debug Exp $
+$Id: HISTORY,v 1.1597 2007-06-08 05:38:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3565,7 +3565,7 @@ Changelog for GXemul:
 		Deskstation Tyne.
 		Removing the non-working skeleton WDSC device (dev_wdsc).
 20070607	Thinking about how to use the host's cc + ld at runtime to
-		generate native code. (See experiments/	native_cc_ld_test.i
+		generate native code. (See experiments/native_cc_ld_test.i
 		for an example.)
 20070608	Adding a program counter sampling timer, which could be useful
 		for native code generation experiments.

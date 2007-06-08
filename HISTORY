@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1595 2007-06-07 15:36:23 debug Exp $
+$Id: HISTORY,v 1.1596 2007-06-08 01:36:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3569,3 +3569,5 @@ Changelog for GXemul:
 		for an example.)
 20070608	Adding a program counter sampling timer, which could be useful
 		for native code generation experiments.
+		The KN02_CSR_NRMMOD bit in the DECstation 5000/200 (KN02) CSR
+		should always be set, to allow a 5000/200 PROM to boot.

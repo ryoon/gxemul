@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.26 2007-02-10 14:20:52 debug Exp $
+ *  $Id: dev_kn02.c,v 1.27 2007-06-08 00:52:34 debug Exp $
  *  
  *  KN02 mainbus (TurboChannel interrupt controller).
  *
@@ -43,6 +43,8 @@
 #include "memory.h"
 #include "misc.h"
 
+
+#include "dec_kn02.h"
 
 #define	DEV_KN02_LENGTH		0x1000
 
@@ -96,6 +98,7 @@ DEVICE_ACCESS(kn02)
 		if (writeflag==MEM_READ) {
 			odata = d->csr[0] + (d->csr[1] << 8) +
 			    (d->csr[2] << 16) + (d->csr[3] << 24);
+
 			/* debug("[ kn02: read from CSR: 0x%08x ]\n", odata); */
 		} else {
 			/*
@@ -146,6 +149,7 @@ DEVICE_ACCESS(kn02)
 DEVINIT(kn02)
 {
 	struct kn02_data *d;
+	uint32_t csr;
 	int i;
 
 	d = malloc(sizeof(struct kn02_data));
@@ -172,6 +176,16 @@ DEVINIT(kn02)
 		template.interrupt_deassert = kn02_interrupt_deassert;
 		interrupt_handler_register(&template);
 	}
+
+	/*
+	 *  Set initial value of the CSR. Note: If the KN02_CSR_NRMMOD bit
+	 *  is not set, the 5000/200 PROM image loops forever.
+	 */
+	csr = KN02_CSR_NRMMOD;
+	d->csr[0] = csr;
+	d->csr[1] = csr >> 8;
+	d->csr[2] = csr >> 16;
+	d->csr[3] = csr >> 24;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_KN02_LENGTH, dev_kn02_access, d,

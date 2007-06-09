@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.10 2006-12-30 13:30:56 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.11 2007-06-09 02:25:27 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -62,9 +62,9 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 	}
 
 	if (strcmp(cmd_line, "show") == 0) {
-		if (m->n_breakpoints == 0)
+		if (m->breakpoints.n == 0)
 			printf("No breakpoints set.\n");
-		for (i=0; i<m->n_breakpoints; i++)
+		for (i=0; i<m->breakpoints.n; i++)
 			show_breakpoint(m, i);
 		return;
 	}
@@ -72,24 +72,23 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 	if (strncmp(cmd_line, "delete ", 7) == 0) {
 		int x = atoi(cmd_line + 7);
 
-		if (m->n_breakpoints == 0) {
+		if (m->breakpoints.n == 0) {
 			printf("No breakpoints set.\n");
 			return;
 		}
-		if (x < 0 || x >= m->n_breakpoints) {
+		if (x < 0 || x > m->breakpoints.n) {
 			printf("Invalid breakpoint nr %i. Use 'breakpoint "
 			    "show' to see the current breakpoints.\n", x);
 			return;
 		}
 
-		free(m->breakpoint_string[x]);
+		free(m->breakpoints.string[x]);
 
-		for (i=x; i<m->n_breakpoints-1; i++) {
-			m->breakpoint_addr[i]   = m->breakpoint_addr[i+1];
-			m->breakpoint_string[i] = m->breakpoint_string[i+1];
-			m->breakpoint_flags[i]  = m->breakpoint_flags[i+1];
+		for (i=x; i<m->breakpoints.n-1; i++) {
+			m->breakpoints.addr[i]   = m->breakpoints.addr[i+1];
+			m->breakpoints.string[i] = m->breakpoints.string[i+1];
 		}
-		m->n_breakpoints --;
+		m->breakpoints.n --;
 
 		/*  Clear translations:  */
 		for (i=0; i<m->ncpus; i++)
@@ -102,14 +101,7 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 		uint64_t tmp;
 		size_t breakpoint_buf_len;
 
-		if (m->n_breakpoints >= MAX_BREAKPOINTS) {
-			printf("Too many breakpoints. (You need to recompile"
-			    " gxemul to increase this. Max = %i.)\n",
-			    MAX_BREAKPOINTS);
-			return;
-		}
-
-		i = m->n_breakpoints;
+		i = m->breakpoints.n;
 
 		res = debugger_parse_expression(m, cmd_line + 4, 0, &tmp);
 		if (!res) {
@@ -117,18 +109,28 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 			return;
 		}
 
+		m->breakpoints.string = realloc(m->breakpoints.string,
+		    sizeof(char *) * (m->breakpoints.n + 1));
+		m->breakpoints.addr = realloc(m->breakpoints.addr,
+		    sizeof(uint64_t) * (m->breakpoints.n + 1));
+		if (m->breakpoints.string == NULL ||
+		    m->breakpoints.addr == NULL) {
+			fprintf(stderr, "out of memory!\n");
+			exit(1);
+		}
+
 		breakpoint_buf_len = strlen(cmd_line+4) + 1;
-		m->breakpoint_string[i] = malloc(breakpoint_buf_len);
-		if (m->breakpoint_string[i] == NULL) {
+
+		m->breakpoints.string[i] = malloc(breakpoint_buf_len);
+		if (m->breakpoints.string[i] == NULL) {
 			printf("out of memory in debugger_cmd_breakpoint()\n");
 			exit(1);
 		}
-		strlcpy(m->breakpoint_string[i], cmd_line+4,
+		strlcpy(m->breakpoints.string[i], cmd_line+4,
 		    breakpoint_buf_len);
-		m->breakpoint_addr[i] = tmp;
-		m->breakpoint_flags[i] = 0;
+		m->breakpoints.addr[i] = tmp;
 
-		m->n_breakpoints ++;
+		m->breakpoints.n ++;
 		show_breakpoint(m, i);
 
 		/*  Clear translations:  */

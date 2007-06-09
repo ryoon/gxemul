@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.160 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.161 2007-06-09 02:25:27 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1700,9 +1700,9 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	if (!single_step_breakpoint) {
 		MODE_uint_t curpc = cpu->pc;
 		int i;
-		for (i=0; i<cpu->machine->n_breakpoints; i++)
+		for (i=0; i<cpu->machine->breakpoints.n; i++)
 			if (curpc == (MODE_uint_t)
-			    cpu->machine->breakpoint_addr[i]) {
+			    cpu->machine->breakpoints.addr[i]) {
 				if (!cpu->machine->instruction_trace) {
 					int old_quiet_mode = quiet_mode;
 					quiet_mode = 0;
@@ -1807,6 +1807,7 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 #endif
 		    instr(to_be_translated);
 	} else {
+#if 1
 		/*
 		 *  Translation read-ahead:
 		 */
@@ -1847,6 +1848,7 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 
 			cpu->translation_readahead = 0;
 		}
+#endif  /*  Read-ahead  */
 
 		/*  Finally finally :-), execute the instruction:  */
 		ic->f(cpu, ic);

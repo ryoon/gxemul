@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1597 2007-06-08 05:38:41 debug Exp $
+$Id: HISTORY,v 1.1598 2007-06-09 02:25:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3571,3 +3571,6 @@ Changelog for GXemul:
 		for native code generation experiments.
 		The KN02_CSR_NRMMOD bit in the DECstation 5000/200 (KN02) CSR
 		should always be set, to allow a 5000/200 PROM to boot.
+20070609	Moving out breakpoint details from the machine struct into
+		a helper struct, and removing the limit on max nr of
+		breakpoints.

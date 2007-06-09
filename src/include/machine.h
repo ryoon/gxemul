@@ -28,15 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.176 2007-06-06 00:40:34 debug Exp $
+ *  $Id: machine.h,v 1.177 2007-06-09 02:25:27 debug Exp $
  */
 
 #include <sys/types.h>
 
 #include "symbol.h"
 
-
-#define	MAX_BREAKPOINTS		8
 
 #define	MAX_TICK_FUNCTIONS	16
 
@@ -60,6 +58,12 @@ struct isa_pic_data {
 
 	int			*pending_timer_interrupts;
 	int			last_int;
+};
+
+struct breakpoints {
+	int		n;
+	char		**string;
+	uint64_t	*addr;
 };
 
 
@@ -137,10 +141,7 @@ struct machine {
 	char	*bootarg;
 
 	/*  Breakpoints:  */
-	int	n_breakpoints;
-	char	*breakpoint_string[MAX_BREAKPOINTS];
-	uint64_t breakpoint_addr[MAX_BREAKPOINTS];
-	int	breakpoint_flags[MAX_BREAKPOINTS];
+	struct breakpoints breakpoints;
 
 	int	halt_on_nonexistant_memaccess;
 	int	instruction_trace;
@@ -383,6 +384,7 @@ struct machine *machine_new(char *name, struct emul *emul, int id);
 void machine_destroy(struct machine *machine);
 int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch);
+void machine_add_breakpoint_string(struct machine *machine, char *str);
 void machine_add_tickfunction(struct machine *machine,
 	void (*func)(struct cpu *, void *), void *extra, int clockshift);
 void machine_statistics_init(struct machine *, char *fname);

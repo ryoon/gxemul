@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.299 2007-06-05 06:41:30 debug Exp $
+ *  $Id: main.c,v 1.300 2007-06-09 02:25:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -502,17 +502,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'p':
-			if (m->n_breakpoints >= MAX_BREAKPOINTS) {
-				fprintf(stderr, "too many breakpoints\n");
-				exit(1);
-			}
-			m->breakpoint_string[m->n_breakpoints] = strdup(optarg);
-			if (m->breakpoint_string[m->n_breakpoints] == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
-			m->breakpoint_flags[m->n_breakpoints] = 0;
-			m->n_breakpoints ++;
+			machine_add_breakpoint_string(m, optarg);
 			msopts = 1;
 			break;
 		case 'Q':

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.291 2007-06-06 00:40:34 debug Exp $
+ *  $Id: emul.c,v 1.292 2007-06-09 02:25:26 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -83,22 +83,22 @@ static void print_separator(void)
 
 
 /*
- *  add_dump_points():
+ *  add_breakpoints():
  *
  *  Take the strings breakpoint_string[] and convert to addresses
  *  (and store them in breakpoint_addr[]).
  *
  *  TODO: This function should be moved elsewhere.
  */
-static void add_dump_points(struct machine *m)
+static void add_breakpoints(struct machine *m)
 {
 	int i;
 	int string_flag;
 	uint64_t dp;
 
-	for (i=0; i<m->n_breakpoints; i++) {
+	for (i=0; i<m->breakpoints.n; i++) {
 		string_flag = 0;
-		dp = strtoull(m->breakpoint_string[i], NULL, 0);
+		dp = strtoull(m->breakpoints.string[i], NULL, 0);
 
 		/*
 		 *  If conversion resulted in 0, then perhaps it is a
@@ -107,12 +107,12 @@ static void add_dump_points(struct machine *m)
 		if (dp == 0) {
 			uint64_t addr;
 			int res = get_symbol_addr(&m->symbol_context,
-			    m->breakpoint_string[i], &addr);
+			    m->breakpoints.string[i], &addr);
 			if (!res) {
 				fprintf(stderr,
 				    "ERROR! Breakpoint '%s' could not be"
 					" parsed\n",
-				    m->breakpoint_string[i]);
+				    m->breakpoints.string[i]);
 				exit(1);
 			} else {
 				dp = addr;
@@ -130,11 +130,11 @@ static void add_dump_points(struct machine *m)
 				dp |= 0xffffffff00000000ULL;
 		}
 
-		m->breakpoint_addr[i] = dp;
+		m->breakpoints.addr[i] = dp;
 
 		debug("breakpoint %i: 0x%llx", i, (long long)dp);
 		if (string_flag)
-			debug(" (%s)", m->breakpoint_string[i]);
+			debug(" (%s)", m->breakpoints.string[i]);
 		debug("\n");
 	}
 }
@@ -768,8 +768,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			m->cpus[i]->running = 0;
 	}
 
-	/*  Add PC dump points:  */
-	add_dump_points(m);
+	/*  Parse and add breakpoints:  */
+	add_breakpoints(m);
 
 	/*  TODO: This is MIPS-specific!  */
 	if (m->machine_type == MACHINE_PMAX &&

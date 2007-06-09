@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.699 2007-06-05 07:27:28 debug Exp $
+ *  $Id: machine.c,v 1.700 2007-06-09 02:25:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -251,6 +251,41 @@ int machine_name_to_type(char *stype, char *ssubtype,
 	    "available types and subtypes.\n\n");
 
 	return 0;
+}
+
+
+/*
+ *  machine_add_breakpoint_string():
+ *
+ *  Add a breakpoint string to the machine. Later (in emul.c) these will be
+ *  converted to actual breakpoints.
+ */
+void machine_add_breakpoint_string(struct machine *machine, char *str)
+{
+	int n = machine->breakpoints.n + 1;
+
+	if ((machine->breakpoints.string = realloc(machine->breakpoints.string,
+	    n * sizeof(char *))) == NULL) {
+		fprintf(stderr, "machine_add_breakpoint_string:"
+		    " out of memory\n");
+		exit(1);
+	}
+	if ((machine->breakpoints.addr = realloc(machine->breakpoints.addr,
+	    n * sizeof(uint64_t))) == NULL) {
+		fprintf(stderr, "machine_add_breakpoint_string:"
+		    " out of memory\n");
+		exit(1);
+	}
+
+	if ((machine->breakpoints.string[machine->breakpoints.n] =
+	    strdup(optarg)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	machine->breakpoints.addr[machine->breakpoints.n] = 0;
+
+	machine->breakpoints.n ++;
 }
 
 

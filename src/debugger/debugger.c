@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.23 2007-06-05 07:27:29 debug Exp $
+ *  $Id: debugger.c,v 1.24 2007-06-09 02:25:27 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -183,13 +183,11 @@ static void show_breakpoint(struct machine *m, int i)
 {
 	printf("%3i: 0x", i);
 	if (m->cpus[0]->is_32bit)
-		printf("%08"PRIx32, (uint32_t) m->breakpoint_addr[i]);
+		printf("%08"PRIx32, (uint32_t) m->breakpoints.addr[i]);
 	else
-		printf("%016"PRIx64, (uint64_t) m->breakpoint_addr[i]);
-	if (m->breakpoint_string[i] != NULL)
-		printf(" (%s)", m->breakpoint_string[i]);
-	if (m->breakpoint_flags[i])
-		printf(": flags=0x%x", m->breakpoint_flags[i]);
+		printf("%016"PRIx64, (uint64_t) m->breakpoints.addr[i]);
+	if (m->breakpoints.string[i] != NULL)
+		printf(" (%s)", m->breakpoints.string[i]);
 	printf("\n");
 }
 

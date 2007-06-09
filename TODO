@@ -1,4 +1,21 @@
-$Id: TODO,v 1.524 2007-06-05 18:06:58 debug Exp $
+$Id: TODO,v 1.525 2007-06-09 02:24:25 debug Exp $
+
+-------------------------------------------------------------------------------
+
+Debian/PMAX funkar ej (vmlinux-2.4.31) med dyntrans read-ahead :(  Varför?
+
+
+mips-test-0.2:
+--------------
+
+1. while true; do ls -l > /dev/null; echo -n .; done, 80x36 dots
+2. while true; do /usr/bin/md5sum /usr/bin/* > /dev/null; echo -n .; done, 80 dots
+3. while true; do grep hej lib/libc.so.6  > /dev/null; echo -n .; done, 80 dots
+
+			 1		 2		 3
+			---		---		---
+QEMU 0.9.0:		2 min 20 sec	45 sec		4 min 41 seconds
+GXemul 20070608:	1 min 59 sec	3 min 18 sec	18 min 10 seconds
 
 -------------------------------------------------------------------------------
 
@@ -265,22 +282,12 @@ Dyntrans:
 	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  Native code generation backends:
-		o)  think carefully about this.
-		o)  simple syntax for emitting opcodes; backend implementation
-		    must be optional, so I don't have to write more code
-		    than necessary. after all, the non-native (C) code should
-		    always work.
-		o)  convert into native code only after an entire
-			block has been translated? probably best.
-		o)  the "almost native" opcodes may be rearranged,
-		    "peep-hole optimized", etc. and then as a separate step
-		    this list of almost native opcodes is written out
-		    as native code.
+		o)  experiment with calling the host's cc and ld externally;
+		    extremely high overhead, but could be interesting none-
+		    theless.
+		o)  experiment with using LLVM?
 		o)  load/store and delay branches are the most important to
 		    think about!
-		o)  x86 and amd64 code generators can be very similar... perhaps
-		o)  NOTE that generation is per _ABI_, not per host arch!
-		    the configure script must detect ABI!!!
 		o)  branches to already translated code blocks can
 			link the blocks together
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.105 2007-06-04 08:53:21 debug Exp $
+ *  $Id: memory_rw.c,v 1.106 2007-06-09 02:24:48 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -239,7 +239,9 @@ not just the device in question.
 					    "writing to" : "reading from",
 					    mem->devices[i].name, (long)paddr);
 #ifdef MEM_MIPS
-					mips_cpu_exception(cpu, EXCEPTION_DBE,
+					mips_cpu_exception(cpu,
+					    cache == CACHE_INSTRUCTION?
+					    EXCEPTION_IBE : EXCEPTION_DBE,
 					    0, vaddr, 0, 0, 0, 0);
 #endif
 					return MEMORY_ACCESS_FAILED;
@@ -302,6 +304,14 @@ not just the device in question.
 				/*  Return all zeroes? (Or 0xff? TODO)  */
 				memset(data, 0, len);
 
+#if 0
+/*
+ *  NOTE: This code prevents a PROM image from a real 5000/200 from booting.
+ *  I think I introduced it because it was how some guest OS (NetBSD?) detected
+ *  the amount of RAM on some machine.
+ *
+ *  TODO: Figure out if it is not needed anymore, and remove it completely.
+ */
 #ifdef MEM_MIPS
 				/*
 				 *  For real data/instruction accesses, cause
@@ -315,6 +325,7 @@ not just the device in question.
 					    0, 0, 0);
 				}
 #endif  /*  MEM_MIPS  */
+#endif
 			}
 
 			/*  Hm? Shouldn't there be a DBE exception for

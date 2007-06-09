@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.700 2007-06-09 02:25:27 debug Exp $
+ *  $Id: machine.c,v 1.701 2007-06-09 14:13:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -304,11 +304,22 @@ void machine_add_breakpoint_string(struct machine *machine, char *str)
 void machine_add_tickfunction(struct machine *machine, void (*func)
 	(struct cpu *, void *), void *extra, int tickshift)
 {
-	int n = machine->n_tick_entries;
+	int n = machine->tick_functions.n_entries;
 
-	if (n >= MAX_TICK_FUNCTIONS) {
-		fprintf(stderr, "machine_add_tickfunction(): too "
-		    "many tick functions\n");
+	machine->tick_functions.ticks_till_next = realloc(
+	    machine->tick_functions.ticks_till_next, (n+1) * sizeof(int));
+	machine->tick_functions.ticks_reset_value = realloc(
+	    machine->tick_functions.ticks_reset_value, (n+1) * sizeof(int));
+	machine->tick_functions.f = realloc(
+	    machine->tick_functions.f, (n+1) * sizeof(void *));
+	machine->tick_functions.extra = realloc(
+	    machine->tick_functions.extra, (n+1) * sizeof(void *));
+
+	if (machine->tick_functions.ticks_till_next == NULL ||
+	    machine->tick_functions.ticks_reset_value == NULL ||
+	    machine->tick_functions.f == NULL ||
+	    machine->tick_functions.extra == NULL) {
+		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
@@ -324,12 +335,12 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 		exit(1);
 	}
 
-	machine->ticks_till_next[n]   = 0;
-	machine->ticks_reset_value[n] = 1 << tickshift;
-	machine->tick_func[n]         = func;
-	machine->tick_extra[n]        = extra;
+	machine->tick_functions.ticks_till_next[n]   = 0;
+	machine->tick_functions.ticks_reset_value[n] = 1 << tickshift;
+	machine->tick_functions.f[n]                 = func;
+	machine->tick_functions.extra[n]             = extra;
 
-	machine->n_tick_entries ++;
+	machine->tick_functions.n_entries = n + 1;
 }
 
 
@@ -658,16 +669,17 @@ int machine_run(struct machine *machine)
 	 *  TODO: This should be redesigned into some "mainbus" stuff instead!
 	 */
 
-	for (te=0; te<machine->n_tick_entries; te++) {
-		machine->ticks_till_next[te] -= cpu0instrs;
-		if (machine->ticks_till_next[te] <= 0) {
-			while (machine->ticks_till_next[te] <= 0) {
-				machine->ticks_till_next[te] +=
-				    machine->ticks_reset_value[te];
+	for (te=0; te<machine->tick_functions.n_entries; te++) {
+		machine->tick_functions.ticks_till_next[te] -= cpu0instrs;
+		if (machine->tick_functions.ticks_till_next[te] <= 0) {
+			while (machine->tick_functions.ticks_till_next[te]<=0) {
+				machine->tick_functions.ticks_till_next[te] +=
+				    machine->tick_functions.
+				    ticks_reset_value[te];
 			}
 
-			machine->tick_func[te](cpus[0],
-			    machine->tick_extra[te]);
+			machine->tick_functions.f[te](cpus[0],
+			    machine->tick_functions.extra[te]);
 		}
 	}
 

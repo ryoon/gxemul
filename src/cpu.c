@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.384 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu.c,v 1.385 2007-06-09 14:13:06 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -399,11 +399,11 @@ void cpu_run_deinit(struct machine *machine)
 	 *  TODO: This should be refactored when redesigning the mainbus
 	 *        concepts!
 	 */
-        for (te=0; te<machine->n_tick_entries; te++) {
-		machine->tick_func[te](machine->cpus[0],
-		    machine->tick_extra[te]);
-		machine->tick_func[te](machine->cpus[0],
-		    machine->tick_extra[te]);
+        for (te=0; te<machine->tick_functions.n_entries; te++) {
+		machine->tick_functions.f[te](machine->cpus[0],
+		    machine->tick_functions.extra[te]);
+		machine->tick_functions.f[te](machine->cpus[0],
+		    machine->tick_functions.extra[te]);
 	}
 
 	if (machine->show_nr_of_instructions)

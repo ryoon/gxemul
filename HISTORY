@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1598 2007-06-09 02:25:26 debug Exp $
+$Id: HISTORY,v 1.1599 2007-06-09 14:13:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3574,3 +3574,5 @@ Changelog for GXemul:
 20070609	Moving out breakpoint details from the machine struct into
 		a helper struct, and removing the limit on max nr of
 		breakpoints.
+20070610	Moving out tick functions into a helper struct as well (which
+		also gets rid of the max limit).

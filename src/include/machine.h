@@ -28,15 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.177 2007-06-09 02:25:27 debug Exp $
+ *  $Id: machine.h,v 1.178 2007-06-09 14:13:06 debug Exp $
  */
 
 #include <sys/types.h>
 
 #include "symbol.h"
 
-
-#define	MAX_TICK_FUNCTIONS	16
 
 #define	MAX_STATISTICS_FIELDS	8
 
@@ -62,8 +60,20 @@ struct isa_pic_data {
 
 struct breakpoints {
 	int		n;
+
+	/*  Arrays, with one element for each entry:  */
 	char		**string;
 	uint64_t	*addr;
+};
+
+struct tick_functions {
+	int	n_entries;
+
+	/*  Arrays, with one element for each entry:  */
+	int	*ticks_till_next;
+	int	*ticks_reset_value;
+	void	(*(*f))(struct cpu *, void *);
+	void	**extra;
 };
 
 
@@ -96,24 +106,12 @@ struct machine {
 	/*  TODO: How about multiple cpu familys in one machine?  */
 	struct cpu_family *cpu_family;
 
-	/*
-	 *  The "mainbus":
-	 *
-	 *	o)  memory
-	 *	o)  devices
-	 *	o)  CPUs
-	 */
-
 	struct memory *memory;
 
 	int	main_console_handle;
 
-	/*  Hardware devices, run every x clock cycles.  */
-	int	n_tick_entries;
-	int	ticks_till_next[MAX_TICK_FUNCTIONS];
-	int	ticks_reset_value[MAX_TICK_FUNCTIONS];
-	void	(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
-	void	*tick_extra[MAX_TICK_FUNCTIONS];
+	/*  Tick functions (e.g. hardware devices):  */
+	struct tick_functions tick_functions;
 
 	char	*cpu_name;  /*  TODO: remove this, there could be several
 				cpus with different names in a machine  */

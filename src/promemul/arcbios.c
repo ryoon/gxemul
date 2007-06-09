@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.14 2007-06-06 00:40:34 debug Exp $
+ *  $Id: arcbios.c,v 1.15 2007-06-09 14:13:06 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -1548,9 +1548,9 @@ int arcbios_emul(struct cpu *cpu)
 			fflush(stdin);
 			fflush(stdout);
 			/*  NOTE/TODO: This gives a tick to _everything_  */
-			for (i=0; i<machine->n_tick_entries; i++)
-				machine->tick_func[i](cpu,
-				    machine->tick_extra[i]);
+			for (i=0; i<machine->tick_functions.n_entries; i++)
+				machine->tick_functions.f[i](cpu,
+				    machine->tick_functions.extra[i]);
 
 			for (i=0; i<(int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2];
 			    i++) {

@@ -1,8 +1,13 @@
-$Id: TODO,v 1.525 2007-06-09 02:24:25 debug Exp $
+$Id: TODO,v 1.526 2007-06-12 01:56:49 debug Exp $
 
 -------------------------------------------------------------------------------
 
+Få Linux/Malta-kärnor från http://people.debian.org/~ths/qemu/malta/ att
+funka. (Implementera nya interruptinstruktioner, plus lite annat?)
+
 Debian/PMAX funkar ej (vmlinux-2.4.31) med dyntrans read-ahead :(  Varför?
+
+Experimentera med cc/ld native-kodgenerering.
 
 
 mips-test-0.2:
@@ -15,7 +20,8 @@ mips-test-0.2:
 			 1		 2		 3
 			---		---		---
 QEMU 0.9.0:		2 min 20 sec	45 sec		4 min 41 seconds
-GXemul 20070608:	1 min 59 sec	3 min 18 sec	18 min 10 seconds
+GXemul 0.4.5.1:		TODO
+GXemul-20070608:	1 min 59 sec	3 min 18 sec	18 min 10 seconds
 
 -------------------------------------------------------------------------------
 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.222 2007-05-22 09:49:30 debug Exp $
+$Id: guestoses.html,v 1.223 2007-06-12 01:56:49 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -154,23 +154,12 @@ serial-console emulation, then choose 3.1.
 <p>To install NetBSD/pmax onto a harddisk image in the emulator,
 follow these instructions:
 
-<p><ol start="1">
+<p><ol>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
 	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=3000000</b>
 
 </pre>
-</ol>
-
-<p>
-From this point, there are two separate ways to continue the installation.
-You can either download a CD-ROM iso image (and let the installation 
-program copy files from the CD-ROM image to the harddisk image), or you 
-can install via ftp. For an installation from a CD-ROM image, follow these 
-steps:
-<p>
-<ol start="2">
-
   <li>Download a NetBSD CD-ROM iso image:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/pmaxcd.iso</a>
 	or
@@ -178,18 +167,24 @@ steps:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -d bc:pmaxcd-3.1.iso</b>
+	<b>gxemul -e 3max -d nbsd_pmax.img -d b:pmaxcd-3.1.iso</b>
 	(or <b>pmaxcd.iso</b>)
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
 	DECstation. Remember to choose <tt>vt100</tt> as your terminal
 	type, and not <tt>rcons</tt>.
 </ol>
-<p>
-For an ftp install, substitute steps 2 and 3 above with these:
-<p>
-<ol start="2">
 
+<p>If you prefer to do an ftp install (usually much slower), you can
+follow these instructions instead:
+
+<p>
+<ol>
+  <li>Create an empty harddisk image, which will be the root disk
+	that NetBSD installs itself onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=3000000</b>
+
+</pre>
   <li>Download a NetBSD pmax INSTALL kernel:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	or
@@ -274,7 +269,7 @@ harddisk image, follow these instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -e pica -x -d nbsd_arc.img -d bc:arccd.iso -j arc/binary/kernel/netbsd.RAMDISK.gz</b>
+	<b>gxemul -e pica -x -d nbsd_arc.img -d b:arccd.iso -j arc/binary/kernel/netbsd.RAMDISK.gz</b>
 
 </pre>
 	(Try removing <tt>-x</tt> if you have problems with the xterm.)

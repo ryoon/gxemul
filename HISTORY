@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1599 2007-06-09 14:13:05 debug Exp $
+$Id: HISTORY,v 1.1600 2007-06-12 03:49:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3576,3 +3576,8 @@ Changelog for GXemul:
 		breakpoints.
 20070610	Moving out tick functions into a helper struct as well (which
 		also gets rid of the max limit).
+20070612	FINALLY figured out why Debian/DECstation stopped working when
+		translation read-ahead was enabled: in src/memory_rw.c, the
+		call to invalidate_code_translation was made also if the
+		memory access was an instruction load (if the page was mapped
+		as writable); it shouldn't be called in that case.

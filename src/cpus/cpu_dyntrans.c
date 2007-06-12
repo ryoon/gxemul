@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.161 2007-06-09 02:25:27 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.162 2007-06-12 03:49:11 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -109,11 +109,15 @@ static void gather_statistics(struct cpu *cpu)
 #define S		gather_statistics(cpu)
 
 
+#if 1
+
 /*  The normal instruction execution core:  */
 #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
 
+#else
+
 /*  For heavy debugging:  */
-/*  #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++;	\
+#define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++;	\
 		{	\
 			int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - \
 			    (size_t)cpu->cd.DYNTRANS_ARCH.cur_ic_page) / \
@@ -122,7 +126,9 @@ static void gather_statistics(struct cpu *cpu)
 			    cpu->cd.DYNTRANS_ARCH.cur_ic_page,		\
 			    ic, low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT); \
 		} \
-		ic->f(cpu, ic);  */
+		ic->f(cpu, ic);
+
+#endif
 
 /*  static long long nr_of_I_calls = 0;  */
 
@@ -1697,7 +1703,7 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	/*
 	 *  Check for breakpoints.
 	 */
-	if (!single_step_breakpoint) {
+	if (!single_step_breakpoint && !cpu->translation_readahead) {
 		MODE_uint_t curpc = cpu->pc;
 		int i;
 		for (i=0; i<cpu->machine->breakpoints.n; i++)
@@ -1789,16 +1795,21 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	}
 
 	/*  ... and finally execute the translated instruction:  */
+
+	/*  (Except when doing read-ahead!)  */
+	if (cpu->translation_readahead)
+		return;
+
+	/*
+	 *  Special case when single-stepping: Execute the translated
+	 *  instruction, but then replace it with a "to be translated"
+	 *  directly afterwards.
+	 */
 	if ((single_step_breakpoint && cpu->delay_slot == NOT_DELAYED)
 #ifdef DYNTRANS_DELAYSLOT
 	    || in_crosspage_delayslot
 #endif
 	    ) {
-		/*
-		 *  Special case when single-stepping: Execute the translated
-		 *  instruction, but then replace it with a "to be translated"
-		 *  directly afterwards.
-		 */
 		single_step_breakpoint = 0;
 		ic->f(cpu, ic);
 		ic->f =
@@ -1806,53 +1817,56 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 		    cpu->is_32bit? instr32(to_be_translated) :
 #endif
 		    instr(to_be_translated);
-	} else {
-#if 1
-		/*
-		 *  Translation read-ahead:
-		 */
-		if (cpu->translation_readahead) {
-			/*  Don't recurse when already doing read-ahead!  */
-			return;
-		} else if (!single_step && !cpu->machine->instruction_trace) {
-			/*  Do readahead:  */
-			int i = 1;
-			uint64_t pagenr = DYNTRANS_ADDR_TO_PAGENR(cpu->pc);
-			uint64_t baseaddr = cpu->pc;
-			cpu->translation_readahead = MAX_DYNTRANS_READAHEAD;
 
-			while (DYNTRANS_ADDR_TO_PAGENR(baseaddr +
-			    (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr &&
-			    cpu->translation_readahead > 0) {
-				void (*old_f)(struct cpu *,
-				    struct DYNTRANS_IC *) = ic[i].f;
-
-				/*  Already translated? Then abort:  */
-				if (old_f != (
-#ifdef DYNTRANS_DUALMODE_32
-				    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-				    instr(to_be_translated)))
-					break;
-
-				/*  Translate the instruction:  */
-				ic[i].f(cpu, ic+i);
-
-				/*  Translation failed? Then abort.  */
-				if (ic[i].f == old_f)
-					break;
-
-				cpu->translation_readahead --;
-				++i;
-			}
-
-			cpu->translation_readahead = 0;
-		}
-#endif  /*  Read-ahead  */
-
-		/*  Finally finally :-), execute the instruction:  */
-		ic->f(cpu, ic);
+		return;
 	}
+
+	/*  Translation read-ahead:  */
+	if (!single_step && !cpu->machine->instruction_trace) {
+		/*  Do readahead:  */
+		int i = 1;
+		uint64_t pagenr = DYNTRANS_ADDR_TO_PAGENR(cpu->pc);
+		uint64_t baseaddr = cpu->pc;
+
+		cpu->translation_readahead = MAX_DYNTRANS_READAHEAD;
+
+		while (DYNTRANS_ADDR_TO_PAGENR(baseaddr +
+		    (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr &&
+		    cpu->translation_readahead > 0) {
+			void (*old_f)(struct cpu *,
+			    struct DYNTRANS_IC *) = ic[i].f;
+
+			/*  Already translated? Then abort:  */
+			if (old_f != (
+#ifdef DYNTRANS_DUALMODE_32
+			    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+			    instr(to_be_translated)))
+				break;
+
+			/*  Translate the instruction:  */
+			ic[i].f(cpu, ic+i);
+
+			/*  Translation failed? Then abort.  */
+			if (ic[i].f == old_f)
+				break;
+
+			cpu->translation_readahead --;
+			++i;
+		}
+
+		cpu->translation_readahead = 0;
+	}
+
+
+	/*
+	 *  Finally finally :-), execute the instruction.
+	 *
+	 *  Note: The instruction might have changed during read-ahead, if
+	 *  instruction combinations are used.
+	 */
+
+	ic->f(cpu, ic);
 
 	return;
 

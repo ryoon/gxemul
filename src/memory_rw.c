@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.106 2007-06-09 02:24:48 debug Exp $
+ *  $Id: memory_rw.c,v 1.107 2007-06-12 03:49:11 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -386,7 +386,7 @@ not just the device in question.
 
 	if ((writeflag == MEM_WRITE
 #if !defined(MEM_USERLAND)
-	    || ok == 2
+	    || (ok == 2 && cache == CACHE_DATA)
 #endif
 	    ) && cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);

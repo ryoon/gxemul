@@ -1,7 +1,7 @@
 /*
 Idea 2007-06-06 on how to use a C compiler + linker as a native code generation backend.
 
-  gcc native_cc_ld_test.i -Wall -O3 -fomit-frame-pointer -fpeephole -fschedule-insns -c
+  gcc native_cc_ld_test.i -Wall -O3 -fomit-frame-pointer -fpeephole -fno-builtin -c
   ld native_cc_ld_test.o -o native_cc_ld_test -e f -Ttext 0x1234560
 
   objdump -d native_cc_ld_test

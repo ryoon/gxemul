@@ -1,11 +1,9 @@
-$Id: TODO,v 1.527 2007-06-12 03:45:46 debug Exp $
+$Id: TODO,v 1.528 2007-06-12 03:45:53 debug Exp $
 
 -------------------------------------------------------------------------------
 
 Få Linux/Malta-kärnor från http://people.debian.org/~ths/qemu/malta/ att
 funka. (Implementera nya interruptinstruktioner, plus lite annat?)
-
-Debian/PMAX funkar ej (vmlinux-2.4.31) med dyntrans read-ahead :(  Varför?
 
 Experimentera med cc/ld native-kodgenerering.
 

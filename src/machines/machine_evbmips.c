@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.23 2007-06-13 01:12:39 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.24 2007-06-13 02:07:36 debug Exp $
  *
  *  Emulation of MIPS evaluation boards, such as the MIPS Malta board.
  */
@@ -169,7 +169,7 @@ MACHINE_DEFAULT_CPU(evbmips)
 	case MACHINE_EVBMIPS_MALTA:
 	case MACHINE_EVBMIPS_MALTA_BE:
 		/*  5Kc = MIPS64 rev 1, 5KE = MIPS64 rev 2  */
-		machine->cpu_name = strdup("5KE");
+		machine->cpu_name = strdup("5Kc");
 		break;
 
 	default:fatal("Unimplemented evbmips subtype.\n");

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1601 2007-06-13 01:13:10 debug Exp $
+$Id: HISTORY,v 1.1602 2007-06-13 02:08:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3582,6 +3582,4 @@ Changelog for GXemul:
 		memory access was an instruction load (if the page was mapped
 		as writable); it shouldn't be called in that case.
 20070613	Implementing some more MIPS32/64 revision 2 instructions: di,
-		ei, ext, dext, dextm, and dextu.
-		Changing the default CPU for the Malta machine from a 5Kc
-		(MIPS64 rev 1) to a 5KE (MIPS64 rev 2).
+		ei, ext, dext, dextm, dextu, and ins.

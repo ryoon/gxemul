@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.66 2007-06-13 01:13:11 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.67 2007-06-13 02:08:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -979,9 +979,9 @@ hz = 100.0;
 		    cp->coproc_nr, reg_nr, cp->coproc_nr==0?
 		    cop0_names[reg_nr] : "?", (long long)tmp);
 
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0,
+		/*  mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0,
 		    cp->coproc_nr, 0, 0, 0);
-		return;
+		return;  */
 	}
 
 	if (readonly) {

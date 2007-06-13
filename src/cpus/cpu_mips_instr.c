@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.132 2007-06-13 01:13:11 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.133 2007-06-13 02:08:03 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1145,6 +1145,28 @@ X(cache)
 
 	/*  Make sure the rmw bit is cleared:  */
 	cpu->cd.mips.rmw = 0;
+}
+
+
+/*
+ *  ins: Insert bitfield.
+ *
+ *  arg[0] = pointer to rt
+ *  arg[1] = pointer to rs
+ *  arg[2] = (msb << 5) + lsb
+ */
+X(ins)
+{
+	int msb = ic->arg[2] >> 5, pos = ic->arg[2] & 0x1f;
+	int size = msb + 1 - pos;
+	uint32_t rt = reg(ic->arg[0]);
+	uint32_t rs = reg(ic->arg[1]);
+	uint32_t mask = (-1) << pos;
+
+	mask <<= (32 - pos - size);
+	mask >>= (32 - pos - size);
+
+	reg(ic->arg[0]) = (int32_t) ((rt & ~mask) | ((rs << pos) & mask));
 }
 
 
@@ -4048,7 +4070,7 @@ X(to_be_translated)
 
 			break;
 		case COPz_MFMCz:
-			if ((iword & 0xffef) == 0x6000) {
+			if ((iword & 0xffdf) == 0x6000) {
 				/*  MIPS32/64 rev 2 "ei" or "di":   */
 				if (cpu->cd.mips.cpu_type.isa_level < 32 ||
 				    cpu->cd.mips.cpu_type.isa_revision < 2) {
@@ -4599,6 +4621,18 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 				ic->arg[2] = (msbd << 6) + lsb;
 				ic->f = instr(dext);
+				if (rt == MIPS_GPR_ZERO)
+					ic->f = instr(nop);
+			}
+			break;
+
+		case SPECIAL3_INS:
+			{
+				int msb = rd, lsb = (iword >> 6) & 0x1f;
+				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
+				ic->arg[2] = (msb << 5) + lsb;
+				ic->f = instr(ins);
 				if (rt == MIPS_GPR_ZERO)
 					ic->f = instr(nop);
 			}

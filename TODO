@@ -1,11 +1,8 @@
-$Id: TODO,v 1.528 2007-06-12 03:45:53 debug Exp $
+$Id: TODO,v 1.529 2007-06-13 01:13:11 debug Exp $
 
 -------------------------------------------------------------------------------
 
-Få Linux/Malta-kärnor från http://people.debian.org/~ths/qemu/malta/ att
-funka. (Implementera nya interruptinstruktioner, plus lite annat?)
-
-Experimentera med cc/ld native-kodgenerering.
+ARM wait/sleep/idle instruction (for NetBSD/cats).
 
 
 mips-test-0.2:

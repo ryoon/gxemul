@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.131 2007-06-04 08:22:06 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.132 2007-06-13 01:13:11 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1157,8 +1157,28 @@ X(cache)
  */
 X(ext)
 {
-	fatal("ext: todo\n");
-	exit(1);
+	int msbd = ic->arg[2] >> 5, lsb = ic->arg[2] & 0x1f;
+	int size = msbd + 1;
+	uint32_t rs = reg(ic->arg[1]);
+	uint32_t x = (rs << (32-lsb-size)) >> (32-lsb-size);
+	reg(ic->arg[0]) = (int32_t) (x >> lsb);
+}
+
+
+/*
+ *  dext:  Extract bitfield (64-bit).
+ *
+ *  arg[0] = pointer to rt
+ *  arg[1] = pointer to rs
+ *  arg[2] = (msbd << 6) + lsb
+ */
+X(dext)
+{
+	int msbd = ic->arg[2] >> 6, lsb = ic->arg[2] & 0x3f;
+	int size = msbd + 1;
+	uint64_t rs = reg(ic->arg[1]);
+	uint64_t x = (rs << (uint64_t)(64-lsb-size)) >> (uint64_t)(64-lsb-size);
+	reg(ic->arg[0]) = x >> lsb;
 }
 
 
@@ -2042,6 +2062,22 @@ X(tlbr)
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 	coproc_tlbpr(cpu, 1);
+}
+
+
+/*
+ *  ei_or_di:  MIPS32/64 rev 2, Enable or disable interrupts
+ *
+ *  arg[0] = ptr to rt
+ *  arg[1] = non-zero to enable interrupts
+ */
+X(ei_or_di)
+{
+	reg(ic->arg[0]) = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
+	if (ic->arg[1])
+		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= STATUS_IE;
+	else
+		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_IE;
 }
 
 
@@ -4011,12 +4047,46 @@ X(to_be_translated)
 				    COMBINE(netbsd_r3k_cache_inv);
 
 			break;
-		case 8:	if (iword == 0x4100ffff) {
+		case COPz_MFMCz:
+			if ((iword & 0xffef) == 0x6000) {
+				/*  MIPS32/64 rev 2 "ei" or "di":   */
+				if (cpu->cd.mips.cpu_type.isa_level < 32 ||
+				    cpu->cd.mips.cpu_type.isa_revision < 2) {
+					static int warning_ei_di = 0;
+					if (!warning_ei_di &&
+					    !cpu->translation_readahead) {
+						fatal("[ WARNING! MIPS32/64 "
+						    "revision 2 di or ei opcode"
+						    " used, but the %s process"
+						    "or does not implement "
+						    "such instructions. Only "
+						    "printing this "
+						    "warning once. ]\n",
+						    cpu->cd.mips.cpu_type.name);
+						warning_ei_di = 1;
+					}
+					ic->f = instr(reserved);
+					break;
+				}
+				ic->f = instr(ei_or_di);
+				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+				if (rt == MIPS_GPR_ZERO)
+					ic->arg[0] =
+					    (size_t)&cpu->cd.mips.scratch;
+				ic->arg[1] = iword & 0x20;
+			} else {
+				if (!cpu->translation_readahead)
+					fatal("Unimplemented COP0_MFMCz\n");
+				goto bad;
+			}
+			break;
+		case COPz_BCzc:
+			if (iword == 0x4100ffff) {
 				/*  R2020 DECstation write-loop thingy.  */
 				ic->f = instr(nop);
 			} else {
 				if (!cpu->translation_readahead)
-					fatal("Unimplemented blah zzzz...\n");
+					fatal("Unimplemented COP0_BCzc\n");
 				goto bad;
 			}
 			break;
@@ -4505,13 +4575,30 @@ X(to_be_translated)
 		switch (s6) {
 
 		case SPECIAL3_EXT:
-			/*  TODO: Cleanup and extend to DEXT... etc  */
 			{
 				int msbd = rd, lsb = (iword >> 6) & 0x1f;
 				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 				ic->arg[2] = (msbd << 5) + lsb;
 				ic->f = instr(ext);
+				if (rt == MIPS_GPR_ZERO)
+					ic->f = instr(nop);
+			}
+			break;
+
+		case SPECIAL3_DEXT:
+		case SPECIAL3_DEXTM:
+		case SPECIAL3_DEXTU:
+			{
+				int msbd = rd, lsb = (iword >> 6) & 0x1f;
+				if (s6 == SPECIAL3_DEXTM)
+					msbd += 32;
+				if (s6 == SPECIAL3_DEXTU)
+					lsb += 32;
+				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
+				ic->arg[2] = (msbd << 6) + lsb;
+				ic->f = instr(dext);
 				if (rt == MIPS_GPR_ZERO)
 					ic->f = instr(nop);
 			}

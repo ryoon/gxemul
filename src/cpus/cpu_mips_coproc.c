@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.65 2007-06-04 08:22:06 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.66 2007-06-13 01:13:11 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2147,9 +2147,18 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			exit(1);
 		}
 
-		op = (function) & 0xff;
 		switch (co_bit) {
+		case 0:
+			if ((function & 0x03e0ffdf) == 0x01606000) {
+				debug("%ci", function & 0x20? 'e' : 'd');
+				if (rt != MIPS_GPR_ZERO)
+					debug("\t%s", regnames[rt]);
+				debug("\n");
+				return;
+			}
+			break;
 		case 1:
+			op = (function) & 0xff;
 			switch (op) {
 			case COP0_TLBR:		/*  Read indexed TLB entry  */
 				debug("tlbr\n");
@@ -2212,8 +2221,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			default:
 				;
 			}
-		default:
-			;
+			break;
 		}
 	}
 

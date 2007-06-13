@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.22 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.23 2007-06-13 01:12:39 debug Exp $
  *
  *  Emulation of MIPS evaluation boards, such as the MIPS Malta board.
  */
@@ -168,7 +168,8 @@ MACHINE_DEFAULT_CPU(evbmips)
 
 	case MACHINE_EVBMIPS_MALTA:
 	case MACHINE_EVBMIPS_MALTA_BE:
-		machine->cpu_name = strdup("5Kc");
+		/*  5Kc = MIPS64 rev 1, 5KE = MIPS64 rev 2  */
+		machine->cpu_name = strdup("5KE");
 		break;
 
 	default:fatal("Unimplemented evbmips subtype.\n");
@@ -179,8 +180,6 @@ MACHINE_DEFAULT_CPU(evbmips)
 
 MACHINE_DEFAULT_RAM(evbmips)
 {
-	/*  MeshCube is always (?) 64 MB, and the others work fine
-	    with 64 MB too.  */
 	machine->physical_ram_in_mb = 64;
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1605 2007-06-14 16:13:29 debug Exp $
+$Id: HISTORY,v 1.1606 2007-06-14 18:11:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3591,3 +3591,5 @@ Changelog for GXemul:
 		that all included architectures are included in both release
 		and development builds.
 		Moving memory related helper functions from misc.c to memory.c.
+		Adding preliminary instructions for netbooting NetBSD/pmppc to
+		guestoses.html.

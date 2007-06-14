@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.267 2007-06-14 16:13:29 debug Exp $
+#  $Id: configure,v 1.268 2007-06-14 16:32:11 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -49,8 +49,6 @@
 #    o)  which compiler flags to use  (overridden by setting CFLAGS)
 #    o)  X11 flags and libraries  (TODO: should be possible to override
 #	 via command line options?)
-#    o)  native code generation backend (i.e. detect host ABI)
-#
 #
 #  The general philosophy regarding command line switches is that anything
 #  which can be incorporated into the program as a runtime command line option
@@ -1147,35 +1145,6 @@ else
 	fi
 fi
 rm -f _test_end*
-
-
-###############################################################################
-#
-#  Native code generation backend:  (Detect host ABI.)
-#
-###############################################################################
-
-if [ z$UNSTABLE = zYES ]; then
-	printf "detecting native code generation ABI... "
-
-	if [ z"`uname -m`" = zamd64 ]; then
-		NATIVE_CODE_GENERATION=YES
-		printf "amd64\n"
-		printf "#define NATIVE_CODE_GENERATION\n" >> config.h
-		printf "#define HOST_ARCH_AMD64\n" >> config.h
-	fi
-
-	if [ z"`uname -m`" = zx86_64 ]; then
-		NATIVE_CODE_GENERATION=YES
-		printf "amd64\n"
-		printf "#define NATIVE_CODE_GENERATION\n" >> config.h
-		printf "#define HOST_ARCH_AMD64\n" >> config.h
-	fi
-
-	if [ z$NATIVE_CODE_GENERATION = z ]; then
-		printf "not supported yet for this host platform\n"
-	fi
-fi
 
 
 ###############################################################################

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.386 2007-06-14 16:13:29 debug Exp $
+ *  $Id: cpu.c,v 1.387 2007-06-14 16:32:11 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -308,12 +308,10 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 	if (cpu->translation_cache == NULL) {
 		cpu->translation_cache = zeroed_alloc(s);
 
-#ifdef NATIVE_CODE_GENERATION
 		if (native_code_translation_enabled) {
 			mprotect(cpu->translation_cache, s,
 			    PROT_READ | PROT_WRITE | PROT_EXEC);
 		}
-#endif
 	}
 
 	/*  Create an empty table at the beginning of the translation cache:  */

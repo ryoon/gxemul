@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.293 2007-06-14 16:13:30 debug Exp $
+ *  $Id: emul.c,v 1.294 2007-06-14 16:32:11 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -68,9 +68,6 @@ extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int quiet_mode;
 extern int native_code_translation_enabled;
-
-extern struct emul *debugger_emul;
-extern struct diskimage *diskimages[];
 
 
 /*

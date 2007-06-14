@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.300 2007-06-09 02:25:27 debug Exp $
+ *  $Id: main.c,v 1.301 2007-06-14 16:32:11 debug Exp $
  */
 
 #include <stdio.h>
@@ -311,11 +311,7 @@ static void usage(int longusage)
 #endif
 
 	printf("\nGeneral options:\n");
-	printf("  -b        enable native code generation");
-#ifndef NATIVE_CODE_GENERATION
-	printf(" (not yet for this host arch, sorry)");
-#endif
-	printf("\n");
+	printf("  -b        enable native code generation\n");
 	printf("  -B        disable native code generation (this is "
 	    "the default)\n");
 	printf("  -c cmd    add cmd as a command to run before starting "
@@ -379,16 +375,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
 		case 'b':
-#ifdef NATIVE_CODE_GENERATION
 			native_code_translation_enabled = 1;
 			break;
-#else
-			printf("Could not start with native code generation"
-			    " (-b). This version\nof GXemul does not support"
-			    " the -b option on this host architecture.\n");
-			printf("Aborting.\n");
-			exit(1);
-#endif
 		case 'B':
 			native_code_translation_enabled = 0;
 			break;

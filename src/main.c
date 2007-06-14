@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.301 2007-06-14 16:32:11 debug Exp $
+ *  $Id: main.c,v 1.302 2007-06-14 16:36:41 debug Exp $
  */
 
 #include <stdio.h>
@@ -311,7 +311,7 @@ static void usage(int longusage)
 #endif
 
 	printf("\nGeneral options:\n");
-	printf("  -b        enable native code generation\n");
+	printf("  -b        enable native code generation, if available\n");
 	printf("  -B        disable native code generation (this is "
 	    "the default)\n");
 	printf("  -c cmd    add cmd as a command to run before starting "

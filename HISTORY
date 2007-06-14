@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1602 2007-06-13 02:08:03 debug Exp $
+$Id: HISTORY,v 1.1603 2007-06-14 04:53:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3583,3 +3583,7 @@ Changelog for GXemul:
 		as writable); it shouldn't be called in that case.
 20070613	Implementing some more MIPS32/64 revision 2 instructions: di,
 		ei, ext, dext, dextm, dextu, and ins.
+20070614	Implementing an instruction combination for the NetBSD/cats
+		idle loop (making the host not use any cpu if NetBSD/cats
+		inside the emulator is not using any cpu).
+		Increasing the nr of ARM VPH entries from 128 to 384.

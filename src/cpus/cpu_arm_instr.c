@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.73 2007-05-26 07:15:49 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.74 2007-06-14 04:53:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -989,8 +989,9 @@ X(store_w1_word_u1_p0_imm);
 X(store_w0_byte_u1_p0_imm);
 X(store_w0_word_u1_p0_imm);
 X(store_w0_word_u1_p1_imm);
-X(load_w1_word_u1_p0_imm);
 X(load_w0_word_u1_p0_imm);
+X(load_w0_word_u1_p1_imm);
+X(load_w1_word_u1_p0_imm);
 X(load_w0_byte_u1_p1_imm);
 X(load_w0_byte_u1_p1_reg);
 X(load_w1_byte_u1_p1_imm);
@@ -1530,6 +1531,62 @@ X(netbsd_scanc)
 
 	cpu->n_translated_instrs += 2;
 	cpu->cd.arm.next_ic = &ic[3];
+}
+
+
+/*
+ *  netbsd_idle:
+ *
+ *  L:	ldr     rX,[rY]
+ *	teqs    rX,#0
+ *	bne     X (samepage)
+ *	teqs    rZ,#0
+ *	beq     L (samepage)
+ *	....
+ *	X:  somewhere else on the same page
+ */
+X(netbsd_idle)
+{
+	uint32_t rY = reg(ic[0].arg[0]);
+	uint32_t rZ = reg(ic[3].arg[0]);
+	uint32_t *p;
+	uint32_t rX;
+
+	p = (uint32_t *) cpu->cd.arm.host_load[rY >> 12];
+	if (p == NULL) {
+		instr(load_w0_word_u1_p1_imm)(cpu, ic);
+		return;
+	}
+
+	rX = p[(rY & 0xfff) >> 2];
+	/*  No need to convert endianness, since it's only a 0-test.  */
+
+	/*  This makes execution continue on the first teqs instruction,
+	    which is fine.  */
+	if (rX != 0) {
+		instr(load_w0_word_u1_p1_imm)(cpu, ic);
+		return;
+	}
+
+	if (rZ == 0) {
+		/*  Synch the program counter.  */
+		uint32_t low_pc = ((size_t)ic - (size_t)
+		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+		cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+		    << ARM_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+
+		/*  Quasi-idle for a while:  */
+		cpu->has_been_idling = 1;
+	        if (cpu->machine->ncpus == 1)
+			usleep(50);
+		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT;
+
+		cpu->cd.arm.next_ic = &nothing_call;
+		return;
+	}
+
+	cpu->cd.arm.next_ic = &ic[5];
 }
 
 
@@ -2270,9 +2327,9 @@ void COMBINE(netbsd_copyout)(struct cpu *cpu,
 
 
 /*
- *  Combine: cmps_b():
+ *  Combine: cmps + beq, etc:
  */
-void COMBINE(cmps_b)(struct cpu *cpu,
+void COMBINE(beq_etc)(struct cpu *cpu,
 	struct arm_instr_call *ic, int low_addr)
 {
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
@@ -2300,6 +2357,20 @@ void COMBINE(cmps_b)(struct cpu *cpu,
 		if (ic[-1].f == instr(tsts) &&
 		    !(ic[-1].arg[1] & 0x80000000)) {
 			ic[-1].f = instr(tsts_lo_beq_samepage);
+		}
+		if (n_back >= 4 &&
+		    ic[-4].f == instr(load_w0_word_u1_p1_imm) &&
+		    ic[-4].arg[0] != ic[-4].arg[2] &&
+		    ic[-4].arg[1] == 0 &&
+		    ic[-4].arg[2] == ic[-3].arg[0] &&
+		    /*  Note: The teqs+bne is already combined!  */
+		    ic[-3].f == instr(teqs_bne_samepage) &&
+		    ic[-3].arg[1] == 0 &&
+		    ic[-2].f == instr(b_samepage__ne) &&
+		    ic[-1].f == instr(teqs) &&
+		    ic[-1].arg[0] != ic[-4].arg[0] &&
+		    ic[-1].arg[1] == 0) {
+			ic[-4].f = instr(netbsd_idle);
 		}
 		if (ic[-1].f == instr(teqs)) {
 			ic[-1].f = instr(teqs_beq_samepage);
@@ -3000,7 +3071,7 @@ X(to_be_translated)
 		if (main_opcode == 0xa && (condition_code <= 1
 		    || condition_code == 3 || condition_code == 8
 		    || condition_code == 12 || condition_code == 13))
-			cpu->cd.arm.combination_check = COMBINE(cmps_b);
+			cpu->cd.arm.combination_check = COMBINE(beq_etc);
 
 		if (iword == 0x1afffffc)
 			cpu->cd.arm.combination_check = COMBINE(strlen);

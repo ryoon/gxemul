@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.73 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu_arm.h,v 1.74 2007-06-14 04:53:14 debug Exp $
  */
 
 #include "misc.h"
@@ -124,7 +124,7 @@ struct arm_cpu_type_def {
 
 DYNTRANS_MISC_DECLARATIONS(arm,ARM,uint32_t)
 
-#define	ARM_MAX_VPH_TLB_ENTRIES		128
+#define	ARM_MAX_VPH_TLB_ENTRIES		384
 
 
 struct arm_cpu {
@@ -234,7 +234,7 @@ struct arm_cpu {
 	 */
 	DYNTRANS_ITC(arm)
 	VPH_TLBS(arm,ARM)
-	VPH32(arm,ARM)
+	VPH32_16BITVPHENTRIES(arm,ARM)
 
 	/*  ARM specific: */
 	uint32_t			is_userpage[N_VPH32_ENTRIES/32];

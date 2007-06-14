@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.127 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu.h,v 1.128 2007-06-14 04:53:14 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -174,6 +174,12 @@
 	uint32_t		phys_addr[N_VPH32_ENTRIES];		\
 	struct arch ## _tc_physpage  *phys_page[N_VPH32_ENTRIES];	\
 	uint8_t			vaddr_to_tlbindex[N_VPH32_ENTRIES];
+#define	VPH32_16BITVPHENTRIES(arch,ARCH)				\
+	unsigned char		*host_load[N_VPH32_ENTRIES];		\
+	unsigned char		*host_store[N_VPH32_ENTRIES];		\
+	uint32_t		phys_addr[N_VPH32_ENTRIES];		\
+	struct arch ## _tc_physpage  *phys_page[N_VPH32_ENTRIES];	\
+	uint16_t		vaddr_to_tlbindex[N_VPH32_ENTRIES];
 #define	VPH32EXTENDED(arch,ARCH,ex)					\
 	unsigned char		*host_load_ ## ex[N_VPH32_ENTRIES];	\
 	unsigned char		*host_store_ ## ex[N_VPH32_ENTRIES];	\

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.10 2007-01-29 19:03:16 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.11 2007-06-14 16:13:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,7 +48,7 @@ MACHINE_SETUP(pmppc)
 	char tmpstr[300];
 
 	/*
-	 *  NetBSD/pmppc (http://www.netbsd.org/Ports/pmppc/)
+	 *  NetBSD/pmppc (http://www.netbsd.org/ports/pmppc/)
 	 */
 	machine->machine_name = "Artesyn's PM/PPC board";
 

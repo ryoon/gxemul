@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.11 2007-02-16 19:57:56 debug Exp $
+ *  $Id: machine_bebox.c,v 1.12 2007-06-14 16:13:25 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
- *  http://www.netbsd.org/Ports/bebox/ for more info.)
+ *  http://www.netbsd.org/ports/bebox/ for more info.)
  */
 
 #include <stdio.h>

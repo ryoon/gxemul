@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.25 2007-06-05 07:00:54 debug Exp $
+ *  $Id: machine_pmax.c,v 1.26 2007-06-14 16:13:25 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -442,7 +442,7 @@ abort();
 
 		/*
 		 *  According to
-		 *  http://www2.no.netbsd.org/Ports/pmax/models.html,
+		 *  http://www2.no.netbsd.org/ports/pmax/models.html,
 		 *  the 5800-series is based on VAX 6000/300.
 		 */
 

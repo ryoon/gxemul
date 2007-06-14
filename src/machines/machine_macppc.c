@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.13 2007-06-05 07:49:42 debug Exp $
+ *  $Id: machine_macppc.c,v 1.14 2007-06-14 16:13:25 debug Exp $
  *
  *  See also:
  *
- *	NetBSD/macppc (http://www.netbsd.org/Ports/macppc/)
+ *	NetBSD/macppc (http://www.netbsd.org/ports/macppc/)
  *	OpenBSD/macppc (http://www.openbsd.org/macppc.html)
  *
  *  Currently, these are skeletons for generic PowerMac G3, G4, and G5 systems.

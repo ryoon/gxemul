@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.24 2007-06-13 02:07:36 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.25 2007-06-14 16:13:25 debug Exp $
  *
  *  Emulation of MIPS evaluation boards, such as the MIPS Malta board.
  */
@@ -52,7 +52,7 @@ MACHINE_SETUP(evbmips)
 	struct pci_data *pci_data;
 	int i;
 
-	/*  See http://www.netbsd.org/Ports/evbmips/ for more info.  */
+	/*  See http://www.netbsd.org/ports/evbmips/ for more info.  */
 
 	switch (machine->machine_subtype) {
 	case MACHINE_EVBMIPS_MALTA:

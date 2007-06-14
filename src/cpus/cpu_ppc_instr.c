@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.73 2007-02-17 10:06:19 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.74 2007-06-14 18:11:27 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2766,8 +2766,9 @@ X(to_be_translated)
 			ic->arg[1] = 19;
 			ic->arg[2] = 19;
 		} else {
-			fatal("[ TODO: Unimplemented ALTIVEC, iword"
-			    " = 0x%08"PRIx32"x ]\n", iword);
+			if (!cpu->translation_readahead)
+				fatal("[ TODO: Unimplemented ALTIVEC, iword"
+				    " = 0x%08"PRIx32"x ]\n", iword);
 			goto bad;
 		}
 		break;
@@ -2822,7 +2823,8 @@ X(to_be_translated)
 	case PPC_HI6_ADDIC:
 	case PPC_HI6_ADDIC_DOT:
 		if (cpu->cd.ppc.bits == 64) {
-			fatal("addic for 64-bit: TODO\n");
+			if (!cpu->translation_readahead)
+				fatal("addic for 64-bit: TODO\n");
 			goto bad;
 		}
 		rt = (iword >> 21) & 31;
@@ -2940,7 +2942,8 @@ X(to_be_translated)
 			    + 32*update];
 		}
 		if (ra == 0 && update) {
-			fatal("TODO: ra=0 && update?\n");
+			if (!cpu->translation_readahead)
+				fatal("TODO: ra=0 && update?\n");
 			goto bad;
 		}
 		if (fp)
@@ -2961,7 +2964,8 @@ X(to_be_translated)
 		bi = (iword >> 16) & 31;
 		tmp_addr = (int64_t)(int16_t)(iword & 0xfffc);
 		if (aa_bit) {
-			fatal("aa_bit: NOT YET\n");
+			if (!cpu->translation_readahead)
+				fatal("aa_bit: NOT YET\n");
 			goto bad;
 		}
 		if (lk_bit) {
@@ -3198,7 +3202,8 @@ X(to_be_translated)
 			}
 			ic->arg[0] = iword;
 			if (cpu->cd.ppc.bits == 32) {
-				fatal("TODO: rld* in 32-bit mode?\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: rld* in 32-bit mode?\n");
 				goto bad;
 			}
 			break;
@@ -3242,7 +3247,8 @@ X(to_be_translated)
 			ra = (iword >> 16) & 31;
 			rc = iword & 1;
 			if (rc) {
-				fatal("TODO: rc\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: rc\n");
 				goto bad;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
@@ -3296,7 +3302,8 @@ X(to_be_translated)
 			rs = (iword >> 21) & 31;
 			l_bit = (iword >> 16) & 1;
 			if (l_bit) {
-				fatal("TODO: mtmsr l-bit\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: mtmsr l-bit\n");
 				goto bad;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
@@ -3332,7 +3339,8 @@ X(to_be_translated)
 			case PPC_31_MTSRIN: ic->f = instr(mtsrin); break;
 			}
 			if (cpu->cd.ppc.bits == 64) {
-				fatal("Not yet for 64-bit mode\n");
+				if (!cpu->translation_readahead)
+					fatal("Not yet for 64-bit mode\n");
 				goto bad;
 			}
 			break;
@@ -3347,7 +3355,8 @@ X(to_be_translated)
 			case PPC_31_MTSR:   ic->f = instr(mtsr); break;
 			}
 			if (cpu->cd.ppc.bits == 64) {
-				fatal("Not yet for 64-bit mode\n");
+				if (!cpu->translation_readahead)
+					fatal("Not yet for 64-bit mode\n");
 				goto bad;
 			}
 			break;
@@ -3432,7 +3441,8 @@ X(to_be_translated)
 			switch (spr) {
 			case 268: ic->f = instr(mftb); break;
 			case 269: ic->f = instr(mftbu); break;
-			default:fatal("mftb spr=%i?\n", spr);
+			default:if (!cpu->translation_readahead)
+					fatal("mftb spr=%i?\n", spr);
 				goto bad;
 			}
 			break;
@@ -3567,7 +3577,8 @@ X(to_be_translated)
 				    [size + 4*zero + 8*load + 16*update];
 			}
 			if (ra == 0 && update) {
-				fatal("TODO: ra=0 && update?\n");
+				if (!cpu->translation_readahead)
+					fatal("TODO: ra=0 && update?\n");
 				goto bad;
 			}
 			break;
@@ -3653,7 +3664,8 @@ X(to_be_translated)
 			oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
 			if (oe_bit) {
-				fatal("oe_bit not yet implemented\n");
+				if (!cpu->translation_readahead)
+					fatal("oe_bit not yet implemented\n");
 				goto bad;
 			}
 			switch (xo) {
@@ -3703,7 +3715,9 @@ X(to_be_translated)
 					ic->f = instr(subfme_dot); break;
 				case PPC_31_SUBFZE:
 					ic->f = instr(subfze_dot); break;
-				default:fatal("RC bit not yet implemented\n");
+				default:if (!cpu->translation_readahead)
+						fatal("RC bit not yet "
+						    "implemented\n");
 					goto bad;
 				}
 			}
@@ -3711,7 +3725,8 @@ X(to_be_translated)
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			if (cpu->cd.ppc.bits == 64 && n64) {
-				fatal("Not yet for 64-bit mode\n");
+				if (!cpu->translation_readahead)
+					fatal("Not yet for 64-bit mode\n");
 				goto bad;
 			}
 			break;
@@ -3751,7 +3766,9 @@ X(to_be_translated)
 		rc = iword & 1;
 
 		if (rc) {
-			fatal("Floating point (59) with rc bit! TODO\n");
+			if (!cpu->translation_readahead)
+				fatal("Floating point (59) "
+				    "with rc bit! TODO\n");
 			goto bad;
 		}
 
@@ -3792,7 +3809,9 @@ X(to_be_translated)
 		rc = iword & 1;
 
 		if (rc) {
-			fatal("Floating point (63) with rc bit! TODO\n");
+			if (!cpu->translation_readahead)
+				fatal("Floating point (63) "
+				    "with rc bit! TODO\n");
 			goto bad;
 		}
 

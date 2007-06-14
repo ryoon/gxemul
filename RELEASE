@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.282 2007-06-14 16:50:20 debug Exp $
+$Id: RELEASE,v 1.283 2007-06-14 18:11:27 debug Exp $
 
 Currently working on what will become 0.4.6 or 0.5.0.
 
@@ -31,7 +31,7 @@ The changes between release 0.4.5.1 and 0.4.6 include, among other things:
 
     o)	General code cleanup: Non-working (skeleton) emulation modes have
 	been removed, to make it easier to maintain the source code in
-	the long run, and some unused/legacy constructs have been removed.
+	the long run, and many unused/legacy constructs have been removed.
 
 Please read the HISTORY file for more details.
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.530 2007-06-14 03:57:02 debug Exp $
+$Id: TODO,v 1.531 2007-06-14 03:57:25 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -179,7 +179,7 @@ HPCmips:
 ARM:
 	o)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
-	o)  ARM "wait"-like instruction?
+	o)  Generic ARM "wait"-like instruction?
 	o)  try to get netbsd/evbarm 3.x or 4.x running (iq80321)
 	o)  make the xscale counter registers (ccnt) work
 	o)  make the ata controller usable for FreeBSD!

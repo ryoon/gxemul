@@ -25,25 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.24 2007-06-09 02:25:27 debug Exp $
+ *  $Id: debugger.c,v 1.25 2007-06-14 03:57:02 debug Exp $
  *
  *  Single-step debugger.
  *
  *
- *  TODO:
- *
- *	This entire module is very much non-reentrant. :-/
- *
- *	Add more functionality that already exists elsewhere in the emulator.
- *
- *	Call stack display (back-trace)?
- *
- *	Nicer looking output of register dumps, floating point registers,
- *	etc. Warn about weird/invalid register contents.
- *
- *	Ctrl-C doesn't enter the debugger on some OSes (HP-UX?)...
- *
- *	Many other TODOs.
+ *  This entire module is very much non-reentrant. :-/  TODO: Fix.
  */
 
 #include <ctype.h>

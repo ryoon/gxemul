@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.1 2007-06-05 05:40:25 debug Exp $
+ *  $Id: useremul.c,v 1.2 2007-06-14 23:50:36 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -75,15 +75,14 @@
 #include <time.h>
 
 #include "cpu.h"
-#include "cpu_mips.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "syscall_linux_ppc.h"
+
 #include "syscall_netbsd.h"
-#include "syscall_ultrix.h"
 #include "sysctl_netbsd.h"
+
 
 struct syscall_emul {
 	char		*name;
@@ -128,14 +127,14 @@ void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
 
 
 /*
- *  useremul__freebsd_setup():
+ *  useremul_freebsd_setup():
  *
  *  Set up an emulated userland environment suitable for running FreeBSD
  *  binaries.
  */
-void useremul__freebsd_setup(struct cpu *cpu, int argc, char **host_argv)
+void useremul_freebsd_setup(struct cpu *cpu, int argc, char **host_argv)
 {
-	debug("useremul__freebsd_setup(): TODO\n");
+	debug("useremul_freebsd_setup(): TODO\n");
 
 	switch (cpu->machine->arch) {
 	case ARCH_ALPHA:
@@ -161,32 +160,12 @@ void useremul__freebsd_setup(struct cpu *cpu, int argc, char **host_argv)
 
 
 /*
- *  useremul__linux_setup():
- *
- *  Set up an emulated userland environment suitable for running Linux
- *  binaries.
- */
-void useremul__linux_setup(struct cpu *cpu, int argc, char **host_argv)
-{
-	debug("useremul__linux_setup(): TODO\n");
-
-	if (cpu->machine->arch != ARCH_PPC) {
-		fatal("non-PPC not yet implemented for linux emul.\n");
-		exit(1);
-	}
-
-	/*  What is a good stack pointer? TODO  */
-	cpu->cd.ppc.gpr[1] = 0x7ffff000ULL;
-}
-
-
-/*
- *  useremul__netbsd_setup():
+ *  useremul_netbsd_setup():
  *
  *  Set up an emulated userland environment suitable for running NetBSD
  *  binaries.
  */
-void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
+void useremul_netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 {
 	uint64_t stack_top = 0x7fff0000;
 	uint64_t stacksize = 8 * 1048576;
@@ -236,83 +215,9 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 		}
 		break;
 
-	case ARCH_ALPHA:
-		debug("useremul__netbsd_setup(): ALPHA: TODO\n");
-		break;
-
-	case ARCH_ARM:
-		debug("useremul__netbsd_setup(): ARM: TODO\n");
-		break;
-
-	case ARCH_PPC:
-		debug("useremul__netbsd_setup(): PPC: TODO\n");
-
-		/*  What is a good stack pointer? TODO  */
-		cpu->cd.ppc.gpr[1] = 0x7ffff000ULL;
-
-		break;
-
-	case ARCH_SH:
-		debug("useremul__netbsd_setup(): SH: TODO\n");
-		break;
-
 	default:
-		fatal("useremul__netbsd_setup(): unimplemented arch\n");
+		fatal("useremul_netbsd_setup(): unimplemented arch\n");
 		exit(1);
-	}
-}
-
-
-/*
- *  useremul__ultrix_setup():
- *
- *  Set up an emulated userland environment suitable for running Ultrix
- *  binaries.
- */
-void useremul__ultrix_setup(struct cpu *cpu, int argc, char **host_argv)
-{
-	uint64_t stack_top = 0x7fff0000;
-	uint64_t stacksize = 8 * 1048576;
-	uint64_t stack_margin = 16384;
-	uint64_t cur_argv;
-	int i, i2;
-	int envc = 1;
-
-	/*  TODO:  is this correct?  */
-	cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
-	cpu->cd.mips.gpr[25] = cpu->pc;		/*  reg. t9  */
-
-	/*  The userland stack:  */
-	cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
-	add_symbol_name(&cpu->machine->symbol_context,
-	    stack_top - stacksize, stacksize, "userstack", 0, 0);
-
-	/*  Stack contents:  (TODO: is this correct?)  */
-	store_32bit_word(cpu, stack_top - stack_margin, argc);
-
-	cur_argv = stack_top - stack_margin + 128 +
-	    (argc + envc) * sizeof(uint32_t);
-	for (i=0; i<argc; i++) {
-		debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
-
-		store_32bit_word(cpu, stack_top - stack_margin +
-		    4 + i*sizeof(uint32_t), cur_argv);
-		store_string(cpu, cur_argv, host_argv[i]);
-		cur_argv += strlen(host_argv[i]) + 1;
-	}
-
-	/*  Store a NULL value between the args and the environment strings:  */
-	store_32bit_word(cpu, stack_top - stack_margin
-	    + 4 + i*sizeof(uint32_t), 0);  i++;
-
-	/*  TODO: get environment strings from somewhere  */
-
-	/*  Store all environment strings:  */
-	for (i2 = 0; i2 < envc; i2 ++) {
-		store_32bit_word(cpu, stack_top - stack_margin + 4 +
-		    (i+i2)*sizeof(uint32_t), cur_argv);
-		store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
-		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 	}
 }
 
@@ -645,13 +550,13 @@ res = 0x18000000ULL;
 
 
 /*
- *  useremul__freebsd():
+ *  useremul_freebsd():
  *
  *  FreeBSD/Alpha syscall emulation.
  *
  *  TODO: How to make this work nicely with non-Alpha archs.
  */
-static void useremul__freebsd(struct cpu *cpu, uint32_t code)
+static void useremul_freebsd(struct cpu *cpu, uint32_t code)
 {
 	int nr;
 	int64_t res = 0, err = 0;
@@ -716,7 +621,7 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 		    arg4, arg5);
 		break;
 
-	default:fatal("useremul__freebsd(): syscall %i not yet "
+	default:fatal("useremul_freebsd(): syscall %i not yet "
 		    "implemented\n", nr);
 		cpu->running = 0;
 	}
@@ -732,55 +637,11 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 
 
 /*
- *  useremul__linux():
- *
- *  Linux syscall emulation.
- *
- *  TODO: How to make this work nicely with non-PPC archs.
- */
-static void useremul__linux(struct cpu *cpu, uint32_t code)
-{
-	int nr;
-	int64_t res = 0, err = 0;
-	uint64_t arg0, arg1, arg2, arg3;
-
-	if (code != 0) {
-		fatal("useremul__linux(): code %i: TODO\n", (int)code);
-		exit(1);
-	}
-
-	nr = cpu->cd.ppc.gpr[0];
-	arg0 = cpu->cd.ppc.gpr[3];
-	arg1 = cpu->cd.ppc.gpr[4];
-	arg2 = cpu->cd.ppc.gpr[5];
-	arg3 = cpu->cd.ppc.gpr[6];
-
-	switch (nr) {
-
-	case LINUX_PPC_SYS_exit:
-		res = useremul_exit(cpu, arg0);
-		break;
-
-	case LINUX_PPC_SYS_write:
-		res = useremul_write(cpu, &err, arg0, arg1, arg2);
-		break;
-
-	default:
-		fatal("useremul__linux(): syscall %i not yet implemented\n",
-		    nr);
-		cpu->running = 0;
-	}
-
-	/*  return res: TODO  */
-}
-
-
-/*
- *  useremul__netbsd():
+ *  useremul_netbsd():
  *
  *  NetBSD syscall emulation.
  */
-static void useremul__netbsd(struct cpu *cpu, uint32_t code)
+static void useremul_netbsd(struct cpu *cpu, uint32_t code)
 {
 	int error_flag = 0, result_high_set = 0;
 	uint64_t arg0=0,arg1=0,arg2=0,arg3=0,stack0=0,stack1=0,stack2=0;
@@ -873,7 +734,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 			charbuf = malloc(arg2);
 			if (charbuf == NULL) {
 				fprintf(stderr, "out of memory in "
-				    "useremul__netbsd()\n");
+				    "useremul_netbsd()\n");
 				exit(1);
 			}
 			result_low = read(arg0, charbuf, arg2);
@@ -899,7 +760,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 			charbuf = malloc(length);
 			if (charbuf == NULL) {
 				fprintf(stderr, "out of memory in "
-				    "useremul__netbsd()\n");
+				    "useremul_netbsd()\n");
 				exit(1);
 			}
 			/*  TODO: address validity check  */
@@ -1253,379 +1114,6 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 
 
 /*
- *  useremul__ultrix():
- *
- *  Ultrix syscall emulation.
- */
-static void useremul__ultrix(struct cpu *cpu, uint32_t code)
-{
-	int error_flag = 0, result_high_set = 0;
-	uint64_t arg0,arg1,arg2,arg3,stack0=0,stack1=0,stack2;
-	int sysnr = 0;
-	int64_t error_code = 0;
-	uint64_t result_low = 0;
-	uint64_t result_high = 0;
-	struct timeval tv;
-	struct timezone tz;
-	int descr;
-	uint64_t length, mipsbuf;
-	unsigned char *charbuf;
-
-	/*
-	 *  Ultrix/pmax gets the syscall number in register v0,
-	 *  and syscall arguments in registers a0, a1, ...
-	 *
-	 *  TODO:  If there is a __syscall-like syscall (as in NetBSD)
-	 *  then 64-bit args may be passed in two registers or something...
-	 *  If so, then copy from the section above (NetBSD).
-	 */
-	sysnr = cpu->cd.mips.gpr[MIPS_GPR_V0];
-
-	arg0 = cpu->cd.mips.gpr[MIPS_GPR_A0];
-	arg1 = cpu->cd.mips.gpr[MIPS_GPR_A1];
-	arg2 = cpu->cd.mips.gpr[MIPS_GPR_A2];
-	arg3 = cpu->cd.mips.gpr[MIPS_GPR_A3];
-	/*  TODO:  stack arguments? Are these correct?  */
-	stack0 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 0);
-	stack1 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 4);
-	stack2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
-
-	switch (sysnr) {
-
-	case ULTRIX_SYS_exit:
-		debug("[ exit(%i) ]\n", (int)arg0);
-		cpu->running = 0;
-		cpu->machine->exit_without_entering_debugger = 1;
-		break;
-
-	case ULTRIX_SYS_read:
-		debug("[ read(%i,0x%llx,%lli) ]\n",
-		    (int)arg0, (long long)arg1, (long long)arg2);
-
-		if (arg2 != 0) {
-			charbuf = malloc(arg2);
-			if (charbuf == NULL) {
-				fprintf(stderr, "out of memory in "
-				    "useremul__ultrix()\n");
-				exit(1);
-			}
-
-			result_low = read(arg0, charbuf, arg2);
-			if ((int64_t)result_low < 0) {
-				error_code = errno;
-				error_flag = 1;
-			}
-
-			/*  TODO: address validity check  */
-			cpu->memory_rw(cpu, cpu->mem, arg1, charbuf,
-			    arg2, MEM_WRITE, CACHE_DATA);
-
-			free(charbuf);
-		}
-		break;
-
-	case ULTRIX_SYS_write:
-		descr   = arg0;
-		mipsbuf = arg1;
-		length  = arg2;
-		debug("[ write(%i,0x%llx,%lli) ]\n",
-		    (int)descr, (long long)mipsbuf, (long long)length);
-
-		if (length != 0) {
-			charbuf = malloc(length);
-			if (charbuf == NULL) {
-				fprintf(stderr, "out of memory in "
-				    "useremul__ultrix()\n");
-				exit(1);
-			}
-
-			/*  TODO: address validity check  */
-			cpu->memory_rw(cpu, cpu->mem, mipsbuf, charbuf,
-			    length, MEM_READ, CACHE_DATA);
-
-			result_low = write(descr, charbuf, length);
-			if ((int64_t)result_low < 0) {
-				error_code = errno;
-				error_flag = 1;
-			}
-			free(charbuf);
-		}
-		break;
-
-	case ULTRIX_SYS_open:
-		charbuf = get_userland_string(cpu, arg0);
-		debug("[ open(\"%s\", 0x%llx, 0x%llx) ]\n",
-		    charbuf, (long long)arg1, (long long)arg2);
-
-		result_low = open((char *)charbuf, arg1, arg2);
-		if ((int64_t)result_low < 0) {
-			error_flag = 1;
-			error_code = errno;
-		}
-		free(charbuf);
-		break;
-
-	case ULTRIX_SYS_close:
-		descr = arg0;
-		debug("[ close(%i) ]\n", (int)descr);
-
-		/*  Special case because some Ultrix programs tend
-		    to close low descriptors:  */
-		if (descr <= 2) {
-			error_flag = 1;
-			error_code = 2;	/*  TODO: Ultrix ENOENT error code  */
-			break;
-		}
-
-		error_code = close(descr);
-		if (error_code != 0)
-			error_flag = 1;
-		break;
-
-	case ULTRIX_SYS_break:
-		useremul_break(cpu, arg0);
-		break;
-
-	case ULTRIX_SYS_sync:
-		useremul_sync(cpu);
-		break;
-
-	case ULTRIX_SYS_getuid:
-		result_low = useremul_getuid(cpu);
-		break;
-
-	case ULTRIX_SYS_getgid:
-		debug("[ getgid() ]\n");
-		result_low = getgid();
-		break;
-
-	case ULTRIX_SYS_dup:
-		debug("[ dup(%i) ]\n", (int)arg0);
-		result_low = dup(arg0);
-		if ((int64_t)result_low < 0) {
-			error_code = errno;
-			error_flag = 1;
-		}
-		break;
-
-	case ULTRIX_SYS_socket:
-		debug("[ socket(%i,%i,%i) ]\n",
-		    (int)arg0, (int)arg1, (int)arg2);
-		result_low = socket(arg0,arg1,arg2);
-		if ((int64_t)result_low < 0) {
-			error_code = errno;
-			error_flag = 1;
-		}
-		break;
-
-	case ULTRIX_SYS_select:
-		debug("[ select(%i,0x%x,0x%x,0x%x,0x%x): TODO ]\n",
-		    (int)arg0, (int)arg1, (int)arg2, (int)arg3, (int)stack0);
-
-		/*  TODO  */
-		{
-			fd_set fdset;
-			FD_ZERO(&fdset);
-			FD_SET(3, &fdset);
-			result_low = select(4, &fdset, NULL, NULL, NULL);
-		}
-		break;
-
-	case ULTRIX_SYS_setsockopt:
-		debug("[ setsockopt(%i,%i,%i,0x%x,%i): TODO ]\n",
-		    (int)arg0, (int)arg1, (int)arg2, (int)arg3, (int)stack0);
-		/*  TODO: len is not 4, len is stack0?  */
-		charbuf = get_userland_buf(cpu, arg3, 4);
-		/*  TODO: endianness of charbuf, etc  */
-		result_low = setsockopt(arg0, arg1, arg2, (void *)charbuf, 4);
-		if ((int64_t)result_low < 0) {
-			error_code = errno;
-			error_flag = 1;
-		}
-		free(charbuf);
-		printf("setsockopt!!!! res = %i error=%i\n",
-		    (int)result_low, (int)error_code);
-		break;
-
-	case ULTRIX_SYS_connect:
-		debug("[ connect(%i,0x%x,%i) ]\n",
-		    (int)arg0, (int)arg1, (int)arg2);
-		charbuf = get_userland_buf(cpu, arg1, arg2);
-		result_low = connect(arg0, (void *)charbuf, arg2);
-		if ((int64_t)result_low < 0) {
-			error_code = errno;
-			error_flag = 1;
-		}
-		printf("connect!!!! res = %i error=%i\n",
-		    (int)result_low, (int)error_code);
-		free(charbuf);
-		break;
-
-	case ULTRIX_SYS_fcntl:
-		debug("[ fcntl(%i,%i,0x%x): TODO ]\n",
-		    (int)arg0, (int)arg1, (int)arg2);
-		/*  TODO:  how about that third argument?  */
-		result_low = fcntl(arg0, arg1, arg2);
-		if ((int64_t)result_low < 0) {
-			error_code = errno;
-			error_flag = 1;
-		}
-		printf("fcntl!!!! res = %i error=%i\n",
-		    (int)result_low, (int)error_code);
-		break;
-
-	case ULTRIX_SYS_stat43:
-		charbuf = get_userland_string(cpu, arg0);
-		debug("[ stat(\"%s\", 0x%llx): TODO ]\n",
-		    charbuf, (long long)arg1);
-
-		if (arg1 != 0) {
-			struct stat st;
-			result_low = stat((char *)charbuf, &st);
-			if ((int64_t)result_low < 0) {
-				error_flag = 1;
-				error_code = errno;
-			} else {
-				/*  Fill in the Ultrix stat struct at arg1:  */
-
-				/*  TODO  */
-			}
-		} else {
-			error_flag = 1;
-			error_code = 1111;	/*  TODO: ultrix ENOMEM?  */
-		}
-		free(charbuf);
-		break;
-
-	case ULTRIX_SYS_fstat:
-		result_low = useremul_fstat(cpu, &error_code, arg0, arg1);
-		break;
-
-	case ULTRIX_SYS_getpagesize:
-		debug("[ getpagesize() ]\n");
-		result_low = 4096;
-		break;
-
-	case ULTRIX_SYS_getdtablesize:
-		debug("[ getdtablesize() ]\n");
-		result_low = getdtablesize();
-		break;
-
-	case ULTRIX_SYS_gethostname:
-		debug("[ gethostname(0x%llx,%lli) ]\n",
-		    (long long)arg0, (long long)arg1);
-		result_low = 0;
-		if (arg1 != 0 && arg1 < 500000) {
-			unsigned char *buf = malloc(arg1);
-			unsigned int i;
-
-			result_low = gethostname((char *)buf, arg1);
-			for (i = 0; i<arg1 && i < arg1; i++)
-				cpu->memory_rw(cpu, cpu->mem, arg0 + i,
-				    &buf[i], 1, MEM_WRITE, CACHE_NONE);
-
-			free(buf);
-		} else {
-			error_flag = 1;
-			error_code = 5555; /* TODO */  /*  ENOMEM  */
-		}
-		break;
-
-	case ULTRIX_SYS_writev:
-		descr = arg0;
-		debug("[ writev(%lli,0x%llx,%lli) ]\n",
-		    (long long)arg0, (long long)arg1, (long long)arg2);
-
-		if (arg1 != 0) {
-			unsigned int i, total = 0;
-
-			for (i=0; i<arg2; i++) {
-				uint32_t iov_base, iov_len;
-				iov_base = load_32bit_word(cpu,
-				    arg1 + 8*i + 0);	/*  char *  */
-				iov_len  = load_32bit_word(cpu,
-				    arg1 + 8*i + 4);	/*  size_t  */
-
-				if (iov_len != 0) {
-					unsigned char *charbuf =
-					    malloc(iov_len);
-					if (charbuf == NULL) {
-						fprintf(stderr, "out of memory"
-						    " in useremul__ultrix()\n");
-						exit(1);
-					}
-
-					/*  TODO: address validity check  */
-					cpu->memory_rw(cpu, cpu->mem, (uint64_t)
-					    iov_base, charbuf, iov_len,
-					    MEM_READ, CACHE_DATA);
-					total += write(descr, charbuf, iov_len);
-					free(charbuf);
-				}
-			}
-
-			result_low = total;
-		}
-		break;
-
-	case ULTRIX_SYS_gethostid:
-		debug("[ gethostid() ]\n");
-		/*  This is supposed to return a unique 32-bit host id.  */
-		result_low = 0x12345678;
-		break;
-
-	case ULTRIX_SYS_gettimeofday:
-		debug("[ gettimeofday(0x%llx,0x%llx) ]\n",
-		    (long long)arg0, (long long)arg1);
-		result_low = gettimeofday(&tv, &tz);
-		if (result_low) {
-			error_flag = 1;
-			error_code = errno;
-		} else {
-			if (arg0 != 0) {
-				/*  Store tv.tv_sec and tv.tv_usec
-				    as 'long' (32-bit) values:  */
-				store_32bit_word(cpu, arg0 + 0, tv.tv_sec);
-				store_32bit_word(cpu, arg0 + 4, tv.tv_usec);
-			}
-			if (arg1 != 0) {
-				/*  Store tz.tz_minuteswest and
-				    tz.tz_dsttime as 'long' (32-bit) values:  */
-				store_32bit_word(cpu, arg1 + 0,
-				    tz.tz_minuteswest);
-				store_32bit_word(cpu, arg1 + 4, tz.tz_dsttime);
-			}
-		}
-		break;
-
-	default:
-		fatal("[ UNIMPLEMENTED ultrix syscall %i ]\n", sysnr);
-		error_flag = 1;
-		error_code = 78;  /*  ENOSYS  */
-	}
-
-	/*
-	 *  Ultrix/mips return values:
-	 *
-	 *  TODO
-	 *
-	 *  a3 is 0 if the syscall was ok, otherwise 1.
-	 *  v0 (and sometimes v1) contain the result value.
-	 */
-	cpu->cd.mips.gpr[MIPS_GPR_A3] = error_flag;
-	if (error_flag)
-		cpu->cd.mips.gpr[MIPS_GPR_V0] = error_code;
-	else
-		cpu->cd.mips.gpr[MIPS_GPR_V0] = result_low;
-
-	if (result_high_set)
-		cpu->cd.mips.gpr[MIPS_GPR_V1] = result_high;
-
-	/* TODO */
-}
-
-
-/*
  *  useremul_name_to_useremul():
  *
  *  Example:
@@ -1755,28 +1243,10 @@ void useremul_init(void)
 {
 	/*  Note: These are in reverse alphabetic order:  */
 
-	add_useremul("Ultrix", ARCH_MIPS, "R3000",
-	    useremul__ultrix, useremul__ultrix_setup);
-
-	add_useremul("NetBSD/sh", ARCH_SH, "SH4",
-	    useremul__netbsd, useremul__netbsd_setup);
-
-	add_useremul("NetBSD/powerpc", ARCH_PPC, "PPC750",
-	    useremul__netbsd, useremul__netbsd_setup);
-
 	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000",
-	    useremul__netbsd, useremul__netbsd_setup);
-
-	add_useremul("NetBSD/arm", ARCH_ARM, "SA1110",
-	    useremul__netbsd, useremul__netbsd_setup);
-
-	add_useremul("NetBSD/alpha", ARCH_ALPHA, "21364",
-	    useremul__netbsd, useremul__netbsd_setup);
-
-	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",
-	    useremul__linux, useremul__linux_setup);
+	    useremul_netbsd, useremul_netbsd_setup);
 
 	add_useremul("FreeBSD/Alpha", ARCH_ALPHA, "21364",
-	    useremul__freebsd, useremul__freebsd_setup);
+	    useremul_freebsd, useremul_freebsd_setup);
 }
 

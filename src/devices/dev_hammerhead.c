@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_hammerhead.c,v 1.4 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_hammerhead.c,v 1.5 2007-06-14 16:13:30 debug Exp $
  *  
  *  Hammerhead controller, for the secondary CPU on MacPPC machines.
  */
@@ -53,9 +53,6 @@ struct hammerhead_data {
 };
 
 
-/*
- *  dev_hammerhead_access():
- */
 DEVICE_ACCESS(hammerhead)
 {
 	uint64_t idata = 0, odata=0;
@@ -76,15 +73,11 @@ return 1;
 
 		other_cpu->running = 1;
 		other_cpu->pc = idata;
-#ifdef ENABLE_PPC
+
 		if (other_cpu->is_32bit)
 			ppc32_pc_to_pointers(other_cpu);
 		else
 			ppc_pc_to_pointers(other_cpu);
-#else
-		fatal("Hm. PPC not enabled.\n");
-		exit(1);
-#endif
 	} else {
 		fatal("[ HAMMERHEAD read: TODO ]\n");
 	}

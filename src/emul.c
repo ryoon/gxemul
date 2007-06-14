@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.292 2007-06-09 02:25:26 debug Exp $
+ *  $Id: emul.c,v 1.293 2007-06-14 16:13:30 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -71,15 +71,6 @@ extern int native_code_translation_enabled;
 
 extern struct emul *debugger_emul;
 extern struct diskimage *diskimages[];
-
-
-static void print_separator(void)
-{
-	int i = 79;
-	while (i-- > 0)
-		debug("-");
-	debug("\n");
-}
 
 
 /*
@@ -501,12 +492,13 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		    m->userland_emul, NULL, NULL, NULL);
 
 		switch (m->arch) {
-#ifdef ENABLE_ALPHA
+
 		case ARCH_ALPHA:
 			cpu->memory_rw = alpha_userland_memory_rw;
 			break;
-#endif
-		default:cpu->memory_rw = userland_memory_rw;
+
+		default:
+			cpu->memory_rw = userland_memory_rw;
 		}
 	}
 
@@ -946,7 +938,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 		if (emul->n_debugger_cmds > 0) {
 			int j;
 			if (i == 0)
-				print_separator();
+				print_separator_line();
 			for (j = 0; j < emul->n_debugger_cmds; j ++) {
 				debug("> %s\n", emul->debugger_cmds[j]);
 				debugger_execute_cmd(emul->debugger_cmds[j],
@@ -955,7 +947,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 		}
 	}
 
-	print_separator();
+	print_separator_line();
 	debug("\n");
 
 

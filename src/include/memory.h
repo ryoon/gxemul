@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.56 2007-05-17 08:37:01 debug Exp $
+ *  $Id: memory.h,v 1.57 2007-06-14 16:13:30 debug Exp $
  *
  *  Memory related functions.
  */
@@ -163,6 +163,28 @@ void memory_device_register(struct memory *mem, const char *,
 void memory_device_remove(struct memory *mem, int i);
 
 uint64_t memory_checksum(struct memory *mem);
+
+void dump_mem_string(struct cpu *cpu, uint64_t addr);
+void store_string(struct cpu *cpu, uint64_t addr, char *s);
+int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);
+int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
+int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16);
+void store_byte(struct cpu *cpu, uint64_t addr, uint8_t data);
+void store_64bit_word_in_host(struct cpu *cpu, unsigned char *data,
+        uint64_t data32);
+void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data,
+        uint64_t data32);
+void store_16bit_word_in_host(struct cpu *cpu, unsigned char *data,
+        uint16_t data16);
+uint64_t load_64bit_word(struct cpu *cpu, uint64_t addr);
+uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
+uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr);
+void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
+void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr);
+void add_environment_string_dual(struct cpu *cpu,
+        uint64_t *ptrp, uint64_t *addrp, char *s1, char *s2);
+void store_pointer_and_advance(struct cpu *cpu, uint64_t *addrp,
+        uint64_t data, int flag64);
 
 void memory_warn_about_unimplemented_addr(struct cpu *cpu, struct memory *mem,
 	int writeflag, uint64_t paddr, uint8_t *data, size_t len);

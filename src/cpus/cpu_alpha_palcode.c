@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.16 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.17 2007-06-14 16:13:30 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  *
@@ -39,29 +39,14 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef ENABLE_ALPHA  
-
-
-#include "cpu_alpha.h"
-
-
-void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen)
-{ buf[0]='\0'; }
-void alpha_palcode(struct cpu *cpu, uint32_t palcode) { }
-
-
-#else   /*  ENABLE_ALPHA  */
-
-
-#include "alpha_prom.h"
 #include "console.h"
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
+
+#include "alpha_prom.h"
 
 
 /*
@@ -315,5 +300,3 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 	}
 }
 
-
-#endif	/*  ENABLE_ALPHA  */

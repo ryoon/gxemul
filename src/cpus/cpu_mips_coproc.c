@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.67 2007-06-13 02:08:03 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.68 2007-06-14 16:13:30 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -46,21 +46,6 @@
 #include "misc.h"
 #include "opcodes_mips.h"
 #include "timer.h"
-
-
-#ifndef ENABLE_MIPS
-
-
-struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
-{ return NULL; }
-
-void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
-	uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
-	int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
-	int cachealgo0, int cachealgo1) { }
-
-
-#else	/*  ENABLE_MIPS  */
 
 
 extern volatile int single_step;
@@ -2247,4 +2232,3 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 }
 
-#endif	/*  ENABLE_MIPS  */

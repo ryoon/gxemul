@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bootblock.c,v 1.2 2007-05-22 13:05:43 debug Exp $
+ *  $Id: bootblock.c,v 1.3 2007-06-14 16:13:30 debug Exp $
  *
  *  Bootblock handling:
  *
@@ -49,7 +49,7 @@
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
-#include "misc.h"
+#include "memory.h"
 
 static char *diskimage_types[] = DISKIMAGE_TYPES;
 

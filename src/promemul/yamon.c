@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.12 2007-05-06 04:36:56 debug Exp $
+ *  $Id: yamon.c,v 1.13 2007-06-14 16:13:30 debug Exp $
  *
  *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
@@ -42,8 +42,6 @@
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
-
-#ifdef ENABLE_MIPS
 
 #include "yamon.h"
 
@@ -241,4 +239,3 @@ int yamon_emul(struct cpu *cpu)
 	return 1;
 }
 
-#endif	/*  ENABLE_MIPS  */

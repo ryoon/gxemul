@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mvmeprom.c,v 1.2 2007-05-15 12:35:14 debug Exp $
+ *  $Id: mvmeprom.c,v 1.3 2007-06-14 16:13:30 debug Exp $
  *
  *  MVME PROM emulation.
  *
@@ -45,10 +45,8 @@
 #include "memory.h"
 #include "misc.h"
 
-
-#ifdef ENABLE_M88K
-
 #include "mvmeprom.h"
+
 
 #define	MVMEPROM_BRDID_ADDR	0x1100
 
@@ -136,7 +134,4 @@ int mvmeprom_emul(struct cpu *cpu)
 
 	return 1;
 }
-
-
-#endif	/*  ENABLE_M88K  */
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.5 2006-12-30 13:31:03 debug Exp $
+ *  $Id: ps2_bios.c,v 1.6 2007-06-14 16:13:30 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -41,7 +41,7 @@
 #include "cpu.h"
 #include "cpu_mips.h"
 #include "machine.h"
-#include "misc.h"
+#include "memory.h"
 
 
 extern int quiet_mode;

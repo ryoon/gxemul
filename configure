@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.266 2007-06-05 18:07:21 debug Exp $
+#  $Id: configure,v 1.267 2007-06-14 16:13:29 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -95,15 +95,6 @@ if [ z"$*" != z ]; then
 fi
 
 
-ENABLEALPHA=YES
-ENABLEARM=YES
-ENABLEM88K=YES
-ENABLEMIPS=YES
-ENABLEPPC=YES
-ENABLESH=YES
-ENABLESPARC=YES
-
-
 ###############################################################################
 #
 #  Configure options:
@@ -140,64 +131,66 @@ ZZ=`echo compiled on \`uname\`/\`uname -m\`, \`date\``
 printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
 
 
+#  Include support for all CPU types:
+printf "#define ADD_ALL_CPU_FAMILIES    " >> config.h
 
-#  Support for various CPU types:
-if [ z$ENABLEALPHA = zYES ]; then
-	printf "#define ENABLE_ALPHA\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_alpha.o cpu_alpha_palcode.o memory_alpha.o"
-	CPU_TOOLS="$CPU_TOOLS generate_alpha_misc"
-fi
-if [ z$ENABLEARM = zYES ]; then
-	printf "#define ENABLE_ARM\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_arm.o cpu_arm_coproc.o memory_arm.o "
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u0_w0.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u0_w1.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u1_w0.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u1_w1.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u0_w0.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u0_w1.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u1_w0.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u1_w1.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_r.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_r0.o tmp_arm_r1.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_r2.o tmp_arm_r3.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_r4.o tmp_arm_r5.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_r6.o tmp_arm_r7.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_r8.o tmp_arm_r9.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_ra.o tmp_arm_rb.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_rc.o tmp_arm_rd.o"
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_re.o tmp_arm_rf.o tmp_arm_multi.o"
-	CPU_TOOLS="$CPU_TOOLS generate_arm_dpi generate_arm_r"
-	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_multi"
-fi
-if [ z$ENABLEM88K = zYES ]; then
-	printf "#define ENABLE_M88K\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_m88k.o memory_m88k.o"
-	CPU_TOOLS="$CPU_TOOLS generate_m88k_bcnd"
-	CPU_TOOLS="$CPU_TOOLS generate_m88k_loadstore"
-fi
-if [ z$ENABLEMIPS = zYES ]; then
-	printf "#define ENABLE_MIPS\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_mips.o cpu_mips_coproc.o "
-	CPU_ARCHS="$CPU_ARCHS cpu_mips_instr_unaligned.o"
-	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore"
-	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore_multi"
-fi
-if [ z$ENABLEPPC = zYES ]; then
-	printf "#define ENABLE_PPC\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_ppc.o"
-	CPU_TOOLS="$CPU_TOOLS generate_ppc_loadstore"
-fi
-if [ z$ENABLESH = zYES ]; then
-	printf "#define ENABLE_SH\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_sh.o memory_sh.o"
-fi
-if [ z$ENABLESPARC = zYES ]; then
-	printf "#define ENABLE_SPARC\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_sparc.o memory_sparc.o"
-	CPU_TOOLS="$CPU_TOOLS generate_sparc_loadstore"
-fi
+#  Alpha
+printf " add_cpu_family(alpha_cpu_family_init, ARCH_ALPHA);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_alpha.o cpu_alpha_palcode.o memory_alpha.o"
+CPU_TOOLS="$CPU_TOOLS generate_alpha_misc"
+
+#  ARM
+printf " add_cpu_family(arm_cpu_family_init, ARCH_ARM);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_arm.o cpu_arm_coproc.o memory_arm.o "
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u0_w0.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u0_w1.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u1_w0.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p0_u1_w1.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u0_w0.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u0_w1.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u1_w0.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore_p1_u1_w1.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_r.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_r0.o tmp_arm_r1.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_r2.o tmp_arm_r3.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_r4.o tmp_arm_r5.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_r6.o tmp_arm_r7.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_r8.o tmp_arm_r9.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_ra.o tmp_arm_rb.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_rc.o tmp_arm_rd.o"
+CPU_ARCHS="$CPU_ARCHS tmp_arm_re.o tmp_arm_rf.o tmp_arm_multi.o"
+CPU_TOOLS="$CPU_TOOLS generate_arm_dpi generate_arm_r"
+CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_multi"
+
+#  M88K
+printf " add_cpu_family(m88k_cpu_family_init, ARCH_M88K);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_m88k.o memory_m88k.o"
+CPU_TOOLS="$CPU_TOOLS generate_m88k_bcnd"
+CPU_TOOLS="$CPU_TOOLS generate_m88k_loadstore"
+
+#  MIPS
+printf " add_cpu_family(mips_cpu_family_init, ARCH_MIPS);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_mips.o cpu_mips_coproc.o "
+CPU_ARCHS="$CPU_ARCHS cpu_mips_instr_unaligned.o"
+CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore"
+CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore_multi"
+
+#  POWER/PowerPC
+printf " add_cpu_family(ppc_cpu_family_init, ARCH_PPC);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_ppc.o"
+CPU_TOOLS="$CPU_TOOLS generate_ppc_loadstore"
+
+#  SuperH
+printf " add_cpu_family(sh_cpu_family_init, ARCH_SH);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_sh.o memory_sh.o"
+
+#  SPARC
+printf " add_cpu_family(sparc_cpu_family_init, ARCH_SPARC);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_sparc.o memory_sparc.o"
+CPU_TOOLS="$CPU_TOOLS generate_sparc_loadstore"
+
+printf "\n" >> config.h
 
 
 ###############################################################################
@@ -300,6 +293,8 @@ if [ z"$CC" = z ]; then
 		fi
 	fi
 	rm -f _testprog
+
+#  Actually, don't try ccc on Alpha. ccc generates broken code :(
 
 #	#  Try ccc (FreeBSD/Alpha):
 #	printf "#!/bin/sh\nccc $CFLAGS _testprog.c -o _testprog >" > _test.sh
@@ -1221,3 +1216,4 @@ printf "\n#endif  /*  CONFIG_H  */\n" >> config.h
 rm -f _Makefile.header
 
 echo Configured. You may now run make to build gxemul.
+

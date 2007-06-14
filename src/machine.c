@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.701 2007-06-09 14:13:06 debug Exp $
+ *  $Id: machine.c,v 1.702 2007-06-14 16:48:22 debug Exp $
  */
 
 #include <stdio.h>
@@ -904,13 +904,11 @@ void machine_list_available_types_and_cpus(void)
 	    "that actually work. Use the alias\nwhen selecting a machine type "
 	    "or subtype, not the real name.\n");
 
-#ifdef UNSTABLE_DEVEL
 	debug("\n");
 
 	useremul_list_emuls();
 	debug("Userland emulation works for programs with the complexity"
 	    " of Hello World,\nbut not much more.\n");
-#endif
 }
 
 

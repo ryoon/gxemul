@@ -1,6 +1,6 @@
-$Id: RELEASE,v 1.281 2007-06-05 05:40:23 debug Exp $
+$Id: RELEASE,v 1.282 2007-06-14 16:50:20 debug Exp $
 
-Currently working on what will become 0.4.6.
+Currently working on what will become 0.4.6 or 0.5.0.
 
 ------------------------------------------------------------------------------
 
@@ -29,8 +29,8 @@ The changes between release 0.4.5.1 and 0.4.6 include, among other things:
 
     o)	Some minor SuperH emulation speed improvements.
 
-    o)	Some code cleanup: Several non-working (skeleton) emulation modes
-	have been removed, to make it easier to maintain the source code in
+    o)	General code cleanup: Non-working (skeleton) emulation modes have
+	been removed, to make it easier to maintain the source code in
 	the long run, and some unused/legacy constructs have been removed.
 
 Please read the HISTORY file for more details.

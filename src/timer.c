@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.7 2007-06-07 15:36:24 debug Exp $
+ *  $Id: timer.c,v 1.8 2007-06-14 16:48:23 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -168,7 +168,7 @@ static void timer_tick(int signal_nr)
 			tv.tv_sec --;
 		}
 
-#if 0
+#ifdef TIMER_DEBUG
 		/*  For debugging/testing:  */
 		{
 			double diff = tv.tv_usec * 0.000001 + tv.tv_sec

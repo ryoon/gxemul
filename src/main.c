@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.302 2007-06-14 16:36:41 debug Exp $
+ *  $Id: main.c,v 1.303 2007-06-14 16:48:22 debug Exp $
  */
 
 #include <stdio.h>
@@ -207,10 +207,8 @@ static void usage(int longusage)
 	printf("\nusage: %s [machine, other, and general options] [file "
 	    "[...]]\n", progname);
 	printf("   or  %s [general options] @configfile\n", progname);
-#ifdef UNSTABLE_DEVEL
 	printf("   or  %s [userland, other, and general options] file "
 	    "[args ...]\n", progname);
-#endif
 
 	if (!longusage) {
 		printf("\nRun  %s -h  for help on command line options.\n",
@@ -304,11 +302,9 @@ static void usage(int longusage)
 	printf("  -z disp   add disp as an X11 display to use for "
 	    "framebuffers\n");
 
-#ifdef UNSTABLE_DEVEL
 	printf("\nUserland options:\n");
 	printf("  -u emul   userland-only (syscall) emulation (use -H to"
 	    " get a list of\n            available emulation modes)\n");
-#endif
 
 	printf("\nGeneral options:\n");
 	printf("  -b        enable native code generation, if available\n");
@@ -337,12 +333,12 @@ static void usage(int longusage)
 	    "To load a raw binary into memory, add \"address:\" in front "
 	    "of the filename,\n"
 	    "or \"address:skiplen:\" or \"address:skiplen:initialpc:\".\n"
-	    "Examples:\n"
+	    "\nExamples:\n"
 	    "    0xbfc00000:rom.bin                    for a raw ROM image\n"
 	    "    0xbfc00000:0x100:rom.bin              for an image with "
 	    "0x100 bytes header\n"
 	    "    0xbfc00000:0x100:0xbfc00884:rom.bin   "
-	    "start with pc=0xbfc00884\n");
+	    "start with pc=0xbfc00884\n\n");
 }
 
 
@@ -362,11 +358,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "bBC:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtU"
-#ifdef UNSTABLE_DEVEL
-	    "u:"
-#endif
-	    "VvW:"
+	    "bBC:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtUu:VvW:"
 #ifdef WITH_X11
 	    "XxY:"
 #endif

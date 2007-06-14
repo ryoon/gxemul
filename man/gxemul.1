@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.94 2007-06-14 16:36:41 debug Exp $
+.\" $Id: gxemul.1,v 1.95 2007-06-14 16:48:22 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -42,10 +42,9 @@
 .Nm
 .Op general options
 .Ar @configfile
-.\" TODO: Reenable this once userland emulation works:
-.\" .Nm
-.\" .Op userland, other, and general options
-.\" .Ar file Op Ar args ...
+.Nm
+.Op userland, other, and general options
+.Ar file Op Ar args ...
 .Sh DESCRIPTION
 .Nm
 is an experimental instruction-level machine emulator. Several
@@ -66,11 +65,10 @@ The emulator can be invoked in the following ways:
 directly on the command line.
 .Pp
 2. Options can be read from a configuration file.
-.\" .Pp
-.\" 3. When emulating a userland environment (syscall-only emulation, not
-.\" emulating complete machines), then the program name and its argument
-.\" should be given on the command line. (This mode doesn't really work yet,
-.\" and is disabled for stable release builds.)
+.Pp
+3. When emulating a userland environment (syscall-only emulation, not
+emulating complete machines), then the program name and its argument
+should be given on the command line. (This mode is not really usable yet.)
 .Pp
 The easiest way to use the emulator is to supply settings directly on the 
 command line. The most important thing you need to supply is the
@@ -372,16 +370,16 @@ Add
 as an X11 display to use for framebuffers.
 .El
 .Pp
-.\" Userland options:
-.\" .Bl -tag -width Ds
-.\" .It Fl u Ar emul-mode
-.\" Userland-only (syscall) emulation. (Use
-.\" .Fl H
-.\" to get a list of available emulation modes.) Some (but not all) of the
-.\" options listed under Other options above can also be used with 
-.\" userland emulation.
-.\" .El
-.\" .Pp
+Userland options:
+.Bl -tag -width Ds
+.It Fl u Ar emul-mode
+Userland-only (syscall) emulation. (Use
+.Fl H
+to get a list of available emulation modes.) Some (but not all) of the
+options listed under Other options above can also be used with 
+userland emulation.
+.El
+.Pp
 General options:
 .Bl -tag -width Ds
 .It Fl b
@@ -422,10 +420,6 @@ MB. The default size is 40 MB.
 Force the single-step debugger to be entered at the end of a simulation.
 .It Fl q
 Quiet mode; this suppresses startup messages.
-.\".It Fl s
-.\"For MIPS emulation: Show opcode usage statistics after the simulation.
-.\"For non-MIPS emulation (i.e. using dyntrans): Save statistics to a file 
-.\"at regular intervals of which physical addresses that were executed.
 .It Fl V
 Start up in the single-step debugger, paused.
 .It Fl v

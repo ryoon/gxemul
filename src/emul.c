@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.294 2007-06-14 16:32:11 debug Exp $
+ *  $Id: emul.c,v 1.295 2007-06-14 16:48:22 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -478,10 +478,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		m->bootstrap_cpu = 0;
 
 	cpu = m->cpus[m->bootstrap_cpu];
-
-	if (native_code_translation_enabled)
-		debug("***\n***  Enabling experimental native "
-		    "code generation.\n***\n");
 
 	/*  Set cpu->useremul_syscall, and use userland_memory_rw:  */
 	if (m->userland_emul != NULL) {

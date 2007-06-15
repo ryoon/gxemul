@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.29 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.30 2007-06-15 06:26:20 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -287,7 +287,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 	uint64_t addr = d->cur_tx_addr, bufaddr;
 	unsigned char descr[16];
 	uint32_t tdes0, tdes1, tdes2, tdes3;
-	int bufsize, buf1_size, buf2_size, i, writeback_len = 4;
+	int bufsize, buf1_size, buf2_size, i;
 
 	addr &= 0x7fffffff;
 
@@ -341,7 +341,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 
 	/*
 	fatal("{ TX (%llx): 0x%08x 0x%08x 0x%x 0x%x: buf %i bytes at 0x%x }\n",
-	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize, (int)bufaddr);
+	  (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize, (int)bufaddr);
 	*/
 	bufaddr &= 0x7fffffff;
 
@@ -372,12 +372,19 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 		if (tdes1 & TDCTL_Tx_FS) {
 			/*  First segment. Let's allocate a new buffer:  */
 			/*  fatal("new frame }\n");  */
+
 			d->cur_tx_buf = malloc(bufsize);
 			d->cur_tx_buf_len = 0;
 		} else {
 			/*  Not first segment. Increase the length of
 			    the current buffer:  */
+
 			/*  fatal("continuing last frame }\n");  */
+			if (d->cur_tx_buf == NULL)
+{				fatal("[ dec21143: WARNING! tx: middle "
+				    "segment, but no first segment?! ]\n");
+exit(1);
+}
 			d->cur_tx_buf = realloc(d->cur_tx_buf,
 			    d->cur_tx_buf_len + bufsize);
 		}
@@ -416,17 +423,13 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			d->cur_tx_buf = NULL;
 			d->cur_tx_buf_len = 0;
 
-			/*  TODO: Shouldn't the OWN bit be cleared on all
-			    kinds of segments, not just the Last?  */
-
-			/*  We are done.  */
-			tdes0 &= ~TDSTAT_OWN;
-			writeback_len = 1;
-
 			/*  Interrupt, if Tx_IC is set:  */
 			if (tdes1 & TDCTL_Tx_IC)
 				d->reg[CSR_STATUS/8] |= STATUS_TI;
 		}
+
+		/*  We are done with this segment.  */
+		tdes0 &= ~TDSTAT_OWN;
 	}
 
 	/*  Error summary:  */
@@ -437,17 +440,15 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 	/*  Descriptor writeback:  */
 	descr[ 0] = tdes0;       descr[ 1] = tdes0 >> 8;
 	descr[ 2] = tdes0 >> 16; descr[ 3] = tdes0 >> 24;
-	if (writeback_len > 1) {
-		descr[ 4] = tdes1;       descr[ 5] = tdes1 >> 8;
-		descr[ 6] = tdes1 >> 16; descr[ 7] = tdes1 >> 24;
-		descr[ 8] = tdes2;       descr[ 9] = tdes2 >> 8;
-		descr[10] = tdes2 >> 16; descr[11] = tdes2 >> 24;
-		descr[12] = tdes3;       descr[13] = tdes3 >> 8;
-		descr[14] = tdes3 >> 16; descr[15] = tdes3 >> 24;
-	}
+	descr[ 4] = tdes1;       descr[ 5] = tdes1 >> 8;
+	descr[ 6] = tdes1 >> 16; descr[ 7] = tdes1 >> 24;
+	descr[ 8] = tdes2;       descr[ 9] = tdes2 >> 8;
+	descr[10] = tdes2 >> 16; descr[11] = tdes2 >> 24;
+	descr[12] = tdes3;       descr[13] = tdes3 >> 8;
+	descr[14] = tdes3 >> 16; descr[15] = tdes3 >> 24;
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t)
-	    * writeback_len, MEM_WRITE, PHYSICAL | NO_EXCEPTIONS)) {
+	    * 4, MEM_WRITE, PHYSICAL | NO_EXCEPTIONS)) {
 		fatal("[ dec21143_tx: memory_rw failed! ]\n");
 		return 0;
 	}

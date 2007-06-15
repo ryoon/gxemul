@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.82 2007-04-21 02:36:23 debug Exp $
+ *  $Id: bus_pci.c,v 1.83 2007-06-15 06:26:20 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -58,6 +58,7 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "cpc700reg.h"
 #include "wdc.h"
 
 extern int verbose;
@@ -1235,8 +1236,8 @@ PCIINIT(dec21143)
 		break;
 	case MACHINE_PMPPC:
 		/*  TODO, not working yet  */
-		irq = 31 - 21;
-		pci_int_line = 0x201;
+		irq = 31 - CPC_IB_EXT1;
+		pci_int_line = 0x101;
 		break;
 	case MACHINE_MACPPC:
 		/*  TODO, not working yet  */

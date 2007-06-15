@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.74 2007-06-14 18:11:27 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.75 2007-06-15 06:26:20 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -190,7 +190,7 @@ X(bclr)
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
-	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	ctr_ok |= ( (tmp == 0) == ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> bi31m) & 1) );
 	if (ctr_ok && cond_ok) {
@@ -228,7 +228,7 @@ X(bclr_l)
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
-	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	ctr_ok |= ( (tmp == 0) == ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> bi31m) & 1) );
 
@@ -272,7 +272,7 @@ X(bclr_l)
  */
 X(bcctr)
 {
-	unsigned int bo = ic->arg[0], bi31m = ic->arg[1]  /*,bh = ic->arg[2]*/;
+	unsigned int bo = ic->arg[0], bi31m = ic->arg[1];
 	uint64_t old_pc = cpu->pc;
 	MODE_uint_t addr = cpu->cd.ppc.spr[SPR_CTR];
 	int cond_ok = (bo >> 4) & 1;
@@ -369,7 +369,7 @@ X(bc)
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
-	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	ctr_ok |= ( (tmp == 0) == ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) ==
 	    ((cpu->cd.ppc.cr >> (bi31m)) & 1)  );
@@ -393,7 +393,7 @@ X(bcl)
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
-	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	ctr_ok |= ( (tmp == 0) == ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) ==
 	    ((cpu->cd.ppc.cr >> bi31m) & 1)  );
@@ -428,7 +428,7 @@ X(bc_samepage)
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
-	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	ctr_ok |= ( (tmp == 0) == ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) ==
 	    ((cpu->cd.ppc.cr >> bi31m) & 1)  );
@@ -464,7 +464,7 @@ X(bcl_samepage)
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
-	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	ctr_ok |= ( (tmp == 0) == ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) ==
 	    ((cpu->cd.ppc.cr >> bi31m) & 1)  );
@@ -3080,6 +3080,12 @@ X(to_be_translated)
 						ic->f = instr(bclr_20);
 				}
 			} else {
+				if (!(bo & 4)) {
+					if (!cpu->translation_readahead)
+						fatal("TODO: bclr/bcctr "
+						    "bo bit 2 clear!\n");
+					goto bad;
+				}
 				if (lk_bit)
 					ic->f = instr(bcctr_l);
 				else

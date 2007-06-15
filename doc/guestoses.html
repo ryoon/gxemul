@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.225 2007-06-14 18:11:22 debug Exp $
+$Id: guestoses.html,v 1.226 2007-06-15 06:26:19 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -60,6 +60,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.1</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.1</a>
+  <li><a href="#netbsdpmppc">NetBSD/pmppc 3.1</a>
   <li><a href="dreamcast.html#netbsd_generic_md">NetBSD/dreamcast 3.1</a>
   <li><a href="dreamcast.html#linux_live_cd">Linux/dreamcast</a>
   <li><a href="#openbsdpmaxinstall">OpenBSD/pmax 2.8-BETA</a>
@@ -108,7 +109,6 @@ you might find the following information interesting:
   <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="#netbsdbeboxinstall">NetBSD/bebox 19981119</a>
   <li><a href="#netbsdlandiskinstall">NetBSD/landisk</a>
-  <li><a href="#netbsdpmppc">NetBSD/pmppc 3.1</a>
 </ul>
 
 <p><b><font color="#ff0000">NOTE:</b>
@@ -708,12 +708,12 @@ cd /; umount /mnt; halt</b>
 <font color="#2020cf">!  Configuration file for running NetBSD/sgimips diskless with
 !  a NetBSD/pmax machine as the nfs server.</font>
 
-<b>    net(
+<b>net(
 	add_remote("localhost:12444")   </b>! the server<b>
 	local_port(12445)               </b>! the client<b>
-    )
+)
 
-    machine(
+machine(
 	name("client machine")
 	serial_nr(1)
 
@@ -722,18 +722,18 @@ cd /; umount /mnt; halt</b>
 
         load("netbsd-INSTALL32_IP3x.gz")</b>
         ! load("netbsd-GENERIC32_IP3x.gz")<b>
-    )
+)
 </b>
 </pre></td></tr></table>
 	... and another configuration file for the server,
 	<tt>config_server</tt>:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>    net(
+<b>net(
 	local_port(12444)               </b>! the server<b>
 	add_remote("localhost:12445")   </b>! the client<b>
-    )
+)
 
-    machine(
+machine(
 	name("nfs server")
 	serial_nr(2)
 
@@ -741,7 +741,7 @@ cd /; umount /mnt; halt</b>
         subtype("5000/200")
 
         disk("nbsd_pmax.img")
-    )
+)
 </b>
 </pre></td></tr></table>
   <li>Boot the "<tt>nfs server</tt>" and the NetBSD/sgimips
@@ -1186,6 +1186,148 @@ the disk image.
 
 
 
+<p><br>
+<a name="netbsdpmppc"></a>
+<h3>NetBSD/pmppc:</h3>
+
+<p><a href="http://www.netbsd.org/ports/pmppc/">NetBSD/pmppc</a> can 
+run in GXemul on an emulated Artesyn PM/PPC board. Currently, no SCSI or other
+disk controller is emulated for this machine type, but it is possible to run
+NetBSD with root-on-nfs.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20070616-netbsd-pmppc-diskless.png"><img src="20070616-netbsd-pmppc-diskless_small.png"></a>
+
+<p>These setup steps will let you run NetBSD/pmppc with root-on-nfs:
+
+<p>
+<ol>
+  <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
+	This needs to have a 750 MB <tt>/tftpboot</tt> partition.
+	<a href="#netbsdpmaxinstall">Install NetBSD/pmax 3.1 from CDROM</a>.
+	(Don't forget to add the extra partition!)
+  <p>
+  <li>Configure the nfs server machine to act as an nfs server.
+	Start up the emulated DECstation:<pre>
+	<b>gxemul -e 3max -d nbsd_pmax.img</b>
+</pre>and enter the following commands as <tt>root</tt>
+	inside the emulator:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>echo hostname=server &gt;&gt; /etc/rc.conf
+echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf
+echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf
+echo 10.0.0.254 &gt; /etc/mygate
+echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports
+echo rpcbind=YES &gt;&gt; /etc/rc.conf
+echo nfs_server=YES &gt;&gt; /etc/rc.conf
+echo mountd=YES &gt;&gt; /etc/rc.conf
+echo bootparamd=YES &gt;&gt; /etc/rc.conf
+printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams
+echo "bootps dgram udp wait root /usr/sbin/bootpd bootpd -d 4 -h 10.0.0.2" &gt;&gt; /etc/inetd.conf
+cat &gt;&gt; /etc/bootptab
+client:\
+        :ht=ether:\
+        :ha=102030000010:\
+        :sm=255.0.0.0:\
+        :lg=10.0.0.254:\
+        :ip=10.0.0.1:\
+        :rp=/tftpboot:
+</b>(press CTRL-D)
+<b>echo "10:20:30:00:00:10 client" &gt; /etc/ethers
+echo 10.0.0.1 client &gt; /etc/hosts
+reboot</b>
+</pre></td></tr></table>
+  <p>
+  <li>Download the NetBSD/pmppc CD-ROM iso image, and the GENERIC kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/pmppccd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/pmppccd-3.1.iso</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/pmppc/binary/kernel/netbsd-PMPPC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/pmppc/binary/kernel/netbsd-PMPPC.gz</a>
+
+</pre>
+  <li>Start the DECstation emulation again:<pre>
+	<b>gxemul -e 3max -d nbsd_pmax.img -d pmppccd-3.1.iso</b>
+
+</pre>and extract the files from the PM/PPC CD-ROM image to the
+	DECstation disk image:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>cd /tftpboot; mount /dev/cd0a /mnt
+for a in /mnt/*/binary/sets/[bcemt]*; do echo $a; tar zxfp $a; done
+echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
+echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
+echo 10.0.0.254 &gt;&gt; /tftpboot/etc/mygate
+echo nameserver 10.0.0.254 &gt;&gt; /tftpboot/etc/resolv.conf
+echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
+dd if=/dev/zero of=swap bs=1024 count=65536
+cd /tftpboot/dev; sh MAKEDEV all
+cd /; umount /mnt; halt</b>
+</pre></td></tr></table>
+  <p>
+  <li>Create a configuration file called <tt>config_client</tt>:
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<font color="#2020cf">!  Configuration file for running NetBSD/pmppc diskless with
+!  a NetBSD/pmax machine as the nfs server.</font>
+
+<b>net(
+	add_remote("localhost:12444")   </b>! the server<b>
+	local_port(12445)               </b>! the client<b>
+)
+
+machine(
+	name("client machine")
+	serial_nr(1)
+
+        type("pmppc")
+
+        load("netbsd-PMPPC.gz")</b>
+)
+</b>
+</pre></td></tr></table>
+	... and another configuration file for the server,
+	<tt>config_server</tt>:
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>net(
+	local_port(12444)               </b>! the server<b>
+	add_remote("localhost:12445")   </b>! the client<b>
+)
+
+machine(
+	name("nfs server")
+	serial_nr(2)
+
+        type("dec")
+        subtype("5000/200")
+
+        disk("nbsd_pmax.img")
+)
+</b>
+</pre></td></tr></table>
+</ol>
+
+<p>It should now be possible to boot NetBSD/pmppc using the NetBSD/pmax
+nfs server, using the following commands: (NOTE! Execute these two 
+commands in separate xterms!)<pre>
+	<b>gxemul @config_server</b>
+	<b>gxemul @config_client</b>
+</pre>
+
+<p>You might want to log in as <tt>root</tt> on the server machine, and
+run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
+actually does on the network.
+
+<p>When asked for "<tt>root device:</tt>" etc. on the client machine, enter
+the following values:<pre>
+	root device: <b>tlp0</b>
+	dump device: 				<b>(leave blank)</b>
+	file system (default generic): 		<b>(leave blank)</b>
+	..
+	init path (default /sbin/init):		<b>(leave blank)</b>
+</pre>
+
+
+
+
+
+
+
 
 
 <p><br>
@@ -1193,11 +1335,6 @@ the disk image.
 <h3>NetBSD/dreamcast:</h3>
 
 Moved <a href="dreamcast.html#netbsd_generic_md">here</a>.
-
-
-
-
-
 
 
 
@@ -2062,12 +2199,12 @@ halt</b>
 !
 !  This config file is for the client.</font>
 
-<b>    net(
+<b>net(
 	add_remote("localhost:12444")   </b>! the server<b>
 	local_port(12445)               </b>! the client<b>
-    )
+)
 
-    machine(
+machine(
 	name("client machine")
 	serial_nr(1)
 
@@ -2076,18 +2213,18 @@ halt</b>
 
         </b>! load("bsd")<b>
         load("bsd.rd")
-    )
+)
 </b>
 </pre></td></tr></table>
 	... and another configuration file for the server,
 	<tt>config_server</tt>:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>    net(
+<b>net(
 	local_port(12444)               </b>! the server<b>
 	add_remote("localhost:12445")   </b>! the client<b>
-    )
+)
 
-    machine(
+machine(
 	name("nfs server")
 	serial_nr(2)
 
@@ -2095,7 +2232,7 @@ halt</b>
         subtype("5000/200")
 
         disk("nbsd_pmax.img")
-    )
+)
 </b>
 </pre></td></tr></table>
   <li>Boot the "<tt>nfs server</tt>" and the OpenBSD/sgi
@@ -2598,150 +2735,6 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 </pre>
 
 
-
-
-
-
-
-
-<p><br>
-<a name="netbsdpmppc"></a>
-<h3>NetBSD/pmppc:</h3>
-
-<p><a href="http://www.netbsd.org/ports/pmppc/">NetBSD/pmppc</a> can 
-theoretically run in GXemul, with root-on-nfs. Currently, it <i>almost</i> 
-works; there are lots of annoying timeouts. (This is a bug which must be 
-fixed some day.)
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20070615-netbsd-pmppc-with-timeouts.png"><img src="20070615-netbsd-pmppc-with-timeouts_small.png"></a>
-
-<p>These setup steps will let you run NetBSD/pmppc with root-on-nfs:
-
-<p>
-<ol>
-  <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
-	This needs to have a 750 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdpmaxinstall">Install NetBSD/pmax 3.1 from CDROM</a>.
-	(Don't forget to add the extra partition!)
-  <p>
-  <li>Configure the nfs server machine to act as an nfs server.
-	Start up the emulated DECstation:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img</b>
-</pre>and enter the following commands as <tt>root</tt>
-	inside the emulator:
-<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>echo hostname=server &gt;&gt; /etc/rc.conf
-echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf
-echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf
-echo 10.0.0.254 &gt; /etc/mygate
-echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports
-echo rpcbind=YES &gt;&gt; /etc/rc.conf
-echo nfs_server=YES &gt;&gt; /etc/rc.conf
-echo mountd=YES &gt;&gt; /etc/rc.conf
-echo bootparamd=YES &gt;&gt; /etc/rc.conf
-printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams
-echo "bootps dgram udp wait root /usr/sbin/bootpd bootpd -d 4 -h 10.0.0.2" &gt;&gt; /etc/inetd.conf
-cat &gt;&gt; /etc/bootptab
-client:\
-        :ht=ether:\
-        :ha=102030000010:\
-        :sm=255.0.0.0:\
-        :lg=10.0.0.254:\
-        :ip=10.0.0.1:\
-        :rp=/tftpboot:
-</b>(press CTRL-D)
-<b>echo "10:20:30:00:00:10 client" &gt; /etc/ethers
-echo 10.0.0.1 client &gt; /etc/hosts
-reboot</b>
-</pre></td></tr></table>
-  <p>
-  <li>Download the NetBSD/pmppc CD-ROM iso image, and the GENERIC kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/pmppccd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/pmppccd-3.1.iso</a>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/pmppc/binary/kernel/netbsd-PMPPC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/pmppc/binary/kernel/netbsd-PMPPC.gz</a>
-
-</pre>
-  <li>Start the DECstation emulation again:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -d pmppccd-3.1.iso</b>
-
-</pre>and extract the files from the PM/PPC CD-ROM image to the
-	DECstation disk image:
-<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>cd /tftpboot; mount /dev/cd0a /mnt
-for a in /mnt/*/binary/sets/[bcemt]*; do echo $a; tar zxfp $a; done
-echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
-echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
-echo 10.0.0.254 &gt;&gt; /tftpboot/etc/mygate
-echo nameserver 10.0.0.254 &gt;&gt; /tftpboot/etc/resolv.conf
-echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
-dd if=/dev/zero of=swap bs=1024 count=65536
-cd /tftpboot/dev; sh MAKEDEV all
-cd /; umount /mnt; halt</b>
-</pre></td></tr></table>
-  <p>
-  <li>Create a configuration file called <tt>config_client</tt>:
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<font color="#2020cf">!  Configuration file for running NetBSD/pmppc diskless with
-!  a NetBSD/pmax machine as the nfs server.</font>
-
-<b>    net(
-	add_remote("localhost:12444")   </b>! the server<b>
-	local_port(12445)               </b>! the client<b>
-    )
-
-    machine(
-	name("client machine")
-	serial_nr(1)
-
-        type("pmppc")
-
-        load("netbsd-PMPPC.gz")</b>
-    )
-</b>
-</pre></td></tr></table>
-	... and another configuration file for the server,
-	<tt>config_server</tt>:
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>    net(
-	local_port(12444)               </b>! the server<b>
-	add_remote("localhost:12445")   </b>! the client<b>
-    )
-
-    machine(
-	name("nfs server")
-	serial_nr(2)
-
-        type("dec")
-        subtype("5000/200")
-
-        disk("nbsd_pmax.img")
-    )
-</b>
-</pre></td></tr></table>
-</ol>
-
-<p>It should now be possible to boot NetBSD/pmppc using the NetBSD/pmax
-nfs server, using the following commands: (NOTE! Execute these two 
-commands in separate xterms!)<pre>
-	<b>gxemul @config_server</b>
-	<b>gxemul @config_client</b>
-</pre>
-
-<p>You might want to log in as <tt>root</tt> on the server machine, and
-run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
-actually does on the network.
-
-<p>When asked for "<tt>root device:</tt>" etc. on the client machine, enter
-the following values:<pre>
-	root device: <b>tlp0</b>
-	dump device: 				<b>(leave blank)</b>
-	file system (default generic): 		<b>(leave blank)</b>
-	..
-	init path (default /sbin/init):		<b>(leave blank)</b>
-</pre>
-
-<p><font color="#ff0000">2007-06-15:</font> There are lots of timeouts. 
-This is a known bug.
 
 
 

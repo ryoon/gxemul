@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.69 2007-05-25 06:09:35 debug Exp $
+$Id: misc.html,v 1.70 2007-06-15 06:26:20 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -416,8 +416,9 @@ count.)
 <a name="userland"></a>
 <h3>Running userland binaries:</h3>
 
-<font color="#ff0000">Note: This feature does not really work yet.
-It is currently disabled in stable release builds of the emulator.</font>
+<font color="#ff0000"><b>NOTE 2007-06-15:</b> I just removed most of the
+userland (syscall) emulation support, and started a rewrite from scratch.
+The rest of this section in the documentation is not currently valid.</font>
 
 <p>There is some skeleton code for running userland programs as well. This
 will not emulate any particular machine, but instead try to translate

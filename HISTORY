@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1608 2007-06-15 00:41:20 debug Exp $
+$Id: HISTORY,v 1.1609 2007-06-15 06:26:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3592,7 +3592,11 @@ Changelog for GXemul:
 		and development builds.
 		Moving memory related helper functions from misc.c to memory.c.
 		Adding preliminary instructions for netbooting NetBSD/pmppc to
-		guestoses.html.
+		guestoses.html; it doesn't work yet, there are weird timeouts.
 		Beginning a total rewrite of the userland emulation modes
 		(removing all emulation modes, beginning from scratch with
 		NetBSD/MIPS and FreeBSD/Alpha only).
+20070616	After fixing a bug in the DEC21143 NIC (the TDSTAT_OWN bit was
+		only cleared for the last segment when transmission, not all
+		segments), NetBSD/pmppc boots with root-on-nfs without the
+		timeouts. Updating guestoses.html.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_freebsd.c,v 1.3 2007-06-15 00:59:01 debug Exp $
+ *  $Id: useremul_freebsd.c,v 1.4 2007-06-15 01:08:14 debug Exp $
  *
  *  FreeBSD userland (syscall) emulation.
  */
@@ -37,6 +37,7 @@
 #include "machine.h"
 #include "useremul.h"
 
+#include "errno_freebsd.h"
 #include "syscall_freebsd.h"
 
 
@@ -129,6 +130,9 @@ void useremul_freebsd(struct cpu *cpu, uint32_t code)
 
 	default:
 		fatal("[ UNIMPLEMENTED FreeBSD syscall nr %i ]\n", syscall_nr);
+		error_flag = 1;  result = FREEBSD_ENOSYS;
+
+		/*  For now, let's abort execution:  */
 		cpu->running = 0;
 	}
 

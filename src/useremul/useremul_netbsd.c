@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_netbsd.c,v 1.2 2007-06-15 00:50:14 debug Exp $
+ *  $Id: useremul_netbsd.c,v 1.3 2007-06-15 01:08:14 debug Exp $
  *
  *  NetBSD userland (syscall) emulation.
  */
@@ -39,6 +39,7 @@
 #include "memory.h"
 #include "useremul.h"
 
+#include "errno_netbsd.h"
 #include "syscall_netbsd.h"
 
 
@@ -112,9 +113,8 @@ void useremul_netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
  */
 void useremul_netbsd(struct cpu *cpu, uint32_t code)
 {
-	int error_flag = 0, result_high_set = 0;
+	int syscall_nr = -1, error_flag = 0, result_high_set = 0;
 	uint64_t arg0=0,arg1=0,arg2=0,arg3=0,stack0=0,stack1=0,stack2=0;
-	int sysnr = 0;
 	int64_t result = 0;
 
 
@@ -125,9 +125,9 @@ void useremul_netbsd(struct cpu *cpu, uint32_t code)
 	switch (cpu->machine->arch) {
 
 	case ARCH_MIPS:
-		sysnr = cpu->cd.mips.gpr[MIPS_GPR_V0];
-		if (sysnr == NETBSD_SYS___syscall) {
-			sysnr = cpu->cd.mips.gpr[MIPS_GPR_A0] +
+		syscall_nr = cpu->cd.mips.gpr[MIPS_GPR_V0];
+		if (syscall_nr == NETBSD_SYS___syscall) {
+			syscall_nr = cpu->cd.mips.gpr[MIPS_GPR_A0] +
 			    (cpu->cd.mips.gpr[MIPS_GPR_A1] << 32);
 			arg0 = cpu->cd.mips.gpr[MIPS_GPR_A2];
 			arg1 = cpu->cd.mips.gpr[MIPS_GPR_A3];
@@ -165,7 +165,7 @@ void useremul_netbsd(struct cpu *cpu, uint32_t code)
 	 *  Handle the syscall:
 	 */
 
-	switch (sysnr) {
+	switch (syscall_nr) {
 
 	case NETBSD_SYS_exit:
 		useremul_syscall_exit(cpu, arg0);
@@ -176,9 +176,11 @@ void useremul_netbsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	default:
-		fatal("[ UNIMPLEMENTED NetBSD syscall nr %i ]\n", sysnr);
-		error_flag = 1;
-		result = 78;  /*  ENOSYS  */
+		fatal("[ UNIMPLEMENTED NetBSD syscall nr %i ]\n", syscall_nr);
+		error_flag = 1;  result = NETBSD_ENOSYS;
+
+		/*  For now, let's abort execution:  */
+		cpu->running = 0;
 	}
 
 

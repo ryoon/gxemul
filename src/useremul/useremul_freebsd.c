@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_freebsd.c,v 1.4 2007-06-15 01:08:14 debug Exp $
+ *  $Id: useremul_freebsd.c,v 1.5 2007-06-15 01:32:58 debug Exp $
  *
  *  FreeBSD userland (syscall) emulation.
  */
@@ -82,7 +82,7 @@ void useremul_freebsd(struct cpu *cpu, uint32_t code)
 {
 	int syscall_nr = -1;
 	int64_t result = 0, error_flag = 0;
-	uint64_t arg0, arg1, arg2, arg3, arg4, arg5;
+	uint64_t arg0=0, arg1=0, arg2=0, arg3=0, arg4=0, arg5=0;
 
 
 	/*

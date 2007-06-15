@@ -25,17 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_syscalls.c,v 1.2 2007-06-15 00:50:14 debug Exp $
+ *  $Id: useremul_syscalls.c,v 1.3 2007-06-15 01:29:44 debug Exp $
  *
  *  Common syscall code for all userland emulation modes.
  */
 
-#include <stdio.h>
 #include <unistd.h>
 
 #include "cpu.h"
-#include "machine.h"
-#include "memory.h"
 #include "misc.h"
 #include "useremul.h"
 

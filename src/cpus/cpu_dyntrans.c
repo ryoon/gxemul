@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.162 2007-06-12 03:49:11 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.163 2007-06-15 15:53:17 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -76,7 +76,7 @@ static void gather_statistics(struct cpu *cpu)
 			a += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
 			if (cpu->is_32bit)
 				snprintf(buf + strlen(buf), sizeof(buf),
-				    "0x%016"PRIx32, (uint32_t)a);
+				    "0x%08"PRIx32, (uint32_t)a);
 			else
 				snprintf(buf + strlen(buf), sizeof(buf),
 				    "0x%016"PRIx64, (uint64_t)a);
@@ -93,7 +93,7 @@ static void gather_statistics(struct cpu *cpu)
 			a += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
 			if (cpu->is_32bit)
 				snprintf(buf + strlen(buf), sizeof(buf),
-				    "0x%016"PRIx32, (uint32_t)a);
+				    "0x%08"PRIx32, (uint32_t)a);
 			else
 				snprintf(buf + strlen(buf), sizeof(buf),
 				    "0x%016"PRIx64, (uint64_t)a);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1607 2007-06-14 23:50:36 debug Exp $
+$Id: HISTORY,v 1.1608 2007-06-15 00:41:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3593,6 +3593,6 @@ Changelog for GXemul:
 		Moving memory related helper functions from misc.c to memory.c.
 		Adding preliminary instructions for netbooting NetBSD/pmppc to
 		guestoses.html.
-		Removing skeleton userland emulation modes, so that the only
-		remaining ones are FreeBSD/Alpha and NetBSD/MIPS. (I'll try to
-		concentrate on those first.)
+		Beginning a total rewrite of the userland emulation modes
+		(removing all emulation modes, beginning from scratch with
+		NetBSD/MIPS and FreeBSD/Alpha only).

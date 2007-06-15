@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.69 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.70 2007-06-15 00:41:21 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -50,6 +50,7 @@
 #include "settings.h"
 #include "symbol.h"
 #include "timer.h"
+#include "useremul.h"
 
 
 #define	DYNTRANS_DUALMODE_32

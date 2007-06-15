@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.254 2007-06-14 16:13:30 debug Exp $
+ *  $Id: misc.h,v 1.255 2007-06-15 00:41:21 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -226,15 +226,6 @@ int playstation2_sifbios_emul(struct cpu *cpu);
 /*  sh_ipl_g.c:  */
 void sh_ipl_g_emul_init(struct machine *machine);
 int sh_ipl_g_emul(struct cpu *);
-
-
-/*  useremul.c:  */
-void useremul_setup(struct cpu *, int, char **);
-void useremul_syscall(struct cpu *cpu, uint32_t code);
-void useremul_name_to_useremul(struct cpu *, char *name,
-	int *arch, char **machine_name, char **cpu_name);
-void useremul_list_emuls(void);
-void useremul_init(void);
 
 
 /*  yamon.c:  */

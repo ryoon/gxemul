@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.702 2007-06-14 16:48:22 debug Exp $
+ *  $Id: machine.c,v 1.703 2007-06-15 00:41:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,6 +44,7 @@
 #include "misc.h"
 #include "settings.h"
 #include "symbol.h"
+#include "useremul.h"
 
 
 /*  See main.c:  */

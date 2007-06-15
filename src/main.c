@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.303 2007-06-14 16:48:22 debug Exp $
+ *  $Id: main.c,v 1.304 2007-06-15 00:41:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,6 +45,7 @@
 #include "misc.h"
 #include "settings.h"
 #include "timer.h"
+#include "useremul.h"
 
 
 extern int single_step;

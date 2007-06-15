@@ -1,4 +1,4 @@
-$Id: TODO,v 1.531 2007-06-14 03:57:25 debug Exp $
+$Id: TODO,v 1.532 2007-06-15 00:41:20 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -467,6 +467,11 @@ Floating point layer:
 	o)  non-IEEE modes (i.e. x86)?
 
 Userland emulation:
+	x)  Try to prefix "/emul/mips/" or similar to all filenames,
+	    and only if that fails, try the given filename.
+            Read this setting from an environment variable, and only
+            if there is none, fall back to hardcoded string.
+	x)  File descriptor (0,1,2) assumptions? Find and fix these?
 	x)  Dynamic linking!
 	x)  Lots of stuff; freebsd, netbsd, linux, ... syscalls.
 	x)  Initial register/stack contents (environment, command line args).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.295 2007-06-14 16:48:22 debug Exp $
+ *  $Id: emul.c,v 1.296 2007-06-15 00:41:21 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -53,6 +53,7 @@
 #include "net.h"
 #include "settings.h"
 #include "timer.h"
+#include "useremul.h"
 #include "x11.h"
 
 

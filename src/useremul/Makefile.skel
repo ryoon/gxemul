@@ -1,12 +1,14 @@
 #
-#  $Id: Makefile.skel,v 1.1 2007-06-05 05:40:25 debug Exp $
+#  $Id: Makefile.skel,v 1.2 2007-06-15 00:41:21 debug Exp $
 #
 #  Makefile for GXemul src/useremul
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 
-OBJS=useremul.o
+OBJS=useremul.o \
+	useremul_freebsd.o useremul_netbsd.o \
+	useremul_syscalls.o
 
 all: $(OBJS)
 

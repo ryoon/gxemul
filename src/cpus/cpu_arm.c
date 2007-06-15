@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.70 2007-06-14 04:53:46 debug Exp $
+ *  $Id: cpu_arm.c,v 1.71 2007-06-15 00:41:21 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -51,6 +51,7 @@
 #include "settings.h"
 #include "symbol.h"
 #include "timer.h"
+#include "useremul.h"
 
 #define DYNTRANS_32
 #include "tmp_arm_head.c"

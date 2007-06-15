@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.17 2007-06-14 16:13:30 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.18 2007-06-15 00:41:21 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  *
@@ -45,6 +45,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "symbol.h"
+#include "useremul.h"
 
 #include "alpha_prom.h"
 

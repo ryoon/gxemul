@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.108 2007-06-05 07:27:28 debug Exp $
+$Id: experiments.html,v 1.109 2007-06-15 06:34:46 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -416,6 +416,41 @@ following experimental devices:
     </td>
   </tr>
 
+  <tr height="15">
+    <td height="15">&nbsp;</td>
+  </tr>
+
+  <tr>
+    <td align="left" valign="top">
+	<a name="expdevices_irqc"><b><tt>irqc</tt>:</b></a>
+	<p>An Interrupt Controller. (Note: Not used for the MIPS test machine.)
+	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_irqc.c</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>dev_irqc.h</tt></font>
+	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x16000000</font>
+    </td>
+    <td></td>
+    <td align="left" valign="top">
+	<table border="0">
+	  <tr>
+	    <td align="left" valign="top"><i><u>Offset:</u></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0</tt></td>
+	    <td align="left" valign="top">Read: IRQ status as a 32-bit word, one bit per interrupt source.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x4</tt></td>
+	    <td align="left" valign="top">Write: Mask one interrupt source. Value should be an integer 0..31.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x8</tt></td>
+	    <td align="left" valign="top">Write: Unmask one interrupt source. Value should be an integer 0..31.</td>
+	  </tr>
+	</table>
+    </td>
+  </tr>
+
 </table></center>
 
 <p>
@@ -463,7 +498,7 @@ what kind of IPI it was.
 <p><center>
 <table border="1">
 	<tr><td align="center">
-		<b><tt>testmips</tt></b>
+		<b><tt>testmips</tt></b> (as native MIPS interrupts)
 	</td></tr>
 	<tr><td>
 		<table border="0">
@@ -482,12 +517,33 @@ what kind of IPI it was.
 		</table>
 	</td></tr>
 </table>
+
+<p><table border="1">
+	<tr><td align="center">
+		<b><tt>testarm</tt></b> (via the <tt>irqc</tt> device)
+	</td></tr>
+	<tr><td>
+		<table border="0">
+		<tr><td align="center">IRQ:</td><td>&nbsp;</td>
+			<td>Used for:</td></tr>
+		<tr><td align="center">6</td><td></td>
+			<td><tt>mp</tt> (inter-processor interrupts)</td></tr>
+		<tr><td align="center">4</td><td></td>
+			<td><tt>rtc</tt></td></tr>
+		<tr><td align="center">3</td><td></td>
+			<td><tt>ether</tt></td></tr>
+		<tr><td align="center">2</td><td></td>
+			<td><tt>cons</tt></td></tr>
+		</table>
+	</td></tr>
+</table>
 </center>
 
 <p>Other machines:  TODO
 
-<p><font color="#ff0000"><b>NOTE:</b></font> The only test machine that
-is working well is the <tt>testmips</tt> machine.
+<p><font color="#ff0000"><b>NOTE:</b></font> The only test machines
+that are working reasonably well are the <tt>testmips</tt> and
+<tt>testarm</tt> machines.
 
 
 

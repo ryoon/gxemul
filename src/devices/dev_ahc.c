@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ahc.c,v 1.7 2007-01-28 00:41:16 debug Exp $
+ *  $Id: dev_ahc.c,v 1.8 2007-06-15 18:44:18 debug Exp $
  *
- *  Adaptec AHC SCSI controller.
+ *  COMMENT: Adaptec AHC SCSI controller
  *
  *  NetBSD should say something like this, on SGI-IP32:
  *	ahc0 at pci0 dev 1 function 0
@@ -193,11 +193,9 @@ DEVICE_ACCESS(ahc)
 
 DEVINIT(ahc)
 {
-	struct ahc_data *d = malloc(sizeof(struct ahc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct ahc_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ahc_data)));
 	memset(d, 0, sizeof(struct ahc_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

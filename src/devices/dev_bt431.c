@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt431.c,v 1.12 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_bt431.c,v 1.13 2007-06-15 18:44:19 debug Exp $
  *  
- *  Brooktree 431, used by TURBOchannel graphics cards.
+ *  COMMENT: Brooktree BT431, used by TURBOchannel graphics cards
  *
  *  TODO.
  */
@@ -60,12 +60,9 @@ struct bt431_data {
 };
 
 
-/*
- *  dev_bt431_access():
- */
 DEVICE_ACCESS(bt431)
 {
-	struct bt431_data *d = (struct bt431_data *) extra;
+	struct bt431_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int btaddr;
 #if 0
@@ -201,12 +198,11 @@ on = 1;
 void dev_bt431_init(struct memory *mem, uint64_t baseaddr,
 	struct vfb_data *vfb_data, int planes)
 {
-	struct bt431_data *d = malloc(sizeof(struct bt431_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct bt431_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct bt431_data)));
 	memset(d, 0, sizeof(struct bt431_data));
+
 	d->vfb_data     = vfb_data;
 	d->planes       = planes;
 	d->cursor_x     = -1;

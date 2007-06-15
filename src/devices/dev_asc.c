@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.85 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_asc.c,v 1.86 2007-06-15 18:44:19 debug Exp $
  *
- *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
+ *  COMMENT: NCR53C9X "ASC" SCSI controller
+ *
+ *  This is the SCSI controller used in some DECstation/DECsystem models and
+ *  the PICA-61 machine.
  *
  *  Supposed to support SCSI-1 and SCSI-2. I've not yet found any docs
  *  on NCR53C9X, so I'll try to implement this device from LSI53CF92A docs
@@ -372,12 +375,8 @@ if (d->dma_controller != NULL)
 					    (int)len, (int)len2);  */
 
 					d->xferp->data_in_len -= len2;
-					n = malloc(d->xferp->data_in_len);
-					if (n == NULL) {
-						fprintf(stderr, "out of memory"
-						    " in dev_asc\n");
-						exit(1);
-					}
+					CHECK_ALLOCATION(n =
+					    malloc(d->xferp->data_in_len));
 					memcpy(n, d->xferp->data_in + len2,
 					    d->xferp->data_in_len);
 					free(d->xferp->data_in);
@@ -507,13 +506,9 @@ fatal("TODO.......asdgasin\n");
 			}
 
 			newlen = oldlen + d->n_bytes_in_fifo;
-			d->xferp->msg_out = realloc(d->xferp->msg_out, newlen);
+			CHECK_ALLOCATION(d->xferp->msg_out =
+			    realloc(d->xferp->msg_out, newlen));
 			d->xferp->msg_out_len = newlen;
-			if (d->xferp->msg_out == NULL) {
-				fprintf(stderr, "out of memory realloc'ing "
-				    "msg_out\n");
-				exit(1);
-			}
 
 			i = oldlen;
 			while (d->fifo_in != d->fifo_out) {
@@ -1237,11 +1232,7 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 {
 	struct asc_data *d;
 
-	d = malloc(sizeof(struct asc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct asc_data)));
 	memset(d, 0, sizeof(struct asc_data));
 
 	INTERRUPT_CONNECT(irq_path, d->irq);
@@ -1250,13 +1241,11 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 
 	d->reg_ro[NCR_CFG3] = NCRF9XCFG3_CDB;
 
-	d->dma_address_reg_memory = malloc(machine->arch_pagesize);
-	d->dma = malloc(ASC_DMA_SIZE);
-	if (d->dma == NULL || d->dma_address_reg_memory == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d->dma_address_reg_memory =
+	    malloc(machine->arch_pagesize));
 	memset(d->dma_address_reg_memory, 0, machine->arch_pagesize);
+
+	CHECK_ALLOCATION(d->dma = malloc(ASC_DMA_SIZE));
 	memset(d->dma, 0, ASC_DMA_SIZE);
 
 	d->dma_controller      = dma_controller;

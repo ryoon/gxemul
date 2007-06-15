@@ -25,8 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.22 2007-05-12 01:14:00 debug Exp $
- *  
+ *  $Id: dev_dec5800.c,v 1.23 2007-06-15 18:44:19 debug Exp $
+ *
+ *  COMMENT: DECsystem 58x0 devices
+ *
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
  *
@@ -178,11 +180,7 @@ DEVINIT(dec5800)
 	char tmpstr[200];
 	int i;
 
-	d = malloc(sizeof(struct dec5800_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dec5800_data)));
 	memset(d, 0, sizeof(struct dec5800_data));
 
 	snprintf(tmpstr, sizeof(tmpstr), "%s.2", devinit->interrupt_path);
@@ -318,11 +316,7 @@ DEVINIT(decbi)
 {
 	struct decbi_data *d;
 
-	d = malloc(sizeof(struct decbi_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct decbi_data)));
 	memset(d, 0, sizeof(struct decbi_data));
 
 	memory_device_register(devinit->machine->memory, "decbi",
@@ -398,11 +392,7 @@ void dev_deccca_init(struct memory *mem, uint64_t baseaddr)
 {
 	struct deccca_data *d;
 
-	d = malloc(sizeof(struct deccca_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct deccca_data)));
 	memset(d, 0, sizeof(struct deccca_data));
 
 	memory_device_register(mem, "deccca", baseaddr, DEV_DECCCA_LENGTH,
@@ -514,11 +504,7 @@ void dev_decxmi_init(struct memory *mem, uint64_t baseaddr)
 {
 	struct decxmi_data *d;
 
-	d = malloc(sizeof(struct decxmi_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct decxmi_data)));
 	memset(d, 0, sizeof(struct decxmi_data));
 
 	memory_device_register(mem, "decxmi", baseaddr, DEV_DECXMI_LENGTH,

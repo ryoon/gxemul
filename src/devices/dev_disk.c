@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.14 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_disk.c,v 1.15 2007-06-15 18:44:19 debug Exp $
+ *
+ *  COMMENT: A simple disk controller device, for the test machines
  *
  *  Basic "disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
@@ -55,27 +57,22 @@ struct disk_data {
 };
 
 
-/*
- *  dev_disk_buf_access():
- */
 DEVICE_ACCESS(disk_buf)
 {
-	struct disk_data *d = (struct disk_data *) extra;
+	struct disk_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		memcpy(d->buf + relative_addr, data, len);
 	else
 		memcpy(data, d->buf + relative_addr, len);
+
 	return 1;
 }
 
 
-/*
- *  dev_disk_access():
- */
 DEVICE_ACCESS(disk)
 {
-	struct disk_data *d = (struct disk_data *) extra;
+	struct disk_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -144,25 +141,18 @@ DEVICE_ACCESS(disk)
 
 DEVINIT(disk)
 {
-	struct disk_data *d = malloc(sizeof(struct disk_data));
+	struct disk_data *d;
 	size_t nlen;
 	char *n1, *n2;
                  
-	nlen = strlen(devinit->name) + 30;
-	n1 = malloc(nlen);
-	n2 = malloc(nlen);
-
-	if (d == NULL || n1 == NULL || n2 == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct disk_data)));
 	memset(d, 0, sizeof(struct disk_data));
 
-	d->buf = malloc(devinit->machine->arch_pagesize);
-	if (d->buf == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	nlen = strlen(devinit->name) + 30;
+	CHECK_ALLOCATION(n1 = malloc(nlen));
+	CHECK_ALLOCATION(n2 = malloc(nlen));
+
+	CHECK_ALLOCATION(d->buf = malloc(devinit->machine->arch_pagesize));
 	memset(d->buf, 0, devinit->machine->arch_pagesize);
 
 	snprintf(n1, nlen, "%s [control]", devinit->name);

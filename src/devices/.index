@@ -1,6 +1,24 @@
-bus_isa.c  Generic ISA bus
+bus_isa.c  Generic ISA bus framework
 bus_pci.c  Generic PCI bus framework
 dev_8253.c  Intel 8253/8254 Programmable Interval Timer
 dev_8259.c  Intel 8259 Programmable Interrupt Controller
+dev_adb.c  Apple Desktop Bus (ADB) controller
+dev_ahc.c  Adaptec AHC SCSI controller
+dev_algor.c  Algor P5064 misc. stuff
+dev_asc.c  NCR53C9X "ASC" SCSI controller
+dev_bebox.c  BeBox motherboard registers and interrupt controller
+dev_bt431.c  Brooktree BT431, used by TURBOchannel graphics cards
+dev_bt455.c  Brooktree BT455, used by TURBOchannel graphics cards
+dev_bt459.c  Brooktree BT459, used by TURBOchannel graphics cards
+dev_clmpcc.c  Cirrus Logic 4-Channel Communications Controller (CD2400/CD2401)
+dev_colorplanemask.c  Color plane mask, used in the DECstation 3100 machine
+dev_cons.c  A simple console device, for the test machines
 dev_cpc700.c  IBM CPC700 bridge (PCI and interrupt controller)
+dev_dc7085.c  DC7085 serial controller, used in some DECstation models
+dev_dec21030.c  DEC 21030 "TGA" graphics card
+dev_dec21143.c  DEC 21143 "Tulip" ethernet controller
+dev_dec5800.c  DECsystem 58x0 devices
+dev_dec_ioasic.c  IOASIC device used in the DECstation "3MIN" and "3MAX" machines
+dev_disk.c  A simple disk controller device, for the test machines
+dev_dreamcast_asic.c  Dreamcast-specific ASIC
 dev_v3.c  V3 Semiconductor PCI controller

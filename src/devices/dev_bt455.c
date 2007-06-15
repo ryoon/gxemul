@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt455.c,v 1.11 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_bt455.c,v 1.12 2007-06-15 18:44:19 debug Exp $
  *  
- *  Brooktree 455, used by TURBOchannel graphics cards.
+ *  COMMENT: Brooktree BT455, used by TURBOchannel graphics cards
  *
  *  TODO:  This is hardcoded to only use 16 grayscales, using only the
  *  green component of the palette.  Perhaps some other graphics card uses
@@ -57,12 +57,9 @@ struct bt455_data {
 };
 
 
-/*
- *  dev_bt455_access():
- */
 DEVICE_ACCESS(bt455)
 {
-	struct bt455_data *d = (struct bt455_data *) extra;
+	struct bt455_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int i, modified;
 
@@ -172,12 +169,11 @@ DEVICE_ACCESS(bt455)
 void dev_bt455_init(struct memory *mem, uint64_t baseaddr,
 	struct vfb_data *vfb_data)
 {
-	struct bt455_data *d = malloc(sizeof(struct bt455_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct bt455_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct bt455_data)));
 	memset(d, 0, sizeof(struct bt455_data));
+
 	d->vfb_data     = vfb_data;
 	d->rgb_palette  = vfb_data->rgb_palette;
 

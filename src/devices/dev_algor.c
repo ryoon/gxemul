@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_algor.c,v 1.5 2007-01-20 13:26:20 debug Exp $
+ *  $Id: dev_algor.c,v 1.6 2007-06-15 18:44:18 debug Exp $
  *
- *  Algor misc. stuff.
+ *  COMMENT: Algor P5064 misc. stuff
  *
  *  TODO: This is hardcoded for P5064 right now. Generalize it to P40xx etc.
  *
@@ -202,11 +202,9 @@ DEVICE_ACCESS(algor)
 DEVINIT(algor)
 {
 	char tmpstr[200];
-	struct algor_data *d = malloc(sizeof(struct algor_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct algor_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct algor_data)));
 	memset(d, 0, sizeof(struct algor_data));
 
 	d->base_addr = devinit->addr;

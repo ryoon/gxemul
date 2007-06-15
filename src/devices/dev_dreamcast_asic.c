@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_asic.c,v 1.8 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_dreamcast_asic.c,v 1.9 2007-06-15 18:44:19 debug Exp $
  *  
- *  Dreamcast ASIC.
+ *  COMMENT: Dreamcast-specific ASIC
  *
  *  A simple device which forwards various Dreamcast device events as
  *  interrupts 13, 11, or 9, to the CPU.
@@ -70,7 +70,7 @@ struct dreamcast_asic_data {
 
 DEVICE_TICK(dreamcast_asic)
 {
-	struct dreamcast_asic_data *d = (struct dreamcast_asic_data *) extra;
+	struct dreamcast_asic_data *d = extra;
 	int i, old_asserted_13 = d->asserted_13, old_asserted_11 =
 	    d->asserted_11, old_asserted_9 = d->asserted_9;
 
@@ -110,7 +110,7 @@ DEVICE_TICK(dreamcast_asic)
 
 DEVICE_ACCESS(dreamcast_asic)
 {
-	struct dreamcast_asic_data *d = (struct dreamcast_asic_data *) extra;
+	struct dreamcast_asic_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int r;
 
@@ -195,13 +195,9 @@ DEVINIT(dreamcast_asic)
 {
 	char tmpstr[300];
 	struct machine *machine = devinit->machine;
-	struct dreamcast_asic_data *d =
-	    malloc(sizeof(struct dreamcast_asic_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct dreamcast_asic_data *d;
 
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dreamcast_asic_data)));
 	memset(d, 0, sizeof(struct dreamcast_asic_data));
 
 	/*  Connect to SH4 interrupt levels 13, 11, and 9:  */

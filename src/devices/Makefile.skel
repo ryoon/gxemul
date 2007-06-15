@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.144 2007-06-06 00:46:35 debug Exp $
+#  $Id: Makefile.skel,v 1.145 2007-06-15 18:44:18 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -26,15 +26,15 @@ OBJS=bus_isa.o bus_pci.o lk201.o \
 	dev_sgi_ip22.o dev_sgi_ip30.o dev_sgi_ip32.o dev_sgi_mardigras.o \
 	dev_sh4.o dev_sii.o dev_sn.o dev_ssc.o dev_turbochannel.o \
 	dev_uninorth.o dev_unreadable.o dev_v3.o dev_vga.o dev_vme.o \
-	dev_vr41xx.o dev_wdc.o dev_z8530.o dev_zero.o \
-	autodev.o
+	dev_vr41xx.o dev_wdc.o dev_z8530.o dev_zero.o
 
 all:
 	cd fonts; $(MAKE); cd ..
 	$(MAKE) font8x8.c font8x10.c font8x16.c
 	$(MAKE) objs
+	make autodev.o
 
-autodev.c: autodev_head.c autodev_middle.c autodev_tail.c makeautodev.sh bus_pci.c
+autodev.c: autodev_head.c autodev_middle.c autodev_tail.c makeautodev.sh bus_pci.c $(OBJS)
 	./makeautodev.sh
 
 objs: $(OBJS)

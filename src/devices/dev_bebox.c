@@ -25,9 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.13 2007-02-16 19:57:56 debug Exp $
+ *  $Id: dev_bebox.c,v 1.14 2007-06-15 18:44:19 debug Exp $
  *
- *  Emulation of BeBox motherboard registers (and interrupt controller).
+ *  COMMENT: BeBox motherboard registers and interrupt controller
+ *
  *  See the following URL for more information:
  *
  *	http://www.bebox.nu/history.php?s=history/benews/benews27
@@ -203,11 +204,7 @@ DEVINIT(bebox)
 	char n[300];
 	struct machine *machine = devinit->machine;
 
-	d = malloc(sizeof(struct bebox_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct bebox_data)));
 	memset(d, 0, sizeof(struct bebox_data));
 
 	/*  Connect to the two BeBox CPUs:  */

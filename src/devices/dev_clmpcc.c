@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_clmpcc.c,v 1.5 2007-06-15 18:13:04 debug Exp $
+ *  $Id: dev_clmpcc.c,v 1.6 2007-06-15 18:44:19 debug Exp $
  *
- *  Cirrus Logic Four Channel Multi-Protocol Communications Controller
- *  (CD2400/CD2401)
+ *  COMMENT: Cirrus Logic 4-Channel Communications Controller (CD2400/CD2401)
  *
  *  TODO
  */
@@ -63,7 +62,7 @@ struct clmpcc_data {
 
 DEVICE_ACCESS(clmpcc)
 {
-	struct clmpcc_data *d = (struct clmpcc_data *) extra;
+	struct clmpcc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)

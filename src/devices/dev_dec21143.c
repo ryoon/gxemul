@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.30 2007-06-15 06:26:20 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.31 2007-06-15 18:44:19 debug Exp $
  *
- *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
- *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
- *  reverse-engineering OpenBSD and NetBSD sources.
+ *  COMMENT: DEC 21143 "Tulip" ethernet controller
+ *
+ *  Implemented from Intel document 278074-001 ("21143 PC/CardBus 10/100Mb/s
+ *  Ethernet LAN Controller") and by reverse-engineering OpenBSD and NetBSD
+ *  sources.
  *
  *  This device emulates several sub-components:
  *
@@ -155,11 +157,9 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 
 		/*  Append a 4 byte CRC:  */
 		d->cur_rx_buf_len += 4;
-		d->cur_rx_buf = realloc(d->cur_rx_buf, d->cur_rx_buf_len);
-		if (d->cur_rx_buf == NULL) {
-			fatal("dec21143_rx(): out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(d->cur_rx_buf = realloc(d->cur_rx_buf,
+		    d->cur_rx_buf_len));
+
 		/*  Well... the CRC is just zeros, for now.  */
 		memset(d->cur_rx_buf + d->cur_rx_buf_len - 4, 0, 4);
 
@@ -373,25 +373,19 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			/*  First segment. Let's allocate a new buffer:  */
 			/*  fatal("new frame }\n");  */
 
-			d->cur_tx_buf = malloc(bufsize);
+			CHECK_ALLOCATION(d->cur_tx_buf = malloc(bufsize));
 			d->cur_tx_buf_len = 0;
 		} else {
 			/*  Not first segment. Increase the length of
 			    the current buffer:  */
-
 			/*  fatal("continuing last frame }\n");  */
-			if (d->cur_tx_buf == NULL)
-{				fatal("[ dec21143: WARNING! tx: middle "
-				    "segment, but no first segment?! ]\n");
-exit(1);
-}
-			d->cur_tx_buf = realloc(d->cur_tx_buf,
-			    d->cur_tx_buf_len + bufsize);
-		}
 
-		if (d->cur_tx_buf == NULL) {
-			fatal("dec21143_tx(): out of memory\n");
-			exit(1);
+			if (d->cur_tx_buf == NULL)
+				fatal("[ dec21143: WARNING! tx: middle "
+				    "segment, but no first segment?! ]\n");
+
+			CHECK_ALLOCATION(d->cur_tx_buf = realloc(d->cur_tx_buf,
+			    d->cur_tx_buf_len + bufsize));
 		}
 
 		/*  "DMA" data from emulated physical memory into the buf:  */
@@ -457,10 +451,7 @@ exit(1);
 }
 
 
-/*
- *  dev_dec21143_tick():
- */
-void dev_dec21143_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(dec21143)
 {
 	struct dec21143_data *d = extra;
 	int asserted;
@@ -988,11 +979,7 @@ DEVINIT(dec21143)
 	struct dec21143_data *d;
 	char name2[100];
 
-	d = malloc(sizeof(struct dec21143_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dec21143_data)));
 	memset(d, 0, sizeof(struct dec21143_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);

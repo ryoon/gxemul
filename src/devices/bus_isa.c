@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.18 2007-06-15 18:13:04 debug Exp $
+ *  $Id: bus_isa.c,v 1.19 2007-06-15 18:44:18 debug Exp $
  *  
- *  COMMENT: Generic ISA bus
+ *  COMMENT: Generic ISA bus framework
  *
  *  This is not a normal device, but it can be used as a quick way of adding
  *  most of the common legacy ISA devices to a machine.

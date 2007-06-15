@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.69 2007-06-15 17:02:39 debug Exp $
+ *  $Id: dev_bt459.c,v 1.70 2007-06-15 18:44:19 debug Exp $
  *  
- *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
+ *  COMMENT: Brooktree BT459, used by TURBOchannel graphics cards
  */
 
 #include <stdio.h>
@@ -284,7 +284,7 @@ DEVICE_TICK(bt459)
 
 DEVICE_ACCESS(bt459_irq)
 {
-	struct bt459_data *d = (struct bt459_data *) extra;
+	struct bt459_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -305,12 +305,9 @@ DEVICE_ACCESS(bt459_irq)
 }
 
 
-/*
- *  dev_bt459_access():
- */
 DEVICE_ACCESS(bt459)
 {
-	struct bt459_data *d = (struct bt459_data *) extra;
+	struct bt459_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int btaddr, old_cursor_on = d->cursor_on, modified;
 
@@ -528,12 +525,9 @@ void dev_bt459_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t baseaddr_irq, struct vfb_data *vfb_data,
 	int planes, char *irq_path, int type)
 {
-	struct bt459_data *d = malloc(sizeof(struct bt459_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct bt459_data *d;
 
+	CHECK_ALLOCATION(d = malloc(sizeof(struct bt459_data)));
 	memset(d, 0, sizeof(struct bt459_data));
 
 	INTERRUPT_CONNECT(irq_path, d->irq);

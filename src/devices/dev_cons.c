@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.41 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_cons.c,v 1.42 2007-06-15 18:44:19 debug Exp $
  *  
- *  A simple console device, useful for simple tests.
+ *  COMMENT: A simple console device, for the test machines
  *
  *  This device provides memory mapped I/O for a simple console supporting
  *  putchar (writing to memory) and getchar (reading from memory), and
@@ -61,10 +61,10 @@ DEVICE_TICK(cons)
 {
 	struct cons_data *d = extra;
 
-	INTERRUPT_DEASSERT(d->irq);
-
 	if (console_charavail(d->console_handle))
 		INTERRUPT_ASSERT(d->irq);
+	else
+		INTERRUPT_DEASSERT(d->irq);
 }
 
 
@@ -118,21 +118,13 @@ DEVINIT(cons)
 	char *name3;
 	size_t nlen;
 
-	d = malloc(sizeof(struct cons_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct cons_data)));
 	memset(d, 0, sizeof(struct cons_data));
 
 	nlen = strlen(devinit->name) + 10;
 	if (devinit->name2 != NULL)
 		nlen += strlen(devinit->name2) + 10;
-	name3 = malloc(nlen);
-	if (name3 == NULL) {
-		fprintf(stderr, "out of memory in dev_cons_init()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(name3 = malloc(nlen));
 	if (devinit->name2 != NULL && devinit->name2[0])
 		snprintf(name3, nlen, "%s [%s]", devinit->name, devinit->name2);
 	else

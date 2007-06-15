@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.13 2007-05-12 01:13:59 debug Exp $
+ *  $Id: dev_adb.c,v 1.14 2007-06-15 18:44:18 debug Exp $
  *
- *  ADB (Apple Desktop Bus) controller.
+ *  COMMENT: Apple Desktop Bus (ADB) controller
  *
  *  Based on intuition from reverse-engineering NetBSD/macppc source code,
  *  so it probably only works with that OS.
@@ -438,12 +438,9 @@ DEVICE_ACCESS(adb)
 
 DEVINIT(adb)
 {
-	struct adb_data *d = malloc(sizeof(struct adb_data));
+	struct adb_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct adb_data)));
 	memset(d, 0, sizeof(struct adb_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);

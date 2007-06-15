@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.61 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.62 2007-06-15 18:44:19 debug Exp $
  *  
- *  DC7085 serial controller, used in some DECstation models.
+ *  COMMENT: DC7085 serial controller, used in some DECstation models
  */
 
 #include <stdio.h>
@@ -161,9 +161,9 @@ DEVICE_TICK(dc7085)
 
 DEVICE_ACCESS(dc7085)
 {
+	struct dc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	size_t i;
-	struct dc_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -172,6 +172,7 @@ DEVICE_ACCESS(dc7085)
 	d->regs.dc_csr &= ~CSR_CLR;
 
 	switch (relative_addr) {
+
 	case 0x00:	/*  CSR:  Control and Status  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ dc7085 write to CSR: 0x%04x ]\n", idata);
@@ -191,6 +192,7 @@ DEVICE_ACCESS(dc7085)
 			odata = d->regs.dc_csr;
 		}
 		break;
+
 	case 0x08:	/*  LPR:  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ dc7085 write to LPR: 0x%04x ]\n", idata);
@@ -226,6 +228,7 @@ DEVICE_ACCESS(dc7085)
 			d->just_transmitted_something = 4;
 		}
 		break;
+
 	case 0x10:	/*  TCR:  */
 		if (writeflag == MEM_WRITE) {
 			/*  fatal("[ dc7085 write to TCR: 0x%04x) ]\n",
@@ -241,6 +244,7 @@ DEVICE_ACCESS(dc7085)
 			odata = d->regs.dc_tcr;
 		}
 		break;
+
 	case 0x18:	/*  Modem status (R), transmit data (W)  */
 		if (writeflag == MEM_WRITE) {
 			int line_no = (d->regs.dc_csr >>
@@ -262,6 +266,7 @@ DEVICE_ACCESS(dc7085)
 			odata = d->regs.dc_msr_tdr;
 		}
 		break;
+
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ dc7085 read from 0x%08lx ]\n",
@@ -297,11 +302,7 @@ int dev_dc7085_init(struct machine *machine, struct memory *mem,
 {
 	struct dc_data *d;
 
-	d = malloc(sizeof(struct dc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dc_data)));
 	memset(d, 0, sizeof(struct dc_data));
 
 	INTERRUPT_CONNECT(irq_path, d->irq);

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21030.c,v 1.6 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_dec21030.c,v 1.7 2007-06-15 18:44:19 debug Exp $
  *
- *  DEC 21030 "tga" graphics.
+ *  COMMENT: DEC 21030 "TGA" graphics card
  *
  *  Resolutions that seem to be possible:  640x480, 1024x768, 1280x1024.
  *  8 bits, perhaps others? (24 bit?)
@@ -86,9 +86,6 @@ struct dec21030_data {
 };
 
 
-/*
- *  dev_dec21030_access():
- */
 DEVICE_ACCESS(dec21030)
 {
 	struct dec21030_data *d = extra;
@@ -237,11 +234,7 @@ DEVINIT(dec21030)
 {
 	struct dec21030_data *d;
 
-	d = malloc(sizeof(struct dec21030_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dec21030_data)));
 	memset(d, 0, sizeof(struct dec21030_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

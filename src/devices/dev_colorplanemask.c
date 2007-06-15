@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_colorplanemask.c,v 1.13 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_colorplanemask.c,v 1.14 2007-06-15 18:44:19 debug Exp $
  *  
- *  Color plane mask used by DECstation 3100.
+ *  COMMENT: Color plane mask, used in the DECstation 3100 machine
  *
  *  Just a one-byte thingy, but the way things work now this has to
  *  be a separate device. :-/
@@ -47,14 +47,12 @@ struct colorplanemask_data {
 };
 
 
-/*
- *  dev_colorplanemask_access():
- */
 DEVICE_ACCESS(colorplanemask)
 {
-	struct colorplanemask_data *d = (struct colorplanemask_data *) extra;
+	struct colorplanemask_data *d = extra;
 
 	switch (relative_addr) {
+
 	case 0x00:
 		if (writeflag == MEM_WRITE) {
 			*d->color_plane_mask = data[0];
@@ -64,6 +62,7 @@ DEVICE_ACCESS(colorplanemask)
 			data[0] = *d->color_plane_mask;
 		}
 		break;
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ colorplanemask: unimplemented write "
@@ -86,13 +85,11 @@ DEVICE_ACCESS(colorplanemask)
 void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr,
 	unsigned char *color_plane_mask)
 {
-	struct colorplanemask_data *d =
-	    malloc(sizeof(struct colorplanemask_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct colorplanemask_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct colorplanemask_data)));
 	memset(d, 0, sizeof(struct colorplanemask_data));
+
 	d->color_plane_mask = color_plane_mask;
 
 	memory_device_register(mem, "colorplanemask", baseaddr,

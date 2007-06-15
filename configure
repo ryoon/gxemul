@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.269 2007-06-15 17:12:31 debug Exp $
+#  $Id: configure,v 1.270 2007-06-15 17:13:40 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1121,8 +1121,8 @@ fi
 rm -f _testuint*
 
 printf "checking for __FUNCTION__... "
-printf "#include <stdio.h>\n\nint main(int argc, char *argv[])
-{\n  printf(__FUNCTION__);\n  return 0;\n}\n" > _testfunction.c
+printf "#include <stdio.h>\n\nint main(int argc, char *argv[]) {
+  if (__FUNCTION__) printf(__FUNCTION__);\n  return 0;\n}\n" > _testfunction.c
 $CC $CFLAGS _testfunction.c -o _testfunction 2> /dev/null
 if [ ! -x _testfunction ]; then
 	printf "no\n"

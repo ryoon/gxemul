@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_hammerhead.c,v 1.5 2007-06-14 16:13:30 debug Exp $
+ *  $Id: dev_hammerhead.c,v 1.6 2007-06-15 19:11:15 debug Exp $
  *  
- *  Hammerhead controller, for the secondary CPU on MacPPC machines.
+ *  COMMENT: Hammerhead controller, for the secondary CPU on MacPPC machines
  */
 
 #include <stdio.h>
@@ -55,8 +55,8 @@ struct hammerhead_data {
 
 DEVICE_ACCESS(hammerhead)
 {
-	uint64_t idata = 0, odata=0;
 	/*  struct hammerhead_data *d = extra;  */
+	uint64_t idata = 0, odata=0;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -91,12 +91,9 @@ return 1;
 
 DEVINIT(hammerhead)
 {
-	struct hammerhead_data *d = malloc(sizeof(struct hammerhead_data));
+	struct hammerhead_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct hammerhead_data)));
 	memset(d, 0, sizeof(struct hammerhead_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

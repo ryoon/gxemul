@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_g2.c,v 1.4 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_dreamcast_g2.c,v 1.5 2007-06-15 19:11:15 debug Exp $
  *  
- *  Dreamcast G2 bus.
+ *  COMMENT: Dreamcast G2 bus
  *
  *  Register offsets are from KOS, NetBSD sources, etc.
  *
@@ -93,7 +93,7 @@ struct dreamcast_g2_data {
 
 DEVICE_ACCESS(dreamcast_g2)
 {
-	struct dreamcast_g2_data *d = (struct dreamcast_g2_data *) extra;
+	struct dreamcast_g2_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -155,7 +155,7 @@ DEVICE_ACCESS(dreamcast_g2)
 
 DEVICE_ACCESS(dreamcast_g2_extdma)
 {
-	struct dreamcast_g2_data *d = (struct dreamcast_g2_data *) extra;
+	struct dreamcast_g2_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int reg = relative_addr, channel = 0;
 
@@ -214,7 +214,7 @@ DEVICE_ACCESS(dreamcast_g2_extdma)
 
 DEVICE_ACCESS(dreamcast_g2_unknown)
 {
-	struct dreamcast_g2_data *d = (struct dreamcast_g2_data *) extra;
+	struct dreamcast_g2_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -274,11 +274,9 @@ DEVICE_ACCESS(dreamcast_g2_unknown)
 DEVINIT(dreamcast_g2)
 {
 	struct machine *machine = devinit->machine;
-	struct dreamcast_g2_data *d = malloc(sizeof(struct dreamcast_g2_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct dreamcast_g2_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dreamcast_g2_data)));
 	memset(d, 0, sizeof(struct dreamcast_g2_data));
 
 	memory_device_register(machine->memory, devinit->name,

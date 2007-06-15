@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.18 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_kn230.c,v 1.19 2007-06-15 19:11:15 debug Exp $
  *  
- *  DEC MIPSMATE 5100 (KN230) stuff.
+ *  COMMENT: DEC KN230 (MIPSMATE 5100) stuff
  */
 
 #include <stdio.h>
@@ -137,11 +137,7 @@ DEVINIT(kn230)
 	char tmpstr[300];
 	int i;
 
-	d = malloc(sizeof(struct kn230_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct kn230_data)));
 	memset(d, 0, sizeof(struct kn230_data));
 
 	/*

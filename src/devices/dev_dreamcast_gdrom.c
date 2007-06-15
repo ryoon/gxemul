@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_gdrom.c,v 1.4 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_dreamcast_gdrom.c,v 1.5 2007-06-15 19:11:15 debug Exp $
  *  
- *  Dreamcast GD-ROM.
+ *  COMMENT: Dreamcast GD-ROM
  *
  *  TODO: This is just a dummy so far.
  */
@@ -78,11 +78,8 @@ struct dreamcast_gdrom_data {
 static void alloc_data(struct dreamcast_gdrom_data *d)
 {
 	d->data_len = d->cnt;
-	d->data = malloc(d->data_len);
-	if (d->data == NULL) {
-		fprintf(stderr, "GDROM alloc_data: out of memory\n");
-		exit(1);
-	}
+
+	CHECK_ALLOCATION(d->data = malloc(d->data_len));
 	memset(d->data, 0, d->data_len);
 }
 
@@ -332,16 +329,12 @@ DEVICE_ACCESS(dreamcast_gdrom)
 
 DEVINIT(dreamcast_gdrom)
 {
-	struct machine *machine = devinit->machine;
-	struct dreamcast_gdrom_data *d =
-	    malloc(sizeof(struct dreamcast_gdrom_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct dreamcast_gdrom_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dreamcast_gdrom_data)));
 	memset(d, 0, sizeof(struct dreamcast_gdrom_data));
 
-	memory_device_register(machine->memory, devinit->name,
+	memory_device_register(devinit->machine->memory, devinit->name,
 	    0x005f7000, 0x100, dev_dreamcast_gdrom_access, d,
 	    DM_DEFAULT, NULL);
 

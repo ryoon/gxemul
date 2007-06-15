@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.18 2007-02-16 19:57:56 debug Exp $
+ *  $Id: dev_eagle.c,v 1.19 2007-06-15 19:11:15 debug Exp $
  *  
- *  Motorola MPC105 "Eagle" host bridge.
+ *  COMMENT: Motorola MPC105 "Eagle" host bridge
  */
 
 #include <stdio.h>
@@ -53,8 +53,8 @@ struct eagle_data {
 
 DEVICE_ACCESS(eagle)
 {
-	uint64_t idata = 0, odata = 0;
 	struct eagle_data *d = extra;
+	uint64_t idata = 0, odata = 0;
 	int bus, dev, func, reg;
 
 	if (writeflag == MEM_WRITE)
@@ -65,6 +65,7 @@ DEVICE_ACCESS(eagle)
 	 */
 
 	switch (relative_addr) {
+
 	case 0:	/*  Address:  */
 		bus_pci_decompose_1(idata, &bus, &dev, &func, &reg);
 		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
@@ -92,11 +93,7 @@ DEVINIT(eagle)
 	char pci_irq_base[300];
 	char isa_irq_base[300];
 
-	d = malloc(sizeof(struct eagle_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct eagle_data)));
 	memset(d, 0, sizeof(struct eagle_data));
 
 	/*  The interrupt path to the CPU at which we are connected:  */
@@ -160,19 +157,23 @@ DEVINIT(eagle)
 	    DM_DEFAULT, NULL);
 
 	switch (devinit->machine->machine_type) {
+
 	case MACHINE_BEBOX:
 		bus_isa_init(devinit->machine, isa_irq_base,
 		    BUS_ISA_IDE0 | BUS_ISA_VGA, isa_portbase, isa_membase);
 		bus_pci_add(devinit->machine, d->pci_data,
 		    devinit->machine->memory, 0, 11, 0, "i82378zb");
 		break;
+
 	case MACHINE_PREP:
 		bus_pci_add(devinit->machine, d->pci_data,
 		    devinit->machine->memory, 0, 11, 0, "ibm_isa");
 		break;
+
 	case MACHINE_MVMEPPC:
 		bus_isa_init(devinit->machine, isa_irq_base,
 		    BUS_ISA_LPTBASE_3BC, isa_portbase, isa_membase);
+
 		switch (devinit->machine->machine_subtype) {
 		case MACHINE_MVMEPPC_1600:
 			bus_pci_add(devinit->machine, d->pci_data,
@@ -183,6 +184,7 @@ DEVINIT(eagle)
 			exit(1);
 		}
 		break;
+
 	default:fatal("unimplemented machine type for eagle\n");
 		exit(1);
 	}

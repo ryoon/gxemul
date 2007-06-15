@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.51 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_gt.c,v 1.52 2007-06-15 19:11:15 debug Exp $
  *  
- *  Galileo Technology GT-64xxx PCI controller.
+ *  COMMENT: Galileo Technology GT-64xxx PCI controller
  *
  *	GT-64011	Used in Cobalt machines.
  *	GT-64120	Used in evbmips machines (Malta).
@@ -81,15 +81,14 @@ struct gt_data {
  */
 static void timer_tick(struct timer *timer, void *extra)
 {
-	struct gt_data *d = (struct gt_data *) extra;
+	struct gt_data *d = extra;
 	d->pending_timer0_interrupts ++;
 }
 
 
 DEVICE_TICK(gt)
 {
-	struct gt_data *d = (struct gt_data *) extra;
-
+	struct gt_data *d = extra;
 	if (d->pending_timer0_interrupts > 0)
 		INTERRUPT_ASSERT(d->timer0_irq);
 }
@@ -97,10 +96,10 @@ DEVICE_TICK(gt)
 
 DEVICE_ACCESS(gt)
 {
+	struct gt_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int bus, dev, func, reg;
 	size_t i;
-	struct gt_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -229,11 +228,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	uint64_t pci_io_offset = 0, pci_mem_offset = 0;
 	char *gt_name = "NO";
 
-	d = malloc(sizeof(struct gt_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct gt_data)));
 	memset(d, 0, sizeof(struct gt_data));
 
 	INTERRUPT_CONNECT(timer_irq_path, d->timer0_irq);

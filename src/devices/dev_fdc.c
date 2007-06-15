@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.20 2007-06-05 07:49:42 debug Exp $
+ *  $Id: dev_fdc.c,v 1.21 2007-06-15 19:11:15 debug Exp $
  *  
- *  PC-style floppy controller.
+ *  COMMENT: PC-style floppy controller
  *
  *  TODO!  (This is just a dummy skeleton right now.)
  *
@@ -57,14 +57,11 @@ struct fdc_data {
 };
 
 
-/*
- *  dev_fdc_access():
- */
 DEVICE_ACCESS(fdc)
 {
+	struct fdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	size_t i;
-	struct fdc_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -96,11 +93,7 @@ DEVINIT(fdc)
 {
 	struct fdc_data *d;
 
-	d = malloc(sizeof(struct fdc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct fdc_data)));
 	memset(d, 0, sizeof(struct fdc_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);

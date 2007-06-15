@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.28 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_jazz.c,v 1.29 2007-06-15 19:11:15 debug Exp $
  *  
- *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
+ *  COMMENT: Microsoft Jazz-related stuff (Acer PICA-61, etc)
  *
  *  TODO/NOTE: This is mostly a quick hack, it doesn't really implement
  *  much of the Jazz architecture.  Also, the a0/20 isa-like stuff is
@@ -268,7 +268,7 @@ DEVICE_TICK(jazz)
 
 DEVICE_ACCESS(jazz)
 {
-	struct jazz_data *d = (struct jazz_data *) extra;
+	struct jazz_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -422,7 +422,7 @@ printf("R4030_SYS_ISA_VECTOR: w=%i\n", writeflag);
 
 DEVICE_ACCESS(jazz_led)
 {
-	struct jazz_data *d = (struct jazz_data *) extra;
+	struct jazz_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -468,7 +468,7 @@ DEVICE_ACCESS(jazz_led)
  */
 DEVICE_ACCESS(jazz_a0)
 {
-	struct jazz_data *d = (struct jazz_data *) extra;
+	struct jazz_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -520,7 +520,7 @@ DEVICE_ACCESS(jazz_a0)
  */
 DEVICE_ACCESS(jazz_20)
 {
-	struct jazz_data *d = (struct jazz_data *) extra;
+	struct jazz_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -572,7 +572,7 @@ DEVICE_ACCESS(jazz_20)
  */
 DEVICE_ACCESS(jazz_jazzio)
 {
-	struct jazz_data *d = (struct jazz_data *) extra;
+	struct jazz_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int i, v;
 
@@ -621,13 +621,11 @@ DEVICE_ACCESS(jazz_jazzio)
 
 DEVINIT(jazz)
 {
+	struct jazz_data *d;
 	char tmpstr[300];
 	int i;
-	struct jazz_data *d = malloc(sizeof(struct jazz_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct jazz_data)));
 	memset(d, 0, sizeof(struct jazz_data));
 
 	d->cpu = devinit->machine->cpus[0];	/*  TODO  */

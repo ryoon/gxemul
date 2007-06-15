@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.13 2007-06-05 07:49:42 debug Exp $
+ *  $Id: dev_lpt.c,v 1.14 2007-06-15 19:11:15 debug Exp $
  *
- *  LPT (parallel printer) controller.
+ *  COMMENT: LPT (parallel printer) controller
  */
 
 #include <stdio.h>
@@ -112,14 +112,11 @@ DEVICE_ACCESS(lpt)
 
 DEVINIT(lpt)
 {
-	struct lpt_data *d = malloc(sizeof(struct lpt_data));
+	struct lpt_data *d;
 	size_t nlen;
 	char *name;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct lpt_data)));
 	memset(d, 0, sizeof(struct lpt_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
@@ -131,11 +128,7 @@ DEVINIT(lpt)
 	nlen = strlen(devinit->name) + 10;
 	if (devinit->name2 != NULL)
 		nlen += strlen(devinit->name2);
-	name = malloc(nlen);
-	if (name == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(name = malloc(nlen));
 	if (devinit->name2 != NULL && devinit->name2[0])
 		snprintf(name, nlen, "%s [%s]", devinit->name, devinit->name2);
 	else

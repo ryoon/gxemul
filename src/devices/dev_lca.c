@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lca.c,v 1.9 2007-04-28 09:19:52 debug Exp $
+ *  $Id: dev_lca.c,v 1.10 2007-06-15 19:11:15 debug Exp $
  *
- *  LCA PCI bus (for Alpha machines).
+ *  COMMENT: LCA PCI bus, for Alpha machines
  */
 
 #include <stdio.h>
@@ -329,11 +329,9 @@ DEVINIT(lca)
 {
 	char *interrupt_path;
 	struct interrupt interrupt_template;
-	struct lca_data *d = malloc(sizeof(struct lca_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct lca_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct lca_data)));
 	memset(d, 0, sizeof(struct lca_data));
 
 	/*  Register a PCI bus:  */
@@ -365,7 +363,8 @@ DEVINIT(lca)
 	    LCA_IOC_BASE, 0x20000000, dev_lca_ioc_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
-	interrupt_path = malloc(strlen(devinit->machine->path) + 10);
+	CHECK_ALLOCATION(interrupt_path =
+	    malloc(strlen(devinit->machine->path) + 10));
 	snprintf(interrupt_path, strlen(devinit->machine->path) + 10,
 	    "%s.lca", devinit->machine->path);
 

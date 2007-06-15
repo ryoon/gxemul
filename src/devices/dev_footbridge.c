@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.56 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.57 2007-06-15 19:11:15 debug Exp $
  *
- *  Footbridge. Used in Netwinder and Cats.
+ *  COMMENT: DC21285 "Footbridge" controller; used in Netwinder and Cats
  *
  *  TODO:
  *	o)  Add actual support for the fcom serial port.
@@ -125,8 +125,6 @@ static void reload_timer_value(struct cpu *cpu, struct footbridge_data *d,
 
 
 /*
- *  dev_footbridge_tick():
- *
  *  The 4 footbridge timers should decrease and cause interrupts. Periodic
  *  interrupts restart as soon as they are acknowledged, non-periodic
  *  interrupts need to be "reloaded" to restart.
@@ -134,10 +132,10 @@ static void reload_timer_value(struct cpu *cpu, struct footbridge_data *d,
  *  TODO: Hm. I thought I had solved this, but it didn't quite work.
  *        This needs to be re-checked against documentation, sometime.
  */
-void dev_footbridge_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(footbridge)
 {
+	struct footbridge_data *d = extra;
 	int i;
-	struct footbridge_data *d = (struct footbridge_data *) extra;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
 		if (d->timer_control[i] & TIMER_ENABLE) {
@@ -181,8 +179,6 @@ void footbridge_interrupt_deassert(struct interrupt *interrupt)
 
 
 /*
- *  dev_footbridge_isa_access():
- *
  *  Reading the byte at 0x79000000 is a quicker way to figure out which ISA
  *  interrupt has occurred (and acknowledging it at the same time), than
  *  dealing with the legacy 0x20/0xa0 ISA ports.
@@ -234,8 +230,6 @@ exit(1);
 
 
 /*
- *  dev_footbridge_pci_access():
- *
  *  The Footbridge PCI configuration space is implemented as a direct memory
  *  space (i.e. not one port for addr and one port for data). This function
  *  translates that into bus_pci calls.
@@ -273,11 +267,6 @@ DEVICE_ACCESS(footbridge_pci)
 }
 
 
-/*
- *  dev_footbridge_access():
- *
- *  The DC21285 registers.
- */
 DEVICE_ACCESS(footbridge)
 {
 	struct footbridge_data *d = extra;
@@ -491,11 +480,7 @@ DEVINIT(footbridge)
 	uint64_t pci_addr = 0x7b000000;
 	int i;
 
-	d = malloc(sizeof(struct footbridge_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct footbridge_data)));
 	memset(d, 0, sizeof(struct footbridge_data));
 
 	/*  Connect to the CPU which this footbridge will interrupt:  */

@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.18 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_ether.c,v 1.19 2007-06-15 19:11:15 debug Exp $
+ *
+ *  COMMENT: A simple ethernet controller, for the test machines
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -61,7 +63,7 @@ struct ether_data {
 
 DEVICE_TICK(ether)
 {  
-	struct ether_data *d = (struct ether_data *) extra;
+	struct ether_data *d = extra;
 	int r = 0;
 
 	d->status &= ~DEV_ETHER_STATUS_MORE_PACKETS_AVAILABLE;
@@ -79,19 +81,20 @@ DEVICE_TICK(ether)
 
 DEVICE_ACCESS(ether_buf)
 {
-	struct ether_data *d = (struct ether_data *) extra;
+	struct ether_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		memcpy(d->buf + relative_addr, data, len);
 	else
 		memcpy(data, d->buf + relative_addr, len);
+
 	return 1;
 }
 
 
 DEVICE_ACCESS(ether)
 {
-	struct ether_data *d = (struct ether_data *) extra;
+	struct ether_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	unsigned char *incoming_ptr;
 	int incoming_len;
@@ -197,20 +200,17 @@ DEVICE_ACCESS(ether)
 
 DEVINIT(ether)
 {
-	struct ether_data *d = malloc(sizeof(struct ether_data));
+	struct ether_data *d;
 	size_t nlen;
 	char *n1, *n2;
 	char tmp[50];
 
-	nlen = strlen(devinit->name) + 80;
-	n1 = malloc(nlen);
-	n2 = malloc(nlen);
-
-	if (d == NULL || n1 == NULL || n2 == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ether_data)));
 	memset(d, 0, sizeof(struct ether_data));
+
+	nlen = strlen(devinit->name) + 80;
+	CHECK_ALLOCATION(n1 = malloc(nlen));
+	CHECK_ALLOCATION(n2 = malloc(nlen));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 

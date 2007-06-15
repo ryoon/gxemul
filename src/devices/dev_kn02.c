@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.27 2007-06-08 00:52:34 debug Exp $
+ *  $Id: dev_kn02.c,v 1.28 2007-06-15 19:11:15 debug Exp $
  *  
- *  KN02 mainbus (TurboChannel interrupt controller).
+ *  COMMENT: DEC KN02 mainbus (TurboChannel interrupt controller)
  *
  *  Used in DECstation type 2 ("3MAX").  See include/dec_kn02.h for more info.
  */
@@ -152,11 +152,7 @@ DEVINIT(kn02)
 	uint32_t csr;
 	int i;
 
-	d = malloc(sizeof(struct kn02_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct kn02_data)));
 	memset(d, 0, sizeof(struct kn02_data));
 
 	/*  Connect the KN02 to a specific MIPS CPU interrupt line:  */

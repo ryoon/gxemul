@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.131 2007-06-15 17:02:39 debug Exp $
+ *  $Id: dev_fb.c,v 1.132 2007-06-15 19:11:15 debug Exp $
  *  
- *  Generic framebuffer device.
+ *  COMMENT: Generic framebuffer device
  *
  *	DECstation VFB01 monochrome framebuffer, 1024x864
  *	DECstation VFB02 8-bit color framebuffer, 1024x864
@@ -141,11 +141,7 @@ void dev_fb_resize(struct vfb_data *d, int new_xsize, int new_ysize)
 	new_bytes_per_line = new_xsize * d->bit_depth / 8;
 	size = new_ysize * new_bytes_per_line;
 
-	new_framebuffer = malloc(size);
-	if (new_framebuffer == NULL) {
-		fprintf(stderr, "dev_fb_resize(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(new_framebuffer = malloc(size));
 
 	/*  Copy the old framebuffer to the new:  */
 	if (d->framebuffer != NULL) {
@@ -748,11 +744,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	int reverse_start = 0;
 	char *name2;
 
-	d = malloc(sizeof(struct vfb_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct vfb_data)));
 	memset(d, 0, sizeof(struct vfb_data));
 
 	if (vfb_type & VFB_REVERSE_START) {
@@ -815,11 +807,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	d->bytes_per_line = d->xsize * d->bit_depth / 8;
 	size = d->ysize * d->bytes_per_line;
 
-	d->framebuffer = malloc(size);
-	if (d->framebuffer == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d->framebuffer = malloc(size));
 
 	/*  Clear the framebuffer (all black pixels):  */
 	d->framebuffer_size = size;
@@ -839,7 +827,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 		d->update_x2 = d->update_y2 = -1;
 	}
 
-	d->name = strdup(name);
+	CHECK_ALLOCATION(d->name = strdup(name));
 	set_title(d);
 
 #ifdef WITH_X11
@@ -862,11 +850,8 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 		d->fb_window = NULL;
 
 	nlen = strlen(name) + 10;
-	name2 = malloc(nlen);
-	if (name2 == NULL) {
-		fprintf(stderr, "out of memory in dev_fb_init()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(name2 = malloc(nlen));
+
 	snprintf(name2, nlen, "fb [%s]", name);
 
 	flags = DM_DEFAULT;

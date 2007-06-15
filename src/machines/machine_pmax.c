@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.28 2007-06-15 18:08:10 debug Exp $
+ *  $Id: machine_pmax.c,v 1.29 2007-06-15 19:11:15 debug Exp $
  *
  *  COMMENT: Digital DECstation ("PMAX") machines
  */
@@ -498,7 +498,7 @@ abort();
 		 */
 		/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 		/*  error registers (?) at 0x17000000 and 0x10080000  */
-		device_add(machine, "kn210 addr=0x10080000");
+		/*  device_add(machine, "kn210 addr=0x10080000");  */
 		dev_ssc_init(machine, mem, 0x10140000, "irq? TODO",
 		    machine->x11_md.in_use);
 		break;

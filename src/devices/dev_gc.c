@@ -24,9 +24,9 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.12 2007-02-16 17:17:51 debug Exp $
+ *  $Id: dev_gc.c,v 1.13 2007-06-15 19:11:15 debug Exp $
  *  
- *  Grand Central Interrupt controller (used by MacPPC).
+ *  COMMENT: Grand Central Interrupt controller (used by MacPPC)
  */
 
 #include <stdio.h>
@@ -211,14 +211,10 @@ DEVINIT(gc)
 	struct gc_data *d;
 	int i;
 
-	d = malloc(sizeof(struct gc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct gc_data)));
 	memset(d, 0, sizeof(struct gc_data));
 
-	/*  Connect to the CPU:  */
+	/*  Connect to the CPU interrupt pin:  */
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->cpu_irq);
 
 	/*

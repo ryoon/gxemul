@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_irqc.c,v 1.2 2007-06-15 17:02:39 debug Exp $
+ *  $Id: dev_irqc.c,v 1.3 2007-06-15 19:11:15 debug Exp $
  *
- *  Generic IRQ controller for the test* machines in GXemul.
+ *  COMMENT: Generic IRQ controller for the test machines
  */
 
 #include <stdio.h>
@@ -49,6 +49,8 @@
 struct irqc_data {
 	struct interrupt irq;		/*  Connected to the CPU  */
 
+	int		asserted;	/*  Current CPU irq assertion  */
+
 	uint32_t	status;		/*  Interrupt Status register  */
 	uint32_t	enabled;	/*  Interrupt Enable register  */
 };
@@ -59,8 +61,10 @@ void irqc_interrupt_assert(struct interrupt *interrupt)
 	struct irqc_data *d = interrupt->extra;
 	d->status |= interrupt->line;
 
-	if (d->status & d->enabled)
+	if ((d->status & d->enabled) && !d->asserted) {
 		INTERRUPT_ASSERT(d->irq);
+		d->asserted = 1;
+	}
 }
 
 
@@ -69,8 +73,10 @@ void irqc_interrupt_deassert(struct interrupt *interrupt)
 	struct irqc_data *d = interrupt->extra;
 	d->status &= ~interrupt->line;
 
-	if (!(d->status & d->enabled))
+	if (!(d->status & d->enabled) && d->asserted) {
 		INTERRUPT_DEASSERT(d->irq);
+		d->asserted = 0;
+	}
 }
 
 

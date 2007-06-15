@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.16 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.17 2007-06-15 19:11:15 debug Exp $
  *  
- *  Dreamcast "Maple" bus controller.
+ *  COMMENT: Dreamcast Maple bus controller
  *
  *  The Maple bus has 4 ports (A-D), and each port has up to 6 possible "units"
  *  (where unit 0 is the main unit). Communication is done using DMA; each
@@ -538,7 +538,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 
 DEVICE_ACCESS(dreamcast_maple)
 {
-	struct dreamcast_maple_data *d = (struct dreamcast_maple_data *) extra;
+	struct dreamcast_maple_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -624,16 +624,12 @@ DEVICE_ACCESS(dreamcast_maple)
 
 DEVINIT(dreamcast_maple)
 {
-	struct machine *machine = devinit->machine;
-	struct dreamcast_maple_data *d =
-	    malloc(sizeof(struct dreamcast_maple_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct dreamcast_maple_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dreamcast_maple_data)));
 	memset(d, 0, sizeof(struct dreamcast_maple_data));
 
-	memory_device_register(machine->memory, devinit->name,
+	memory_device_register(devinit->machine->memory, devinit->name,
 	    0x5f6c00, 0x100, dev_dreamcast_maple_access, d, DM_DEFAULT, NULL);
 
 	/*  Devices connected to port A..D:  */
@@ -642,8 +638,9 @@ DEVINIT(dreamcast_maple)
 	d->device[2] = &maple_device_keyboard;
 	d->device[3] = NULL;	/*  TODO:  &maple_device_mouse;  */
 
-	d->console_handle = console_start_slave_inputonly(machine, "maple", 1);
-	machine->main_console_handle = d->console_handle;
+	d->console_handle = console_start_slave_inputonly(
+	    devinit->machine, "maple", 1);
+	devinit->machine->main_console_handle = d->console_handle;
 
 	machine_add_tickfunction(devinit->machine, dev_maple_tick, d,
 	    MAPLE_TICK_SHIFT);

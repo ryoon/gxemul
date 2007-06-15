@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn220.c,v 1.7 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_kn220.c,v 1.8 2007-06-15 19:11:15 debug Exp $
  *  
- *  DEC KN220 (DECsystem 5500) devices.
+ *  COMMENT: DEC KN220 (DECsystem 5500) devices
  *
  *	o)  I/O board
  *	o)  SGEC (ethernet)  (Called "ne" in Ultrix.)
@@ -152,12 +152,11 @@ DEVICE_ACCESS(sgec)
  */
 void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 {
-	struct sgec_data *d = malloc(sizeof(struct sgec_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct sgec_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sgec_data)));
 	memset(d, 0, sizeof(struct sgec_data));
+
 	d->irq_nr = irq_nr;
 
 	memory_device_register(mem, "sgec", baseaddr, DEV_SGEC_LENGTH,
@@ -171,12 +170,9 @@ void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu,
 	struct memory *mem, uint64_t baseaddr)
 {
-	struct dec5500_ioboard_data *d =
-	    malloc(sizeof(struct dec5500_ioboard_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct dec5500_ioboard_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct dec5500_ioboard_data)));
 	memset(d, 0, sizeof(struct dec5500_ioboard_data));
 
 	memory_device_register(mem, "dec5500_ioboard", baseaddr,

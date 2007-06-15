@@ -21,4 +21,32 @@ dev_dec5800.c  DECsystem 58x0 devices
 dev_dec_ioasic.c  IOASIC device used in the DECstation "3MIN" and "3MAX" machines
 dev_disk.c  A simple disk controller device, for the test machines
 dev_dreamcast_asic.c  Dreamcast-specific ASIC
+dev_dreamcast_g2.c  Dreamcast G2 bus
+dev_dreamcast_gdrom.c  Dreamcast GD-ROM
+dev_dreamcast_maple.c  Dreamcast Maple bus controller
+dev_dreamcast_rtc.c  Dreamcast Real-Time Clock
+dev_eagle.c  Motorola MPC105 "Eagle" host bridge
+dev_ether.c  A simple ethernet controller, for the test machines
+dev_fb.c  Generic framebuffer device
+dev_fbctrl.c  Framebuffer controller device (control's dev_fb in test machines)
+dev_fdc.c  PC-style floppy controller
+dev_footbridge.c  DC21285 "Footbridge" controller; used in Netwinder and Cats
+dev_gc.c  Grand Central Interrupt controller (used by MacPPC)
+dev_gt.c  Galileo Technology GT-64xxx PCI controller
+dev_hammerhead.c  Hammerhead controller, for the secondary CPU on MacPPC machines
+dev_i80321.c  Intel i80321 (ARM) core functionality
+dev_igsfb.c  Integraphics Systems "igsfb" Framebuffer graphics card
+dev_iq80321_7seg.c  IQ80321 LED device
+dev_irqc.c  Generic IRQ controller for the test machines
+dev_jazz.c  Microsoft Jazz-related stuff (Acer PICA-61, etc)
+dev_kn01.c  DEC KN01 ("PMAX", DECstation type 1) control register and VDAC
+dev_kn02.c  DEC KN02 mainbus (TurboChannel interrupt controller)
+dev_kn220.c  DEC KN220 (DECsystem 5500) devices
+dev_kn230.c  DEC KN230 (MIPSMATE 5100) stuff
+dev_lca.c  LCA PCI bus, for Alpha machines
+dev_le.c  LANCE ethernet, as used in DECstations
+dev_lpt.c  LPT (parallel printer) controller
+dev_m8820x.c  M88200/M88204 CMMU (Cache/Memory Management Unit)
+dev_malta_lcd.c  Malta (evbmips) LCD display
+dev_mb8696x.c  Fujitsu MB8696x Ethernet interface (used in the Dreamcast)
 dev_v3.c  V3 Semiconductor PCI controller

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_m8820x.c,v 1.7 2007-05-25 22:22:56 debug Exp $
+ *  $Id: dev_m8820x.c,v 1.8 2007-06-15 19:11:15 debug Exp $
  *
- *  M88200/M88204 CMMU (Cache/Memory Management Unit)
+ *  COMMENT: M88200/M88204 CMMU (Cache/Memory Management Unit)
  */
 
 #include <stdio.h>
@@ -224,13 +224,9 @@ DEVICE_ACCESS(m8820x)
 
 DEVINIT(m8820x)
 {
-	struct m8820x_data *d = malloc(sizeof(struct m8820x_data));
+	struct m8820x_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(d = malloc(sizeof(struct m8820x_data)));
 	memset(d, 0, sizeof(struct m8820x_data));
 
 	d->cmmu_nr = devinit->addr2;

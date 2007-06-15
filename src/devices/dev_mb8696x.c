@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mb8696x.c,v 1.3 2007-02-03 20:14:23 debug Exp $
+ *  $Id: dev_mb8696x.c,v 1.4 2007-06-15 19:11:15 debug Exp $
  *
- *  Fujitsu MB8696x Ethernet interface.
+ *  COMMENT: Fujitsu MB8696x Ethernet interface (used in the Dreamcast)
  *
  *  Used as the LAN adapter (MB86967) in the Dreamcast machine mode.
  *
@@ -91,7 +91,7 @@ struct mb8696x_data {
 
 DEVICE_ACCESS(mb8696x)
 {
-	struct mb8696x_data *d = (struct mb8696x_data *) extra;
+	struct mb8696x_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	uint8_t *reg_ptr;
 
@@ -268,17 +268,15 @@ DEVICE_ACCESS(mb8696x)
 
 DEVINIT(mb8696x)
 {
-	struct machine *machine = devinit->machine;
-	struct mb8696x_data *d = malloc(sizeof(struct mb8696x_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct mb8696x_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct mb8696x_data)));
 	memset(d, 0, sizeof(struct mb8696x_data));
+
 	d->addr_mult = devinit->addr_mult;
 
-	memory_device_register(machine->memory, devinit->name, devinit->addr,
-	    MB8696X_NREGS * d->addr_mult, dev_mb8696x_access, d,
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, MB8696X_NREGS * d->addr_mult, dev_mb8696x_access, d,
 	    DM_DEFAULT, NULL);
 
 	/*  NetBSD/dreamcast expects ident = 86967.  */
@@ -288,7 +286,7 @@ DEVINIT(mb8696x)
 	 *  Generate the MAC address, both in the first 6 bytes of the
 	 *  EEPROM, and in DLCR8..13:
 	 */
-	net_generate_unique_mac(machine, &d->eeprom[0]);
+	net_generate_unique_mac(devinit->machine, &d->eeprom[0]);
 	memcpy(&d->reg[FE_DLCR8], &d->eeprom[0], 6);
 
 	return 1;

@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01.c,v 1.10 2007-01-05 15:20:06 debug Exp $
- *  
- *  KN01 stuff ("PMAX", DECstation type 1); CSR (System Control Register)
- *  and VDAC.
+ *  $Id: dev_kn01.c,v 1.11 2007-06-15 19:11:15 debug Exp $
+ *
+ *  COMMENT: DEC KN01 ("PMAX", DECstation type 1) control register and VDAC
  *
  *  TODO: The CSR isn't really complete.
  *
@@ -236,12 +235,11 @@ DEVICE_ACCESS(vdac)
 void dev_vdac_init(struct memory *mem, uint64_t baseaddr,
 	unsigned char *rgb_palette, int color_fb_flag)
 {
-	struct vdac_data *d = malloc(sizeof(struct vdac_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct vdac_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct vdac_data)));
 	memset(d, 0, sizeof(struct vdac_data));
+
 	d->rgb_palette   = rgb_palette;
 	d->color_fb_flag = color_fb_flag;
 
@@ -255,15 +253,12 @@ void dev_vdac_init(struct memory *mem, uint64_t baseaddr,
  */
 void dev_kn01_init(struct memory *mem, uint64_t baseaddr, int color_fb)
 {
-	struct kn01_data *d = malloc(sizeof(struct kn01_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct kn01_data *d;
 
+	CHECK_ALLOCATION(d = malloc(sizeof(struct kn01_data)));
 	memset(d, 0, sizeof(struct kn01_data));
-	d->color_fb = color_fb;
 
+	d->color_fb = color_fb;
 	d->csr = 0;
 	d->csr |= (color_fb? 0 : KN01_CSR_MONO);
 

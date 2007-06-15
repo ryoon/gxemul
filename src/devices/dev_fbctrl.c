@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fbctrl.c,v 1.5 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_fbctrl.c,v 1.6 2007-06-15 19:11:15 debug Exp $
+ *
+ *  COMMENT: Framebuffer controller device (control's dev_fb in test machines)
  *
  *  A "framebuffer control" device. It can be used to manipulate the
  *  framebuffer device in testmachines.
@@ -36,7 +38,6 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "cpu_mips.h"
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
@@ -155,11 +156,7 @@ DEVINIT(fbctrl)
 {
 	struct fbctrl_data *d;
 
-	d = malloc(sizeof(struct fbctrl_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct fbctrl_data)));
 	memset(d, 0, sizeof(struct fbctrl_data));
 
 	d->vfb_data = dev_fb_init(devinit->machine, devinit->machine->memory,

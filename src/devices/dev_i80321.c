@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.22 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_i80321.c,v 1.23 2007-06-15 19:11:15 debug Exp $
  *
- *  Intel i80321 (ARM) core functionality.
+ *  COMMENT: Intel i80321 (ARM) core functionality
  *
  *	o)  Interrupt controller
  *	o)  Timer
@@ -284,18 +284,15 @@ ret:
 
 DEVINIT(i80321)
 {
-	struct i80321_data *d = malloc(sizeof(struct i80321_data));
+	struct i80321_data *d;
 	uint32_t memsize = devinit->machine->physical_ram_in_mb * 1048576;
 	uint32_t base;
 	char tmpstr[300];
-	int i;
 	struct cpu *cpu = devinit->machine->cpus[devinit->
 	    machine->bootstrap_cpu];
+	int i;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct i80321_data)));
 	memset(d, 0, sizeof(struct i80321_data));
 
 	/*  Connect to the CPU interrupt pin:  */

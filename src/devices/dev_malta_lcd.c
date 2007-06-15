@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta_lcd.c,v 1.10 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_malta_lcd.c,v 1.11 2007-06-15 19:11:15 debug Exp $
  *
- *  Malta (evbmips) LCD thingy. Mostly a dummy device.
+ *  COMMENT: Malta (evbmips) LCD display
+ *
+ *  TODO. This is mostly a dummy device.
  */
 
 #include <stdio.h>
@@ -52,11 +54,7 @@ struct malta_lcd_data {
 };
 
 
-
-/*
- *  dev_malta_lcd_tick():
- */     
-void dev_malta_lcd_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(malta_lcd)
 { 
 	struct malta_lcd_data *d = extra;
 	int i;
@@ -67,21 +65,20 @@ void dev_malta_lcd_tick(struct cpu *cpu, void *extra)
 		d->display_modified = 2;
 		return;
 	}
+
 	debug("[ malta_lcd:  ");
 	for (i=0; i<LCD_LEN; i++)
 		if (d->display[i] >= ' ')
 			debug("%c", d->display[i]);
 	debug("  ]\n");
+
 	d->display_modified = 0;
 }
 
 
-/*
- *  dev_malta_lcd_access():
- */
 DEVICE_ACCESS(malta_lcd)
 {
-	struct malta_lcd_data *d = (struct malta_lcd_data *) extra;
+	struct malta_lcd_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int i;
 
@@ -89,6 +86,7 @@ DEVICE_ACCESS(malta_lcd)
 		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
 	case 0x18:
 	case 0x20:
 	case 0x28:
@@ -104,6 +102,7 @@ DEVICE_ACCESS(malta_lcd)
 		} else
 			odata = d->display[i];
 		break;
+
 	default:if (writeflag == MEM_WRITE) {
 			fatal("[ malta_lcd: unimplemented write to "
 			    "offset 0x%x: data=0x%02x ]\n", (int)
@@ -123,12 +122,9 @@ DEVICE_ACCESS(malta_lcd)
 
 DEVINIT(malta_lcd)
 {
-	struct malta_lcd_data *d = malloc(sizeof(struct malta_lcd_data));
+	struct malta_lcd_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct malta_lcd_data)));
 	memset(d, 0, sizeof(struct malta_lcd_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

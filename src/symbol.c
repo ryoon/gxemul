@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.38 2007-04-22 14:32:01 debug Exp $
+ *  $Id: symbol.c,v 1.39 2007-06-15 17:02:38 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -253,23 +253,13 @@ void add_symbol_name(struct symbol_context *sc,
 	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
 		addr |= 0xffffffff00000000ULL;
 
-	s = malloc(sizeof(struct symbol));
-	if (s == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(s = malloc(sizeof(struct symbol)));
 	memset(s, 0, sizeof(struct symbol));
 
 	s->name = symbol_demangle_cplusplus(name);
 
-	if (s->name == NULL) {
-		s->name = strdup(name);
-		if (s->name == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-	}
+	if (s->name == NULL)
+		CHECK_ALLOCATION(s->name = strdup(name));
 
 	s->addr   = addr;
 	s->len    = len;
@@ -375,11 +365,8 @@ void symbol_recalc_sizes(struct symbol_context *sc)
 	struct symbol *tmp_ptr;
 	int i;
 
-	tmp_array = malloc(sizeof (struct symbol) * sc->n_symbols);
-	if (tmp_array == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(tmp_array = malloc(sizeof (struct symbol) *
+	    sc->n_symbols));
 
 	/*  Copy first_symbol --> tmp_array, and remove the old
 		first_symbol at the same time:  */

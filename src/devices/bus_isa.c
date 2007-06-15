@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.16 2007-02-17 06:32:06 debug Exp $
+ *  $Id: bus_isa.c,v 1.17 2007-06-15 17:02:39 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -208,7 +208,7 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 	}
 
 	kbd_in_use = ((bus_isa_flags & BUS_ISA_PCKBC_FORCE_USE) ||
-	    (machine->use_x11))? 1 : 0;
+	    (machine->x11_md.in_use))? 1 : 0;
 
 	if (machine->machine_type == MACHINE_PREP) {
 		/*  PReP with obio controller has both WDCs on irq 13!  */
@@ -295,7 +295,7 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 	}
 
 	if (bus_isa_flags & BUS_ISA_VGA) {
-		if (machine->use_x11 || bus_isa_flags & BUS_ISA_VGA_FORCE)
+		if (machine->x11_md.in_use || bus_isa_flags & BUS_ISA_VGA_FORCE)
 			dev_vga_init(machine, machine->memory,
 			    isa_membase + 0xa0000, isa_portbase + 0x3c0,
 			    machine->machine_name);

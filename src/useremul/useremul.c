@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.4 2007-06-15 01:32:58 debug Exp $
+ *  $Id: useremul.c,v 1.5 2007-06-15 17:02:40 debug Exp $
  *
  *  Userland (syscall) emulation.
  */
@@ -130,21 +130,14 @@ void useremul_name_to_useremul(struct cpu *cpu, char *name, int *arch,
 			if (arch != NULL)
 				*arch = sep->arch;
 
-			if (machine_name != NULL) {
-				*machine_name = strdup(sep->name);
-				if (*machine_name == NULL) {
-					printf("out of memory\n");
-					exit(1);
-				}
-			}
+			if (machine_name != NULL)
+				CHECK_ALLOCATION((*machine_name) =
+				    strdup(sep->name));
 
-			if (cpu_name != NULL) {
-				*cpu_name = strdup(sep->cpu_name);
-				if (*cpu_name == NULL) {
-					printf("out of memory\n");
-					exit(1);
-				}
-			}
+			if (cpu_name != NULL)
+				CHECK_ALLOCATION((*cpu_name) =
+				    strdup(sep->cpu_name));
+
 			return;
 		}
 
@@ -167,11 +160,7 @@ static void add_useremul(char *name, int arch, char *cpu_name,
 {
 	struct syscall_emul *sep;
 
-	sep = malloc(sizeof(struct syscall_emul));
-	if (sep == NULL) {
-		printf("add_useremul(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(sep = malloc(sizeof(struct syscall_emul)));
 	memset(sep, 0, sizeof(sep));
 
 	sep->name     = name;

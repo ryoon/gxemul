@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_ecoff.c,v 1.1 2007-04-10 16:33:44 debug Exp $
+ *  $Id: file_ecoff.c,v 1.2 2007-06-15 17:02:39 debug Exp $
  *
  *  ECOFF file support.
  */
@@ -307,11 +307,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 			 *    mat%20Specification.txt
 			 *  for more details.
 			 */
-			ms_sym_buf = malloc(sizeof(struct ms_sym) * f_nsyms);
-			if (ms_sym_buf == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(ms_sym_buf =
+			    malloc(sizeof(struct ms_sym) * f_nsyms));
 			fseek(f, f_symptr, SEEK_SET);
 			len = fread(ms_sym_buf, 1,
 			    sizeof(struct ms_sym) * f_nsyms, f);
@@ -380,22 +377,15 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		debug("%i symbols @ 0x%08x (strings @ 0x%08x)\n",
 		    iextMax, cbExtOffset, cbSsExtOffset);
 
-		symbol_data = malloc(issExtMax + 2);
-		if (symbol_data == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(symbol_data = malloc(issExtMax + 2));
 		memset(symbol_data, 0, issExtMax + 2);
 		fseek(f, cbSsExtOffset, SEEK_SET);
 		fread(symbol_data, 1, issExtMax + 1, f);
 
 		nsymbols = iextMax;
 
-		extsyms = malloc(iextMax * sizeof(struct ecoff_extsym));
-		if (extsyms == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(extsyms =
+		    malloc(iextMax * sizeof(struct ecoff_extsym)));
 		memset(extsyms, 0, iextMax * sizeof(struct ecoff_extsym));
 		fseek(f, cbExtOffset, SEEK_SET);
 		fread(extsyms, 1, iextMax * sizeof(struct ecoff_extsym), f);

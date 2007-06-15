@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.11 2007-06-09 02:25:27 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.12 2007-06-15 17:02:39 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -109,23 +109,17 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 			return;
 		}
 
-		m->breakpoints.string = realloc(m->breakpoints.string,
-		    sizeof(char *) * (m->breakpoints.n + 1));
-		m->breakpoints.addr = realloc(m->breakpoints.addr,
-		    sizeof(uint64_t) * (m->breakpoints.n + 1));
-		if (m->breakpoints.string == NULL ||
-		    m->breakpoints.addr == NULL) {
-			fprintf(stderr, "out of memory!\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(m->breakpoints.string = realloc(
+		    m->breakpoints.string, sizeof(char *) *
+		    (m->breakpoints.n + 1)));
+		CHECK_ALLOCATION(m->breakpoints.addr = realloc(
+		    m->breakpoints.addr, sizeof(uint64_t) *
+		   (m->breakpoints.n + 1)));
 
 		breakpoint_buf_len = strlen(cmd_line+4) + 1;
 
-		m->breakpoints.string[i] = malloc(breakpoint_buf_len);
-		if (m->breakpoints.string[i] == NULL) {
-			printf("out of memory in debugger_cmd_breakpoint()\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(m->breakpoints.string[i] =
+		    malloc(breakpoint_buf_len));
 		strlcpy(m->breakpoints.string[i], cmd_line+4,
 		    breakpoint_buf_len);
 		m->breakpoints.addr[i] = tmp;
@@ -260,7 +254,9 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 
 	if (cmd_line[0] != '\0') {
 		uint64_t tmp;
-		char *tmps = strdup(cmd_line);
+		char *tmps;
+
+		CHECK_ALLOCATION(tmps = strdup(cmd_line));
 
 		/*  addr:  */
 		p = strchr(tmps, ' ');
@@ -1104,7 +1100,9 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 
 	if (cmd_line[0] != '\0') {
 		uint64_t tmp;
-		char *tmps = strdup(cmd_line);
+		char *tmps;
+
+		CHECK_ALLOCATION(tmps = strdup(cmd_line));
 
 		/*  addr:  */
 		p = strchr(tmps, ' ');

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_aout.c,v 1.2 2007-04-19 15:18:16 debug Exp $
+ *  $Id: file_aout.c,v 1.3 2007-06-15 17:02:39 debug Exp $
  *
  *  a.out file support.
  */
@@ -173,11 +173,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		off_t oldpos;
 
 		debug("symbols: %i bytes @ 0x%x\n", symbsize, (int)ftello(f));
-		syms = malloc(symbsize);
-		if (syms == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(syms = malloc(symbsize));
 		len = fread(syms, 1, symbsize, f);
 		if (len != symbsize) {
 			fprintf(stderr, "error reading symbols from %s\n",
@@ -190,11 +186,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		strings_len = ftello(f) - oldpos;
 		fseek(f, oldpos, SEEK_SET);
 		debug("strings: %i bytes @ 0x%x\n", strings_len,(int)ftello(f));
-		string_symbols = malloc(strings_len);
-		if (string_symbols == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(string_symbols = malloc(strings_len));
 		fread(string_symbols, 1, strings_len, f);
 
 		aout_symbol_ptr = (struct aout_symbol *) syms;

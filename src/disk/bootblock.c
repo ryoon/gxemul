@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bootblock.c,v 1.3 2007-06-14 16:13:30 debug Exp $
+ *  $Id: bootblock.c,v 1.4 2007-06-15 17:02:39 debug Exp $
  *
  *  Bootblock handling:
  *
@@ -90,11 +90,7 @@ int load_bootblock(struct machine *m, struct cpu *cpu,
 			exit(1);
 		}
 
-		bootblock_buf = malloc(32768);
-		if (bootblock_buf == NULL) {
-			fprintf(stderr, "Out of memory.\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(bootblock_buf = malloc(32768));
 
 		debug("loading Dreamcast IP.BIN from %s id %i\n",
 		    diskimage_types[boot_disk_type], boot_disk_id);
@@ -125,8 +121,8 @@ int load_bootblock(struct machine *m, struct cpu *cpu,
 					bootblock_buf[i] = 0;
 				i ++;
 			}
-			cpu->machine->boot_kernel_filename = strdup(
-			    (char *)bootblock_buf + 0x60);
+			CHECK_ALLOCATION(cpu->machine->boot_kernel_filename =
+			    strdup((char *)bootblock_buf + 0x60));
 		}
 
 		debug("boot filename: %s\n",
@@ -212,12 +208,7 @@ int load_bootblock(struct machine *m, struct cpu *cpu,
 				fatal("\nWARNING! Unusually large bootblock "
 				    "(%i bytes)\n\n", n_blocks * 512);
 
-			bootblock_buf = malloc(n_blocks * 512);
-			if (bootblock_buf == NULL) {
-				fprintf(stderr, "out of memory in "
-				    "load_bootblock()\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(bootblock_buf = malloc(n_blocks*512));
 
 			res = diskimage_access(m, boot_disk_id, boot_disk_type,
 			    0, bootblock_offset, bootblock_buf, n_blocks * 512);
@@ -245,12 +236,7 @@ int load_bootblock(struct machine *m, struct cpu *cpu,
 	 *  does not rely on machine-dependent boot blocks etc.
 	 */
 	/*  ISO9660: (0x800 bytes at 0x8000 + base_offset)  */
-	bootblock_buf = malloc(0x800);
-	if (bootblock_buf == NULL) {
-		fprintf(stderr, "Out of memory.\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(bootblock_buf = malloc(0x800));
 	res = diskimage_access(m, boot_disk_id, boot_disk_type,
 	    0, base_offset + 0x8000, bootblock_buf, 0x800);
 	if (!res) {

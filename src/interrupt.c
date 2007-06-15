@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.11 2007-06-05 06:17:26 debug Exp $
+ *  $Id: interrupt.c,v 1.12 2007-06-15 17:02:38 debug Exp $
  *
  *  The interrupt subsystem.
  *
@@ -101,17 +101,12 @@ void interrupt_handler_register(struct interrupt *template)
 	}
 
 	nr_of_interrupt_handlers ++;
-	interrupt_handlers = realloc(interrupt_handlers,
-	    nr_of_interrupt_handlers * sizeof(struct interrupt_handler));
-	if (interrupt_handlers == NULL) {
-		fprintf(stderr, "out of memory in "
-		    "ninterrupt_handler_register().\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(interrupt_handlers = realloc(interrupt_handlers,
+	    nr_of_interrupt_handlers * sizeof(struct interrupt_handler)));
 
 	interrupt_handlers[nr_of_interrupt_handlers-1].template = *template;
-	interrupt_handlers[nr_of_interrupt_handlers-1].template.name =
-	    strdup(template->name);
+	CHECK_ALLOCATION(interrupt_handlers[nr_of_interrupt_handlers-1].
+	    template.name = strdup(template->name));
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bootblock_iso9660.c,v 1.2 2007-03-16 15:17:55 debug Exp $
+ *  $Id: bootblock_iso9660.c,v 1.3 2007-06-15 17:02:39 debug Exp $
  *
  *  ISO9660 CD-ROM "bootblock" handling.
  *
@@ -97,23 +97,14 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	int disk_id, int disk_type, int iso_type, unsigned char *buf,
 	int *n_loadp, char ***load_namesp)
 {
-	int filenr, dirlen, res = 0, res2, iadd = DEBUG_INDENTATION;
-	int found_dir;
-	uint64_t dirofs;
-	uint64_t fileofs, filelen;
-	unsigned char *dirbuf = NULL, *dp;
-	unsigned char *match_entry = NULL;
-	char *p, *filename_orig;
-	char *filename = strdup(cpu->machine->boot_kernel_filename);
-	unsigned char *filebuf = NULL;
-	char *tmpfname = NULL;
+	int filenr, dirlen, res = 0, res2, iadd = DEBUG_INDENTATION, found_dir;
+	uint64_t dirofs, fileofs, filelen;
+	unsigned char *dirbuf = NULL, *dp, *match_entry = NULL, *filebuf = NULL;
+	char *p, *filename_orig, *filename, *tmpfname = NULL;
 	char **new_array;
 	int tmpfile_handle;
 
-	if (filename == NULL) {
-		fatal("out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(filename = strdup(cpu->machine->boot_kernel_filename));
 	filename_orig = filename;
 
 	debug("ISO9660 boot:\n");
@@ -137,12 +128,7 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);
 #endif
 
-	dirbuf = malloc(dirlen);
-	if (dirbuf == NULL) {
-		fatal("out of memory in iso_load_bootblock()\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(dirbuf = malloc(dirlen));
 	res2 = diskimage_access(m, disk_id, disk_type, 0, dirofs, dirbuf,
 	    dirlen);
 	if (!res2) {
@@ -227,11 +213,7 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 
 	/*  Free the old dirbuf, and allocate a new one:  */
 	free(dirbuf);
-	dirbuf = malloc(512);
-	if (dirbuf == NULL) {
-		fatal("out of memory in iso_load_bootblock()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(dirbuf = malloc(512));
 
 	for (;;) {
 		size_t len, i;
@@ -284,11 +266,8 @@ printf("\n");
 						    "now... (BUG)\n");
 						exit(1);
 					}
-					match_entry = malloc(512);
-					if (match_entry == NULL) {
-						fatal("out of memory\n");
-						exit(1);
-					}
+					CHECK_ALLOCATION(match_entry =
+					    malloc(512));
 					memcpy(match_entry, dp, 512);
 					break;
 				}
@@ -322,13 +301,7 @@ printf("\n");
 	/*  debug("filelen=%llx fileofs=%llx\n", (long long)filelen,
 	    (long long)fileofs);  */
 
-	filebuf = malloc(filelen);
-	if (filebuf == NULL) {
-		fatal("could not allocate %lli bytes to read the file"
-		    " from the disk image!\n", (long long)filelen);
-		goto ret;
-	}
-
+	CHECK_ALLOCATION(filebuf = malloc(filelen));
 	tmpfname = strdup("/tmp/gxemul.XXXXXXXXXXXX");
 
 	res2 = diskimage_access(m, disk_id, disk_type, 0, fileofs, filebuf,
@@ -350,18 +323,14 @@ printf("\n");
 
 	/*  Add the temporary filename to the load_namesp array:  */
 	(*n_loadp)++;
-	new_array = malloc(sizeof(char *) * (*n_loadp));
-	if (new_array == NULL) {
-		fatal("out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(new_array = malloc(sizeof(char *) * (*n_loadp)));
 	memcpy(new_array, *load_namesp, sizeof(char *) * (*n_loadp));
 	*load_namesp = new_array;
 
 	/*  This adds a Backspace char in front of the filename; this
 	    is a special hack which causes the file to be removed once
 	    it has been loaded.  */
-	tmpfname = realloc(tmpfname, strlen(tmpfname) + 2);
+	CHECK_ALLOCATION(tmpfname = realloc(tmpfname, strlen(tmpfname) + 2));
 	memmove(tmpfname + 1, tmpfname, strlen(tmpfname) + 1);
 	tmpfname[0] = 8;
 

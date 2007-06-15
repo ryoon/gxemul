@@ -28,15 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.178 2007-06-09 14:13:06 debug Exp $
+ *  $Id: machine.h,v 1.179 2007-06-15 17:02:39 debug Exp $
  */
 
 #include <sys/types.h>
 
 #include "symbol.h"
-
-
-#define	MAX_STATISTICS_FIELDS	8
 
 struct cpu_family;
 struct diskimage;
@@ -76,6 +73,18 @@ struct tick_functions {
 	void	**extra;
 };
 
+struct x11_md {
+	/*  X11/framebuffer stuff:  */
+	int	in_use;
+	int	scaledown;
+	int	scaleup;
+	int	n_display_names;
+	char	**display_names;
+	int	current_display_name_nr;	/*  updated by x11.c  */
+
+	int	n_fb_windows;
+	struct fb_window **fb_windows;
+};
 
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
@@ -162,16 +171,8 @@ struct machine {
 	int	statistics_enabled;
 	char	*statistics_fields;	/*  "vpi" etc.  */
 
-	/*  X11/framebuffer stuff:  */
-	int	use_x11;
-	int	x11_scaledown;
-	int	x11_scaleup;
-	int	x11_n_display_names;
-	char	**x11_display_names;
-	int	x11_current_display_name_nr;	/*  updated by x11.c  */
-
-	int	n_fb_windows;
-	struct fb_window **fb_windows;
+	/*  X11/framebuffer stuff (per machine):  */
+	struct x11_md x11_md;
 
 	/*  Machine-dependent: (PROM stuff, etc.)  */
 	union {
@@ -213,9 +214,8 @@ struct machine {
 #define	MACHINE_SGI		1006
 #define	MACHINE_ARC		1007
 #define	MACHINE_EVBMIPS		1008
-#define	MACHINE_PSP		1009
-#define	MACHINE_ALGOR		1010
-#define	MACHINE_QEMU_MIPS	1011
+#define	MACHINE_ALGOR		1009
+#define	MACHINE_QEMU_MIPS	1010
 
 /*  PPC:  */
 #define	MACHINE_BAREPPC		2000

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.6 2007-04-28 09:19:52 debug Exp $
+ *  $Id: diskimage.c,v 1.7 2007-06-15 17:02:39 debug Exp $
  *
  *  Disk image support.
  *
@@ -128,15 +128,12 @@ void diskimage_add_overlay(struct diskimage *d, char *overlay_basename)
 {
 	struct diskimage_overlay overlay;
 	size_t bitmap_name_len = strlen(overlay_basename) + 20;
-	char *bitmap_name = malloc(bitmap_name_len);
+	char *bitmap_name;
 
-	if (bitmap_name == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(bitmap_name = malloc(bitmap_name_len));
 	snprintf(bitmap_name, bitmap_name_len, "%s.map", overlay_basename);
 
-	overlay.overlay_basename = strdup(overlay_basename);
+	CHECK_ALLOCATION(overlay.overlay_basename = strdup(overlay_basename));
 	overlay.f_data = fopen(overlay_basename, d->writable? "r+" : "r");
 	if (overlay.f_data == NULL) {
 		perror(overlay_basename);
@@ -151,12 +148,9 @@ void diskimage_add_overlay(struct diskimage *d, char *overlay_basename)
 	}
 
 	d->nr_of_overlays ++;
-	d->overlays = realloc(d->overlays, sizeof(struct diskimage_overlay)
-	    * d->nr_of_overlays);
-	if (d->overlays == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+
+	CHECK_ALLOCATION(d->overlays = realloc(d->overlays,
+	    sizeof(struct diskimage_overlay) * d->nr_of_overlays));
 
 	d->overlays[d->nr_of_overlays - 1] = overlay;
 
@@ -742,11 +736,7 @@ int diskimage_add(struct machine *machine, char *fname)
 	}
 
 	/*  Allocate a new diskimage struct:  */
-	d = malloc(sizeof(struct diskimage));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory in diskimage_add()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct diskimage)));
 	memset(d, 0, sizeof(struct diskimage));
 
 	/*  Default to IDE disks...  */
@@ -813,11 +803,7 @@ int diskimage_add(struct machine *machine, char *fname)
 	if (prefix_o)
 		d->override_base_offset = override_base_offset;
 
-	d->fname = strdup(fname);
-	if (d->fname == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d->fname = strdup(fname));
 
 	d->logical_block_size = 512;
 

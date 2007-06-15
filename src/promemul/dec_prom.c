@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.12 2007-06-05 07:00:54 debug Exp $
+ *  $Id: dec_prom.c,v 1.13 2007-06-15 17:02:40 debug Exp $
  *
  *  DECstation PROM emulation.
  *
@@ -138,13 +138,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 			int res;
 			unsigned char *tmp_buf;
 
-			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
-			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in "
-				    "dec_prom.c, allocating %i bytes ]\n",
-				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				break;
-			}
+			CHECK_ALLOCATION(tmp_buf =
+			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			res = diskimage_access(cpu->machine, disk_id,
 			    DISKIMAGE_SCSI, 0, current_file_offset, tmp_buf,
@@ -477,13 +472,8 @@ int decstation_prom_emul(struct cpu *cpu)
 			int res;
 			unsigned char *tmp_buf;
 
-			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
-			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in "
-				    "dec_prom.c, allocating %i bytes ]\n",
-				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				break;
-			}
+			CHECK_ALLOCATION(tmp_buf =
+			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			res = diskimage_access(cpu->machine, disk_id,
 			    DISKIMAGE_SCSI, 0,

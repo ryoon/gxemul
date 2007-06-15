@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.296 2007-06-15 00:41:21 debug Exp $
+ *  $Id: emul.c,v 1.297 2007-06-15 17:02:37 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -146,19 +146,11 @@ static void fix_console(void)
 struct emul *emul_new(char *name, int id)
 {
 	struct emul *e;
-	e = malloc(sizeof(struct emul));
-	if (e == NULL) {
-		fprintf(stderr, "out of memory in emul_new()\n");
-		exit(1);
-	}
 
+	CHECK_ALLOCATION(e = malloc(sizeof(struct emul)));
 	memset(e, 0, sizeof(struct emul));
 
-	e->path = malloc(15);
-	if (e->path == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(e->path = malloc(15));
 	snprintf(e->path, 15, "emul[%i]", id);
 
 	e->settings = settings_new();
@@ -174,12 +166,7 @@ struct emul *emul_new(char *name, int id)
 	e->next_serial_nr = 1;
 
 	if (name != NULL) {
-		e->name = strdup(name);
-		if (e->name == NULL) {
-			fprintf(stderr, "out of memory in emul_new()\n");
-			exit(1);
-		}
-
+		CHECK_ALLOCATION(e->name = strdup(name));
 		settings_add(e->settings, "name", 0,
 		    SETTINGS_TYPE_STRING, SETTINGS_FORMAT_STRING,
 		    (void *) &e->name);
@@ -234,15 +221,10 @@ struct machine *emul_add_machine(struct emul *e, char *name)
 	m = machine_new(name, e, e->n_machines);
 	m->serial_nr = (e->next_serial_nr ++);
 
-	i = e->n_machines;
+	i = e->n_machines ++;
 
-	e->n_machines ++;
-	e->machines = realloc(e->machines,
-	    sizeof(struct machine *) * e->n_machines);
-	if (e->machines == NULL) {
-		fprintf(stderr, "emul_add_machine(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(e->machines = realloc(e->machines,
+	    sizeof(struct machine *) * e->n_machines));
 
 	e->machines[i] = m;
 
@@ -440,11 +422,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		else
 			m->ncpus = 1;
 	}
-	m->cpus = malloc(sizeof(struct cpu *) * m->ncpus);
-	if (m->cpus == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+
+	CHECK_ALLOCATION(m->cpus = malloc(sizeof(struct cpu *) * m->ncpus));
 	memset(m->cpus, 0, sizeof(struct cpu *) * m->ncpus);
 
 	debug("cpu0");
@@ -460,18 +439,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		}
 	}
 	debug("\n");
-
-#if 0
-	/*  Special case: The Playstation Portable has an additional CPU:  */
-	if (m->machine_type == MACHINE_PSP) {
-		debug("cpu%i: ", m->ncpus);
-		m->cpus[m->ncpus] = cpu_new(m->memory, m,
-		    0  /*  use 0 here to show info with debug()  */,
-		    "Allegrex" /*  TODO  */);
-		debug("\n");
-		m->ncpus ++;
-	}
-#endif
 
 	if (m->use_random_bootstrap_cpu)
 		m->bootstrap_cpu = random() % m->ncpus;
@@ -496,7 +463,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		}
 	}
 
-	if (m->use_x11)
+	if (m->x11_md.in_use)
 		x11_init(m);
 
 	/*  Fill memory with random bytes:  */
@@ -565,8 +532,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			fread(buf, 1, sizeof(buf), tmp_f);
 			if (buf[0]==0x1f && buf[1]==0x8b) {
 				size_t zzlen = strlen(name_to_load)*2 + 100;
-				char *zz = malloc(zzlen);
+				char *zz;
+
+				CHECK_ALLOCATION(zz = malloc(zzlen));
 				debug("gunziping %s\n", name_to_load);
+
 				/*
 				 *  gzip header found.  If this was a file
 				 *  extracted from, say, a CDROM image, then it
@@ -583,8 +553,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				} else {
 					/*  gunzip into new temp file:  */
 					int tmpfile_handle;
-					char *new_temp_name =
-					    strdup("/tmp/gxemul.XXXXXXXXXXXX");
+					char *new_temp_name;
+					CHECK_ALLOCATION(new_temp_name =
+					    strdup("/tmp/gxemul.XXXXXXXXXXXX"));
 					tmpfile_handle = mkstemp(new_temp_name);
 					close(tmpfile_handle);
 					snprintf(zz, zzlen, "gunzip -c '%s' > "
@@ -596,48 +567,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				free(zz);
 			}
 			fclose(tmp_f);
-		}
-
-		/*
-		 *  Ugly (but usable) hack for Playstation Portable:  If the
-		 *  filename ends with ".pbp" and the file contains an ELF
-		 *  header, then extract the ELF file into a temporary file.
-		 */
-		if (strlen(name_to_load) > 4 && strcasecmp(name_to_load +
-		    strlen(name_to_load) - 4, ".pbp") == 0 &&
-		    (tmp_f = fopen(name_to_load, "r")) != NULL) {
-			off_t filesize, j, found=0;
-			unsigned char *buf;
-			fseek(tmp_f, 0, SEEK_END);
-			filesize = ftello(tmp_f);
-			fseek(tmp_f, 0, SEEK_SET);
-			buf = malloc(filesize);
-			if (buf == NULL) {
-				fprintf(stderr, "out of memory while trying"
-				    " to read %s\n", name_to_load);
-				exit(1);
-			}
-			fread(buf, 1, filesize, tmp_f);
-			fclose(tmp_f);
-			/*  Search for the ELF header, from offset 1 (!):  */
-			for (j=1; j<filesize - 4; j++)
-				if (memcmp(buf + j, ELFMAG, SELFMAG) == 0) {
-					found = j;
-					break;
-				}
-			if (found != 0) {
-				int tmpfile_handle;
-				char *new_temp_name =
-				    strdup("/tmp/gxemul.XXXXXXXXXXXX");
-				debug("extracting ELF from %s (offset 0x%x)\n",
-				    name_to_load, (int)found);
-				tmpfile_handle = mkstemp(new_temp_name);
-				write(tmpfile_handle, buf + found,
-				    filesize - found);
-				close(tmpfile_handle);
-				name_to_load = new_temp_name;
-				remove_after_load = 1;
-			}
 		}
 
 		byte_order = NO_BYTE_ORDER_OVERRIDE;
@@ -1056,7 +985,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 	n = 0;
 	for (i=0; i<n_emuls; i++)
 		for (j=0; j<emuls[i]->n_machines; j++)
-			if (emuls[i]->machines[j]->use_x11)
+			if (emuls[i]->machines[j]->x11_md.in_use)
 				n++;
 	if (n > 0) {
 		printf("Press enter to quit.\n");

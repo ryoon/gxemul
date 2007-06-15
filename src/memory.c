@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.203 2007-06-14 16:13:30 debug Exp $
+ *  $Id: memory.c,v 1.204 2007-06-15 17:02:38 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -130,11 +130,7 @@ void *zeroed_alloc(size_t s)
 		    " environment.\n");
 		exit(1);
 #else
-		p = malloc(s);
-		if (p == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(p = malloc(s));
 		memset(p, 0, s);
 #endif
 	}
@@ -158,12 +154,7 @@ struct memory *memory_new(uint64_t physical_max, int arch)
 	int max_bits = MAX_BITS;
 	size_t s;
 
-	mem = malloc(sizeof(struct memory));
-	if (mem == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(mem = malloc(sizeof(struct memory)));
 	memset(mem, 0, sizeof(struct memory));
 
 	/*  Check bits_per_pagetable and bits_per_memblock for sanity:  */
@@ -183,11 +174,7 @@ struct memory *memory_new(uint64_t physical_max, int arch)
 	mem->pagetable = (unsigned char *) mmap(NULL, s,
 	    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (mem->pagetable == NULL) {
-		mem->pagetable = malloc(s);
-		if (mem->pagetable == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(mem->pagetable = malloc(s));
 		memset(mem->pagetable, 0, s);
 	}
 
@@ -426,12 +413,8 @@ void memory_device_register(struct memory *mem, const char *device_name,
 
 	mem->n_mmapped_devices++;
 
-	mem->devices = realloc(mem->devices, sizeof(struct memory_device)
-	    * mem->n_mmapped_devices);
-	if (mem->devices == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(mem->devices = realloc(mem->devices,
+	    sizeof(struct memory_device) * mem->n_mmapped_devices));
 
 	/*  Make space for the new entry:  */
 	if (newi + 1 != mem->n_mmapped_devices)
@@ -439,17 +422,12 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		    sizeof(struct memory_device)
 		    * (mem->n_mmapped_devices - newi - 1));
 
-	mem->devices[newi].name = strdup(device_name);
+	CHECK_ALLOCATION(mem->devices[newi].name = strdup(device_name));
 	mem->devices[newi].baseaddr = baseaddr;
 	mem->devices[newi].endaddr = baseaddr + len;
 	mem->devices[newi].length = len;
 	mem->devices[newi].flags = flags;
 	mem->devices[newi].dyntrans_data = dyntrans_data;
-
-	if (mem->devices[newi].name == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
 
 	if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
 	    && !(flags & DM_EMULATED_RAM) && dyntrans_data == NULL) {
@@ -563,11 +541,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 		table[entry] = (void *) mmap(NULL, alloclen,
 		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		if (table[entry] == NULL) {
-			table[entry] = malloc(alloclen);
-			if (table[entry] == NULL) {
-				fatal("out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(table[entry] = malloc(alloclen));
 			memset(table[entry], 0, alloclen);
 		}
 	}

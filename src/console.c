@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.24 2007-06-15 06:26:20 debug Exp $
+ *  $Id: console.c,v 1.25 2007-06-15 17:02:37 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -204,11 +204,7 @@ static void start_xterm(int handle)
 	/*  printf("filedesB = %i,%i\n", filedesB[0], filedesB[1]);  */
 
 	/*  NOTE/warning: Hardcoded max nr of args!  */
-	a = malloc(sizeof(char *) * 20);
-	if (a == NULL) {
-		fprintf(stderr, "start_xterm(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(a = malloc(sizeof(char *) * 20));
 
 	a[0] = getenv("XTERM");
 	if (a[0] == NULL)
@@ -218,13 +214,13 @@ static void start_xterm(int handle)
 	a[3] = "-title";
 	mlen = strlen(console_handles[handle].name) +
 	    strlen(console_handles[handle].machine_name) + 30;
-	a[4] = malloc(mlen);
+	CHECK_ALLOCATION(a[4] = malloc(mlen));
 	snprintf(a[4], mlen, "GXemul: %s %s",
 	    console_handles[handle].machine_name,
 	    console_handles[handle].name);
 	a[5] = "-e";
 	a[6] = progname;
-	a[7] = malloc(80);
+	CHECK_ALLOCATION(a[7] = malloc(80));
 	snprintf(a[7], 80, "-WW@S%i,%i", filedes[0], filedesB[1]);
 	a[8] = NULL;
 
@@ -615,12 +611,9 @@ static struct console_handle *console_new_handle(char *name, int *handlep)
 	if (found_free == -1) {
 		/*  Let's realloc console_handles[], to make room
 		    for the new one:  */
-		console_handles = realloc(console_handles, sizeof(
-		    struct console_handle) * (n_console_handles + 1));
-		if (console_handles == NULL) {
-			printf("console_new_handle(): out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(console_handles =
+		    realloc(console_handles, sizeof(
+		    struct console_handle) * (n_console_handles + 1)));
 		found_free = n_console_handles;
 		n_console_handles ++;
 	}
@@ -630,11 +623,7 @@ static struct console_handle *console_new_handle(char *name, int *handlep)
 
 	chp->in_use = 1;
 	chp->machine_name = "";
-	chp->name = strdup(name);
-	if (chp->name == NULL) {
-		printf("console_new_handle(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(chp->name = strdup(name));
 
 	*handlep = found_free;
 	return chp;
@@ -685,11 +674,12 @@ int console_start_slave(struct machine *machine, char *consolename,
 	}
 
 	if (machine->machine_name != NULL)
-		chp->machine_name = strdup(machine->machine_name);
+		CHECK_ALLOCATION(chp->machine_name =
+		    strdup(machine->machine_name));
 	else
-		chp->machine_name = strdup("");
+		CHECK_ALLOCATION(chp->machine_name = strdup(""));
 
-	chp->name = strdup(consolename);
+	CHECK_ALLOCATION(chp->name = strdup(consolename));
 
 	if (allow_slaves)
 		chp->using_xterm = USING_XTERM_BUT_NOT_YET_OPEN;
@@ -724,8 +714,8 @@ int console_start_slave_inputonly(struct machine *machine, char *consolename,
 	chp = console_new_handle(consolename, &handle);
 	chp->inputonly = 1;
 	chp->in_use_for_input = use_for_input;
-	chp->machine_name = strdup(machine->name);
-	chp->name = strdup(consolename);
+	CHECK_ALLOCATION(chp->machine_name = strdup(machine->name));
+	CHECK_ALLOCATION(chp->name = strdup(consolename));
 
 	return handle;
 }

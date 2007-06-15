@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.14 2007-05-12 01:14:02 debug Exp $
+ *  $Id: dev_z8530.c,v 1.15 2007-06-15 17:02:39 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -203,13 +203,10 @@ DEVICE_ACCESS(z8530)
 
 DEVINIT(z8530)
 {
-	struct z8530_data *d = malloc(sizeof(struct z8530_data));
+	struct z8530_data *d;
 	char tmp[100];
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct z8530_data)));
 	memset(d, 0, sizeof(struct z8530_data));
 
 	d->addr_mult  = devinit->addr_mult;

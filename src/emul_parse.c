@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.45 2006-12-30 13:30:52 debug Exp $
+ *  $Id: emul_parse.c,v 1.46 2007-06-15 17:02:38 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -306,11 +306,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 			free(e->name);
 			e->name = NULL;
 		}
-		e->name = strdup(tmp);
-		if (e->name == NULL) {
-			fprintf(stderr, "out of memory in parse__emul()\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(e->name = strdup(tmp));
 		debug("name: \"%s\"\n", e->name);
 		return;
 	}
@@ -427,11 +423,9 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 			fprintf(stderr, "too many remote networks\n");
 			exit(1);
 		}
-		cur_net_remote[cur_net_n_remote] = malloc(MAX_REMOTE_LEN);
-		if (cur_net_remote[cur_net_n_remote] == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+
+		CHECK_ALLOCATION(cur_net_remote[cur_net_n_remote] =
+		    malloc(MAX_REMOTE_LEN));
 		read_one_word(f, cur_net_remote[cur_net_n_remote],
 		    MAX_REMOTE_LEN, line, EXPECT_WORD);
 		cur_net_n_remote ++;
@@ -469,12 +463,12 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			exit(1);
 
 		if (cur_machine_cpu[0])
-			m->cpu_name = strdup(cur_machine_cpu);
+			CHECK_ALLOCATION(m->cpu_name = strdup(cur_machine_cpu));
 
 		if (!cur_machine_use_x11[0])
 			strlcpy(cur_machine_use_x11, "no",
 			    sizeof(cur_machine_use_x11));
-		m->use_x11 = parse_on_off(cur_machine_use_x11);
+		m->x11_md.in_use = parse_on_off(cur_machine_use_x11);
 
 		if (!cur_machine_slowsi[0])
 			strlcpy(cur_machine_slowsi, "no",
@@ -549,16 +543,16 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		m->physical_ram_in_mb = atoi(cur_machine_memory);
 
 		if (!cur_machine_x11_scaledown[0])
-			m->x11_scaledown = 1;
+			m->x11_md.scaledown = 1;
 		else {
-			m->x11_scaledown = atoi(cur_machine_x11_scaledown);
-			if (m->x11_scaledown < 0) {
-				m->x11_scaleup = 0 - m->x11_scaledown;
-				m->x11_scaledown = 1;
+			m->x11_md.scaledown = atoi(cur_machine_x11_scaledown);
+			if (m->x11_md.scaledown < 0) {
+				m->x11_md.scaleup = 0 - m->x11_md.scaledown;
+				m->x11_md.scaledown = 1;
 			}
-			if (m->x11_scaledown < 1) {
+			if (m->x11_md.scaledown < 1) {
 				fprintf(stderr, "Invalid scaledown value"
-				    " (%i)\n", m->x11_scaledown);
+				    " (%i)\n", m->x11_md.scaledown);
 				exit(1);
 			}
 		}
@@ -575,21 +569,13 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			m->boot_string_argument = strdup(cur_machine_bootarg);
 
 		for (i=0; i<cur_machine_n_x11_disp; i++) {
-			m->x11_n_display_names ++;
-			m->x11_display_names = realloc(
-			    m->x11_display_names, m->x11_n_display_names
-			    * sizeof(char *));
-			if (m->x11_display_names == NULL) {
-				printf("out of memory\n");
-				exit(1);
-			}
-			m->x11_display_names[m->x11_n_display_names-1] =
-			    strdup(cur_machine_x11_disp[i]);
-			if (m->x11_display_names
-			   [m->x11_n_display_names-1] == NULL) {
-				printf("out of memory\n");
-				exit(1);
-			}
+			m->x11_md.n_display_names ++;
+			CHECK_ALLOCATION(m->x11_md.display_names = realloc(
+			    m->x11_md.display_names, m->x11_md.n_display_names
+			    * sizeof(char *)));
+			CHECK_ALLOCATION(m->x11_md.display_names[
+			    m->x11_md.n_display_names-1] =
+			    strdup(cur_machine_x11_disp[i]));
 			free(cur_machine_x11_disp[i]);
 			cur_machine_x11_disp[i] = NULL;
 		}
@@ -640,11 +626,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			fprintf(stderr, "too many loads\n");
 			exit(1);
 		}
-		cur_machine_load[cur_machine_n_load] = malloc(MAX_LOAD_LEN);
-		if (cur_machine_load[cur_machine_n_load] == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(cur_machine_load[cur_machine_n_load] =
+		    malloc(MAX_LOAD_LEN));
 		read_one_word(f, cur_machine_load[cur_machine_n_load],
 		    MAX_LOAD_LEN, line, EXPECT_WORD);
 		cur_machine_n_load ++;
@@ -660,11 +643,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			fprintf(stderr, "too many disks\n");
 			exit(1);
 		}
-		cur_machine_disk[cur_machine_n_disk] = malloc(MAX_DISK_LEN);
-		if (cur_machine_disk[cur_machine_n_disk] == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(cur_machine_disk[cur_machine_n_disk] =
+		    malloc(MAX_DISK_LEN));
 		read_one_word(f, cur_machine_disk[cur_machine_n_disk],
 		    MAX_DISK_LEN, line, EXPECT_WORD);
 		cur_machine_n_disk ++;
@@ -680,12 +660,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			fprintf(stderr, "too many devices\n");
 			exit(1);
 		}
-		cur_machine_device[cur_machine_n_device] =
-		    malloc(MAX_DEVICE_LEN);
-		if (cur_machine_device[cur_machine_n_device] == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(cur_machine_device[cur_machine_n_device] =
+		    malloc(MAX_DEVICE_LEN));
 		read_one_word(f, cur_machine_device[cur_machine_n_device],
 		    MAX_DEVICE_LEN, line, EXPECT_WORD);
 		cur_machine_n_device ++;
@@ -701,12 +677,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			fprintf(stderr, "too many x11 displays\n");
 			exit(1);
 		}
-		cur_machine_x11_disp[cur_machine_n_x11_disp] =
-		    malloc(MAX_X11_DISP_LEN);
-		if (cur_machine_x11_disp[cur_machine_n_x11_disp] == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(cur_machine_x11_disp[cur_machine_n_x11_disp] =
+		    malloc(MAX_X11_DISP_LEN));
 		read_one_word(f, cur_machine_x11_disp[cur_machine_n_x11_disp],
 		    MAX_X11_DISP_LEN, line, EXPECT_WORD);
 		cur_machine_n_x11_disp ++;

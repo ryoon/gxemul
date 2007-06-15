@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.23 2007-03-24 06:40:16 debug Exp $
+ *  $Id: of.c,v 1.24 2007-06-15 17:02:40 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -473,14 +473,12 @@ static int of_get_unused_device_handle(struct of_data *of_data)
 static struct of_device *of_add_device(struct of_data *of_data, char *name,
 	char *parentname)
 {
-	struct of_device *od = malloc(sizeof(struct of_device));
-	if (od == NULL)
-		goto bad;
+	struct of_device *od;
+
+	CHECK_ALLOCATION(od = malloc(sizeof(struct of_device)));
 	memset(od, 0, sizeof(struct of_device));
 
-	od->name = strdup(name);
-	if (od->name == NULL)
-		goto bad;
+	CHECK_ALLOCATION(od->name = strdup(name));
 
 	od->handle = of_get_unused_device_handle(of_data);
 	od->parent = find_device_handle(of_data, parentname);
@@ -492,13 +490,8 @@ static struct of_device *of_add_device(struct of_data *of_data, char *name,
 
 	od->next = of_data->of_devices;
 	of_data->of_devices = od;
+
 	return od;
-
-bad:
-	fatal("of_add_device(): out of memory\n");
-	exit(1);
-
-	return NULL;	/*  Silences a compiler warning  */
 }
 
 
@@ -510,10 +503,12 @@ bad:
 static void of_add_prop(struct of_data *of_data, char *devname,
 	char *propname, unsigned char *data, uint32_t len, int flags)
 {
-	struct of_device_property *pr =
-	    malloc(sizeof(struct of_device_property));
+	struct of_device_property *pr;
 	struct of_device *od = of_data->of_devices;
 	int h = find_device_handle(of_data, devname);
+
+	CHECK_ALLOCATION(pr = malloc(sizeof(struct of_device_property)));
+	memset(pr, 0, sizeof(struct of_device_property));
 
 	OF_FIND(od, od->handle == h);
 	if (od == NULL) {
@@ -521,24 +516,13 @@ static void of_add_prop(struct of_data *of_data, char *devname,
 		exit(1);
 	}
 
-	if (pr == NULL)
-		goto bad;
-	memset(pr, 0, sizeof(struct of_device_property));
-
-	pr->name = strdup(propname);
-	if (pr->name == NULL)
-		goto bad;
+	CHECK_ALLOCATION(pr->name = strdup(propname));
 	pr->data = data;
 	pr->len = len;
 	pr->flags = flags;
 
 	pr->next = od->properties;
 	od->properties = pr;
-	return;
-
-bad:
-	fatal("of_add_device(): out of memory\n");
-	exit(1);
 }
 
 
@@ -550,14 +534,12 @@ bad:
 static void of_add_service(struct of_data *of_data, char *name,
 	int (*f)(OF_SERVICE_ARGS), int n_args, int n_ret_args)
 {
-	struct of_service *os = malloc(sizeof(struct of_service));
-	if (os == NULL)
-		goto bad;
+	struct of_service *os;
+
+	CHECK_ALLOCATION(os = malloc(sizeof(struct of_service)));
 	memset(os, 0, sizeof(struct of_service));
 
-	os->name = strdup(name);
-	if (os->name == NULL)
-		goto bad;
+	CHECK_ALLOCATION(os->name = strdup(name));
 
 	os->f = f;
 	os->n_args = n_args;
@@ -565,11 +547,6 @@ static void of_add_service(struct of_data *of_data, char *name,
 
 	os->next = of_data->of_services;
 	of_data->of_services = os;
-	return;
-
-bad:
-	fatal("of_add_service(): out of memory\n");
-	exit(1);
 }
 
 
@@ -656,11 +633,10 @@ static void of_dump_all(struct of_data *ofd)
 static void of_add_prop_int32(struct of_data *ofd,
 	char *devname, char *propname, uint32_t x)
 {
-	unsigned char *p = malloc(sizeof(int32_t));
-	if (p == NULL) {
-		fatal("of_add_prop_int32(): out of memory\n");
-		exit(1);
-	}
+	unsigned char *p;
+
+	CHECK_ALLOCATION(p = malloc(sizeof(int32_t)));
+
 	of_store_32bit_in_host(p, x);
 	of_add_prop(ofd, devname, propname, p, sizeof(int32_t),
 	    OF_PROP_INT);
@@ -675,11 +651,9 @@ static void of_add_prop_int32(struct of_data *ofd,
 static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
 	char *devname, char *propname, char *data)
 {
-	char *p = strdup(data);
-	if (p == NULL) {
-		fatal("of_add_prop_str(): out of memory\n");
-		exit(1);
-	}
+	char *p;
+
+	CHECK_ALLOCATION(p = strdup(data));
 
 	of_add_prop(ofd, devname, propname, (unsigned char *)p, strlen(p) + 1,
 	    OF_PROP_STRING);
@@ -695,10 +669,10 @@ void of_emul_init_isa(struct machine *machine)
 	unsigned char *isa_ranges;
 
 	of_add_device(ofd, "isa", "/");
-	isa_ranges = malloc(32);
-	if (isa_ranges == NULL)
-		goto bad;
+
+	CHECK_ALLOCATION(isa_ranges = malloc(32));
 	memset(isa_ranges, 0, 32);
+
 	/*  2 *: isa_phys_hi, isa_phys_lo, parent_phys_start, size  */
 	/*  MEM space:  */
 	of_store_32bit_in_host(isa_ranges + 0, 0);
@@ -708,12 +682,6 @@ void of_emul_init_isa(struct machine *machine)
 	of_store_32bit_in_host(isa_ranges + 20, 0xd0000000);
 
 	of_add_prop(ofd, "/isa", "ranges", isa_ranges, 32, 0);
-
-	return;
-
-bad:
-	fatal("of_emul_init_isa(): out of memory\n");
-	exit(1);
 }
 
 
@@ -725,10 +693,8 @@ void of_emul_init_adb(struct machine *machine)
 	struct of_data *ofd = machine->md.of_data;
 	unsigned char *adb_interrupts, *adb_reg;
 
-	adb_interrupts = malloc(4 * sizeof(uint32_t));
-	adb_reg = malloc(8 * sizeof(uint32_t));
-	if (adb_interrupts == NULL || adb_reg == NULL)
-		goto bad;
+	CHECK_ALLOCATION(adb_interrupts = malloc(4 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(adb_reg = malloc(8 * sizeof(uint32_t)));
 
 	of_add_device(ofd, "adb", "/bandit/gc");
 	of_add_prop_str(machine, ofd, "/bandit/gc/adb", "name", "via-cuda");
@@ -748,12 +714,6 @@ void of_emul_init_adb(struct machine *machine)
 	of_store_32bit_in_host(adb_reg + 28, 0);
 	of_add_prop(ofd, "/bandit/gc/adb", "reg", adb_reg,
 	    8*sizeof(uint32_t), 0);
-
-	return;
-
-bad:
-	fatal("of_emul_init_adb(): out of memory\n");
-	exit(1);
 }
 
 
@@ -765,9 +725,7 @@ void of_emul_init_zs(struct machine *machine)
 	struct of_data *ofd = machine->md.of_data;
 	unsigned char *zs_interrupts, *zs_reg;
 
-	zs_reg = malloc(6 * sizeof(uint32_t));
-	if (zs_reg == NULL)
-		goto bad;
+	CHECK_ALLOCATION(zs_reg = malloc(6 * sizeof(uint32_t)));
 
 	/*  The controller:  */
 	of_add_device(ofd, "zs", "/bandit/gc");
@@ -782,10 +740,8 @@ void of_emul_init_zs(struct machine *machine)
 	of_add_prop(ofd, "/bandit/gc/zs", "reg", zs_reg, 6*sizeof(uint32_t), 0);
 
 	/*  Port 1:  */
-	zs_interrupts = malloc(3 * sizeof(uint32_t));
-	zs_reg = malloc(6 * sizeof(uint32_t));
-	if (zs_interrupts == NULL || zs_reg == NULL)
-		goto bad;
+	CHECK_ALLOCATION(zs_interrupts = malloc(3 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(zs_reg = malloc(6 * sizeof(uint32_t)));
 
 	of_add_device(ofd, "zstty1", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty1", "name", "ch-a");
@@ -804,10 +760,8 @@ void of_emul_init_zs(struct machine *machine)
 	    "reg", zs_reg, 6*sizeof(uint32_t), 0);
 
 	/*  Port 0:  */
-	zs_interrupts = malloc(3 * sizeof(uint32_t));
-	zs_reg = malloc(6 * sizeof(uint32_t));
-	if (zs_interrupts == NULL || zs_reg == NULL)
-		goto bad;
+	CHECK_ALLOCATION(zs_interrupts = malloc(3 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(zs_reg = malloc(6 * sizeof(uint32_t)));
 
 	of_add_device(ofd, "zstty0", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty0", "name", "ch-b");
@@ -824,12 +778,6 @@ void of_emul_init_zs(struct machine *machine)
 	of_store_32bit_in_host(zs_reg + 20, 0x100);
 	of_add_prop(ofd, "/bandit/gc/zs/zstty0",
 	    "reg", zs_reg, 6*sizeof(uint32_t), 0);
-
-	return;
-
-bad:
-	fatal("of_emul_init_zs(): out of memory\n");
-	exit(1);
 }
 
 
@@ -850,16 +798,12 @@ void of_emul_init_uninorth(struct machine *machine)
 	of_add_prop_str(machine, ofd, n, "device_type", "pci");
 	of_add_prop_str(machine, ofd, n, "compatible", "uni-north");
 
-	uninorth_reg = malloc(2 * sizeof(uint32_t));
-	uninorth_bus_range = malloc(2 * sizeof(uint32_t));
-	uninorth_ranges = malloc(12 * sizeof(uint32_t));
-	macio_aa = malloc(5 * sizeof(uint32_t));
-	ata_interrupts = malloc(6 * sizeof(uint32_t));
-	ata_reg = malloc(8 * sizeof(uint32_t));
-	if (uninorth_ranges == NULL || uninorth_bus_range == NULL ||
-	    uninorth_reg == NULL || macio_aa == NULL ||
-	    ata_interrupts == NULL || ata_reg == NULL)
-		goto bad;
+	CHECK_ALLOCATION(uninorth_reg = malloc(2 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(uninorth_bus_range = malloc(2 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(uninorth_ranges = malloc(12 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(macio_aa = malloc(5 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(ata_interrupts = malloc(6 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(ata_reg = malloc(8 * sizeof(uint32_t)));
 
 	of_store_32bit_in_host(uninorth_reg + 0, 0xe2000000);
 	of_store_32bit_in_host(uninorth_reg + 4, 0);	/*  not used?  */
@@ -933,12 +877,6 @@ void of_emul_init_uninorth(struct machine *machine)
 		    machine->bootstrap_cpu);
 		device_add(machine, tmpstr);
 	}
-
-	return;
-
-bad:
-	fatal("of_emul_init_uninorth(): out of memory\n");
-	exit(1);
 }
 
 
@@ -953,11 +891,10 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	unsigned char *memory_reg, *memory_av;
 	unsigned char *zs_assigned_addresses;
 	struct of_device *mmu, *devstdout, *devstdin;
-	struct of_data *ofd = malloc(sizeof(struct of_data));
+	struct of_data *ofd;
 	int i;
 
-	if (ofd == NULL)
-		goto bad;
+	CHECK_ALLOCATION(ofd = malloc(sizeof(struct of_data)));
 	memset(ofd, 0, sizeof(struct of_data));
 
 	ofd->vfb_data = vfb_data;
@@ -971,7 +908,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	devstdin  = of_add_device(ofd, "stdin", "/io");
 	devstdout = of_add_device(ofd, "stdout", "/io");
 
-	if (machine->use_x11) {
+	if (machine->x11_md.in_use) {
 		fatal("!\n!  TODO: keyboard + framebuffer for MacPPC\n!\n");
 
 		of_add_prop_str(machine, ofd, "/io/stdin", "name",
@@ -986,10 +923,9 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		of_add_prop_int32(ofd, "/io/stdout", "depth", 8);
 		of_add_prop_int32(ofd, "/io/stdout", "address", fb_addr);
 	} else {
-		zs_assigned_addresses = malloc(12);
-		if (zs_assigned_addresses == NULL)
-			goto bad;
+		CHECK_ALLOCATION(zs_assigned_addresses = malloc(12));
 		memset(zs_assigned_addresses, 0, 12);
+
 		of_add_prop_str(machine, ofd, "/io/stdin", "name", "ch-b");
 		of_add_prop_str(machine, ofd, "/io/stdin", "device_type",
 		    "serial");
@@ -1026,10 +962,9 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_add_prop_int32(ofd, "/chosen", "stdout", devstdout->handle);
 
 	of_add_device(ofd, "memory", "/");
-	memory_reg = malloc(2 * sizeof(uint32_t));
-	memory_av = malloc(2 * sizeof(uint32_t));
-	if (memory_reg == NULL || memory_av == NULL)
-		goto bad;
+	CHECK_ALLOCATION(memory_reg = malloc(2 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(memory_av = malloc(2 * sizeof(uint32_t)));
+
 	of_store_32bit_in_host(memory_reg + 0, 0);
 	of_store_32bit_in_host(memory_reg + 4, machine->physical_ram_in_mb<<20);
 	of_store_32bit_in_host(memory_av + 0, 10 << 20);
@@ -1064,13 +999,8 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		of_dump_all(ofd);
 
 	machine->md.of_data = ofd;
+
 	return ofd;
-
-bad:
-	fatal("of_emul_init(): out of memory\n");
-	exit(1);
-
-	return NULL;	/*  Silences a compiler warning  */
 }
 
 
@@ -1130,13 +1060,12 @@ int of_emul(struct cpu *cpu)
 			fatal("TOO MANY ARGS!");
 			continue;
 		}
+
 		ptr = load_32bit_word(cpu, base + ofs);
-		arg[i] = malloc(OF_ARG_MAX_LEN + 1);
-		if (arg[i] == NULL) {
-			fatal("out of memory\n");
-			exit(1);
-		}
+
+		CHECK_ALLOCATION(arg[i] = malloc(OF_ARG_MAX_LEN + 1));
 		memset(arg[i], 0, OF_ARG_MAX_LEN + 1);
+
 		x = ptr;
 		if (x > -256 && x < 256) {
 			debug("%i", x);

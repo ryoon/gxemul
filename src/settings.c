@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.15 2006-12-30 13:30:52 debug Exp $
+ *  $Id: settings.c,v 1.16 2007-06-15 17:02:38 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -89,14 +89,9 @@ struct settings {
  */
 struct settings *settings_new(void)
 {
-	struct settings *settings = malloc(sizeof(struct settings));
+	struct settings *settings;
 
-	if (settings == NULL) {
-		fprintf(stderr, "settings_new(): out of memory\n");
-		exit(1);
-	}
-
-	/*  No settings.  */
+	CHECK_ALLOCATION(settings = malloc(sizeof(struct settings)));
 	memset(settings, 0, sizeof(struct settings));
 
 	return settings;
@@ -272,9 +267,11 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 	int recurse)
 {
 	size_t name_buflen = strlen(prefix) + 100;
-	char *name = malloc(name_buflen);
+	char *name;
 	int i;
 	uint64_t value = 0;
+
+	CHECK_ALLOCATION(name = malloc(name_buflen));
 
 	for (i=0; i<settings->n_settings; i++) {
 		snprintf(name, name_buflen, "%s.%s", prefix, settings->name[i]);
@@ -354,25 +351,19 @@ void settings_add(struct settings *settings, const char *name, int writable,
 
 	settings->n_settings ++;
 
-	if ((settings->name = realloc(settings->name, settings->n_settings
-	    * sizeof(char *))) == NULL)
-		goto out_of_mem;
-	if ((settings->writable = realloc(settings->writable,
-	    settings->n_settings * sizeof(int))) == NULL)
-		goto out_of_mem;
-	if ((settings->storage_type = realloc(settings->storage_type,
-	    settings->n_settings * sizeof(int))) == NULL)
-		goto out_of_mem;
-	if ((settings->presentation_format = realloc(settings->
-	    presentation_format, settings->n_settings * sizeof(int))) == NULL)
-		goto out_of_mem;
-	if ((settings->ptr = realloc(settings->ptr, settings->n_settings
-	    * sizeof(void *))) == NULL)
-		goto out_of_mem;
+	CHECK_ALLOCATION(settings->name = realloc(settings->name, 
+	    settings->n_settings * sizeof(char *)));
+	CHECK_ALLOCATION(settings->writable = realloc(settings->writable,
+	    settings->n_settings * sizeof(int)));
+	CHECK_ALLOCATION(settings->storage_type = realloc(
+	    settings->storage_type, settings->n_settings * sizeof(int)));
+	CHECK_ALLOCATION(settings->presentation_format = realloc(settings->
+	    presentation_format, settings->n_settings * sizeof(int)));
+	CHECK_ALLOCATION(settings->ptr = realloc(settings->ptr,
+	    settings->n_settings * sizeof(void *)));
 
-	settings->name[settings->n_settings - 1] = strdup(name);
-	if (settings->name[settings->n_settings - 1] == NULL)
-		goto out_of_mem;
+	CHECK_ALLOCATION(settings->name[settings->n_settings - 1] =
+	    strdup(name));
 	settings->writable[settings->n_settings - 1] = writable;
 	settings->storage_type[settings->n_settings - 1] = type;
 	settings->presentation_format[settings->n_settings - 1] = format;
@@ -380,16 +371,9 @@ void settings_add(struct settings *settings, const char *name, int writable,
 
 	if (type == SETTINGS_TYPE_SUBSETTINGS) {
 		((struct settings *)ptr)->parent = settings;
-		((struct settings *)ptr)->name_in_parent = strdup(name);
-		if (((struct settings *)ptr)->name_in_parent == NULL)
-			goto out_of_mem;
+		CHECK_ALLOCATION( ((struct settings *)ptr)->name_in_parent =
+		    strdup(name) );
 	}
-
-	return;
-
-out_of_mem:
-	fprintf(stderr, "settings_add(): fatal error: out of memory\n");
-	exit(1);
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_elf.c,v 1.4 2007-05-22 13:11:24 debug Exp $
+ *  $Id: file_elf.c,v 1.5 2007-06-15 17:02:39 debug Exp $
  *
  *  ELF file support.
  */
@@ -422,8 +422,10 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			if ((p_vaddr & 0xffff)==0)	align_len = 0x10000;
 			ofs = 0;  len = chunk_len = align_len;
 			while (ofs < (int64_t)p_filesz && len==chunk_len) {
-				unsigned char *ch = malloc(chunk_len);
+				unsigned char *ch;
 				int i = 0;
+
+				CHECK_ALLOCATION(ch = malloc(chunk_len));
 
 				/*  Switch to larger size, if possible:  */
 				if (align_len < 0x10000 &&
@@ -431,18 +433,13 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					align_len = 0x10000;
 					len = chunk_len = align_len;
 					free(ch);
-					ch = malloc(chunk_len);
+					CHECK_ALLOCATION(ch=malloc(chunk_len));
 				} else if (align_len < 0x1000 &&
 				    ((p_vaddr + ofs) & 0xfff)==0) {
 					align_len = 0x1000;
 					len = chunk_len = align_len;
 					free(ch);
-					ch = malloc(chunk_len);
-				}
-
-				if (ch == NULL) {
-					fprintf(stderr, "out of memory\n");
-					exit(1);
+					CHECK_ALLOCATION(ch=malloc(chunk_len));
 				}
 
 				len = fread(&ch[0], 1, chunk_len, f);
@@ -536,22 +533,18 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			if (elf64) {
 				if (symbols_sym64 != NULL)
 					free(symbols_sym64);
-				symbols_sym64 = malloc(sh_size);
-				if (symbols_sym64 == NULL) {
-					fprintf(stderr, "out of memory\n");
-					exit(1);
-				}
+
+				CHECK_ALLOCATION(symbols_sym64 =
+				    malloc(sh_size));
 
 				len = fread(symbols_sym64, 1, sh_entsize *
 				    n_entries, f);
 			} else {
 				if (symbols_sym32 != NULL)
 					free(symbols_sym32);
-				symbols_sym32 = malloc(sh_size);
-				if (symbols_sym32 == NULL) {
-					fprintf(stderr, "out of memory\n");
-					exit(1);
-				}
+
+				CHECK_ALLOCATION(symbols_sym32 =
+				    malloc(sh_size));
 
 				len = fread(symbols_sym32, 1,
 				    sh_entsize * n_entries, f);
@@ -583,11 +576,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			if (symbol_strings != NULL)
 				free(symbol_strings);
 
-			symbol_strings = malloc(sh_size + 1);
-			if (symbol_strings == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(symbol_strings = malloc(sh_size + 1));
 
 			fseek(f, sh_offset, SEEK_SET);
 			len = fread(symbol_strings, 1, sh_size, f);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.68 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_bt459.c,v 1.69 2007-06-15 17:02:39 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -145,7 +145,7 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 	 */
 
 #ifdef WITH_X11
-	if (cpu->machine->use_x11 && d->vfb_data->fb_window != NULL) {
+	if (cpu->machine->x11_md.in_use && d->vfb_data->fb_window != NULL) {
 		for (y=0; y<=ymax; y++) {
 			for (x=0; x<=xmax; x+=4) {
 				struct fb_window *win = d->vfb_data->fb_window;

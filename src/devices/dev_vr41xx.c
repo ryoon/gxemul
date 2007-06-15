@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.44 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.45 2007-06-15 17:02:39 debug Exp $
  *  
  *  VR41xx (VR4122 and VR4131) misc functions.
  *
@@ -406,7 +406,7 @@ DEVICE_TICK(vr41xx)
 	if (d->pending_timer_interrupts > 0)
 		INTERRUPT_ASSERT(d->timer_irq);
 
-	if (cpu->machine->use_x11)
+	if (cpu->machine->x11_md.in_use)
 		vr41xx_keytick(cpu, d);
 }
 
@@ -737,7 +737,7 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	    machine->path, machine->bootstrap_cpu, VRIP_INTR_KIU);
 	INTERRUPT_CONNECT(tmps, d->kiu_irq);
 
-	if (machine->use_x11)
+	if (machine->x11_md.in_use)
 		machine->main_console_handle = d->kiu_console_handle;  
 
 	switch (cpumodel) {

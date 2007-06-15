@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net_ip.c,v 1.5 2006-12-30 13:31:02 debug Exp $
+ *  $Id: net_ip.c,v 1.6 2007-06-15 17:02:40 debug Exp $
  *
  *  Internet Protocol related networking stuff.
  */
@@ -1375,15 +1375,9 @@ void net_tcp_rx_avail(struct net *net, void *extra)
 			continue;
 		}
 
-		if (net->tcp_connections[con_id].incoming_buf == NULL) {
-			net->tcp_connections[con_id].incoming_buf =
-			    malloc(TCP_INCOMING_BUF_LEN);
-			if (net->tcp_connections[con_id].incoming_buf == NULL) {
-				printf("out of memory allocating "
-				    "incoming_buf for con_id %i\n", con_id);
-				exit(1);
-			}
-		}
+		if (net->tcp_connections[con_id].incoming_buf == NULL)
+			CHECK_ALLOCATION(net->tcp_connections[con_id].
+			    incoming_buf = malloc(TCP_INCOMING_BUF_LEN));
 
 		if (net->tcp_connections[con_id].state >=
 		    TCP_OUTSIDE_DISCONNECTED)

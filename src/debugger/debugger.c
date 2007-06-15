@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.25 2007-06-14 03:57:02 debug Exp $
+ *  $Id: debugger.c,v 1.26 2007-06-15 17:02:39 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -200,11 +200,7 @@ void debugger_assignment(struct machine *m, char *cmd)
 	uint64_t tmp;
 	uint64_t old_pc = m->cpus[0]->pc;	/*  TODO: multiple cpus?  */
 
-	left  = malloc(MAX_CMD_BUFLEN);
-	if (left == NULL) {
-		fprintf(stderr, "out of memory in debugger_assignment()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(left = malloc(MAX_CMD_BUFLEN));
 	strlcpy(left, cmd, MAX_CMD_BUFLEN);
 	right = strchr(left, '=');
 	if (right == NULL) {
@@ -742,11 +738,7 @@ void debugger_init(struct emul **emuls, int n_emuls)
 	debugger_cur_emul = 0;
 
 	for (i=0; i<N_PREVIOUS_CMDS; i++) {
-		last_cmd[i] = malloc(MAX_CMD_BUFLEN);
-		if (last_cmd[i] == NULL) {
-			fprintf(stderr, "debugger_init(): out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(last_cmd[i] = malloc(MAX_CMD_BUFLEN));
 		last_cmd[i][0] = '\0';
 	}
 

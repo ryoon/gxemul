@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.255 2007-06-15 00:41:21 debug Exp $
+ *  $Id: misc.h,v 1.256 2007-06-15 17:02:39 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -160,6 +160,21 @@ struct memory;
 /*  Debug stuff:  */
 #define	DEBUG_BUFSIZE		1024
 #define	DEBUG_INDENTATION	4
+
+
+#define	FAILURE(error_msg)					{	\
+		char where_msg[400];					\
+		snprintf(where_msg, sizeof(where_msg),			\
+		    "%s, line %i, function '%s'\n",			\
+		    __FILE__, __LINE__, __FUNCTION__);			\
+        	fprintf(stderr, "%s: %s\n", error_msg, where_msg);	\
+		exit(1);						\
+	}
+
+#define	CHECK_ALLOCATION(ptr)					{	\
+		if ((ptr) == NULL)					\
+			FAILURE("Out of memory");			\
+	}
 
 
 /*  bootblock.c:  */

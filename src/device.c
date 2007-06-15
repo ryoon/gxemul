@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.33 2007-06-05 07:49:42 debug Exp $
+ *  $Id: device.c,v 1.34 2007-06-15 17:02:37 debug Exp $
  *
  *  Device registry framework.
  */
@@ -90,17 +90,13 @@ static void sort_entries(void)
  */
 int device_register(char *name, int (*initf)(struct devinit *))
 {
-	device_entries = realloc(device_entries, sizeof(struct device_entry)
-	    * (n_device_entries + 1));
-	if (device_entries == NULL) {
-		fprintf(stderr, "device_register(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(device_entries = realloc(device_entries,
+	    sizeof(struct device_entry) * (n_device_entries + 1)));
 
 	memset(&device_entries[n_device_entries], 0,
 	    sizeof(struct device_entry));
 
-	device_entries[n_device_entries].name = strdup(name);
+	CHECK_ALLOCATION(device_entries[n_device_entries].name = strdup(name));
 	device_entries[n_device_entries].initf = initf;
 
 	device_entries_sorted = 0;
@@ -120,16 +116,12 @@ int device_register(char *name, int (*initf)(struct devinit *))
 int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
 	struct pci_device *))
 {
-	pci_entries = realloc(pci_entries, sizeof(struct pci_entry)
-	    * (n_pci_entries + 1));
-	if (pci_entries == NULL) {
-		fprintf(stderr, "pci_register(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(pci_entries = realloc(pci_entries,
+	    sizeof(struct pci_entry) * (n_pci_entries + 1)));
 
 	memset(&pci_entries[n_pci_entries], 0, sizeof(struct pci_entry));
 
-	pci_entries[n_pci_entries].name = strdup(name);
+	CHECK_ALLOCATION(pci_entries[n_pci_entries].name = strdup(name));
 	pci_entries[n_pci_entries].initf = initf;
 	n_pci_entries ++;
 	return 1;
@@ -281,20 +273,13 @@ void *device_add(struct machine *machine, char *name_and_params)
 		s2 ++;
 
 	len = (size_t)s2 - (size_t)name_and_params;
-	devinit.name = malloc(len + 1);
-	if (devinit.name == NULL) {
-		fprintf(stderr, "device_add(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(devinit.name = malloc(len + 1));
 	memcpy(devinit.name, name_and_params, len);
 	devinit.name[len] = '\0';
 
 	/*  Allocate space for the default interrupt name:  */
-	devinit.interrupt_path = malloc(interrupt_path_len + 1);
-	if (devinit.interrupt_path == NULL) {
-		fprintf(stderr, "device_add(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(devinit.interrupt_path =
+	    malloc(interrupt_path_len + 1));
 	snprintf(devinit.interrupt_path, interrupt_path_len,
 	    "%s.cpu[%i]", machine->path, machine->bootstrap_cpu);
 
@@ -367,11 +352,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 				if (!quoted && *h == ' ')
 					break;
 			}
-			devinit.name2 = malloc(len + 1);
-			if (devinit.name2 == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(devinit.name2 = malloc(len + 1));
 			h = s2 + 6;
 			if (*h == '\'')
 				len -= 2, h++;

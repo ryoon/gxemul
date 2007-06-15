@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.388 2007-06-15 00:59:00 debug Exp $
+ *  $Id: cpu.c,v 1.389 2007-06-15 17:02:37 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -71,19 +71,11 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 		exit(1);
 	}
 
-	cpu_type_name = strdup(name);
-	if (cpu_type_name == NULL) {
-		fprintf(stderr, "cpu_new(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(cpu_type_name = strdup(name));
 
 	cpu = zeroed_alloc(sizeof(struct cpu));
 
-	cpu->path = malloc(strlen(machine->path) + 15);
-	if (cpu->path == NULL) {
-		fprintf(stderr, "cpu_new(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(cpu->path = malloc(strlen(machine->path) + 15));
 	snprintf(cpu->path, strlen(machine->path) + 15,
 	    "%s.cpu[%i]", machine->path, cpu_id);
 
@@ -521,11 +513,7 @@ static void add_cpu_family(int (*family_init)(struct cpu_family *), int arch)
 	struct cpu_family *fp, *tmp;
 	int res;
 
-	fp = malloc(sizeof(struct cpu_family));
-	if (fp == NULL) {
-		fprintf(stderr, "add_cpu_family(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(fp = malloc(sizeof(struct cpu_family)));
 	memset(fp, 0, sizeof(struct cpu_family));
 
 	/*

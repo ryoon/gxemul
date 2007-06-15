@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.10 2006-12-30 13:30:56 debug Exp $
+ *  $Id: debugger_expr.c,v 1.11 2007-06-15 17:02:39 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -257,11 +257,7 @@ int debugger_parse_expression(struct machine *m, char *expr, int writeflag,
 	while (expr[0] == '\t' || expr[0] == ' ')
 		expr ++;
 
-	copy = strdup(expr);
-	if (copy == NULL) {
-		fprintf(stderr, "debugger_parse_expression(): out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(copy = strdup(expr));
 
 	while (copy[0] && copy[strlen(copy)-1] == ' ')
 		copy[strlen(copy)-1] = '\0';

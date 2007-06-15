@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_irqc.c,v 1.1 2007-05-26 03:47:34 debug Exp $
+ *  $Id: dev_irqc.c,v 1.2 2007-06-15 17:02:39 debug Exp $
  *
  *  Generic IRQ controller for the test* machines in GXemul.
  */
@@ -57,7 +57,7 @@ struct irqc_data {
 void irqc_interrupt_assert(struct interrupt *interrupt)
 {
 	struct irqc_data *d = interrupt->extra;
-	d->status |= (1 << interrupt->line);
+	d->status |= interrupt->line;
 
 	if (d->status & d->enabled)
 		INTERRUPT_ASSERT(d->irq);
@@ -67,7 +67,7 @@ void irqc_interrupt_assert(struct interrupt *interrupt)
 void irqc_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct irqc_data *d = interrupt->extra;
-	d->status &= ~(1 << interrupt->line);
+	d->status &= ~interrupt->line;
 
 	if (!(d->status & d->enabled))
 		INTERRUPT_DEASSERT(d->irq);
@@ -154,11 +154,7 @@ DEVINIT(irqc)
 	char n[300];
 	int i;
 
-	d = malloc(sizeof(struct irqc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct irqc_data)));
 	memset(d, 0, sizeof(struct irqc_data));
 
 	/*  Connect to the CPU's interrupt pin:  */
@@ -172,7 +168,8 @@ DEVINIT(irqc)
 		    devinit->interrupt_path, i);
 
 		memset(&template, 0, sizeof(template));
-		template.line = i;
+		template.line = 1 << i;		/*  Note: line contains the
+						    _mask_, not line number.  */
 		template.name = n;
 		template.extra = d;
 		template.interrupt_assert = irqc_interrupt_assert;

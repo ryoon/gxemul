@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.8 2007-06-14 16:48:23 debug Exp $
+ *  $Id: timer.c,v 1.9 2007-06-15 17:02:38 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#include "misc.h"
 #include "timer.h"
 
 
@@ -76,11 +77,9 @@ static int timer_is_running;
 struct timer *timer_add(double freq, void (*timer_tick)(struct timer *timer,
 	void *extra), void *extra)
 {
-	struct timer *newtimer = malloc(sizeof(struct timer));
-	if (newtimer == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct timer *newtimer;
+
+	CHECK_ALLOCATION(newtimer = malloc(sizeof(struct timer)));
 
 	if (freq <= 0.00000001)
 		freq = 0.00000001;

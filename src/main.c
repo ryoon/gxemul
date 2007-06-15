@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.304 2007-06-15 00:41:21 debug Exp $
+ *  $Id: main.c,v 1.305 2007-06-15 17:02:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -374,19 +374,16 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			native_code_translation_enabled = 0;
 			break;
 		case 'C':
-			m->cpu_name = strdup(optarg);
+			CHECK_ALLOCATION(m->cpu_name = strdup(optarg));
 			msopts = 1;
 			break;
 		case 'c':
 			emul->n_debugger_cmds ++;
-			emul->debugger_cmds = realloc(emul->debugger_cmds,
-			    emul->n_debugger_cmds * sizeof(char *));
-			if (emul->debugger_cmds == NULL) {
-			        fatal("out of memory\n");
-			        exit(1);
-			}
-			emul->debugger_cmds[emul->n_debugger_cmds-1] =
-			    strdup(optarg);
+			CHECK_ALLOCATION(emul->debugger_cmds =
+			    realloc(emul->debugger_cmds,
+			    emul->n_debugger_cmds * sizeof(char *)));
+			CHECK_ALLOCATION(emul->debugger_cmds[emul->
+			    n_debugger_cmds-1] = strdup(optarg));
 			break;
 		case 'D':
 			skip_srandom_call = 1;
@@ -394,13 +391,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'd':
 			/*  diskimage_add() is called further down  */
 			(*n_diskimagesp) ++;
-			(*diskimagesp) = realloc(*diskimagesp,
-			    sizeof(char *) * (*n_diskimagesp));
-			if (*diskimagesp == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
-			(*diskimagesp)[(*n_diskimagesp) - 1] = strdup(optarg);
+			CHECK_ALLOCATION( (*diskimagesp) =
+			    realloc(*diskimagesp,
+			    sizeof(char *) * (*n_diskimagesp)) );
+			CHECK_ALLOCATION( (*diskimagesp)[(*n_diskimagesp) - 1] =
+			    strdup(optarg) );
 			using_switch_d = 1;
 			msopts = 1;
 			break;
@@ -439,11 +434,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'j':
-			m->boot_kernel_filename = strdup(optarg);
-			if (m->boot_kernel_filename == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(m->boot_kernel_filename =
+			    strdup(optarg));
 			msopts = 1;
 			break;
 		case 'k':
@@ -475,11 +467,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'o':
-			m->boot_string_argument = strdup(optarg);
-			if (m->boot_string_argument == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(m->boot_string_argument =
+			    strdup(optarg));
 			msopts = 1;
 			break;
 		case 'p':
@@ -523,11 +512,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'u':
-			m->userland_emul = strdup(optarg);
-			if (m->userland_emul == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(m->userland_emul = strdup(optarg));
 			m->machine_type = MACHINE_USERLAND;
 			msopts = 1;
 			break;
@@ -541,19 +526,19 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			internal_w(optarg);
 			exit(0);
 		case 'X':
-			m->use_x11 = 1;
+			m->x11_md.in_use = 1;
 			msopts = 1;
 			/*  FALL-THROUGH  */
 		case 'x':
 			console_allow_slaves(1);
 			break;
 		case 'Y':
-			m->x11_scaledown = atoi(optarg);
-			if (m->x11_scaledown < -1) {
-				m->x11_scaleup = - m->x11_scaledown;
-				m->x11_scaledown = 1;
+			m->x11_md.scaledown = atoi(optarg);
+			if (m->x11_md.scaledown < -1) {
+				m->x11_md.scaleup = - m->x11_md.scaledown;
+				m->x11_md.scaledown = 1;
 			}
-			if (m->x11_scaledown < 1) {
+			if (m->x11_md.scaledown < 1) {
 				fprintf(stderr, "Invalid scaledown value.\n");
 				exit(1);
 			}
@@ -565,21 +550,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'z':
-			m->x11_n_display_names ++;
-			m->x11_display_names = realloc(
-			    m->x11_display_names,
-			    m->x11_n_display_names * sizeof(char *));
-			if (m->x11_display_names == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
-			m->x11_display_names[m->x11_n_display_names-1] =
-			    strdup(optarg);
-			if (m->x11_display_names
-			    [m->x11_n_display_names-1] == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			m->x11_md.n_display_names ++;
+			CHECK_ALLOCATION(m->x11_md.display_names = realloc(
+			    m->x11_md.display_names,
+			    m->x11_md.n_display_names * sizeof(char *)));
+			CHECK_ALLOCATION(m->x11_md.display_names[
+			    m->x11_md.n_display_names-1] = strdup(optarg));
 			msopts = 1;
 			break;
 		default:
@@ -664,11 +640,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		else
 			s2 ++;
 
-		m->boot_kernel_filename = strdup(s2);
-		if (m->boot_kernel_filename == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(m->boot_kernel_filename = strdup(s2));
 	}
 
 	if (m->n_gfx_cards < 0 || m->n_gfx_cards > 3) {
@@ -676,7 +648,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		exit(1);
 	}
 
-	if (!using_switch_Z && !m->use_x11)
+	if (!using_switch_Z && !m->x11_md.in_use)
 		m->n_gfx_cards = 0;
 
 	return 0;
@@ -752,18 +724,11 @@ int main(int argc, char *argv[])
 	useremul_init();
 
 	emuls = malloc(sizeof(struct emul *));
-	if (emuls == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(emuls);
 
 	/*  Allocate space for a simple emul setup:  */
 	n_emuls = 1;
 	emuls[0] = emul_new(NULL, 0);
-	if (emuls[0] == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
 	settings_add(global_settings, "emul[0]", 1,
 	    SETTINGS_TYPE_SUBSETTINGS, 0, emuls[0]->settings);
 
@@ -819,11 +784,8 @@ int main(int argc, char *argv[])
 				s = argv[i];
 			}
 			n_emuls ++;
-			emuls = realloc(emuls, sizeof(struct emul *) * n_emuls);
-			if (emuls == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(emuls = realloc(emuls,
+			    sizeof(struct emul *) * n_emuls));
 
 			/*  Always allow slave xterms when using multiple
 			    emulations:  */

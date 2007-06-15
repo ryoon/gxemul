@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.15 2007-06-09 14:13:06 debug Exp $
+ *  $Id: arcbios.c,v 1.16 2007-06-15 17:02:40 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -66,14 +66,9 @@ void arcbios_add_string_to_component(struct machine *machine,
 		exit(1);
 	}
 
-	machine->md.arc->string_to_component[machine->
-	    md.arc->n_string_to_components] = strdup(string);
-	if (machine->md.arc->string_to_component[machine->
-	    md.arc->n_string_to_components] == NULL) {
-		fprintf(stderr, "out of memory in "
-		    "arcbios_add_string_to_component()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->md.arc->string_to_component[machine->
+	    md.arc->n_string_to_components] = strdup(string));
+
 	debug("adding ARC component mapping: 0x%08x = %s\n",
 	    (int)component, string);
 
@@ -1488,11 +1483,8 @@ int arcbios_emul(struct cpu *cpu)
 			 *  anything. It is used by the Windows NT SETUPLDR
 			 *  program to load stuff from the boot partition.
 			 */
-			unsigned char *buf = malloc(MAX_OPEN_STRINGLEN);
-			if (buf == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			unsigned char *buf;
+			CHECK_ALLOCATION(buf = malloc(MAX_OPEN_STRINGLEN));
 			memset(buf, 0, MAX_OPEN_STRINGLEN);
 			for (i=0; i<MAX_OPEN_STRINGLEN; i++) {
 				cpu->memory_rw(cpu, cpu->mem,
@@ -1611,13 +1603,8 @@ int arcbios_emul(struct cpu *cpu)
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2],
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A3]);
 
-			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
-			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in "
-				    "arcbios.c, allocating %i bytes ]\n",
-				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				break;
-			}
+			CHECK_ALLOCATION(tmp_buf =
+			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			res = diskimage_access(machine, disk_id, disk_type,
 			    0, partition_offset + machine->md.arc->
@@ -1683,13 +1670,8 @@ int arcbios_emul(struct cpu *cpu)
 			    (int) cpu->cd.mips.gpr[MIPS_GPR_A2],
 			    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A3]);
 
-			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
-			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in"
-				    " arcbios.c, allocating %i bytes ]\n",
-				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				break;
-			}
+			CHECK_ALLOCATION(tmp_buf =
+			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			for (i=0; i<(int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2]; i++)
 				cpu->memory_rw(cpu, cpu->mem,
@@ -1983,7 +1965,7 @@ static void arcbios_add_other_components(struct machine *machine,
 			    0xffffffffe2000000ULL, 0x090000000ULL,
 			    0x091000000ULL, 1, 1, 1, 1, 1, 0, 2, 2);
 
-			if (machine->use_x11) {
+			if (machine->x11_md.in_use) {
 				ali_s3 = arcbios_addchild_manual(cpu,
 				    COMPONENT_CLASS_ControllerClass,
 				    COMPONENT_TYPE_DisplayController,
@@ -2002,7 +1984,7 @@ static void arcbios_add_other_components(struct machine *machine,
 			}
 			break;
 		case MACHINE_ARC_JAZZ_MAGNUM:
-			if (machine->use_x11) {
+			if (machine->x11_md.in_use) {
 				vxl = arcbios_addchild_manual(cpu,
 				    COMPONENT_CLASS_ControllerClass,
 				    COMPONENT_TYPE_DisplayController,
@@ -2165,11 +2147,8 @@ void arcbios_console_init(struct machine *machine,
 	uint64_t vram, uint64_t ctrlregs)
 {
 	if (machine->md.arc == NULL) {
-		machine->md.arc = malloc(sizeof(struct machine_arcbios));
-		if (machine->md.arc == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(machine->md.arc =
+		    malloc(sizeof(struct machine_arcbios)));
 		memset(machine->md.arc, 0, sizeof(struct machine_arcbios));
 	}
 
@@ -2203,11 +2182,7 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 	 *  TODO: How about floppies? multi()disk()fdisk()
 	 *        Is tftp() good for netbooting?
 	 */
-	init_bootpath = malloc(bootpath_len);
-	if (init_bootpath == NULL) {
-		fprintf(stderr, "out of mem, bootpath\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(init_bootpath = malloc(bootpath_len));
 	init_bootpath[0] = '\0';
 
 	if (machine->bootdev_id < 0 || machine->force_netboot) {
@@ -2238,11 +2213,7 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 	if (machine->machine_type == MACHINE_ARC)
 		strlcat(init_bootpath, "\\", bootpath_len);
 
-	machine->bootstr = malloc(ARC_BOOTSTR_BUFLEN);
-		if (machine->bootstr == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-	}
+	CHECK_ALLOCATION(machine->bootstr = malloc(ARC_BOOTSTR_BUFLEN));
 
 	strlcpy(machine->bootstr, init_bootpath, ARC_BOOTSTR_BUFLEN);
 	if (strlcat(machine->bootstr, machine->boot_kernel_filename,
@@ -2285,7 +2256,7 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 	 *  as a string using add_environment_string(), and add a
 	 *  pointer to it to the ARC_ENV_POINTERS array.
 	 */
-	if (machine->use_x11) {
+	if (machine->x11_md.in_use) {
 		if (machine->machine_type == MACHINE_ARC) {
 			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 			add_environment_string(cpu,
@@ -2393,7 +2364,7 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		char *tmp;
 		size_t mlen = strlen(machine->bootarg) +
 		    strlen("OSLOADOPTIONS=") + 2;
-		tmp = malloc(mlen);
+		CHECK_ALLOCATION(tmp = malloc(mlen));
 		snprintf(tmp, mlen, "OSLOADOPTIONS=%s", machine->bootarg);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, tmp, &addr);
@@ -2439,11 +2410,8 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 	struct arcbios_spb_64 arcbios_spb_64;
 
 	if (machine->md.arc == NULL) {
-		machine->md.arc = malloc(sizeof(struct machine_arcbios));
-		if (machine->md.arc == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(machine->md.arc =
+		    malloc(sizeof(struct machine_arcbios)));
 		memset(machine->md.arc, 0, sizeof(struct machine_arcbios));
 	}
 
@@ -2466,7 +2434,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		machine->md.arc->current_seek_offset[i] = 0;
 	}
 
-	if (!machine->use_x11)
+	if (!machine->x11_md.in_use)
 		machine->md.arc->vgaconsole = 0;
 
 	if (machine->md.arc->vgaconsole) {
@@ -2607,11 +2575,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 	/*  Add the root node:  */
 	switch (machine->machine_type) {
 	case MACHINE_SGI:
-		name = malloc(alloclen);
-		if (name == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(name = malloc(alloclen));
 		snprintf(name, alloclen, "SGI-IP%i",
 		    machine->machine_subtype);
 

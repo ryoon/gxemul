@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.c,v 1.8 2007-06-14 16:13:30 debug Exp $
+ *  $Id: misc.c,v 1.9 2007-06-15 17:02:38 debug Exp $
  *
  *  This file contains things that don't fit anywhere else, and fake/dummy
  *  implementations of libc functions that are missing on some systems.
@@ -170,5 +170,4 @@ void print_separator_line(void)
                 debug("-");
         debug("\n");
 }
-
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.130 2007-05-12 01:14:00 debug Exp $
+ *  $Id: dev_fb.c,v 1.131 2007-06-15 17:02:39 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -416,7 +416,7 @@ DEVICE_TICK(fb)
 	int need_to_redraw_cursor = 0;
 #endif
 
-	if (!cpu->machine->use_x11)
+	if (!cpu->machine->x11_md.in_use)
 		return;
 
 	do {
@@ -650,7 +650,7 @@ DEVICE_ACCESS(fb)
 	 *  of which area(s) we modify, so that the display isn't updated
 	 *  unnecessarily.
 	 */
-	if (writeflag == MEM_WRITE && cpu->machine->use_x11) {
+	if (writeflag == MEM_WRITE && cpu->machine->x11_md.in_use) {
 		int x, y, x2,y2;
 
 		x = (relative_addr % d->bytes_per_line) * 8 / d->bit_depth;
@@ -810,7 +810,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	else if (d->bit_depth == 8 || d->bit_depth == 1)
 		set_blackwhite_palette(d, 1 << d->bit_depth);
 
-	d->vfb_scaledown = machine->x11_scaledown;
+	d->vfb_scaledown = machine->x11_md.scaledown;
 
 	d->bytes_per_line = d->xsize * d->bit_depth / 8;
 	size = d->ysize * d->bytes_per_line;
@@ -843,10 +843,10 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	set_title(d);
 
 #ifdef WITH_X11
-	if (machine->use_x11) {
+	if (machine->x11_md.in_use) {
 		int i = 0;
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
-		    d->title, machine->x11_scaledown, machine);
+		    d->title, machine->x11_md.scaledown, machine);
 		switch (d->fb_window->x11_screen_depth) {
 		case 15: i = 2; break;
 		case 16: i = 4; break;

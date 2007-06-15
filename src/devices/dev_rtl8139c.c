@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtl8139c.c,v 1.3 2007-04-22 03:57:38 debug Exp $
+ *  $Id: dev_rtl8139c.c,v 1.4 2007-06-15 17:02:39 debug Exp $
  *
  *  Realtek 8139-style NIC.
  *
@@ -201,12 +201,9 @@ DEVINIT(rtl8139c)
 {
 	char *name2;
 	size_t nlen = 100;
-	struct rtl8139c_data *d = malloc(sizeof(struct rtl8139c_data));
+	struct rtl8139c_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct rtl8139c_data)));
 	memset(d, 0, sizeof(struct rtl8139c_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
@@ -220,11 +217,7 @@ DEVINIT(rtl8139c)
 	d->eeprom_reg[8] = d->macaddr[2] + (d->macaddr[3] << 8);
 	d->eeprom_reg[9] = d->macaddr[4] + (d->macaddr[5] << 8);
 
-	name2 = malloc(nlen);
-	if (name2 == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(name2 = malloc(nlen));
 	snprintf(name2, nlen, "%s [%02x:%02x:%02x:%02x:%02x:%02x]",
 	    devinit->name, d->macaddr[0], d->macaddr[1], d->macaddr[2],
 	    d->macaddr[3], d->macaddr[4], d->macaddr[5]);

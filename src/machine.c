@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.703 2007-06-15 00:41:21 debug Exp $
+ *  $Id: machine.c,v 1.704 2007-06-15 17:02:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -64,25 +64,17 @@ struct machine_entry *first_machine_entry = NULL;
 struct machine *machine_new(char *name, struct emul *emul, int id)
 {
 	struct machine *m;
-	m = malloc(sizeof(struct machine));
-	if (m == NULL) {
-		fprintf(stderr, "machine_new(): out of memory\n");
-		exit(1);
-	}
 
+	CHECK_ALLOCATION(m = malloc(sizeof(struct machine)));
 	memset(m, 0, sizeof(struct machine));
 
 	/*  Pointer back to the emul object that this machine belongs to:  */
 	m->emul = emul;
 
-	m->name = strdup(name);
+	CHECK_ALLOCATION(m->name = strdup(name));
 
 	/*  Full path, e.g. "emul[0].machine[0]":  */
-	m->path = malloc(strlen(emul->path) + 20);
-	if (m->path == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(m->path = malloc(strlen(emul->path) + 20));
 	snprintf(m->path, strlen(emul->path) + 20, "%s.machine[%i]",
 	    emul->path, id);
 
@@ -97,8 +89,8 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
 	m->boot_kernel_filename = "";
 	m->boot_string_argument = NULL;
-	m->x11_scaledown = 1;
-	m->x11_scaleup = 1;
+	m->x11_md.scaledown = 1;
+	m->x11_md.scaleup = 1;
 	m->n_gfx_cards = 1;
 	symbol_init(&m->symbol_context);
 
@@ -265,27 +257,14 @@ void machine_add_breakpoint_string(struct machine *machine, char *str)
 {
 	int n = machine->breakpoints.n + 1;
 
-	if ((machine->breakpoints.string = realloc(machine->breakpoints.string,
-	    n * sizeof(char *))) == NULL) {
-		fprintf(stderr, "machine_add_breakpoint_string:"
-		    " out of memory\n");
-		exit(1);
-	}
-	if ((machine->breakpoints.addr = realloc(machine->breakpoints.addr,
-	    n * sizeof(uint64_t))) == NULL) {
-		fprintf(stderr, "machine_add_breakpoint_string:"
-		    " out of memory\n");
-		exit(1);
-	}
-
-	if ((machine->breakpoints.string[machine->breakpoints.n] =
-	    strdup(optarg)) == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->breakpoints.string =
+	    realloc(machine->breakpoints.string, n * sizeof(char *)));
+	CHECK_ALLOCATION(machine->breakpoints.addr =
+	    realloc(machine->breakpoints.addr, n * sizeof(uint64_t)));
+	CHECK_ALLOCATION(machine->breakpoints.string[machine->breakpoints.n] =
+	    strdup(optarg));
 
 	machine->breakpoints.addr[machine->breakpoints.n] = 0;
-
 	machine->breakpoints.n ++;
 }
 
@@ -307,22 +286,14 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 {
 	int n = machine->tick_functions.n_entries;
 
-	machine->tick_functions.ticks_till_next = realloc(
-	    machine->tick_functions.ticks_till_next, (n+1) * sizeof(int));
-	machine->tick_functions.ticks_reset_value = realloc(
-	    machine->tick_functions.ticks_reset_value, (n+1) * sizeof(int));
-	machine->tick_functions.f = realloc(
-	    machine->tick_functions.f, (n+1) * sizeof(void *));
-	machine->tick_functions.extra = realloc(
-	    machine->tick_functions.extra, (n+1) * sizeof(void *));
-
-	if (machine->tick_functions.ticks_till_next == NULL ||
-	    machine->tick_functions.ticks_reset_value == NULL ||
-	    machine->tick_functions.f == NULL ||
-	    machine->tick_functions.extra == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->tick_functions.ticks_till_next = realloc(
+	    machine->tick_functions.ticks_till_next, (n+1) * sizeof(int)));
+	CHECK_ALLOCATION(machine->tick_functions.ticks_reset_value = realloc(
+	    machine->tick_functions.ticks_reset_value, (n+1) * sizeof(int)));
+	CHECK_ALLOCATION(machine->tick_functions.f = realloc(
+	    machine->tick_functions.f, (n+1) * sizeof(void *)));
+	CHECK_ALLOCATION(machine->tick_functions.extra = realloc(
+	    machine->tick_functions.extra, (n+1) * sizeof(void *)));
 
 	/*
 	 *  The dyntrans subsystem wants to run code in relatively
@@ -366,8 +337,9 @@ void machine_statistics_init(struct machine *machine, char *fname)
 		exit(1);
 	}
 
-	machine->statistics_fields = malloc(MAX_STATISTICS_FIELDS + 1);
 	machine->statistics_enabled = 1;
+	CHECK_ALLOCATION(machine->statistics_fields = malloc(1));
+	machine->statistics_fields[0] = '\0';
 
 	while (*pcolon && *pcolon != ':')
 		pcolon ++;
@@ -386,13 +358,10 @@ void machine_statistics_init(struct machine *machine, char *fname)
 		case 'v':
 		case 'i':
 		case 'p':
+			CHECK_ALLOCATION(machine->statistics_fields = realloc(
+			    machine->statistics_fields, strlen(
+			    machine->statistics_fields) + 2));
 			machine->statistics_fields[n_fields ++] = *fname;
-			if (n_fields >= MAX_STATISTICS_FIELDS) {
-				fprintf(stderr, "Internal error: Too many "
-				    "statistics fields used. Increase "
-				    "MAX_STATISTICS_FIELDS.\n");
-				exit(1);
-			}
 			machine->statistics_fields[n_fields] = '\0';
 			break;
 
@@ -413,7 +382,7 @@ void machine_statistics_init(struct machine *machine, char *fname)
 
 	fname ++;	/*  point to the filename after the colon  */
 
-	machine->statistics_filename = strdup(fname);
+	CHECK_ALLOCATION(machine->statistics_filename = strdup(fname));
 	machine->statistics_file = fopen(machine->statistics_filename, mode);
 }
 
@@ -452,16 +421,16 @@ void machine_dumpinfo(struct machine *m)
 	if (m->slow_serial_interrupts_hack_for_linux)
 		debug("Using slow_serial_interrupts_hack_for_linux\n");
 
-	if (m->use_x11) {
+	if (m->x11_md.in_use) {
 		debug("Using X11");
-		if (m->x11_scaledown > 1)
-			debug(", scaledown %i", m->x11_scaledown);
-		if (m->x11_scaleup > 1)
-			debug(", scaleup %i", m->x11_scaleup);
-		if (m->x11_n_display_names > 0) {
-			for (i=0; i<m->x11_n_display_names; i++) {
+		if (m->x11_md.scaledown > 1)
+			debug(", scaledown %i", m->x11_md.scaledown);
+		if (m->x11_md.scaleup > 1)
+			debug(", scaleup %i", m->x11_md.scaleup);
+		if (m->x11_md.n_display_names > 0) {
+			for (i=0; i<m->x11_md.n_display_names; i++) {
 				debug(i? ", " : " (");
-				debug("\"%s\"", m->x11_display_names[i]);
+				debug("\"%s\"", m->x11_md.display_names[i]);
 			}
 			debug(")");
 		}
@@ -709,12 +678,7 @@ struct machine_entry *machine_entry_new(const char *name, int arch,
 {
 	struct machine_entry *me;
 
-	me = malloc(sizeof(struct machine_entry));
-	if (me == NULL) {
-		fprintf(stderr, "machine_entry_new(): out of memory (1)\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(me = malloc(sizeof(struct machine_entry)));
 	memset(me, 0, sizeof(struct machine_entry));
 
 	me->name = name;
@@ -737,11 +701,9 @@ struct machine_entry *machine_entry_new(const char *name, int arch,
 void machine_entry_add_alias(struct machine_entry *me, const char *name)
 {
 	me->n_aliases ++;
-	me->aliases = realloc(me->aliases, sizeof(char *) * me->n_aliases);
-	if (me->aliases == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+
+	CHECK_ALLOCATION(me->aliases = realloc(me->aliases,
+	    sizeof(char *) * me->n_aliases));
 
 	me->aliases[me->n_aliases - 1] = (char *) name;
 }
@@ -763,21 +725,12 @@ void machine_entry_add_subtype(struct machine_entry *me, const char *name,
 	struct machine_entry_subtype *mes;
 
 	/*  Allocate a new subtype struct:  */
-	mes = malloc(sizeof(struct machine_entry_subtype));
-	if (mes == NULL) {
-		fprintf(stderr, "machine_entry_subtype_new(): out "
-		    "of memory (1)\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(mes = malloc(sizeof(struct machine_entry_subtype)));
 
 	/*  Add the subtype to the machine entry:  */
 	me->n_subtypes ++;
-	me->subtype = realloc(me->subtype, sizeof(struct
-	    machine_entry_subtype *) * me->n_subtypes);
-	if (me->subtype == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(me->subtype = realloc(me->subtype, sizeof(struct
+	    machine_entry_subtype *) * me->n_subtypes));
 	me->subtype[me->n_subtypes - 1] = mes;
 
 	/*  Fill the struct with subtype data:  */
@@ -797,12 +750,8 @@ void machine_entry_add_subtype(struct machine_entry *me, const char *name,
 			break;
 
 		mes->n_aliases ++;
-		mes->aliases = realloc(mes->aliases, sizeof(char *) *
-		    mes->n_aliases);
-		if (mes->aliases == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+		CHECK_ALLOCATION(mes->aliases =
+		    realloc(mes->aliases, sizeof(char *) * mes->n_aliases));
 
 		mes->aliases[mes->n_aliases - 1] = s;
 	}

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.20 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_sii.c,v 1.21 2007-06-15 19:57:34 debug Exp $
  *  
- *  SII SCSI controller, used in some DECstation systems.
+ *  COMMENT: SII SCSI controller, used in some DECstation systems
  *
  *  TODO:  This is huge and ugly. Fix this.
  */
@@ -93,10 +93,7 @@ void combine_sii_bits(struct sii_data *d)
 }
 
 
-/*
- *  dev_sii_tick():
- */
-void dev_sii_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(sii)
 {
 	struct sii_data *d = extra;
 
@@ -442,20 +439,15 @@ DEVICE_ACCESS(sii)
 }
 
 
-/*
- *  dev_sii_init():
- */
 void dev_sii_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end,
 	char *irq_path)
 {
-	struct sii_data *d = malloc(sizeof(struct sii_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct sii_data *d;
 
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sii_data)));
 	memset(d, 0, sizeof(struct sii_data));
+
 	INTERRUPT_CONNECT(irq_path, d->irq);
 	d->buf_start = buf_start;
 	d->buf_end   = buf_end;

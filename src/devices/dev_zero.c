@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zero.c,v 1.6 2006-12-30 13:31:00 debug Exp $
+ *  $Id: dev_zero.c,v 1.7 2007-06-15 19:57:34 debug Exp $
  *  
- *  A simple device which returns zero for all reads, and discards all writes.
+ *  COMMENT: A simple device which returns zero for reads, discards all writes
  */
 
 #include <stdio.h>

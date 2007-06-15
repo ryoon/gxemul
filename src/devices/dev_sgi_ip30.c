@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.25 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.26 2007-06-15 19:57:34 debug Exp $
  *  
- *  SGI IP30 stuff.
+ *  COMMENT: SGI IP30 stuff
  *
- *  This is just comprised of hardcoded guesses so far. (Ugly.)
+ *  NOTE/TODO: This is just comprised of hardcoded guesses so far. (Ugly.)
  */
 
 #include <stdio.h>
@@ -67,7 +67,7 @@ struct sgi_ip30_data {
 };
 
 
-void dev_sgi_ip30_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(sgi_ip30)
 {
 	struct sgi_ip30_data *d = extra;
 
@@ -83,22 +83,21 @@ abort();
 }
 
 
-/*
- *  dev_sgi_ip30_access():
- */
 DEVICE_ACCESS(sgi_ip30)
 {
-	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
+	struct sgi_ip30_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
 	case 0x20:
 		/*  Memory bank configuration:  */
 		odata = 0x80010000ULL;
 		break;
+
 	case 0x10000:	/*  Interrupt mask register 0:  */
 		if (writeflag == MEM_WRITE) {
 			d->imask0 = idata;
@@ -106,6 +105,7 @@ DEVICE_ACCESS(sgi_ip30)
 			odata = d->imask0;
 		}
 		break;
+
 	case 0x10018:
 		/*
 		 *  If this is not implemented, the IP30 PROM complains during
@@ -121,6 +121,7 @@ DEVICE_ACCESS(sgi_ip30)
 			odata = d->reg_0x10018;
 		}
 		break;
+
 	case 0x10020:	/*  Set ISR, according to Linux/IP30  */
 		d->isr = idata;
 		/*  Recalculate CPU interrupt assertions:  */
@@ -128,6 +129,7 @@ fatal("IP30 legacy interrupt rewrite: TODO\n");
 abort();
 //		cpu_interrupt(cpu, 8);
 		break;
+
 	case 0x10028:	/*  Clear ISR, according to Linux/IP30  */
 		d->isr &= ~idata;
 		/*  Recalculate CPU interrupt assertions:  */
@@ -135,6 +137,7 @@ fatal("IP30 legacy interrupt rewrite: TODO\n");
 abort();
 //		cpu_interrupt(cpu, 8);
 		break;
+
 	case 0x10030:	/*  Interrupt Status Register  */
 		if (writeflag == MEM_WRITE) {
 			/*  Clear-on-write  (TODO: is this correct?)  */
@@ -147,6 +150,7 @@ abort();
 			odata = d->isr;
 		}
 		break;
+
 	case 0x20000:
 		/*  A counter  */
 		if (writeflag == MEM_WRITE) {
@@ -155,6 +159,7 @@ abort();
 			odata = d->reg_0x20000;
 		}
 		break;
+
 	case 0x30000:
 		if (writeflag == MEM_WRITE) {
 			d->reg_0x30000 = idata;
@@ -162,6 +167,7 @@ abort();
 			odata = d->reg_0x30000;
 		}
 		break;
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip30: unimplemented write to address "
@@ -180,12 +186,9 @@ abort();
 }
 
 
-/*
- *  dev_sgi_ip30_2_access():
- */
 DEVICE_ACCESS(sgi_ip30_2)
 {
-	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
+	struct sgi_ip30_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
@@ -233,17 +236,15 @@ DEVICE_ACCESS(sgi_ip30_2)
 }
 
 
-/*
- *  dev_sgi_ip30_3_access():
- */
 DEVICE_ACCESS(sgi_ip30_3)
 {
-	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
+	struct sgi_ip30_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
 	case 0xb4:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip30_3: unimplemented write to "
@@ -253,6 +254,7 @@ DEVICE_ACCESS(sgi_ip30_3)
 			odata = 2;	/*  should be 2, or Irix loops  */
 		}
 		break;
+
 	case 0x00104:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip30_3: unimplemented write to address "
@@ -263,6 +265,7 @@ DEVICE_ACCESS(sgi_ip30_3)
 					    complains  */
 		}
 		break;
+
 	case 0x00284:
 		/*
 		 *  If this is not implemented, the IP30 PROM complains during
@@ -278,6 +281,7 @@ DEVICE_ACCESS(sgi_ip30_3)
 			odata = d->reg_0x00284;
 		}
 		break;
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip30_3: unimplemented write to address "
@@ -296,17 +300,15 @@ DEVICE_ACCESS(sgi_ip30_3)
 }
 
 
-/*
- *  dev_sgi_ip30_4_access():
- */
 DEVICE_ACCESS(sgi_ip30_4)
 {
-	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
+	struct sgi_ip30_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
 	case 0x000b0:
 		/*
 		 *  If this is not implemented, the IP30 PROM complains during
@@ -322,6 +324,7 @@ DEVICE_ACCESS(sgi_ip30_4)
 			odata = d->reg_0x000b0;
 		}
 		break;
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip30_4: unimplemented write to address"
@@ -340,17 +343,15 @@ DEVICE_ACCESS(sgi_ip30_4)
 }
 
 
-/*
- *  dev_sgi_ip30_5_access():
- */
 DEVICE_ACCESS(sgi_ip30_5)
 {
-	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
+	struct sgi_ip30_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
 	case 0x00000:
 		if (writeflag == MEM_WRITE) {
 			d->reg_0x00000 = idata;
@@ -358,6 +359,7 @@ DEVICE_ACCESS(sgi_ip30_5)
 			odata = d->reg_0x00000;
 		}
 		break;
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip30_5: unimplemented write to address "
@@ -378,11 +380,9 @@ DEVICE_ACCESS(sgi_ip30_5)
 
 DEVINIT(sgi_ip30)
 {
-	struct sgi_ip30_data *d = malloc(sizeof(struct sgi_ip30_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct sgi_ip30_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sgi_ip30_data)));
 	memset(d, 0, sizeof(struct sgi_ip30_data));
 
 	memory_device_register(devinit->machine->memory, "sgi_ip30_1",

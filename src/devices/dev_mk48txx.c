@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mk48txx.c,v 1.7 2007-05-25 21:17:30 debug Exp $
+ *  $Id: dev_mk48txx.c,v 1.8 2007-06-15 19:57:33 debug Exp $
  *
- *  Mostek MK48Txx Real Time Clock.
- *
+ *  COMMENT: Mostek MK48Txx Real Time Clock
  *
  *  TODO:
  *	Only the MK48T08 is implemented so far.
@@ -79,7 +78,7 @@ void mk48txx_update_regs(struct mk48txx_data *d)
 
 DEVICE_ACCESS(mk48txx)
 {
-	struct mk48txx_data *d = (struct mk48txx_data *) extra;
+	struct mk48txx_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -132,11 +131,9 @@ ret:
 
 DEVINIT(mk48txx)
 {
-	struct mk48txx_data *d = malloc(sizeof(struct mk48txx_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct mk48txx_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct mk48txx_data)));
 	memset(d, 0, sizeof(struct mk48txx_data));
 
 	mk48txx_update_regs(d);

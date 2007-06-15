@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.18 2007-04-21 06:13:53 debug Exp $
+ *  $Id: dev_sn.c,v 1.19 2007-06-15 19:57:34 debug Exp $
  *  
- *  National Semiconductor SONIC ("sn") DP83932 ethernet.
- *
+ *  COMMENT: National Semiconductor SONIC ("sn") DP83932 ethernet controller
  *
  *  TODO
  */
@@ -59,7 +58,7 @@ struct sn_data {
 
 DEVICE_ACCESS(sn)
 {
-	struct sn_data *d = (struct sn_data *) extra;
+	struct sn_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -100,23 +99,16 @@ DEVINIT(sn)
 {
 	char *name2;
 	size_t nlen = 55;
-	struct sn_data *d = malloc(sizeof(struct sn_data));
+	struct sn_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sn_data)));
 	memset(d, 0, sizeof(struct sn_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	net_generate_unique_mac(devinit->machine, d->macaddr);
 
-	name2 = malloc(nlen);
-	if (name2 == NULL) {
-		fprintf(stderr, "out of memory in dev_sn_init()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(name2 = malloc(nlen));
 	snprintf(name2, nlen, "%s [%02x:%02x:%02x:%02x:%02x:%02x]",
 	    devinit->name, d->macaddr[0], d->macaddr[1], d->macaddr[2],
 	    d->macaddr[3], d->macaddr[4], d->macaddr[5]);

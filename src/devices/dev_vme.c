@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_vme.c,v 1.3 2007-05-25 12:19:07 debug Exp $
+ *  $Id: dev_vme.c,v 1.4 2007-06-15 19:57:34 debug Exp $
  *
- *  VME bus.
+ *  COMMENT: VME bus
  *
  *  TODO
  */
@@ -59,7 +59,7 @@ struct vme_data {
 
 DEVICE_ACCESS(vme)
 {
-	struct vme_data *d = (struct vme_data *) extra;
+	struct vme_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -81,11 +81,10 @@ DEVICE_ACCESS(vme)
 	case VME2_T1COUNT:
 		if (writeflag == MEM_WRITE)
 			d->reg[relative_addr / sizeof(uint32_t)] = idata;
-		else
-
-/*  TODO: HAhahaha, quick hack!  */
-
+		else {
+			/*  NOTE! This is a quick hack. TODO: Fix!  */
 			d->reg[relative_addr / sizeof(uint32_t)] += 10;
+		}
 		break;
 
 	case VME2_TCTL:
@@ -112,11 +111,9 @@ DEVICE_ACCESS(vme)
 
 DEVINIT(vme)
 {
-	struct vme_data *d = malloc(sizeof(struct vme_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct vme_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct vme_data)));
 	memset(d, 0, sizeof(struct vme_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

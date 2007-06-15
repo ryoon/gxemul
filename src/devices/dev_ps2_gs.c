@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.22 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.23 2007-06-15 19:57:33 debug Exp $
  *  
- *  Playstation 2 "graphics system".
+ *  COMMENT: PlayStation 2 graphics system
  */
 
 #include <stdio.h>
@@ -71,8 +71,7 @@ char *gs_reg_names[15] = {
 	"PMODE", "SMODE1", "SMODE2", "SRFSH",
 	"SYNCH1", "SYNCH2", "SYNCV", "DISPFB1",
 	"DISPLAY1", "DISPFB2", "DISPLAY2", "EXTBUF",
-	"EXTDATA", "EXTWRITE", "BGCOLOR"
-	};
+	"EXTDATA", "EXTWRITE", "BGCOLOR"  };
 
 #define	GS_S_CSR_REG		0x100
 #define	GS_S_IMR_REG		0x101
@@ -84,15 +83,12 @@ char *gs_reg_high_names[4] = {
 	};
 
 
-/*
- *  dev_ps2_gs_access():
- */
 DEVICE_ACCESS(ps2_gs)
 {
+	struct gs_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	size_t i;
 	int regnr;
-	struct gs_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -148,11 +144,7 @@ DEVINIT(ps2_gs)
 	struct gs_data *d;
 	char str[100];
 
-	d = malloc(sizeof(struct gs_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct gs_data)));
 	memset(d, 0, sizeof(struct gs_data));
 
 	snprintf(str, sizeof(str) - 1, "ps2_gif addr=0x%llx",

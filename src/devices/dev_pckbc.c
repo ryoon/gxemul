@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.73 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.74 2007-06-15 19:57:33 debug Exp $
  *  
- *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
- *  controller), including the 8048 keyboard chip.
+ *  COMMENT: 8042 PC keyboard controller (+ 8242WB Keyboard/Mouse controller)
+ *
+ *  This module includes emulation of the 8048 keyboard chip too.
  *
  *  Quick source of good info: http://my.execpc.com/~geezer/osd/kbd/kbd.txt
  *
@@ -437,10 +438,7 @@ static void ascii_to_pc_scancodes_type2(int a, struct pckbc_data *d)
 }
 
 
-/*
- *  dev_pckbc_tick():
- */
-void dev_pckbc_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(pckbc)
 {
 	struct pckbc_data *d = extra;
 	int port_nr, ch, ints_enabled;
@@ -622,10 +620,10 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 
 DEVICE_ACCESS(pckbc)
 {
+	struct pckbc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int port_nr = 0;
 	size_t i;
-	struct pckbc_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -912,11 +910,7 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	struct pckbc_data *d;
 	int len = DEV_PCKBC_LENGTH;
 
-	d = malloc(sizeof(struct pckbc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pckbc_data)));
 	memset(d, 0, sizeof(struct pckbc_data));
 
 	if (type == PCKBC_8242)

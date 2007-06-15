@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtc.c,v 1.6 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_rtc.c,v 1.7 2007-06-15 19:57:34 debug Exp $
  *
- *  An experimental Real-Time Clock device. It can be used to retrieve the
- *  current system time, and to cause periodic interrupts.
+ *  COMMENT: A generic Real-Time Clock device, for the test machines
+ *
+ *  It can be used to retrieve the current system time, and to cause periodic
+ *  interrupts.
  */
 
 #include <stdio.h>
@@ -74,7 +76,7 @@ static void timer_tick(struct timer *t, void *extra)
 
 DEVICE_TICK(rtc)
 {  
-	struct rtc_data *d = (struct rtc_data *) extra;
+	struct rtc_data *d = extra;
 
 	if (d->pending_interrupts > 0)
 		INTERRUPT_ASSERT(d->irq);
@@ -85,7 +87,7 @@ DEVICE_TICK(rtc)
 
 DEVICE_ACCESS(rtc)
 {
-	struct rtc_data *d = (struct rtc_data *) extra;
+	struct rtc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -159,12 +161,9 @@ DEVICE_ACCESS(rtc)
 
 DEVINIT(rtc)
 {
-	struct rtc_data *d = malloc(sizeof(struct rtc_data));
+	struct rtc_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct rtc_data)));
 	memset(d, 0, sizeof(struct rtc_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);

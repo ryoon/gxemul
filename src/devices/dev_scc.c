@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.39 2007-05-25 11:57:56 debug Exp $
- *  
- *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
- *  Most of the code in here is written for DECsystem emulation, though.
+ *  $Id: dev_scc.c,v 1.40 2007-06-15 19:57:34 debug Exp $
+ *
+ *  COMMENT: Serial controller used in some DECsystem and SGI machines
+ *
+ *  Hm... Same as Z8530? Most of the code in here is written for DECsystem
+ *  emulation, though.
  *
  *  NOTE:
  *	Each scc device is responsible for two lines; the first scc device
@@ -149,8 +151,8 @@ static unsigned char rx_nextchar(struct scc_data *d, int portnr)
 
 DEVICE_TICK(scc)
 {
+	struct scc_data *d = extra;
 	int i;
-	struct scc_data *d = (struct scc_data *) extra;
 
 	/*  Add keystrokes to the rx queue:  */
 	if (d->use_fb == 0 && d->scc_nr == 1) {
@@ -305,7 +307,7 @@ int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr,
 
 DEVICE_ACCESS(scc)
 {
-	struct scc_data *d = (struct scc_data *) extra;
+	struct scc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int port;
 	int ultrix_mode = 0;
@@ -474,12 +476,9 @@ void *dev_scc_init(struct machine *machine, struct memory *mem,
 {
 	struct scc_data *d;
 
-	d = malloc(sizeof(struct scc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct scc_data)));
 	memset(d, 0, sizeof(struct scc_data));
+
 	d->irq_nr  = irq_nr;
 	d->scc_nr  = scc_nr;
 	d->use_fb  = use_fb;

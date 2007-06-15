@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.52 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.53 2007-06-15 19:57:34 debug Exp $
  *  
- *  SGI IP32 devices.
+ *  COMMENT: SGI IP32 stuff (CRIME, MACE, MACEPCI, mec, ust, mte)
  *
  *	o)  CRIME
  *	o)  MACE
@@ -131,7 +131,7 @@ void crime_interrupt_deassert(struct interrupt *interrupt)
  *  A R10000 is detected as running at
  *  CRIME_SPEED_FACTOR * 66 MHz. (TODO: this is not correct anymore)
  */
-void dev_crime_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(crime)
 {
 	int j, carry, old, new, add_byte;
 	uint64_t what_to_add = (1<<CRIME_TICKSHIFT)
@@ -274,12 +274,9 @@ void dev_crime_init(struct machine *machine, struct memory *mem,
 	char tmpstr[200];
 	int i;
 
-	d = malloc(sizeof(struct crime_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct crime_data)));
 	memset(d, 0, sizeof(struct crime_data));
+
 	d->use_fb = use_fb;
 
 	INTERRUPT_CONNECT(irq_path, d->irq);
@@ -429,11 +426,7 @@ DEVINIT(mace)
 	char tmpstr[300];
 	int i;
 
-	d = malloc(sizeof(struct mace_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct mace_data)));
 	memset(d, 0, sizeof(struct mace_data));
 
 	snprintf(tmpstr, sizeof(tmpstr), "%s.0x%x",
@@ -487,7 +480,7 @@ DEVINIT(mace)
 
 DEVICE_ACCESS(macepci)
 {
-	struct macepci_data *d = (struct macepci_data *) extra;
+	struct macepci_data *d = extra;
 	uint64_t idata = 0, odata=0;
 	int regnr, res = 1, bus, dev, func, pcireg;
 
@@ -554,11 +547,9 @@ DEVICE_ACCESS(macepci)
 struct pci_data *dev_macepci_init(struct machine *machine,
 	struct memory *mem, uint64_t baseaddr, char *irq_path)
 {
-	struct macepci_data *d = malloc(sizeof(struct macepci_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct macepci_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct macepci_data)));
 	memset(d, 0, sizeof(struct macepci_data));
 
 	/*  TODO: PCI vs ISA interrupt?  */
@@ -900,12 +891,9 @@ advance_tx:
 }
 
 
-/*
- *  dev_sgi_mec_tick():
- */
-void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(sgi_mec)
 {
-	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
+	struct sgi_mec_data *d = extra;
 	int n = 0;
 
 	while (mec_try_tx(cpu, d))
@@ -929,7 +917,7 @@ void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 
 DEVICE_ACCESS(sgi_mec)
 {
-	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
+	struct sgi_mec_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -1091,23 +1079,16 @@ void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 {
 	char *name2;
 	size_t nlen = 55;
-	struct sgi_mec_data *d = malloc(sizeof(struct sgi_mec_data));
+	struct sgi_mec_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sgi_mec_data)));
 	memset(d, 0, sizeof(struct sgi_mec_data));
 
 	INTERRUPT_CONNECT(irq_path, d->irq);
 	memcpy(d->macaddr, macaddr, 6);
 	mec_reset(d);
 
-	name2 = malloc(nlen);
-	if (name2 == NULL) {
-		fprintf(stderr, "out of memory in dev_sgi_mec_init()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(name2 = malloc(nlen));
 	snprintf(name2, nlen, "mec [%02x:%02x:%02x:%02x:%02x:%02x]",
 	    d->macaddr[0], d->macaddr[1], d->macaddr[2],
 	    d->macaddr[3], d->macaddr[4], d->macaddr[5]);
@@ -1133,7 +1114,7 @@ struct sgi_ust_data {
 
 DEVICE_ACCESS(sgi_ust)
 {
-	struct sgi_ust_data *d = (struct sgi_ust_data *) extra;
+	struct sgi_ust_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -1172,11 +1153,9 @@ DEVICE_ACCESS(sgi_ust)
  */
 void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr)
 {
-	struct sgi_ust_data *d = malloc(sizeof(struct sgi_ust_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct sgi_ust_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sgi_ust_data)));
 	memset(d, 0, sizeof(struct sgi_ust_data));
 
 	memory_device_register(mem, "sgi_ust", baseaddr,
@@ -1206,7 +1185,7 @@ struct sgi_mte_data {
 
 DEVICE_ACCESS(sgi_mte)
 {
-	struct sgi_mte_data *d = (struct sgi_mte_data *) extra;
+	struct sgi_mte_data *d = extra;
 	uint64_t first_addr, last_addr, zerobuflen, fill_addr, fill_len;
 	unsigned char zerobuf[ZERO_CHUNK_LEN];
 	uint64_t idata = 0, odata = 0;
@@ -1446,11 +1425,9 @@ DEVICE_ACCESS(sgi_mte)
  */
 void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr)
 {
-	struct sgi_mte_data *d = malloc(sizeof(struct sgi_mte_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct sgi_mte_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sgi_mte_data)));
 	memset(d, 0, sizeof(struct sgi_mte_data));
 
 	memory_device_register(mem, "sgi_mte", baseaddr, DEV_SGI_MTE_LENGTH,

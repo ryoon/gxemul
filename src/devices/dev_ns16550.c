@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.61 2007-06-15 18:13:04 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.62 2007-06-15 19:57:33 debug Exp $
  *  
- *  NS16550 serial controller.
- *
+ *  COMMENT: NS16550 serial controller
  *
  *  TODO: Implement the FIFO.
  */

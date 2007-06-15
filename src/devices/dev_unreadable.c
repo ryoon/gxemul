@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_unreadable.c,v 1.14 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_unreadable.c,v 1.15 2007-06-15 19:57:34 debug Exp $
  *  
- *  A simple device which returns an error for all accesses (both reads and
- *  writes).
+ *  COMMENT: A simple device which returns an error for all reads/writes
  */
 
 #include <stdio.h>

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.75 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_wdc.c,v 1.76 2007-06-15 19:57:34 debug Exp $
  *
- *  Standard "wdc" IDE controller.
+ *  COMMENT: Standard "wdc" IDE controller
  */
 
 #include <stdio.h>
@@ -676,8 +676,10 @@ DEVICE_ACCESS(wdc)
 				inbuf_len += WDC_INBUF_SIZE;
 
 			if (d->atapi_cmd_in_progress && inbuf_len == 12) {
-				unsigned char *scsi_cmd = malloc(12);
+				unsigned char *scsi_cmd;
 				int x = 0, res;
+
+				CHECK_ALLOCATION(scsi_cmd = malloc(12));
 
 				if (d->atapi_st != NULL)
 					scsi_transfer_free(d->atapi_st);
@@ -742,13 +744,10 @@ DEVICE_ACCESS(wdc)
 			    inbuf_len % 512 == 0) ) {
 				int count = (d->write_in_progress ==
 				    WDCC_WRITEMULTI)? d->write_count : 1;
-				unsigned char *buf = malloc(512 * count);
-				unsigned char *b = buf;
+				unsigned char *buf, *b;
 
-				if (buf == NULL) {
-					fprintf(stderr, "out of memory\n");
-					exit(1);
-				}
+				CHECK_ALLOCATION(buf = malloc(512 * count));
+				b = buf;
 
 				if (d->inbuf_tail+512*count <= WDC_INBUF_SIZE) {
 					b = d->inbuf + d->inbuf_tail;
@@ -913,11 +912,7 @@ DEVINIT(wdc)
 	uint64_t alt_status_addr;
 	int i, tick_shift = WDC_TICK_SHIFT;
 
-	d = malloc(sizeof(struct wdc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct wdc_data)));
 	memset(d, 0, sizeof(struct wdc_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);

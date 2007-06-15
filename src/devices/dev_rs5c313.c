@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rs5c313.c,v 1.2 2007-04-14 12:54:27 debug Exp $
+ *  $Id: dev_rs5c313.c,v 1.3 2007-06-15 19:57:34 debug Exp $
  *
- *  RICOH RS5C313 Real Time Clock
+ *  COMMENT: RICOH RS5C313 Real Time Clock
  *
  *  The RS5C313 has 16 registers, see rs5c313reg.h for details. These registers
  *  are addressed at byte offsets.
@@ -92,7 +92,7 @@ static void rs5c313_update_time(struct rs5c313_data *d)
 
 DEVICE_ACCESS(rs5c313)
 {
-	struct rs5c313_data *d = (struct rs5c313_data *) extra;
+	struct rs5c313_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	rs5c313_update_time(d);
@@ -112,12 +112,9 @@ DEVICE_ACCESS(rs5c313)
 
 DEVINIT(rs5c313)
 {
-	struct rs5c313_data *d = malloc(sizeof(struct rs5c313_data));
+	struct rs5c313_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct rs5c313_data)));
 	memset(d, 0, sizeof(struct rs5c313_data));
 
 	/*  Default values:  */

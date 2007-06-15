@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.37 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_px.c,v 1.38 2007-06-15 19:57:33 debug Exp $
  *  
- *  TURBOchannel Pixelstamp graphics device.
+ *  COMMENT: TURBOchannel Pixelstamp graphics card
  *
  *	PMAG-CA = PX
  *	PMAG-DA = PXG
@@ -98,10 +98,7 @@
 /* #define PX_DEBUG  */
 
 
-/*
- *  dev_px_tick():
- */
-void dev_px_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(px)
 {
 #if 0
 	struct px_data *d = extra;
@@ -558,9 +555,6 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 }
 
 
-/*
- *  dev_px_access():
- */
 DEVICE_ACCESS(px)
 {
 	uint64_t idata = 0, odata = 0;
@@ -635,6 +629,7 @@ DEVICE_ACCESS(px)
 	/*  TODO:  Most of these aren't implemented yet.  */
 
 	switch (relative_addr) {
+
 	case 0x180008:		/*  hsync  */
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from hsync: 0x%08llx ]\n",
@@ -644,6 +639,7 @@ DEVICE_ACCESS(px)
 			    (long long)idata);
 		}
 		break;
+
 	case 0x18000c:		/*  hsync2  */
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from hsync2: 0x%08llx ]\n",
@@ -653,6 +649,7 @@ DEVICE_ACCESS(px)
 			    (long long)idata);
 		}
 		break;
+
 	case 0x180010:		/*  hblank  */
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from hblank: 0x%08llx ]\n",
@@ -662,6 +659,7 @@ DEVICE_ACCESS(px)
 			    (long long)idata);
 		}
 		break;
+
 	case 0x180014:		/*  vsync  */
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from vsync: 0x%08llx ]\n",
@@ -671,6 +669,7 @@ DEVICE_ACCESS(px)
 			    (long long)idata);
 		}
 		break;
+
 	case 0x180018:		/*  vblank  */
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from vblank: 0x%08llx ]\n",
@@ -680,6 +679,7 @@ DEVICE_ACCESS(px)
 			    (long long)idata);
 		}
 		break;
+
 	case 0x180020:		/*  ipdvint  */
 		if (writeflag==MEM_READ) {
 			odata = d->intr;
@@ -701,6 +701,7 @@ odata = random();
 			    (long long)idata);
 		}
 		break;
+
 	case 0x180028:		/*  sticsr  */
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from sticsr: 0x%08llx ]\n",
@@ -710,6 +711,7 @@ odata = random();
 			    (long long)idata);
 		}
 		break;
+
 	case 0x180038:		/*  buscsr  */
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from buscsr: 0x%08llx ]\n",
@@ -719,6 +721,7 @@ odata = random();
 			    (long long)idata);
 		}
 		break;
+
 	case 0x18003c:		/*  modcl  */
 		if (writeflag==MEM_READ) {
 			odata = (d->type << 12) + (d->xconfig << 11) +
@@ -730,6 +733,7 @@ odata = random();
 			    (long long)idata);
 		}
 		break;
+
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ px: read from addr 0x%x: 0x%llx ]\n",
@@ -747,19 +751,12 @@ odata = random();
 }
 
 
-/*
- *  dev_px_init():
- */
 void dev_px_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int px_type, char *irq_path)
 {
 	struct px_data *d;
 
-	d = malloc(sizeof(struct px_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct px_data)));
 	memset(d, 0, sizeof(struct px_data));
 
 	d->type = px_type;

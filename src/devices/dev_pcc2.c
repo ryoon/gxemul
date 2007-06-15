@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_pcc2.c,v 1.3 2007-06-15 18:13:04 debug Exp $
+ *  $Id: dev_pcc2.c,v 1.4 2007-06-15 19:57:33 debug Exp $
  *
- *  PCC2 bus (used in e.g. the MVME187 machine).
+ *  COMMENT: PCC2 bus (used in MVME machine)
  *
  *  TODO
  */

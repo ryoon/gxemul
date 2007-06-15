@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.41 2007-06-05 07:27:29 debug Exp $
+ *  $Id: dev_mp.c,v 1.42 2007-06-15 19:57:33 debug Exp $
+ *
+ *  COMMENT: Generic Multi-processor controller for the test machines
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -192,12 +194,8 @@ DEVICE_ACCESS(mp)
 				send_it = 1;
 			if (send_it) {
 				d->n_pending_ipis[i] ++;
-				d->ipi[i] = realloc(d->ipi[i],
-				    d->n_pending_ipis[i] * sizeof(int));
-				if (d->ipi[i] == NULL) {
-					fprintf(stderr, "out of memory\n");
-					exit(1);
-				}
+				CHECK_ALLOCATION(d->ipi[i] = realloc(d->ipi[i],
+				    d->n_pending_ipis[i] * sizeof(int)));
 
 				/*  Add the IPI last in the array:  */
 				d->ipi[i][d->n_pending_ipis[i] - 1] =
@@ -260,12 +258,9 @@ DEVINIT(mp)
 	struct mp_data *d;
 	int n, i;
 
-	d = malloc(sizeof(struct mp_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct mp_data)));
 	memset(d, 0, sizeof(struct mp_data));
+
 	d->cpus = devinit->machine->cpus;
 	d->startup_addr = INITIAL_PC;
 	d->stack_addr = INITIAL_STACK_POINTER;
@@ -273,11 +268,8 @@ DEVINIT(mp)
 	n = devinit->machine->ncpus;
 
 	/*  Connect to all CPUs' IPI pins:  */
-	d->ipi_irq = malloc(n * sizeof(struct interrupt));
-	if (d->ipi_irq == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d->ipi_irq = malloc(n * sizeof(struct interrupt)));
+
 	for (i=0; i<n; i++) {
 		char tmpstr[200];
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%s",
@@ -285,13 +277,10 @@ DEVINIT(mp)
 		INTERRUPT_CONNECT(tmpstr, d->ipi_irq[i]);
 	}
 
-	d->n_pending_ipis = malloc(n * sizeof(int));
-	d->ipi = malloc(n * sizeof(int *));
-	if (d->ipi == NULL || d->n_pending_ipis == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d->n_pending_ipis = malloc(n * sizeof(int)));
 	memset(d->n_pending_ipis, 0, sizeof(int) * n);
+
+	CHECK_ALLOCATION(d->ipi = malloc(n * sizeof(int *)));
 	memset(d->ipi, 0, sizeof(int *) * n);
 
 	memory_device_register(devinit->machine->memory, devinit->name,

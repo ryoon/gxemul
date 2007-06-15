@@ -25,12 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.10 2007-02-11 10:03:55 debug Exp $
+ *  $Id: dev_prep.c,v 1.11 2007-06-15 19:57:33 debug Exp $
  *
- *  PReP mainbus.
- *
- *  o)  ISA bus
- *  o)  Interrupt controller
+ *  COMMENT: PReP machine mainbus (ISA bus + interrupt controller)
  */
 
 #include <stdio.h>
@@ -75,11 +72,7 @@ DEVINIT(prep)
 {
 	struct prep_data *d;
 
-	d = malloc(sizeof(struct prep_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct prep_data)));
 	memset(d, 0, sizeof(struct prep_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

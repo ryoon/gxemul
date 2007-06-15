@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.34 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.35 2007-06-15 19:57:33 debug Exp $
  *  
- *  Playstation 2 "gif" graphics device.
+ *  COMMENT: PlayStation 2 "gif" graphics device
  *
  *  TODO:  Convert dev_fb_access() accesses into direct framebuffer reads and
  *         writes, to improve performance.
@@ -73,7 +73,7 @@ void test_triangle(struct gif_data *d,
 	int x2, int y2, int r2, int g2, int b2,
 	int x3, int y3, int r3, int g3, int b3)
 {
-	unsigned char *line = malloc(d->xsize * d->bytes_per_pixel);
+	unsigned char *line;
 	int y, tmp, scale = 32768;
 	int xofs, xlen, savedxlen, xdir, x;
 	int r, g, b;			/*  scaled  */
@@ -86,6 +86,8 @@ void test_triangle(struct gif_data *d,
 	int rpy12, rpy13, rpy23;
 	int gpy12, gpy13, gpy23;
 	int bpy12, bpy13, bpy23;
+
+	CHECK_ALLOCATION(line = malloc(d->xsize * d->bytes_per_pixel));
 
 	if (y2 > y3) {
 		tmp = x2; x2 = x3; x3 = tmp;
@@ -204,9 +206,6 @@ void test_triangle(struct gif_data *d,
 }
 
 
-/*
- *  dev_ps2_gif_access():
- */
 DEVICE_ACCESS(ps2_gif)
 {
 	unsigned int i;
@@ -403,11 +402,7 @@ DEVINIT(ps2_gif)
 {
 	struct gif_data *d;
 
-	d = malloc(sizeof(struct gif_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct gif_data)));
 	memset(d, 0, sizeof(struct gif_data));
 
 	d->transparent_text = 0;

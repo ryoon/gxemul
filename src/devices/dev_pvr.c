@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.23 2007-06-15 18:13:04 debug Exp $
+ *  $Id: dev_pvr.c,v 1.24 2007-06-15 19:57:33 debug Exp $
  *  
- *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
- *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
+ *  COMMENT: PowerVR CLX2 (graphics controller used in the Dreamcast)
+ *
+ *  Implemented by reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
  *  http://mc.pp.se/dc/pvr.html, source code of various demos and KalistOS,
  *  and doing a lot of guessing.
  *
@@ -419,7 +420,7 @@ static void pvr_ta_command(struct cpu *cpu, struct pvr_data *d, int list_ofs)
 
 DEVICE_ACCESS(pvr_ta)
 {
-	struct pvr_data *d = (struct pvr_data *) extra;
+	struct pvr_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE) {
@@ -444,7 +445,7 @@ DEVICE_ACCESS(pvr_ta)
 
 DEVICE_ACCESS(pvr)
 {
-	struct pvr_data *d = (struct pvr_data *) extra;
+	struct pvr_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.45 2007-06-15 17:02:39 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.46 2007-06-15 19:57:34 debug Exp $
  *  
- *  VR41xx (VR4122 and VR4131) misc functions.
+ *  COMMENT: VR41xx (VR4122 and VR4131) misc functions
  *
  *  This is just a big hack.
  *
@@ -394,7 +394,7 @@ static void vr41xx_keytick(struct cpu *cpu, struct vr41xx_data *d)
  */
 static void timer_tick(struct timer *timer, void *extra)
 {
-	struct vr41xx_data *d = (struct vr41xx_data *) extra;
+	struct vr41xx_data *d = extra;
 	d->pending_timer_interrupts ++;
 }
 
@@ -481,7 +481,7 @@ static uint64_t vr41xx_kiu(struct cpu *cpu, int ofs, uint64_t idata,
 
 DEVICE_ACCESS(vr41xx)
 {
-	struct vr41xx_data *d = (struct vr41xx_data *) extra;
+	struct vr41xx_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 	int revision = 0;
@@ -674,15 +674,12 @@ ret:
 struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	struct memory *mem, int cpumodel)
 {
+	struct vr41xx_data *d;
 	uint64_t baseaddr = 0;
 	char tmps[300];
 	int i;
-	struct vr41xx_data *d = malloc(sizeof(struct vr41xx_data));
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct vr41xx_data)));
 	memset(d, 0, sizeof(struct vr41xx_data));
 
 	/*  Connect to MIPS irq 2:  */

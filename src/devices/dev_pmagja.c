@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.21 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.22 2007-06-15 19:57:33 debug Exp $
  *  
- *  TURBOchannel PMAG-JA graphics device.
+ *  COMMENT: TURBOchannel PMAG-JA graphics card
  *
  *  TODO
  */
@@ -64,13 +64,10 @@ struct pmagja_data {
 };
 
 
-/*
- *  dev_pmagja_access():
- */
 DEVICE_ACCESS(pmagja)
 {
-	uint64_t idata = 0, odata = 0;
 	struct pmagja_data *d = extra;
+	uint64_t idata = 0, odata = 0;
 	size_t i, res = 1;
 
 	if (writeflag == MEM_WRITE)
@@ -198,19 +195,12 @@ for (i=0; i<len; i++)
 }
 
 
-/*
- *  dev_pmagja_init():
- */
 void dev_pmagja_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *irq_path)
 {
 	struct pmagja_data *d;
 
-	d = malloc(sizeof(struct pmagja_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pmagja_data)));
 	memset(d, 0, sizeof(struct pmagja_data));
 
 	INTERRUPT_CONNECT(irq_path, d->irq);

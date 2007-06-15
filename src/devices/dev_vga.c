@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.103 2007-06-15 17:02:39 debug Exp $
+ *  $Id: dev_vga.c,v 1.104 2007-06-15 19:57:34 debug Exp $
  *
- *  VGA charcell and graphics device.
+ *  COMMENT: VGA framebuffer device (charcell and graphics modes)
  *
  *  It should work with 80x25 and 40x25 text modes, and with a few graphics
  *  modes as long as no fancy VGA features are used.
@@ -503,10 +503,7 @@ static void vga_update_cursor(struct machine *machine, struct vga_data *d)
 }
 
 
-/*
- *  dev_vga_tick():
- */
-void dev_vga_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(vga)
 {
 	struct vga_data *d = extra;
 	int64_t low = -1, high;
@@ -587,8 +584,6 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 
 
 /*
- *  vga_graphics_access():
- *
  *  Reads and writes to the VGA video memory (pixels).
  */
 DEVICE_ACCESS(vga_graphics)
@@ -684,9 +679,7 @@ DEVICE_ACCESS(vga_graphics)
 
 
 /*
- *  dev_vga_access():
- *
- *  Reads and writes to the VGA video memory (charcells).
+ *  Reads and writes the VGA video memory (charcells).
  */
 DEVICE_ACCESS(vga)
 {
@@ -882,7 +875,8 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 		if (d->cur_mode == MODE_GRAPHICS)
 			d->gfx_mem_size = d->max_x * d->max_y /
 			    (d->graphics_mode == GRAPHICS_MODE_8BIT? 1 : 2);
-		d->gfx_mem = malloc(d->gfx_mem_size);
+
+		CHECK_ALLOCATION(d->gfx_mem = malloc(d->gfx_mem_size));
 
 		/*  Clear screen and reset the palette:  */
 		memset(d->charcells_outputed, 0, d->charcells_size);
@@ -1145,12 +1139,9 @@ DEVICE_ACCESS(vga_ctrl)
 			if ((d->current_retrace_line & 7) == 7) {
 				if (d->retrace_palette == NULL &&
 				    d->n_is1_reads > N_IS1_READ_THRESHOLD) {
-					d->retrace_palette = malloc(
-					    MAX_RETRACE_SCANLINES * 256*3);
-					if (d->retrace_palette == NULL) {
-						fatal("out of memory\n");
-						exit(1);
-					}
+					CHECK_ALLOCATION(d->retrace_palette =
+					    malloc(
+					    MAX_RETRACE_SCANLINES * 256*3));
 				}
 				if (d->retrace_palette != NULL)
 					memcpy(d->retrace_palette + (d->
@@ -1199,14 +1190,9 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	uint64_t videomem_base, uint64_t control_base, char *name)
 {
 	struct vga_data *d;
-	size_t i;
-	size_t allocsize;
+	size_t allocsize, i;
 
-	d = malloc(sizeof(struct vga_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct vga_data)));
 	memset(d, 0, sizeof(struct vga_data));
 
 	d->console_handle = console_start_slave(machine, "vga",
@@ -1224,15 +1210,10 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	/*  Allocate in full pages, to make it possible to use dyntrans:  */
 	allocsize = ((d->charcells_size-1) | (machine->arch_pagesize-1)) + 1;
-	d->charcells = malloc(d->charcells_size);
-	d->charcells_outputed = malloc(d->charcells_size);
-	d->charcells_drawn = malloc(d->charcells_size);
-	d->gfx_mem = malloc(d->gfx_mem_size);
-	if (d->charcells == NULL || d->charcells_outputed == NULL ||
-	    d->charcells_drawn == NULL || d->gfx_mem == NULL) {
-		fprintf(stderr, "out of memory in dev_vga_init()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d->charcells = malloc(d->charcells_size));
+	CHECK_ALLOCATION(d->charcells_outputed = malloc(d->charcells_size));
+	CHECK_ALLOCATION(d->charcells_drawn = malloc(d->charcells_size));
+	CHECK_ALLOCATION(d->gfx_mem = malloc(d->gfx_mem_size));
 
 	memset(d->charcells_drawn, 0, d->charcells_size);
 

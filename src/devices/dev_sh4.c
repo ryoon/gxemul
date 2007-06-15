@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.49 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_sh4.c,v 1.50 2007-06-15 19:57:34 debug Exp $
  *  
- *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
+ *  COMMENT: SH4-specific memory mapped registers (0xf0000000 - 0xffffffff)
  *
  *  TODO: Among other things:
  *
@@ -173,7 +173,7 @@ struct sh4_data {
  */
 static void sh4_timer_tick(struct timer *t, void *extra)
 {
-	struct sh4_data *d = (struct sh4_data *) extra;
+	struct sh4_data *d = extra;
 	int i;
 
 	/*  Fake RAM refresh:  */
@@ -259,7 +259,7 @@ static void scif_reassert_interrupts(struct sh4_data *d)
 
 DEVICE_TICK(sh4)
 {
-	struct sh4_data *d = (struct sh4_data *) extra;
+	struct sh4_data *d = extra;
 	unsigned int i;
 
 	/*
@@ -679,7 +679,7 @@ DEVICE_ACCESS(sh4_utlb_da1)
 
 DEVICE_ACCESS(sh4_pcic)
 {
-	struct sh4_data *d = (struct sh4_data *) extra;
+	struct sh4_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -837,7 +837,7 @@ DEVICE_ACCESS(sh4_pcic)
 
 DEVICE_ACCESS(sh4)
 {
-	struct sh4_data *d = (struct sh4_data *) extra;
+	struct sh4_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int timer_nr = 0, dma_channel = 0;
 
@@ -1593,12 +1593,9 @@ DEVINIT(sh4)
 	char tmp[200], n[200];
 	int i;
 	struct machine *machine = devinit->machine;
-	struct sh4_data *d = malloc(sizeof(struct sh4_data));
+	struct sh4_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sh4_data)));
 	memset(d, 0, sizeof(struct sh4_data));
 
 

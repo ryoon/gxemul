@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ether.c,v 1.7 2006-12-30 13:30:58 debug Exp $
+ *  $Id: dev_ps2_ether.c,v 1.8 2007-06-15 19:57:33 debug Exp $
  *  
- *  Playstation 2 ethernet (smap and emac3).
+ *  COMMENT: PlayStation 2 ethernet (smap and emac3)
  *
  *  TODO
  */
@@ -50,9 +50,6 @@ struct ps2_ether_data {
 };
 
 
-/*
- *  dev_ps2_ether_access():
- */
 DEVICE_ACCESS(ps2_ether)
 {
 	/*  struct ps2_ether_data *d = extra;  */
@@ -62,12 +59,15 @@ DEVICE_ACCESS(ps2_ether)
 		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
 	case 0x105c:
 		/*  TODO: make these register accesses nicer  */
 		break;
+
 	case 0x105e:
 		odata = 0x8000;	/*  STACR_OC  */
 		break;
+
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ ps2_ether: read from addr 0x%x: 0x%llx ]\n",
@@ -89,11 +89,7 @@ DEVINIT(ps2_ether)
 {
 	struct ps2_ether_data *d;
 
-	d = malloc(sizeof(struct ps2_ether_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ps2_ether_data)));
 	memset(d, 0, sizeof(struct ps2_ether_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_spd.c,v 1.16 2007-01-28 00:41:17 debug Exp $
+ *  $Id: dev_ps2_spd.c,v 1.17 2007-06-15 19:57:33 debug Exp $
  *  
- *  Playstation 2 "SPD" harddisk controller.
+ *  COMMENT: PlayStation 2 SPD harddisk controller
  *
  *  TODO
  */
@@ -99,12 +99,9 @@ DEVINIT(ps2_spd)
 	struct ps2_spd_data *d;
 	char tmpstr[200];
 
-	d = malloc(sizeof(struct ps2_spd_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ps2_spd_data)));
 	memset(d, 0, sizeof(struct ps2_spd_data));
+
 	d->wdcaddr = devinit->addr + DEV_PS2_SPD_LENGTH;
 
 	memory_device_register(devinit->machine->memory, "ps2_spd",

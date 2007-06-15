@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmppc.c,v 1.8 2007-01-29 18:06:52 debug Exp $
+ *  $Id: dev_pmppc.c,v 1.9 2007-06-15 19:57:33 debug Exp $
  *  
- *  PM/PPC devices.
+ *  COMMENT: Artesyn PM/PPC motherboard registers
  *
- *  TODO
+ *  NOTE/TODO: Only enough to boot NetBSD/pmppc has been implemented.
  */
 
 #include <stdio.h>
@@ -64,6 +64,7 @@ DEVICE_ACCESS(pmppc_board)
 	relative_addr += PMPPC_CONFIG0;
 
 	switch (relative_addr) {
+
 	case PMPPC_CONFIG0:
 		if (writeflag==MEM_READ) {
 			odata = d->config0;
@@ -72,6 +73,7 @@ DEVICE_ACCESS(pmppc_board)
 			    " 0x%02x ]\n", (int)idata);
 		}
 		break;
+
 	case PMPPC_CONFIG1:
 		if (writeflag==MEM_READ) {
 			odata = d->config1;
@@ -80,6 +82,7 @@ DEVICE_ACCESS(pmppc_board)
 			    " 0x%02x ]\n", (int)idata);
 		}
 		break;
+
 	case PMPPC_RESET:
 		if (writeflag==MEM_READ) {
 			odata = d->reset_reg;
@@ -93,6 +96,7 @@ DEVICE_ACCESS(pmppc_board)
 			d->reset_reg = idata;
 		}
 		break;
+
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ pmppc: UNIMPLEMENTED read from 0x%08lx ]\n",
@@ -115,11 +119,7 @@ DEVINIT(pmppc)
 	struct pmppc_data *d;
 	struct memory *mem = devinit->machine->memory;
 
-	d = malloc(sizeof(struct pmppc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pmppc_data)));
 	memset(d, 0, sizeof(struct pmppc_data));
 
 	/*

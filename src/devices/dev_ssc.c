@@ -25,8 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.30 2007-05-12 01:14:01 debug Exp $
- *  
+ *  $Id: dev_ssc.c,v 1.31 2007-06-15 19:57:34 debug Exp $
+ *
+ *  COMMENT: System Support Chip serial controller
+ *
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
  *
@@ -70,10 +72,7 @@ struct ssc_data {
 };
 
 
-/*
- *  dev_ssc_tick():
- */
-void dev_ssc_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(ssc)
 {
 	struct ssc_data *d = extra;
 
@@ -225,20 +224,14 @@ DEVICE_ACCESS(ssc)
 }
 
 
-/*
- *  dev_ssc_init():
- */
 void dev_ssc_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *irq_path, int use_fb)
 {
 	struct ssc_data *d;
 
-	d = malloc(sizeof(struct ssc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ssc_data)));
 	memset(d, 0, sizeof(struct ssc_data));
+
 	d->use_fb = use_fb;
 	d->console_handle = console_start_slave(machine, "SSC", 1);
 

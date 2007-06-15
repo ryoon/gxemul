@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.24 2007-03-08 11:43:44 debug Exp $
+ *  $Id: dev_ram.c,v 1.25 2007-06-15 19:57:33 debug Exp $
  *  
- *  A generic RAM (memory) device. Can also be used to mirror/alias another
- *  part of RAM.
+ *  COMMENT: A generic RAM (memory) device
+ *
+ *  Note: This device can also be used to mirror/alias another part of RAM.
  */
 
 #include <stdio.h>
@@ -79,11 +80,13 @@ DEVICE_ACCESS(ram)
 #endif
 
 	switch (d->mode) {
+
 	case DEV_RAM_MIRROR:
 		/*  TODO:  how about caches?  */
 		return cpu->memory_rw(cpu, mem,
 		    d->otheraddress + relative_addr, data, len,
 		    writeflag, PHYSICAL);
+
 	case DEV_RAM_RAM:
 		if (writeflag == MEM_WRITE) {
 			memcpy(&d->data[relative_addr], data, len);
@@ -98,6 +101,7 @@ DEVICE_ACCESS(ram)
 			memcpy(data, &d->data[relative_addr], len);
 		}
 		break;
+
 	default:
 		fatal("dev_ram_access(): unknown mode %i\n", d->mode);
 		exit(1);
@@ -120,12 +124,7 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	struct ram_data *d;
 	int flags = DM_DEFAULT, points_to_ram = 1;
 
-	d = malloc(sizeof(struct ram_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ram_data)));
 	memset(d, 0, sizeof(struct ram_data));
 
 	if (mode & DEV_RAM_MIGHT_POINT_TO_DEVICES) {
@@ -163,18 +162,14 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	case DEV_RAM_RAM:
 		/*
 		 *  Allocate zero-filled RAM using mmap(). If mmap() failed,
-		 *  try malloc(), but then we also have to memset(), which
+		 *  try malloc(), but then memset() must also be called, which
 		 *  can be slow for large chunks of memory.
 		 */
 		d->length = length;
 		d->data = (unsigned char *) mmap(NULL, length,
 		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		if (d->data == NULL) {
-			d->data = malloc(length);
-			if (d->data == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
+			CHECK_ALLOCATION(d->data = malloc(length));
 			memset(d->data, 0, length);
 		}
 

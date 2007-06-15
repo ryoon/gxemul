@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.15 2007-06-15 17:02:39 debug Exp $
+ *  $Id: dev_z8530.c,v 1.16 2007-06-15 19:57:34 debug Exp $
  *  
- *  Zilog "zs" serial controller (Z8530).
+ *  COMMENT: Zilog Z8530 "zs" serial controller
  *
  *  Features:
  *	o)  Two channels, 0 = "channel B", 1 = "channel A".
@@ -95,7 +95,7 @@ static void check_incoming(struct cpu *cpu, struct z8530_data *d)
 DEVICE_TICK(z8530)
 {
 	/*  Generate transmit and receive interrupts at regular intervals.  */
-	struct z8530_data *d = (struct z8530_data *) extra;
+	struct z8530_data *d = extra;
 	int asserted = 0;
 
 	if (d->rr[1][3] & ZSRR3_IP_B_TX && d->wr[0][1] & ZSWR1_TIE)

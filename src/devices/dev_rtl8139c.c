@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtl8139c.c,v 1.4 2007-06-15 17:02:39 debug Exp $
+ *  $Id: dev_rtl8139c.c,v 1.5 2007-06-15 19:57:34 debug Exp $
  *
- *  Realtek 8139-style NIC.
+ *  COMMENT: Realtek 8139 ethernet controller
  *
  *  TODO: Pretty much everything.
  */
@@ -125,7 +125,7 @@ static void eeprom_clk(struct rtl8139c_data *d)
 
 DEVICE_ACCESS(rtl8139c)
 {
-	struct rtl8139c_data *d = (struct rtl8139c_data *) extra;
+	struct rtl8139c_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)

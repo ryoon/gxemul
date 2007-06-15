@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mvme187.c,v 1.5 2007-05-25 11:51:36 debug Exp $
+ *  $Id: dev_mvme187.c,v 1.6 2007-06-15 19:57:33 debug Exp $
  *
- *  MVME187-specific devices and control registers.
+ *  COMMENT: MVME187-specific devices and control registers
  */
 
 #include <stdio.h>
@@ -96,16 +96,12 @@ DEVICE_ACCESS(mvme187_memc)
 
 DEVINIT(mvme187)
 {
-	struct mvme187_data *d = malloc(sizeof(struct mvme187_data));
+	struct mvme187_data *d;
 	char tmpstr[300];
 	struct m8820x_cmmu *cmmu;
 	int size_per_memc, r;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(d = malloc(sizeof(struct mvme187_data)));
 	memset(d, 0, sizeof(struct mvme187_data));
 
 
@@ -131,12 +127,9 @@ DEVINIT(mvme187)
 
 
 	/*  Instruction CMMU:  */
-	cmmu = malloc(sizeof(struct m8820x_cmmu));
-	if (cmmu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(cmmu = malloc(sizeof(struct m8820x_cmmu)));
 	memset(cmmu, 0, sizeof(struct m8820x_cmmu));
+
 	devinit->machine->cpus[devinit->machine->bootstrap_cpu]->
 	    cd.m88k.cmmu[0] = cmmu;
 	/*  This is a 88200, revision 9:  */
@@ -146,12 +139,9 @@ DEVINIT(mvme187)
 	device_add(devinit->machine, tmpstr);
 
 	/*  ... and data CMMU:  */
-	cmmu = malloc(sizeof(struct m8820x_cmmu));
-	if (cmmu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(cmmu = malloc(sizeof(struct m8820x_cmmu)));
 	memset(cmmu, 0, sizeof(struct m8820x_cmmu));
+
 	devinit->machine->cpus[devinit->machine->bootstrap_cpu]->
 	    cd.m88k.cmmu[1] = cmmu;
 	/*  This is also a 88200, revision 9:  */

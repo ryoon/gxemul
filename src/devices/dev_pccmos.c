@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.30 2007-05-25 06:38:54 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.31 2007-06-15 19:57:33 debug Exp $
  *  
- *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
+ *  COMMENT: PC CMOS/RTC device (ISA ports 0x70 and 0x71)
  *
  *  The main point of this device is to be a "PC style wrapper" for accessing
  *  the MC146818 (the RTC). In most other respects, this device is bogus, and
@@ -58,7 +58,7 @@ struct pccmos_data {
 
 DEVICE_ACCESS(pccmos)
 {
-	struct pccmos_data *d = (struct pccmos_data *) extra;
+	struct pccmos_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	unsigned char b = 0;
 	int r = 1;
@@ -113,13 +113,10 @@ DEVICE_ACCESS(pccmos)
 
 DEVINIT(pccmos)
 {
-	struct pccmos_data *d = malloc(sizeof(struct pccmos_data));
 	int type = MC146818_PC_CMOS, len = DEV_PCCMOS_LENGTH;
+	struct pccmos_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pccmos_data)));
 	memset(d, 0, sizeof(struct pccmos_data));
 
 	switch (devinit->machine->machine_type) {

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.10 2007-01-28 00:41:17 debug Exp $
+ *  $Id: dev_ohci.c,v 1.11 2007-06-15 19:57:33 debug Exp $
  *  
- *  USB OHCI (Open Host Controller Interface).
+ *  COMMENT: USB Open Host Controller Interface
  *
  *  TODO
  */
@@ -60,9 +60,6 @@ struct ohci_data {
 };
 
 
-/*
- *  dev_ohci_access():
- */
 DEVICE_ACCESS(ohci)
 {
 	struct ohci_data *d = extra;
@@ -82,7 +79,7 @@ DEVICE_ACCESS(ohci)
 	case OHCI_COMMAND_STATUS:
 		name = "COMMAND_STATUS";
 		if (idata == 0x2) {
-fatal("URK\n");
+			fatal("Hm... OHCI COMMAND STATUS\n");
 			INTERRUPT_ASSERT(d->irq);
 		}
 		break;
@@ -154,11 +151,7 @@ DEVINIT(ohci)
 {
 	struct ohci_data *d;
 
-	d = malloc(sizeof(struct ohci_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ohci_data)));
 	memset(d, 0, sizeof(struct ohci_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);

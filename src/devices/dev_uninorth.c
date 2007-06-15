@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_uninorth.c,v 1.8 2007-02-16 17:17:51 debug Exp $
+ *  $Id: dev_uninorth.c,v 1.9 2007-06-15 19:57:34 debug Exp $
  *  
- *  Uni-North PCI controller (as used by MacPPC).
+ *  COMMENT: Uni-North PCI controller (used by MacPPC machines)
  */
 
 #include <stdio.h>
@@ -110,9 +110,6 @@ DEVICE_ACCESS(uninorth_data)
 }
 
 
-/*
- *  dev_uninorth_init():
- */
 struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	uint64_t addr, int isa_irqbase, int pciirq)
 {
@@ -121,12 +118,9 @@ struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	uint64_t isa_portbase = 0, isa_membase = 0;
 	uint64_t pci_portbase = 0, pci_membase = 0;
 
-	d = malloc(sizeof(struct uninorth_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct uninorth_data)));
 	memset(d, 0, sizeof(struct uninorth_data));
+
 	d->pciirq = pciirq;
 
 	pci_io_offset  = 0x00000000ULL;

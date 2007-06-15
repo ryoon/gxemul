@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.32 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.33 2007-06-15 19:57:33 debug Exp $
  *  
- *  Playstation 2 misc. stuff:
+ *  COMMENT: PlayStation 2 misc stuff (timer, DMA, interrupts, ...)
  *
  *	offset 0x0000	timer control
  *	offset 0x8000	DMA controller
@@ -271,12 +271,8 @@ DEVICE_ACCESS(ps2)
 				    d->dmac_reg[D2_MADR_REG/0x10],
 				    (long)length);
 
-				copy_buf = malloc(length);
-				if (copy_buf == NULL) {
-					fprintf(stderr, "out of memory in "
-					    "dev_ps2_access()\n");
-					exit(1);
-				}
+				CHECK_ALLOCATION(copy_buf = malloc(length));
+
 				cpu->memory_rw(cpu, cpu->mem, from_addr,
 				    copy_buf, length, MEM_READ,
 				    CACHE_NONE | PHYSICAL);
@@ -399,11 +395,7 @@ DEVINIT(ps2)
 	struct interrupt template;
 	char n[300];
 
-	d = malloc(sizeof(struct ps2_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct ps2_data)));
 	memset(d, 0, sizeof(struct ps2_data));
 
 	d->other_memory_base[DMA_CH_GIF] = DEV_PS2_GIF_FAKE_BASE;

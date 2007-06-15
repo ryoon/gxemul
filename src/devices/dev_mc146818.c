@@ -25,9 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.98 2007-06-07 15:36:24 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.99 2007-06-15 19:57:33 debug Exp $
  *  
- *  MC146818 real-time clock, used by many different machines types.
+ *  COMMENT: MC146818 real-time clock
+ *
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
  *
  *  This device contains Date/time, the machine's ethernet address (on
@@ -150,9 +151,7 @@ DEVICE_TICK(mc146818)
  *  It seems like JAZZ machines accesses the mc146818 by writing one byte to
  *  0x90000070 and then reading or writing another byte at 0x......0004000.
  */
-int dev_mc146818_jazz_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(mc146818_jazz)
 {
 	struct mc_data *d = extra;
 
@@ -277,20 +276,14 @@ static void mc146818_update_time(struct mc_data *d)
 }
 
 
-/*
- *  dev_mc146818_access():
- *
- *  TODO: This access function only handles 8-bit accesses!
- */
-int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
-	uint64_t r, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(mc146818)
 {
+	struct mc_data *d = extra;
 	struct tm *tmp;
 	time_t timet;
-	struct mc_data *d = extra;
-	int relative_addr = r;
 	size_t i;
+
+	/*  NOTE/TODO: This access function only handles 8-bit accesses!  */
 
 	relative_addr /= d->addrdiv;
 
@@ -600,12 +593,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	int i, dev_len;
 	struct mc_data *d;
 
-	d = malloc(sizeof(struct mc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(d = malloc(sizeof(struct mc_data)));
 	memset(d, 0, sizeof(struct mc_data));
 
 	d->access_style  = access_style;

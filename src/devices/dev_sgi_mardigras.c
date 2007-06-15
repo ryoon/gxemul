@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.24 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.25 2007-06-15 19:57:34 debug Exp $
  *  
- *  "MardiGras" graphics controller on SGI IP30 (Octane).
+ *  COMMENT: MardiGras graphics controller on SGI IP30 (Octane)
  *
  *  Most of this is just guesses based on the behaviour of Linux/Octane.
  *
@@ -209,9 +209,6 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 }
 
 
-/*
- *  dev_sgi_mardigras_access():
- */
 DEVICE_ACCESS(sgi_mardigras)
 {
 	uint64_t idata = 0, odata = 0;
@@ -233,6 +230,7 @@ DEVICE_ACCESS(sgi_mardigras)
 	}
 
 	switch (relative_addr) {
+
 	case 0x00004:
 		/*  xtalk data:  (according to Linux/IP30)  */
 		/*  (mfgr & 0x7ff) << 1  */
@@ -240,19 +238,24 @@ DEVICE_ACCESS(sgi_mardigras)
 		/*  (rev  & 0xf) << 28  */
 		odata = (2 << 28) | (0xc003 << 12) | (0x2aa << 1);
 		break;
+
 	case 0x20008:	/*  Fifo status  */
 		break;
+
 	case 0x20200:
 		break;
+
 	case 0x20400:
 		if (writeflag == MEM_WRITE)
 			mardigras_20400(cpu, d, idata);
 		else
 			debug("[ sgi_mardigras: read from 0x20400? ]\n");
 		break;
+
 	case 0x58040:
 		/*  HQ4 microcode stuff  */
 		break;
+
 	case 0x70c30:
 		/*  Palette register select?  */
 		if (writeflag == MEM_WRITE)
@@ -260,6 +263,7 @@ DEVICE_ACCESS(sgi_mardigras)
 		else
 			odata = d->palette_reg_select;
 		break;
+
 	case 0x70d18:
 		/*  Palette register read/write?  */
 		i = 3 * ((d->palette_reg_select >> 8) & 0xff);
@@ -273,9 +277,11 @@ DEVICE_ACCESS(sgi_mardigras)
 				(d->fb->rgb_palette[i+2] << 8);
 		}
 		break;
+
 	case 0x71208:
 		odata = 8;
 		break;
+
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ sgi_mardigras: read from 0x%08lx ]\n",
@@ -297,11 +303,7 @@ DEVINIT(sgi_mardigras)
 {
 	struct sgi_mardigras_data *d;
 
-	d = malloc(sizeof(struct sgi_mardigras_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sgi_mardigras_data)));
 	memset(d, 0, sizeof(struct sgi_mardigras_data));
 
 	d->fb = dev_fb_init(devinit->machine, devinit->machine->memory,

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.49 2007-06-15 18:13:04 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.50 2007-06-15 19:57:34 debug Exp $
  *  
- *  Generic framework for TURBOchannel devices, used in DECstation machines.
+ *  COMMENT: TURBOchannel bus framework, used in DECstation machines
  */
 
 #include <stdio.h>
@@ -62,9 +62,6 @@ struct turbochannel_data {
 };
 
 
-/*
- *  dev_turbochannel_access():
- */
 DEVICE_ACCESS(turbochannel)
 {
 	struct turbochannel_data *d = extra;

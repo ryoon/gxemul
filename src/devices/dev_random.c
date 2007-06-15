@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_random.c,v 1.7 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_random.c,v 1.8 2007-06-15 19:57:34 debug Exp $
  *  
- *  A simple device which returns random data for all reads, and discards all
- *  writes.
+ *  COMMENT: A device which returns random data for reads, discards all writes
  */
 
 #include <stdio.h>

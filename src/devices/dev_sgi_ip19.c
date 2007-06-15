@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.18 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.19 2007-06-15 19:57:34 debug Exp $
  *  
- *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
+ *  COMMENT: SGI IP19 (and IP25) stuff
+ *
+ *  NOTE/TODO: The stuff in here is mostly guesswork.
  */
 
 #include <stdio.h>
@@ -48,12 +50,9 @@ struct sgi_ip19_data {
 };
 
 
-/*
- *  dev_sgi_ip19_access():
- */
 DEVICE_ACCESS(sgi_ip19)
 {
-	struct sgi_ip19_data *d = (struct sgi_ip19_data *) extra;
+	struct sgi_ip19_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -63,6 +62,7 @@ DEVICE_ACCESS(sgi_ip19)
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+
 	case 0x08:	/*  cpu id  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip19: unimplemented write to address "
@@ -72,6 +72,7 @@ DEVICE_ACCESS(sgi_ip19)
 			odata = cpu->cpu_id;	/*  ?  TODO  */
 		}
 		break;
+
 	case 0x200:	/*  cpu available mask?  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip19: unimplemented write to address "
@@ -82,6 +83,7 @@ DEVICE_ACCESS(sgi_ip19)
 			odata = ((1 << cpu->machine->ncpus) - 1) << 16;
 		}
 		break;
+
 	case 0x20000:	/*  cycle counter or clock  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip19: unimplemented write to address "
@@ -93,6 +95,7 @@ DEVICE_ACCESS(sgi_ip19)
 		}
 
 		break;
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip19: unimplemented write to address "
@@ -113,11 +116,9 @@ DEVICE_ACCESS(sgi_ip19)
 
 DEVINIT(sgi_ip19)
 {
-	struct sgi_ip19_data *d = malloc(sizeof(struct sgi_ip19_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct sgi_ip19_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct sgi_ip19_data)));
 	memset(d, 0, sizeof(struct sgi_ip19_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.284 2007-06-15 06:27:21 debug Exp $
+$Id: RELEASE,v 1.285 2007-06-15 06:46:43 debug Exp $
 
 Currently working on what will become 0.4.6.
 
@@ -27,7 +27,8 @@ systems are probably NetBSD/pmax and NetBSD/cats.
 
 The changes between release 0.4.5.1 and 0.4.6 include, among other things:
 
-    o)	NetBSD/pmppc can now run in the emulator (with root-on-nfs).
+    o)	NetBSD/pmppc can now run in the emulator (with root-on-nfs), on
+	an emulated Artesyn PM/PPC board.
 
     o)	Some minor SuperH emulation speed improvements.
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_pcc2.c,v 1.2 2007-05-25 12:19:07 debug Exp $
+ *  $Id: dev_pcc2.c,v 1.3 2007-06-15 18:13:04 debug Exp $
  *
  *  PCC2 bus (used in e.g. the MVME187 machine).
  *
@@ -106,13 +106,9 @@ DEVICE_ACCESS(pcc2)
 
 DEVINIT(pcc2)
 {
-	struct pcc2_data *d = malloc(sizeof(struct pcc2_data));
+	struct pcc2_data *d;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pcc2_data)));
 	memset(d, 0, sizeof(struct pcc2_data));
 
 	d->pcctwo_reg[PCCTWO_CHIPID] = PCC2_ID;

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.29 2006-12-30 13:30:57 debug Exp $
+ *  $Id: dev_8259.c,v 1.30 2007-06-15 18:13:04 debug Exp $
  *  
- *  8259 Programmable Interrupt Controller.
+ *  COMMENT: Intel 8259 Programmable Interrupt Controller
  *
  *  See the following URL for more details:
  *	http://www.nondot.org/sabre/os/files/MiscHW/8259pic.txt
@@ -53,7 +53,7 @@
 
 DEVICE_ACCESS(8259)
 {
-	struct pic8259_data *d = (struct pic8259_data *) extra;
+	struct pic8259_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int i;
 
@@ -260,19 +260,16 @@ DEVICE_ACCESS(8259)
  */
 DEVINIT(8259)
 {
-	struct pic8259_data *d = malloc(sizeof(struct pic8259_data));
+	struct pic8259_data *d;
 	char *name2;
 	size_t nlen = strlen(devinit->name) + 20;
 
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pic8259_data)));
 	memset(d, 0, sizeof(struct pic8259_data));
 
 	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
-	name2 = malloc(nlen);
+	CHECK_ALLOCATION(name2 = malloc(nlen));
 	snprintf(name2, nlen, "%s", devinit->name);
 	if ((devinit->addr & 0xfff) == 0xa0) {
 		strlcat(name2, " [secondary]", nlen);

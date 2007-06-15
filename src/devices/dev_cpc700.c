@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.11 2007-05-26 03:47:34 debug Exp $
+ *  $Id: dev_cpc700.c,v 1.12 2007-06-15 18:13:04 debug Exp $
  *
- *  IBM CPC700 bridge; PCI and interrupt controller.
+ *  COMMENT: IBM CPC700 bridge (PCI and interrupt controller)
  */
 
 #include <stdio.h>
@@ -58,14 +58,14 @@ struct cpc700_data {
 void cpc700_interrupt_assert(struct interrupt *interrupt)
 {
 	struct cpc700_data *d = interrupt->extra;
-	d->sr |= (1 << interrupt->line);
+	d->sr |= interrupt->line;
 	if (d->sr & d->er)
 		INTERRUPT_ASSERT(d->ppc_irq);
 }
 void cpc700_interrupt_deassert(struct interrupt *interrupt)
 {
 	struct cpc700_data *d = interrupt->extra;
-	d->sr &= ~(1 << interrupt->line);
+	d->sr &= ~interrupt->line;
 	if (!(d->sr & d->er))
 		INTERRUPT_DEASSERT(d->ppc_irq);
 }
@@ -189,11 +189,7 @@ DEVINIT(cpc700)
 	char tmp[300];
 	int i;
 
-	d = malloc(sizeof(struct cpc700_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct cpc700_data)));
 	memset(d, 0, sizeof(struct cpc700_data));
 
 	/*  Connect to the CPU's interrupt pin:  */
@@ -206,7 +202,7 @@ DEVINIT(cpc700)
 		snprintf(n, sizeof(n), "%s.cpc700.%i",
 		    devinit->interrupt_path, i);
 		memset(&template, 0, sizeof(template));
-		template.line = i;
+		template.line = 1 << i;
 		template.name = n;
 		template.extra = d;
 		template.interrupt_assert = cpc700_interrupt_assert;

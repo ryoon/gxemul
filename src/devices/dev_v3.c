@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_v3.c,v 1.8 2007-01-20 13:26:20 debug Exp $
+ *  $Id: dev_v3.c,v 1.9 2007-06-15 18:13:04 debug Exp $
  *  
- *  V3 Semiconductor PCI controller.
+ *  COMMENT: V3 Semiconductor PCI controller
  *
  *  The ISA interrupt controller part forwards ISA interrupts as follows
  *  (on Algor P5064):
@@ -252,11 +252,7 @@ DEVINIT(v3)
 	char pci_irq_base[200];
 	int i;
 
-	d = malloc(sizeof(struct v3_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct v3_data)));
 	memset(d, 0, sizeof(struct v3_data));
 
 	switch (devinit->machine->machine_type) {

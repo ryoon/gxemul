@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1611 2007-06-15 17:02:37 debug Exp $
+$Id: HISTORY,v 1.1612 2007-06-15 18:13:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3605,3 +3605,5 @@ Changelog for GXemul:
 		struct.
 		Cleanup of out-of-memory checks, to use a new CHECK_ALLOCATION
 		macro (which prints a meaningful error message).
+		Adding a COMMENT to each machine and device (for automagic
+		.index comment generation).

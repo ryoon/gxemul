@@ -1,0 +1,6 @@
+bus_isa.c  Generic ISA bus
+bus_pci.c  Generic PCI bus framework
+dev_8253.c  Intel 8253/8254 Programmable Interval Timer
+dev_8259.c  Intel 8259 Programmable Interrupt Controller
+dev_cpc700.c  IBM CPC700 bridge (PCI and interrupt controller)
+dev_v3.c  V3 Semiconductor PCI controller

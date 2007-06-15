@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.17 2007-06-15 17:02:39 debug Exp $
+ *  $Id: bus_isa.c,v 1.18 2007-06-15 18:13:04 debug Exp $
  *  
- *  Generic ISA bus. This is not a normal device, but it can be used as a quick
- *  way of adding most of the common legacy ISA devices to a machine.
+ *  COMMENT: Generic ISA bus
+ *
+ *  This is not a normal device, but it can be used as a quick way of adding
+ *  most of the common legacy ISA devices to a machine.
  */
 
 #include <stdio.h>
@@ -175,12 +177,13 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 	char *interrupt_base_path, uint32_t bus_isa_flags,
 	uint64_t isa_portbase, uint64_t isa_membase)
 {
-	struct bus_isa_data *d = malloc(sizeof(struct bus_isa_data));
+	struct bus_isa_data *d;
 	char tmpstr[300], tmpstr2[300];
 	int wdc0_irq = 14, wdc1_irq = 15;
 	int i, tmp_handle, kbd_in_use;
 	int lptbase = 0x378;
 
+	CHECK_ALLOCATION(d = malloc(sizeof(struct bus_isa_data)));
 	memset(d, 0, sizeof(struct bus_isa_data));
 
 	d->isa_portbase = isa_portbase;

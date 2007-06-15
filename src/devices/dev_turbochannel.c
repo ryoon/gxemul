@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.48 2006-12-30 13:30:59 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.49 2007-06-15 18:13:04 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -41,7 +41,7 @@
 #include "sfbreg.h"
 
 
-#define	DEVICE_NAME_BUFLEN		9
+#define	DEVICE_MAX_NAMELEN		9
 #define	CARD_NAME_BUFLEN		9
 #define	CARD_FIRMWARE_BUFLEN		5
 
@@ -52,7 +52,7 @@ struct turbochannel_data {
 
 	int		rom_skip;
 
-	char		device_name[DEVICE_NAME_BUFLEN];  /*  NUL-terminated  */
+	char		device_name[DEVICE_MAX_NAMELEN];  /*  NUL-terminated  */
 
 	/*  These should be terminated with spaces  */
 	char		card_firmware_version[CARD_NAME_BUFLEN];
@@ -193,17 +193,14 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 
-	d = malloc(sizeof(struct turbochannel_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct turbochannel_data)));
 	memset(d, 0, sizeof(struct turbochannel_data));
+
 	d->slot_nr  = slot_nr;
 	d->baseaddr = baseaddr;
 	d->endaddr  = endaddr;
 
-	strlcpy(d->device_name, device_name, DEVICE_NAME_BUFLEN);
+	strlcpy(d->device_name, device_name, DEVICE_MAX_NAMELEN);
 
 	strncpy(d->card_firmware_version, "V5.3a   ", CARD_NAME_BUFLEN);
 	strncpy(d->card_vendor_name,      "DEC     ", CARD_NAME_BUFLEN);
@@ -322,11 +319,8 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 	d->rom_skip = rom_skip;
 
 	nlen = strlen(device_name) + 30;
-	name2 = malloc(nlen);
-	if (name2 == NULL) {
-		fprintf(stderr, "out of memory in dev_turbochannel_init()\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(name2 = malloc(nlen));
+
 	if (*device_name)
 		snprintf(name2, nlen, "turbochannel [%s]", device_name);
 	else

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautodev.sh,v 1.7 2006-12-30 13:31:00 debug Exp $
+#  $Id: makeautodev.sh,v 1.8 2007-06-15 18:13:04 debug Exp $
 
 
 printf "Generating autodev.c... "
@@ -37,6 +37,16 @@ rm -f autodev.c
 printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> autodev.c
 
 cat autodev_head.c >> autodev.c
+
+printf "5"
+rm -f .index
+for a in *.c; do
+	B=`grep COMMENT $a`
+	if [ z"$B" != z ]; then
+		printf "$a " >> .index
+		echo "$B"|cut -d : -f 2- >> .index
+	fi
+done
 
 printf "4"
 for a in dev_*.c; do

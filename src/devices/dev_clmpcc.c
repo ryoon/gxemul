@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_clmpcc.c,v 1.4 2007-05-25 12:19:07 debug Exp $
+ *  $Id: dev_clmpcc.c,v 1.5 2007-06-15 18:13:04 debug Exp $
  *
  *  Cirrus Logic Four Channel Multi-Protocol Communications Controller
  *  (CD2400/CD2401)
@@ -99,11 +99,9 @@ DEVICE_ACCESS(clmpcc)
 
 DEVINIT(clmpcc)
 {
-	struct clmpcc_data *d = malloc(sizeof(struct clmpcc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct clmpcc_data *d;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct clmpcc_data)));
 	memset(d, 0, sizeof(struct clmpcc_data));
 
 	d->console_handle =

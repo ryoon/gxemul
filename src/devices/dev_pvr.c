@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.22 2007-05-12 01:14:01 debug Exp $
+ *  $Id: dev_pvr.c,v 1.23 2007-06-15 18:13:04 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -1174,13 +1174,13 @@ DEVICE_ACCESS(pvr_vram)
 DEVINIT(pvr)
 {
 	struct machine *machine = devinit->machine;
-	struct pvr_data *d = malloc(sizeof(struct pvr_data));
-	struct pvr_data_alt *d_alt = malloc(sizeof(struct pvr_data_alt));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	struct pvr_data *d;
+	struct pvr_data_alt *d_alt;
+
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pvr_data)));
 	memset(d, 0, sizeof(struct pvr_data));
+
+	CHECK_ALLOCATION(d_alt = malloc(sizeof(struct pvr_data_alt)));
 	memset(d_alt, 0, sizeof(struct pvr_data_alt));
 
 	d_alt->d = d;

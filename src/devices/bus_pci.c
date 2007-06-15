@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.83 2007-06-15 06:26:20 debug Exp $
+ *  $Id: bus_pci.c,v 1.84 2007-06-15 18:13:04 debug Exp $
  *  
- *  Generic PCI bus framework. This is not a normal "device", but is used by
- *  individual PCI controllers and devices.
+ *  COMMENT: Generic PCI bus framework
+ *
+ *  This is not a normal "device", but is used by individual PCI controllers
+ *  and devices.
  *
  *  See NetBSD's pcidevs.h for more PCI vendor and device identifiers.
  *
@@ -241,20 +243,15 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 		pd = pd->next;
 	}
 
-	pd = malloc(sizeof(struct pci_device));
-	if (pd == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(pd = malloc(sizeof(struct pci_device)));
 	memset(pd, 0, sizeof(struct pci_device));
 
 	/*  Add the new device first in the PCI bus' chain:  */
 	pd->next = pci_data->first_device;
 	pci_data->first_device = pd;
 
+	CHECK_ALLOCATION(pd->name = strdup(name));
 	pd->pcibus   = pci_data;
-	pd->name     = strdup(name);
 	pd->bus      = bus;
 	pd->device   = device;
 	pd->function = function;
@@ -364,16 +361,12 @@ struct pci_data *bus_pci_init(struct machine *machine, char *irq_path,
 {
 	struct pci_data *d;
 
-	d = malloc(sizeof(struct pci_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(d = malloc(sizeof(struct pci_data)));
 	memset(d, 0, sizeof(struct pci_data));
 
-	d->irq_path              = strdup(irq_path);
-	d->irq_path_isa          = strdup(isa_irqbase);
-	d->irq_path_pci          = strdup(pci_irqbase);
+	CHECK_ALLOCATION(d->irq_path     = strdup(irq_path));
+	CHECK_ALLOCATION(d->irq_path_isa = strdup(isa_irqbase));
+	CHECK_ALLOCATION(d->irq_path_pci = strdup(pci_irqbase));
 
 	d->pci_actual_io_offset  = pci_actual_io_offset;
 	d->pci_actual_mem_offset = pci_actual_mem_offset;
@@ -812,11 +805,7 @@ PCIINIT(piix3_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
-	pd->extra = malloc(sizeof(struct piix_ide_extra));
-	if (pd->extra == NULL) {
-		fatal("Out of memory.\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(pd->extra = malloc(sizeof(struct piix_ide_extra)));
 	((struct piix_ide_extra *)pd->extra)->wdc0 = NULL;
 	((struct piix_ide_extra *)pd->extra)->wdc1 = NULL;
 
@@ -856,11 +845,7 @@ PCIINIT(piix4_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
-	pd->extra = malloc(sizeof(struct piix_ide_extra));
-	if (pd->extra == NULL) {
-		fatal("Out of memory.\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(pd->extra = malloc(sizeof(struct piix_ide_extra)));
 	((struct piix_ide_extra *)pd->extra)->wdc0 = NULL;
 	((struct piix_ide_extra *)pd->extra)->wdc1 = NULL;
 
@@ -996,11 +981,7 @@ PCIINIT(vt82c586_ide)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	pd->extra = malloc(sizeof(struct vt82c586_ide_extra));
-	if (pd->extra == NULL) {
-		fatal("Out of memory.\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(pd->extra = malloc(sizeof(struct vt82c586_ide_extra)));
 	((struct vt82c586_ide_extra *)pd->extra)->wdc0 = NULL;
 	((struct vt82c586_ide_extra *)pd->extra)->wdc1 = NULL;
 
@@ -1113,11 +1094,7 @@ PCIINIT(symphony_82c105)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	pd->extra = malloc(sizeof(struct symphony_82c105_extra));
-	if (pd->extra == NULL) {
-		fatal("Out of memory.\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(pd->extra = malloc(sizeof(struct symphony_82c105_extra)));
 	((struct symphony_82c105_extra *)pd->extra)->wdc0 = NULL;
 	((struct symphony_82c105_extra *)pd->extra)->wdc1 = NULL;
 

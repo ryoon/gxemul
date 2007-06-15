@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.14 2007-06-14 16:13:25 debug Exp $
+ *  $Id: machine_macppc.c,v 1.15 2007-06-15 17:02:03 debug Exp $
  *
  *  See also:
  *
@@ -72,7 +72,7 @@ MACHINE_SETUP(macppc)
 	    machine, pci_data, machine->memory, 0, 12, 0, "dec21143");  */
 	bus_pci_add(machine, pci_data, machine->memory, 0, 15, 0, "gc_obio");
 
-	if (machine->use_x11)
+	if (machine->x11_md.in_use)
 		bus_pci_add(machine, pci_data, machine->memory, 0, 16, 0,
 		    "ati_radeon_9200_2");
 
@@ -99,7 +99,7 @@ MACHINE_SETUP(macppc)
 	of_emul_init(machine, fb, 0xf1000000, 1024, 768);
 	of_emul_init_uninorth(machine);
 
-	if (machine->use_x11)
+	if (machine->x11_md.in_use)
 		of_emul_init_adb(machine);
 	else
 		of_emul_init_zs(machine);

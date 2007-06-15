@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.26 2007-06-14 16:13:25 debug Exp $
+ *  $Id: machine_pmax.c,v 1.27 2007-06-15 17:02:03 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -137,7 +137,7 @@ MACHINE_SETUP(pmax)
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
 		    machine->path, machine->bootstrap_cpu, KN01_INT_DZ);
 		dev_dc7085_init(machine, mem, KN01_SYS_DZ, tmpstr,
-		    machine->use_x11);
+		    machine->x11_md.in_use);
 
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
 		    machine->path, machine->bootstrap_cpu, KN01_INT_CLOCK);
@@ -236,7 +236,7 @@ MACHINE_SETUP(pmax)
 		    machine->path, machine->bootstrap_cpu, 7);
 		machine->main_console_handle =
 		    dev_dc7085_init(machine, mem,
-		    KN02_SYS_DZ, tmpstr, machine->use_x11);
+		    KN02_SYS_DZ, tmpstr, machine->x11_md.in_use);
 
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
 		    machine->path, machine->bootstrap_cpu, KN02_INT_CLOCK);
@@ -290,9 +290,9 @@ abort();
 //		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
 //		    KMIN_INTR_LANCE + 8, 4 * 65536);
 		dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 + 8,
-		    machine->use_x11, 0, 1);
+		    machine->x11_md.in_use, 0, 1);
 		dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 + 8,
-		    machine->use_x11, 1, 1);
+		    machine->x11_md.in_use, 1, 1);
 fatal("TODO: mc146818 irq\n");
 abort();
 //		dev_mc146818_init(machine, mem, 0x1c200000, 
@@ -380,12 +380,12 @@ abort();
 //		    dev_scc_dma_func;
 //		machine->md_int.dec_ioasic_data->dma_func_extra[2] =
 //		    dev_scc_init(machine, mem, KN03_SYS_SCC_0,
-//		    KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+//		    KN03_INTR_SCC_0 +8, machine->x11_md.in_use, 0, 1);
 //		machine->md_int.dec_ioasic_data->dma_func[2] =
 //		    dev_scc_dma_func;
 //		machine->md_int.dec_ioasic_data->dma_func_extra[3] =
 //		    dev_scc_init(machine, mem, KN03_SYS_SCC_1,
-//		    KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+//		    KN03_INTR_SCC_1 +8, machine->x11_md.in_use, 1, 1);
 
 fatal("TODO: mc146818 irq\n");
 abort();
@@ -462,7 +462,7 @@ abort();
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].dec5800.28",
 		    machine->path, machine->bootstrap_cpu);
 		dev_ssc_init(machine, mem, 0x10140000,
-		    tmpstr, machine->use_x11);
+		    tmpstr, machine->x11_md.in_use);
 
 		dev_decxmi_init(mem, 0x11800000);
 		dev_deccca_init(mem, DEC_DECCCA_BASEADDR);
@@ -500,7 +500,7 @@ abort();
 		/*  error registers (?) at 0x17000000 and 0x10080000  */
 		device_add(machine, "kn210 addr=0x10080000");
 		dev_ssc_init(machine, mem, 0x10140000, "irq? TODO",
-		    machine->use_x11);
+		    machine->x11_md.in_use);
 		break;
 
 	case MACHINE_DEC_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -581,7 +581,7 @@ abort();
 //		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
 //		    XINE_INTR_LANCE +8, 4*65536);
 		dev_scc_init(machine, mem, 0x1c100000,
-		    XINE_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+		    XINE_INTR_SCC_0 +8, machine->x11_md.in_use, 0, 1);
 fatal("TODO: mc146818 irq\n");
 abort();
 //		dev_mc146818_init(machine, mem, 0x1c200000,
@@ -622,7 +622,7 @@ abort();
 		 */
 
 		dev_ssc_init(machine, mem, 0x10140000, "TODO: irq",
-		    machine->use_x11);
+		    machine->x11_md.in_use);
 
 		/*  something at 0x17000000, ultrix says "cpu 0 panic: "
 		    "DS5500 I/O Board is missing" if this is not here  */
@@ -654,7 +654,7 @@ abort();
 			    "cannot have more than 128MB RAM. Continuing"
 			    " anyway.\n");
 
-		if (machine->use_x11)
+		if (machine->x11_md.in_use)
 			fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines "
 			    "cannot have a graphical framebuffer. "
 			    "Continuing anyway.\n");
@@ -679,12 +679,12 @@ abort();
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].kn230.0x%x",
 		    machine->path, machine->bootstrap_cpu, KN230_CSR_INTR_DZ0);
 		dev_dc7085_init(machine, mem, KN230_SYS_DZ0,
-		    tmpstr, machine->use_x11);
+		    tmpstr, machine->x11_md.in_use);
 
 		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ1,
-		    KN230_CSR_INTR_OPT0, machine->use_x11);  */
+		    KN230_CSR_INTR_OPT0, machine->x11_md.in_use);  */
 		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2,
-		    KN230_CSR_INTR_OPT1, machine->use_x11);  */
+		    KN230_CSR_INTR_OPT1, machine->x11_md.in_use);  */
 
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].kn230.0x%x",
 		    machine->path, machine->bootstrap_cpu,
@@ -808,11 +808,7 @@ abort();
 		init_bootpath = bootpath;
 	}
 
-	machine->bootarg = malloc(BOOTARG_BUFLEN);
-	if (machine->bootarg == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->bootarg = malloc(BOOTARG_BUFLEN));
 	strlcpy(machine->bootarg, init_bootpath, BOOTARG_BUFLEN);
 	if (strlcat(machine->bootarg, machine->boot_kernel_filename,
 	    BOOTARG_BUFLEN) > BOOTARG_BUFLEN) {
@@ -857,19 +853,13 @@ abort();
 
 	store_buf(cpu, BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
 
-	machine->md.pmax = malloc(sizeof(struct machine_pmax));
-	if (machine->md.pmax == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->md.pmax =
+	    malloc(sizeof(struct machine_pmax)));
 	memset(machine->md.pmax, 0, sizeof(struct machine_pmax));
 
 	/*  The system's memmap:  */
-	machine->md.pmax->memmap = malloc(sizeof(struct dec_memmap));
-	if (machine->md.pmax->memmap == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->md.pmax->memmap =
+	    malloc(sizeof(struct dec_memmap)));
 	store_32bit_word_in_host(cpu,
 	    (unsigned char *)&machine->md.pmax->memmap->pagesize, 4096);
 	{
@@ -884,7 +874,7 @@ abort();
 	/*  Environment variables:  */
 	addr = DEC_PROM_STRINGS;
 
-	if (machine->use_x11 && machine->n_gfx_cards > 0)
+	if (machine->x11_md.in_use && machine->n_gfx_cards > 0)
 		/*  (0,3)  Keyboard and Framebuffer  */
 		add_environment_string(cpu, framebuffer_console_name, &addr);
 	else
@@ -945,13 +935,13 @@ abort();
 MACHINE_DEFAULT_CPU(pmax)
 {
 	if (machine->machine_subtype > 2)
-		machine->cpu_name = strdup("R3000A");
+		CHECK_ALLOCATION(machine->cpu_name = strdup("R3000A"));
 
 	if (machine->machine_subtype > 1 && machine->cpu_name == NULL)
-		machine->cpu_name = strdup("R3000");
+		CHECK_ALLOCATION(machine->cpu_name = strdup("R3000"));
 
 	if (machine->cpu_name == NULL)
-		machine->cpu_name = strdup("R2000");
+		CHECK_ALLOCATION(machine->cpu_name = strdup("R2000"));
 }
 
 

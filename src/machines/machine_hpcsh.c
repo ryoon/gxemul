@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcsh.c,v 1.7 2006-12-30 13:31:02 debug Exp $
+ *  $Id: machine_hpcsh.c,v 1.8 2007-06-15 17:02:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -65,7 +65,7 @@ MACHINE_SETUP(hpcsh)
 	machine->machine_name = "HPCsh";
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
-	if (!machine->use_x11)
+	if (!machine->x11_md.in_use)
 		fprintf(stderr, "-------------------------------------"
 		    "------------------------------------------\n"
 		    "\n  WARNING!  You are emulating a Dreamcast without -X."

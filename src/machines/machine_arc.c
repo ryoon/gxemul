@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.18 2007-06-06 00:43:15 debug Exp $
+ *  $Id: machine_arc.c,v 1.19 2007-06-15 17:02:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -53,11 +53,7 @@ MACHINE_SETUP(arc)
 	char *eaddr_string = "eaddr=10:20:30:40:50:60";		/*  bogus  */
 	unsigned char macaddr[6];
 
-	machine->machine_name = malloc(MACHINE_NAME_MAXBUF);
-	if (machine->machine_name == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->machine_name = malloc(MACHINE_NAME_MAXBUF));
 
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	snprintf(machine->machine_name, MACHINE_NAME_MAXBUF, "ARC");
@@ -139,13 +135,13 @@ MACHINE_SETUP(arc)
 		    machine->bootstrap_cpu);
 		i = dev_pckbc_init(machine, mem, 0x80005000ULL,
 		    PCKBC_JAZZ, tmpstr, tmpstr2,
-		    machine->use_x11, 0);
+		    machine->x11_md.in_use, 0);
 
 		/*  Serial controllers at JAZZ irq 8 and 9:  */
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "ns16550 irq=%s.cpu[%i].jazz.8 addr=0x80006000"
 		    " in_use=%i name2=tty0", machine->path,
-		    machine->bootstrap_cpu, machine->use_x11? 0 : 1);
+		    machine->bootstrap_cpu, machine->x11_md.in_use? 0 : 1);
 		j = (size_t)device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "ns16550 irq=%s.cpu[%i].jazz.9 addr=0x80007000"
@@ -153,14 +149,14 @@ MACHINE_SETUP(arc)
 		    machine->bootstrap_cpu);
 		device_add(machine, tmpstr);
 
-		if (machine->use_x11)
+		if (machine->x11_md.in_use)
 			machine->main_console_handle = i;
 		else
 			machine->main_console_handle = j;
 
 		switch (machine->machine_subtype) {
 		case MACHINE_ARC_JAZZ_PICA:
-			if (machine->use_x11) {
+			if (machine->x11_md.in_use) {
 				dev_vga_init(machine, mem, 0x400a0000ULL,
 				    0x600003c0ULL, machine->machine_name);
 				arcbios_console_init(machine,
@@ -232,11 +228,13 @@ Not yet.
 MACHINE_DEFAULT_CPU(arc)
 {
 	switch (machine->machine_subtype) {
+
 	case MACHINE_ARC_JAZZ_PICA:
-		machine->cpu_name = strdup("R4000");
+		CHECK_ALLOCATION(machine->cpu_name = strdup("R4000"));
 		break;
+
 	default:
-		machine->cpu_name = strdup("R4400");
+		CHECK_ALLOCATION(machine->cpu_name = strdup("R4400"));
 	}
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.10 2007-01-28 14:15:30 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.11 2007-06-15 17:02:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -66,7 +66,7 @@ MACHINE_SETUP(playstation2)
 	if (machine->physical_ram_in_mb != 32)
 		fprintf(stderr, "WARNING! Playstation 2 machines are supposed "
 		    "to have exactly 32 MB RAM. Continuing anyway.\n");
-	if (!machine->use_x11)
+	if (!machine->x11_md.in_use)
 		fprintf(stderr, "WARNING! Playstation 2 without -X is pretty "
 		    "meaningless. Continuing anyway.\n");
 
@@ -111,7 +111,7 @@ MACHINE_SETUP(playstation2)
 
 
 	tmplen = 1000;
-	tmp = malloc(tmplen);
+	CHECK_ALLOCATION(tmp = malloc(tmplen));
 
 	add_symbol_name(&machine->symbol_context,
 	    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0, 0);
@@ -124,10 +124,6 @@ MACHINE_SETUP(playstation2)
 
 	store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb
 	    * 1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
-	if (tmp == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
 
 	strlcpy(tmp, "root=/dev/hda1 crtmode=vesa0,60", tmplen);
 

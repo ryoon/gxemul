@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.12 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_alpha.c,v 1.13 2007-06-15 17:02:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -131,7 +131,7 @@ MACHINE_SETUP(alpha)
 	/*  CTB: Console Terminal Block  */
 	memset(&ctb, 0, sizeof(struct ctb));
 	store_64bit_word_in_host(cpu, (unsigned char *)
-	    &(ctb.ctb_term_type), machine->use_x11?
+	    &(ctb.ctb_term_type), machine->x11_md.in_use?
 	    CTB_GRAPHICS : CTB_PRINTERPORT);
 
 	/*  CRB: Console Routine Block  */

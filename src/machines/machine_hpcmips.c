@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcmips.c,v 1.7 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_hpcmips.c,v 1.8 2007-06-15 17:02:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -82,7 +82,7 @@ MACHINE_SETUP(hpcmips)
 
 		/*  TODO: irq?  */
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x"
-		    "0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
+		    "0a008680 addr_mult=4 in_use=%i", !machine->x11_md.in_use);
 		machine->main_console_handle = (size_t)
 		    device_add(machine, tmpstr);
 
@@ -112,7 +112,7 @@ MACHINE_SETUP(hpcmips)
 
 		/*  TODO: irq?  */
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x"
-		    "0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
+		    "0a008680 addr_mult=4 in_use=%i", !machine->x11_md.in_use);
 		machine->main_console_handle = (size_t)
 		    device_add(machine, tmpstr);
 
@@ -242,7 +242,7 @@ MACHINE_SETUP(hpcmips)
 			    "ns16550 irq=%i addr=0x0c000010", 8+VRIP_INTR_SIU);
 			x = (size_t)device_add(machine, tmpstr);
 
-			if (!machine->use_x11)
+			if (!machine->x11_md.in_use)
 				machine->main_console_handle = x;
 		}
 
@@ -345,7 +345,7 @@ MACHINE_SETUP(hpcmips)
 		    "res:240,bpp:4,gray,hpck:3084,inv ether=0,0x03fe0300,eth0");
 		tmp[tmplen-1] = '\0';
 
-		if (!machine->use_x11)
+		if (!machine->x11_md.in_use)
 			snprintf(tmp+strlen(tmp), tmplen-strlen(tmp),
 			    " console=ttyS0,115200");
 		tmp[tmplen-1] = '\0';

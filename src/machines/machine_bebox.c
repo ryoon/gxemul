@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.12 2007-06-14 16:13:25 debug Exp $
+ *  $Id: machine_bebox.c,v 1.13 2007-06-15 17:02:03 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/ports/bebox/ for more info.)
@@ -92,7 +92,7 @@ MACHINE_SETUP(bebox)
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 12, 20);  /* next */
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 16, 1); /* console */
 	store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
-	    machine->use_x11? "vga" : "com", 4);
+	    machine->x11_md.in_use? "vga" : "com", 4);
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 24, 0x3f8);/* addr */
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 28, 9600);/* speed */
 

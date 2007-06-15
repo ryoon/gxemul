@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcarm.c,v 1.4 2006-12-30 13:31:01 debug Exp $
+ *  $Id: machine_hpcarm.c,v 1.5 2007-06-15 17:02:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -177,7 +177,7 @@ MACHINE_SETUP(hpcarm)
 	store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type,
 	    hpc_fb_encoding);
 	store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse,
-	    machine->use_x11? BI_CNUSE_BUILTIN : BI_CNUSE_SERIAL);
+	    machine->x11_md.in_use? BI_CNUSE_BUILTIN : BI_CNUSE_SERIAL);
 
 	store_32bit_word_in_host(cpu,(unsigned char *)&hpc_bootinfo.timezone,0);
 	store_buf(cpu, machine->physical_ram_in_mb * 1048576 - 256,

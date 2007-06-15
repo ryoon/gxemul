@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.25 2007-06-14 16:13:25 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.26 2007-06-15 17:02:03 debug Exp $
  *
  *  Emulation of MIPS evaluation boards, such as the MIPS Malta board.
  */
@@ -85,7 +85,7 @@ MACHINE_SETUP(evbmips)
 		pci_data = dev_gt_init(machine, machine->memory, 0x1be00000,
 		    tmpstr, tmpstr2, 120);
 
-		if (machine->use_x11) {
+		if (machine->x11_md.in_use) {
 			if (strlen(machine->boot_string_argument) < 3) {
 				fatal("WARNING: remember to use  -o 'console="
 				    "tty0'  if you are emulating Linux. (Not"

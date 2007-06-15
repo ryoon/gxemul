@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.31 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.32 2007-06-15 17:02:03 debug Exp $
  *
  *  Dreamcast.
  */
@@ -52,7 +52,7 @@ MACHINE_SETUP(dreamcast)
 	/*  50 MHz SH4 PCLOCK:  */
 	machine->cpus[0]->cd.sh.pclock = 50000000;
 
-	if (!machine->use_x11)
+	if (!machine->x11_md.in_use)
 		fprintf(stderr, "-------------------------------------"
 		    "------------------------------------------\n"
 		    "\n  WARNING!  You are emulating a Dreamcast without -X."

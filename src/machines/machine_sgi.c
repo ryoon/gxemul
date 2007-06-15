@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.20 2007-06-06 00:46:35 debug Exp $
+ *  $Id: machine_sgi.c,v 1.21 2007-06-15 17:02:03 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -70,11 +70,7 @@ MACHINE_SETUP(sgi)
 
 	struct pci_data *pci_data = NULL;
 
-	machine->machine_name = malloc(MACHINE_NAME_MAXBUF);
-	if (machine->machine_name == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(machine->machine_name = malloc(MACHINE_NAME_MAXBUF));
 
 	cpu->byte_order = EMUL_BIG_ENDIAN;
 	snprintf(machine->machine_name, MACHINE_NAME_MAXBUF,
@@ -100,7 +96,7 @@ MACHINE_SETUP(sgi)
 	}
 
 	net_generate_unique_mac(machine, macaddr);
-	eaddr_string = malloc(ETHERNET_STRING_MAXLEN);
+	CHECK_ALLOCATION(eaddr_string = malloc(ETHERNET_STRING_MAXLEN));
 
 	switch (machine->machine_subtype) {
 
@@ -124,7 +120,7 @@ MACHINE_SETUP(sgi)
 		    " (Everest IP19)", MACHINE_NAME_MAXBUF);
 		machine->main_console_handle = (size_t)device_add(machine,
 		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
-		dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11,
+		dev_scc_init(machine, mem, 0x10086000, 0, machine->x11_md.in_use,
 		    0, 8);	/*  serial? irix?  */
 
 		device_add(machine, "sgi_ip19 addr=0x18000000");
@@ -276,10 +272,10 @@ abort();
 fatal("TODO: legacy rewrite\n");
 abort();
 //		j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
-//		    0, 0, machine->use_x11, 0);  /*  TODO: irq numbers  */
+//		    0, 0, machine->x11_md.in_use, 0);  /*  TODO: irq numbers  */
 j = 0;
 
-		if (machine->use_x11)
+		if (machine->x11_md.in_use)
 			machine->main_console_handle = j;
 
 		/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
@@ -313,7 +309,7 @@ j = 0;
 
 		 /*  serial? irix?  */
 		dev_scc_init(machine, mem,
-		    0x400086000ULL, 0, machine->use_x11, 0, 8);
+		    0x400086000ULL, 0, machine->x11_md.in_use, 0, 8);
 
 		/*  NOTE: ip19! (perhaps not really the same  */
 		device_add(machine, "sgi_ip19 addr=0x18000000");
@@ -398,7 +394,7 @@ abort();
 
 		/*  TODO: irq!  */
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
-		    "0x1f620170 name2=tty0 in_use=%i", machine->use_x11? 0 : 1);
+		    "0x1f620170 name2=tty0 in_use=%i", machine->x11_md.in_use? 0 : 1);
 		machine->main_console_handle = (size_t)device_add(machine,
 		    tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
@@ -433,7 +429,7 @@ abort();
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
 		    machine->path, machine->bootstrap_cpu);
 		dev_crime_init(machine, mem, 0x14000000, tmpstr,
-		    machine->use_x11);				/*  crime0  */
+		    machine->x11_md.in_use);				/*  crime0  */
 		dev_sgi_mte_init(mem, 0x15000000);		/*  mte ???  */
 		dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  */
 
@@ -477,10 +473,6 @@ abort();
 		 *  intr 7 = MACE_PCI_BRIDGE
 		 */
 
-		if (eaddr_string == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
 		snprintf(eaddr_string, ETHERNET_STRING_MAXLEN,
 		    "eaddr=%02x:%02x:%02x:%02x:%02x:%02x",
 		    macaddr[0], macaddr[1], macaddr[2],
@@ -497,7 +489,7 @@ abort();
 		    "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
 		    "0x1f390000 addr_mult=0x100 in_use=%i name2=tty0",
 		    machine->path, machine->bootstrap_cpu,
-		    MACE_PERIPH_SERIAL, 20, machine->use_x11? 0 : 1);
+		    MACE_PERIPH_SERIAL, 20, machine->x11_md.in_use? 0 : 1);
 		j = (size_t)device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
@@ -513,10 +505,10 @@ abort();
 #if 0
 fatal("TODO: legacy SGI rewrite\n");
 abort();
-		if (machine->use_x11) {
+		if (machine->x11_md.in_use) {
 			i = dev_pckbc_init(machine, mem, 0x1f320000,
 			    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-			    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
+			    0x800 + MACE_PERIPH_MISC, machine->x11_md.in_use, 0);
 				/*  keyb+mouse (mace irq numbers)  */
 			machine->main_console_handle = i;
 		}

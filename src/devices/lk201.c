@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.28 2006-12-30 13:31:00 debug Exp $
- *  
- *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
- *  controller devices.
+ *  $Id: lk201.c,v 1.29 2007-06-15 20:11:27 debug Exp $
+ *
+ *  COMMENT: LK201 keyboard and mouse, used by the dc7085 and scc controllers
  */
 
 #include <stdio.h>

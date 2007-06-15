@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1612 2007-06-15 18:13:03 debug Exp $
+$Id: HISTORY,v 1.1613 2007-06-15 20:11:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3607,3 +3607,4 @@ Changelog for GXemul:
 		macro (which prints a meaningful error message).
 		Adding a COMMENT to each machine and device (for automagic
 		.index comment generation).
+		Doing regression testing for the next release.

@@ -97,3 +97,4 @@ dev_vr41xx.c  VR41xx (VR4122 and VR4131) misc functions
 dev_wdc.c  Standard "wdc" IDE controller
 dev_z8530.c  Zilog Z8530 "zs" serial controller
 dev_zero.c  A simple device which returns zero for reads, discards all writes
+lk201.c  LK201 keyboard and mouse, used by the dc7085 and scc controllers

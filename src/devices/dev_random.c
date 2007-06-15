@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_random.c,v 1.8 2007-06-15 19:57:34 debug Exp $
+ *  $Id: dev_random.c,v 1.9 2007-06-15 20:11:27 debug Exp $
  *  
  *  COMMENT: A device which returns random data for reads, discards all writes
  */
@@ -43,7 +43,7 @@
 DEVICE_ACCESS(random)
 {
 	if (writeflag == MEM_READ) {
-		unsigned int i;
+		size_t i;
 		for (i=0; i<len; i++)
 			data[i] = random();
 	}

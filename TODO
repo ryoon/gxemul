@@ -1,4 +1,4 @@
-$Id: TODO,v 1.534 2007-06-15 21:43:09 debug Exp $
+$Id: TODO,v 1.535 2007-06-15 22:17:36 debug Exp $
 
 ---------------------------------------------------------------------
 Guest OS regression testing:
@@ -11,13 +11,15 @@ Done:
 	# NetBSD/pmax 3.1 or 1.6.2
 	# Sprite for DECstation
 	# Ultrix/RISC 4.5
+	# QEMU_MIPS
+	# NetBSD/hpcmips 3.1
 
 Ongoing:
 	# Debian GNU/Linux for DECstation 
+	# OpenBSD/landisk 4.1
 
 TODO:
 	# NetBSD/arc 1.6.2
-	# NetBSD/hpcmips 3.1
 	# NetBSD/cobalt 3.1
 	# NetBSD/evbmips 3.1
 	# NetBSD/algor 3.1
@@ -30,8 +32,6 @@ TODO:
 	# NetBSD/pmppc 3.1
 	# OpenBSD/pmax 2.8-BETA
 	# OpenBSD/cats 4.0
-	# OpenBSD/landisk 4.1
-	# QEMU_MIPS
 
 ---------------------------------------------------------------------
 

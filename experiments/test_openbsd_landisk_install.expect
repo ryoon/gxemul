@@ -3,7 +3,7 @@
 set timeout 4000
 spawn ./gxemul -E landisk -q -d obsd_landisk.img -d bd:../../emul/sh/openbsd_landisk_4.1.iso -j 4.1/landisk/bsd.rd
 
-set  send_slow  {1 .35}
+set  send_slow  {1 .5}
 
 expect "(I)nstall"
 send -s "i\r"

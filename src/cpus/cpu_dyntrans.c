@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.163 2007-06-15 15:53:17 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.164 2007-06-15 18:07:08 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -953,13 +953,9 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 	int x1, x2;
 #endif
 	int i;
-	struct DYNTRANS_TC_PHYSPAGE *ppp = malloc(sizeof(
-	    struct DYNTRANS_TC_PHYSPAGE));
+	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
-	if (ppp == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	CHECK_ALLOCATION(ppp = malloc(sizeof(struct DYNTRANS_TC_PHYSPAGE)));
 
 	ppp->next_ofs = 0;
 	ppp->translations = 0;
@@ -1542,8 +1538,9 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 				cpu->cd.DYNTRANS_ARCH.next_free_l2 = l2->next;
 			} else {
 				int i;
-				l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1] =
-				    malloc(sizeof(struct DYNTRANS_L2_64_TABLE));
+				CHECK_ALLOCATION(l2 =
+				    cpu->cd.DYNTRANS_ARCH.l1_64[x1] = malloc(
+				    sizeof(struct DYNTRANS_L2_64_TABLE)));
 				l2->refcount = 0;
 				for (i=0; i<(1 << DYNTRANS_L2N); i++)
 					l2->l3[i] = cpu->cd.DYNTRANS_ARCH.

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.75 2006-12-30 13:30:51 debug Exp $
+$Id: technical.html,v 1.76 2007-06-15 18:07:08 debug Exp $
 
 Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 
@@ -107,8 +107,7 @@ with the emulator, e.g.:
 <a name="net"></a>
 <h3>Networking</h3>
 
-<font color="#ff0000">NOTE/TODO: This section is very old and a bit
-out of date.</font>
+<font color="#ff0000">NOTE/TODO: This section is very old.</font>
 
 <p>Running an entire operating system under emulation is very interesting
 in itself, but for several reasons, running a modern OS without access to
@@ -310,11 +309,13 @@ fragmentation issue mentioned above.
 <a name="devices"></a>
 <h3>Emulation of hardware devices</h3>
 
-Each file called <tt>dev_*.c</tt> in the <tt>src/device/</tt> directory is
+Each file called <tt>dev_*.c</tt> in the 
+<a href="../src/devices/"><tt>src/devices/</tt></a> directory is
 responsible for one hardware device. These are used from
-<tt>src/machines/machine_*.c</tt>, when initializing which hardware a particular
-machine model will be using, or when adding devices to a machine using the
-<tt>device()</tt> command in configuration files.
+<a href="../src/machines/"><tt>src/machines</tt></a><tt>/machine_*.c</tt>,
+when initializing which hardware a particular machine model will be using,
+or when adding devices to a machine using the <tt>device()</tt> command in
+<a href="configfiles.html">configuration files</a>.
 
 <p>(I'll be using the name "<tt>foo</tt>" as the name of the device in all
 these examples.  This is pseudo code, it might need some modification to
@@ -329,21 +330,20 @@ actually compile and run.)
 <pre>
 	DEVINIT(foo)
 	{
-	        struct foo_data *d = malloc(sizeof(struct foo_data));
+	        struct foo_data *d;
 
-	        if (d == NULL) {
-	                fprintf(stderr, "out of memory\n");
-	                exit(1);
-	        }
+		CHECK_ALLOCATION(d = malloc(sizeof(struct foo_data)));
 	        memset(d, 0, sizeof(struct foo_data));
 
 		/*
 		 *  Set up stuff here, for example fill d with useful
-		 *  data. devinit contains settings like address, irq_nr,
+		 *  data. devinit contains settings like address, irq path,
 		 *  and other things.
 		 *
 		 *  ...
 		 */
+
+		INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
         
 	        memory_device_register(devinit->machine->memory, devinit->name,
 	            devinit->addr, DEV_FOO_LENGTH,
@@ -368,15 +368,14 @@ actually compile and run.)
 	should be defined.
 <pre>
 	struct foo_data {
-		int	irq_nr;
+		struct interrupt	irq;
 		/*  ...  */
 	}
 </pre><br>
-	(There is an exception to this rule; ugly hacks which allow
-	code in <tt>src/machine.c</tt> to use some structures makes it
-	necessary to place the <tt>struct foo_data</tt> in
-	<tt>src/include/devices.h</tt> instead of in <tt>dev_foo.c</tt>
-	itself. This is useful for example for interrupt controllers.)
+	(There is an exception to this rule; some legacy code and other
+	ugly hacks have their device structs defined in
+	<tt>src/include/devices.h</tt> instead of <tt>dev_foo.c</tt>.
+	New code should not add stuff to <tt>devices.h</tt>.)
   <p>
   <li>If <tt>foo</tt> has a tick function (that is, something that needs to be
 	run at regular intervals) then <tt>FOO_TICKSHIFT</tt> and a tick 
@@ -384,14 +383,14 @@ actually compile and run.)
 <pre>
 	#define FOO_TICKSHIFT		14
 
-	void dev_foo_tick(struct cpu *cpu, void *extra)
+	DEVICE_TICK(foo)
 	{
-		struct foo_data *d = (struct foo_data *) extra;
+		struct foo_data *d = extra;
 
 		if (.....)
-			cpu_interrupt(cpu, d->irq_nr);
+			INTERRUPT_ASSERT(d->irq);
 		else
-			cpu_interrupt_ack(cpu, d->irq_nr);
+			INTERRUPT_DEASSERT(d->irq);
 	}
 </pre><br>
 
@@ -420,9 +419,16 @@ actually compile and run.)
 		struct foo_data *d = extra;
 		uint64_t idata = 0, odata = 0;
 
-		idata = memory_readmax64(cpu, data, len);
+		if (writeflag == MEM_WRITE)
+			idata = memory_readmax64(cpu, data, len);
+
 		switch (relative_addr) {
-		/* .... */
+
+		/*  Handle accesses to individual addresses within
+		    the device here.  */
+
+		/*  ...  */
+
 		}
 
 		if (writeflag == MEM_READ)

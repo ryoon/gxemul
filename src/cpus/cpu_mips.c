@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.82 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu_mips.c,v 1.83 2007-06-15 18:07:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -220,19 +220,15 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 		cpu->cd.mips.cache_mask[i] = cpu->cd.mips.cache_size[i] - 1;
 
-		cpu->cd.mips.cache[i] = malloc(cpu->cd.mips.cache_size[i]);
-		if (cpu->cd.mips.cache[i] == NULL) {
-			fprintf(stderr, "out of memory\n");
-		}
+		CHECK_ALLOCATION(cpu->cd.mips.cache[i] =
+		    malloc(cpu->cd.mips.cache_size[i]));
 
 		n_cache_lines = cpu->cd.mips.cache_size[i] /
 		    cpu->cd.mips.cache_linesize[i];
 		tags_size = n_cache_lines * size_per_cache_line;
 
-		cpu->cd.mips.cache_tags[i] = malloc(tags_size);
-		if (cpu->cd.mips.cache_tags[i] == NULL) {
-			fprintf(stderr, "out of memory\n");
-		}
+		CHECK_ALLOCATION(cpu->cd.mips.cache_tags[i] =
+		    malloc(tags_size));
 
 		/*  Initialize the cache tags:  */
 		switch (cpu->cd.mips.cpu_type.rev) {

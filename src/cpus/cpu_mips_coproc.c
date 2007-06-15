@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.68 2007-06-14 16:13:30 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.69 2007-06-15 18:07:08 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -359,13 +359,9 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 {
 	struct mips_coproc *c;
 
-	c = malloc(sizeof(struct mips_coproc));
-	if (c == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	CHECK_ALLOCATION(c = malloc(sizeof(struct mips_coproc)));
 	memset(c, 0, sizeof(struct mips_coproc));
+
 	c->coproc_nr = coproc_nr;
 
 	if (coproc_nr == 0) {

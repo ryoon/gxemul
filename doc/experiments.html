@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.109 2007-06-15 06:34:46 debug Exp $
+$Id: experiments.html,v 1.110 2007-06-15 18:07:08 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -453,8 +453,10 @@ following experimental devices:
 
 </table></center>
 
-<p>
-While these devices may resemble real-world hardware, they are 
+<p>The include files for the test machine devices are found in
+<a href="../src/include/testmachine/"><tt>src/include/testmachine/</tt></a>.
+
+<p>While these devices may resemble real-world hardware, they are 
 intentionally made simpler to use. (An exception is the framebuffer;
 some machines actually have simple linear framebuffers like this.)
 
@@ -520,7 +522,7 @@ what kind of IPI it was.
 
 <p><table border="1">
 	<tr><td align="center">
-		<b><tt>testarm</tt></b> (via the <tt>irqc</tt> device)
+		<b><tt>testarm</tt> and others</b> (via the <tt>irqc</tt> device)
 	</td></tr>
 	<tr><td>
 		<table border="0">
@@ -538,12 +540,6 @@ what kind of IPI it was.
 	</td></tr>
 </table>
 </center>
-
-<p>Other machines:  TODO
-
-<p><font color="#ff0000"><b>NOTE:</b></font> The only test machines
-that are working reasonably well are the <tt>testmips</tt> and
-<tt>testarm</tt> machines.
 
 
 

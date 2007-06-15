@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.117 2007-06-15 06:26:20 debug Exp $
+$Id: intro.html,v 1.118 2007-06-15 21:43:09 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -73,15 +73,15 @@ processors and surrounding hardware components are emulated well enough to
 let <a href="#emulmodes">unmodified operating systems (e.g. NetBSD)
 run</a> as if they were running on a real machine.
 
+<p>The emulator is written in C, does not depend on third-party libraries,
+and should compile and run on most 64-bit and 32-bit Unix-like systems, 
+with few or no modifications.
+
 <p>Devices and processors are not simulated with 100% accuracy. They are 
 only ``faked'' well enough to allow guest operating systems to run without 
 complaining too much. Still, the emulator could be of interest for 
 academic research and experiments, such as when learning how to write 
 operating system code.
-
-<p>The emulator is written in C, does not depend on third-party libraries,
-and should compile and run on most 64-bit and 32-bit Unix-like systems, 
-with few or no modifications.
 
 <p>The emulator contains code which tries to emulate the workings of CPUs
 and surrounding hardware found in real machines, but it does not contain
@@ -91,17 +91,17 @@ emulator itself, so you do not need to use any ROM image at all.
 
 <p>You can use pre-compiled kernels (for example <a href="http://www.netbsd.org/">NetBSD</a>
 kernels, or Linux), or other programs that are in binary format, and in some cases
-even actual ROM images. A couple of different file formats are supported
-(<a href="http://en.wikipedia.org/wiki/Executable_and_Linkable_Format">ELF</a>,
+even actual ROM images. A couple of different file formats are supported:
+<a href="http://en.wikipedia.org/wiki/Executable_and_Linkable_Format">ELF</a>,
 <a href="http://en.wikipedia.org/wiki/A.out">a.out</a>,
 <a href="http://en.wikipedia.org/wiki/COFF">COFF</a>/<a href="http://en.wikipedia.org/wiki/ECOFF">ECOFF</a>,
-<a href="http://en.wikipedia.org/wiki/SREC_%28file_format%29">SREC</a>, and raw binaries).
+<a href="http://en.wikipedia.org/wiki/SREC_%28file_format%29">SREC</a>, and raw binaries.
 
 <p>If you do not have a kernel as a separate file, but you have a bootable
 disk image, then it is sometimes possible to boot directly from that
-image. (This works for example with DECstation emulation, <a href="dreamcast.html">Dreamcast 
+image. This works for example with DECstation emulation, <a href="dreamcast.html">Dreamcast 
 emulation</a>, or when booting from generic <a href="http://en.wikipedia.org/wiki/ISO9660">ISO9660</a>
-CDROM images if the kernel is included in the image as a plain file.)
+CDROM images if the kernel is included in the image as a plain file.
 
 <p>Thanks to (in no specific order) Joachim Buss, Olivier Houchard, Juli 
 Mallett, Juan Romero Pardines, Carl van Schaik, Miod Vallat, Alec Voropay,

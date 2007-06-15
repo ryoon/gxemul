@@ -1,12 +1,19 @@
-$Id: TODO,v 1.533 2007-06-15 20:11:27 debug Exp $
+$Id: TODO,v 1.534 2007-06-15 21:43:09 debug Exp $
 
 ---------------------------------------------------------------------
 Guest OS regression testing:
 
 Done:
+	# NetBSD/dreamcast 3.1
+	# Linux/dreamcast
+	# HelenOS/MIPS
+	# HelenOS/ARM
+	# NetBSD/pmax 3.1 or 1.6.2
+	# Sprite for DECstation
+	# Ultrix/RISC 4.5
 
 Ongoing:
-	# NetBSD/pmax 3.1 or 1.6.2
+	# Debian GNU/Linux for DECstation 
 
 TODO:
 	# NetBSD/arc 1.6.2
@@ -21,17 +28,10 @@ TODO:
 	# NetBSD/prep 2.1
 	# NetBSD/macppc 3.1
 	# NetBSD/pmppc 3.1
-	# NetBSD/dreamcast 3.1
-	# Linux/dreamcast
 	# OpenBSD/pmax 2.8-BETA
 	# OpenBSD/cats 4.0
 	# OpenBSD/landisk 4.1
-	# Ultrix/RISC 4.5
-	# Sprite for DECstation
-	# Debian GNU/Linux for DECstation 
 	# QEMU_MIPS
-	# HelenOS/MIPS
-# HelenOS/ARM
 
 ---------------------------------------------------------------------
 

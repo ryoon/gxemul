@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.164 2007-06-15 18:07:08 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.165 2007-06-15 21:43:53 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -51,6 +51,10 @@ static void gather_statistics(struct cpu *cpu)
 		return;
 	}
 
+	/*  low_pc must be within the page!  */
+	if (low_pc < 0 || low_pc > DYNTRANS_IC_ENTRIES_PER_PAGE)
+		return;
+
 	buf[0] = '\0';
 
 	while ((ch = cpu->machine->statistics_fields[i]) != '\0') {
@@ -64,10 +68,6 @@ static void gather_statistics(struct cpu *cpu)
 			break;
 		case 'p':
 			/*  Physical program counter address:  */
-			/*  (low_pc must be within the page!)  */
-			if (low_pc < 0 ||
-			    low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE)
-				strlcat(buf, "-", sizeof(buf));
 			cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
 			    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 			a = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
@@ -83,10 +83,6 @@ static void gather_statistics(struct cpu *cpu)
 			break;
 		case 'v':
 			/*  Virtual program counter address:  */
-			/*  (low_pc inside the page, or in a delay slot)  */
-			if (low_pc < 0 ||
-			    low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE + 2)
-				strlcat(buf, "-", sizeof(buf));
 			a = cpu->pc;
 			a &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 			    DYNTRANS_INSTR_ALIGNMENT_SHIFT);

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.95 2007-06-14 16:48:22 debug Exp $
+.\" $Id: gxemul.1,v 1.96 2007-06-15 21:43:53 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -61,8 +61,8 @@ without the need to implement per-architecture backends.
 .Pp
 The emulator can be invoked in the following ways:
 .Pp
-1. When emulating a complete machine, configuration options can be entered
-directly on the command line.
+1. When emulating a complete machine, configuration options can be
+supplied directly on the command line.
 .Pp
 2. Options can be read from a configuration file.
 .Pp
@@ -71,18 +71,23 @@ emulating complete machines), then the program name and its argument
 should be given on the command line. (This mode is not really usable yet.)
 .Pp
 The easiest way to use the emulator is to supply settings directly on the 
-command line. The most important thing you need to supply is the
+command line.
+.Pp
+The most important thing you need to supply is the
 file argument. This is the name of a binary file (an ELF, a.out, COFF/ECOFF,
 SREC, or a raw binary image) which you wish to run in the emulator. This file
 might be an operating system kernel, or perhaps a ROM image file.
-.Pp
 If more than one filename is supplied, all files are loaded into memory, 
 and the entry point (if available) is taken from the last file.
 .Pp
-Apart from the name of a binary file, it is also necessary to select
-which specific emulation mode to use. For example, a MIPS-based machine
-from DEC (a DECstation) is very different from a MIPS-based machine
-from SGI. Use
+Apart from the name of a binary file, you must also use the
+.Fl E
+and/or
+.Fl e
+options to select which emulation mode to use. This is necessary because
+the emulator cannot in general deduce this from the file being executed.
+For example, a MIPS-based machine from DEC (a DECstation) is very different
+from a MIPS-based machine from SGI. Use
 .Nm
 .Fl H
 to get a list of available emulation modes.
@@ -323,9 +328,6 @@ are always disabled (i.e. implicit
 and
 .Fl B
 flags are added to the command line).
-.Pp
-If a value is missing (e.g. the end-of-page slot does not really have a 
-known physical address), it is written out as just a dash ("-").
 .It Fl T
 Halt if the emulated program attempts to access non-existing memory.
 .It Fl t
@@ -378,6 +380,8 @@ Userland-only (syscall) emulation. (Use
 to get a list of available emulation modes.) Some (but not all) of the
 options listed under Other options above can also be used with 
 userland emulation.
+.Pp
+Note: Userland (syscall) emulation does not really work yet.
 .El
 .Pp
 General options:
@@ -415,7 +419,7 @@ Display a list of all available command line options.
 .It Fl k Ar n
 Set the size of the dyntrans cache (per emulated CPU) to
 .Ar n
-MB. The default size is 40 MB.
+MB. The default size is 48 MB.
 .It Fl K
 Force the single-step debugger to be entered at the end of a simulation.
 .It Fl q

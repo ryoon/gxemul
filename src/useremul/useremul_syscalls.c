@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_syscalls.c,v 1.1 2007-06-15 00:41:21 debug Exp $
+ *  $Id: useremul_syscalls.c,v 1.2 2007-06-15 00:50:14 debug Exp $
  *
  *  Common syscall code for all userland emulation modes.
  */
@@ -42,16 +42,15 @@
 
 USEREMUL_SYSCALL1(exit)
 {
-	debug("[ exit(%i) ]\n", (int)arg0);
+	debug("[ syscall: exit(%i) ]\n", (int)arg0);
 	cpu->running = 0;
-	cpu->machine->exit_without_entering_debugger = 1;
 	return 0;
 }
 
 
 USEREMUL_SYSCALL0(sync)
 {
-	debug("[ sync() ]\n");
+	debug("[ syscall: sync() ]\n");
 	sync();
 	return 0;
 }

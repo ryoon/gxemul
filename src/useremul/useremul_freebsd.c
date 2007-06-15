@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_freebsd.c,v 1.1 2007-06-15 00:41:21 debug Exp $
+ *  $Id: useremul_freebsd.c,v 1.2 2007-06-15 00:50:14 debug Exp $
  *
  *  FreeBSD userland (syscall) emulation.
  */
@@ -82,7 +82,7 @@ void useremul_freebsd_setup(struct cpu *cpu, int argc, char **host_argv)
 void useremul_freebsd(struct cpu *cpu, uint32_t code)
 {
 	int syscall_nr = -1;
-	int64_t error_code = 0, error_flag = 0;
+	int64_t result = 0, error_flag = 0;
 	uint64_t arg0, arg1, arg2, arg3, arg4, arg5;
 
 
@@ -130,8 +130,7 @@ void useremul_freebsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	default:
-		fatal("[ UNIMPLEMENTED NetBSD syscall nr %i ]\n",
-		    syscall_nr);
+		fatal("[ UNIMPLEMENTED FreeBSD syscall nr %i ]\n", syscall_nr);
 		cpu->running = 0;
 	}
 
@@ -143,13 +142,8 @@ void useremul_freebsd(struct cpu *cpu, uint32_t code)
 	switch (cpu->machine->arch) {
 
 	case ARCH_ALPHA:
-		if (error_flag) {
-			cpu->cd.alpha.r[ALPHA_A3] = 1;
-			cpu->cd.alpha.r[ALPHA_V0] = error_flag;
-		} else {
-			cpu->cd.alpha.r[ALPHA_A3] = 0;
-			cpu->cd.alpha.r[ALPHA_V0] = error_code;
-		}
+		cpu->cd.alpha.r[ALPHA_V0] = result;
+		cpu->cd.alpha.r[ALPHA_A3] = error_flag;
 		break;
 	}
 }

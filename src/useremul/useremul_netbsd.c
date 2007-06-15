@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_netbsd.c,v 1.1 2007-06-15 00:41:21 debug Exp $
+ *  $Id: useremul_netbsd.c,v 1.2 2007-06-15 00:50:14 debug Exp $
  *
  *  NetBSD userland (syscall) emulation.
  */
@@ -115,9 +115,7 @@ void useremul_netbsd(struct cpu *cpu, uint32_t code)
 	int error_flag = 0, result_high_set = 0;
 	uint64_t arg0=0,arg1=0,arg2=0,arg3=0,stack0=0,stack1=0,stack2=0;
 	int sysnr = 0;
-	int64_t error_code = 0;
-	uint64_t result_low = 0;
-	uint64_t result_high = 0;
+	int64_t result = 0;
 
 
 	/*
@@ -170,17 +168,17 @@ void useremul_netbsd(struct cpu *cpu, uint32_t code)
 	switch (sysnr) {
 
 	case NETBSD_SYS_exit:
-		error_code = useremul_syscall_exit(cpu, arg0);
+		useremul_syscall_exit(cpu, arg0);
 		break;
 
 	case NETBSD_SYS_sync:
-		error_code = useremul_syscall_sync(cpu);
+		useremul_syscall_sync(cpu);
 		break;
 
 	default:
 		fatal("[ UNIMPLEMENTED NetBSD syscall nr %i ]\n", sysnr);
 		error_flag = 1;
-		error_code = 78;  /*  ENOSYS  */
+		result = 78;  /*  ENOSYS  */
 	}
 
 
@@ -199,12 +197,10 @@ void useremul_netbsd(struct cpu *cpu, uint32_t code)
 		 */
 		cpu->cd.mips.gpr[MIPS_GPR_A3] = error_flag;
 		if (error_flag)
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = error_code;
-		else
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = result_low;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = (int32_t)result;
 
 		if (result_high_set)
-			cpu->cd.mips.gpr[MIPS_GPR_V1] = result_high;
+			cpu->cd.mips.gpr[MIPS_GPR_V1] = (int32_t)(result >> 32);
 		break;
 	}
 }

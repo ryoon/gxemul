@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.13 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_bebox.c,v 1.14 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: BeBox
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/ports/bebox/ for more info.)

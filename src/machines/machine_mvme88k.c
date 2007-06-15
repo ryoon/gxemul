@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvme88k.c,v 1.10 2007-05-25 12:19:07 debug Exp $
+ *  $Id: machine_mvme88k.c,v 1.11 2007-06-15 18:08:10 debug Exp $
  *
- *  MVME88K machines (for experimenting with OpenBSD/mvme88k).
+ *  COMMENT: MVME88K machines (MVME187)
  *
+ *  This is for experiments with OpenBSD/mvme88k.
  *
  *  TODO: This is completely bogus so far. No devices exist yet.
  *

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.21 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_sgi.c,v 1.22 2007-06-15 18:08:10 debug Exp $
  *
- *  Machine descriptions for Silicon Graphics' MIPS-based machines.
+ *  COMMENT: Silicon Graphics' MIPS-based machines
  *
  *  http://obsolete.majix.org/computers/sgi/iptable.shtml contains a
  *  pretty detailed list of IP ("Inhouse Processor") model numbers.

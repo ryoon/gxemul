@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.19 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_algor.c,v 1.20 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: Algorithmic P4032 and P5064 evaluation boards
  */
 
 #include <stdio.h>

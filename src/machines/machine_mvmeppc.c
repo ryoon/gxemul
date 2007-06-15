@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.21 2007-06-06 01:03:04 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.22 2007-06-15 18:08:10 debug Exp $
  *
- *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
+ *  COMMENT: MVMEPPC machines
+ *
+ *  This is for experiments with NetBSD/mvmeppc or RTEMS.
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
  *
  *  Note:  MVME machines that really adhere to the PReP standard should be

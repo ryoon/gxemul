@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.32 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.33 2007-06-15 18:08:10 debug Exp $
  *
- *  Dreamcast.
+ *  COMMENT: SEGA Dreamcast
  */
 
 #include <stdio.h>

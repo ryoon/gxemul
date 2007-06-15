@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.14 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_cats.c,v 1.15 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: Simtec Electronics' CATS board
  */
 
 #include <stdio.h>

@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcsh.c,v 1.8 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_hpcsh.c,v 1.9 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: Handheld SuperH-based machines
  */
 
 #include <stdio.h>

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.19 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_prep.c,v 1.20 2007-06-15 18:08:10 debug Exp $
  *
- *  Machines conforming to the PowerPC Reference Platform specs.
+ *  COMMENT: Machines conforming to the PowerPC Reference Platform specs
  */
 
 #include <stdio.h>

@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.11 2007-06-14 16:13:25 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.12 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: Artesyn's PM/PPC board
  */
 
 #include <stdio.h>

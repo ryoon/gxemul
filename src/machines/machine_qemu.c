@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.12 2007-01-21 21:02:57 debug Exp $
+ *  $Id: machine_qemu.c,v 1.13 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: Machine mimicing QEMU's default MIPS emulation mode
  *
  *  This file contains semi-bogus machine descriptions for experimental
  *  machines, mimicing those emulated by Fabrice Bellard's QEMU.

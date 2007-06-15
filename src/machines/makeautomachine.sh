@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautomachine.sh,v 1.4 2006-12-30 13:31:02 debug Exp $
+#  $Id: makeautomachine.sh,v 1.5 2007-06-15 18:08:10 debug Exp $
 
 
 printf "Generating automachine.c... "
@@ -37,6 +37,16 @@ rm -f automachine.c
 printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> automachine.c
 
 cat automachine_head.c >> automachine.c
+
+printf "3"
+rm -f .index
+for a in *.c; do
+	B=`grep COMMENT $a`
+	if [ z"$B" != z ]; then
+		printf "$a " >> .index
+		echo "$B"|cut -d : -f 2- >> .index
+	fi
+done
 
 printf "2"
 for a in machine_*.c; do

@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.16 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.17 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: NetWinder
  */
 
 #include <stdio.h>

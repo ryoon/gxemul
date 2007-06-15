@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.27 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_pmax.c,v 1.28 2007-06-15 18:08:10 debug Exp $
  *
- *  DECstation ("PMAX") machine description.
+ *  COMMENT: Digital DECstation ("PMAX") machines
  */
 
 #include <stdio.h>

@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.19 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_arc.c,v 1.20 2007-06-15 18:08:10 debug Exp $
+ *
+ *  COMMENT: ARC (Advanced RISC Computing) machines
  */
 
 #include <stdio.h>

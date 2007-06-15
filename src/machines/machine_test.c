@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.37 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_test.c,v 1.38 2007-06-15 18:08:10 debug Exp $
  *
- *  Various test machines. Generally, the machines are as follows:
+ *  COMMENT: Various test machines
+ *
+ *  Generally, the machines are as follows:
  *
  *	bareXYZ:	A bare machine using an XYZ processor.
  *

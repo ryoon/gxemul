@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.26 2007-06-15 17:02:03 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.27 2007-06-15 18:08:10 debug Exp $
  *
- *  Emulation of MIPS evaluation boards, such as the MIPS Malta board.
+ *  COMMENT: MIPS evaluation boards (e.g. Malta)
  */
 
 #include <stdio.h>

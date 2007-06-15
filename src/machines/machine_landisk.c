@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.17 2007-06-04 08:22:07 debug Exp $
+ *  $Id: machine_landisk.c,v 1.18 2007-06-15 18:08:10 debug Exp $
  *
- *  I-O DATA LANDISK USL-5P.
+ *  COMMENT: I-O DATA LanDisk USL-5P
  *
  *  This machine consists of:
  *

@@ -1,16 +1,9 @@
-$Id: TODO,v 1.539 2007-06-16 14:39:17 debug Exp $
+$Id: TODO,v 1.540 2007-06-16 16:58:27 debug Exp $
 
 -------------------------------------------------------------------------------
 
-translation_areas_ofs i physpage-structen!
-En liten lista, testa med:
-	offset till nästa lista (32 bitar)
-	N entries:	16 bitar offset, 16 bitar längd
-där N = 15, t ex
-
-Funktioner för att:
-	Lägga till offset + längd till en physpage.
-	Hjälpfunktion för att skapa ny lista.
+ÄNDRA ALLA NEXT_IC++ TILL NEXT_IC=ic+2 OCH LIKNANDE! Detta för att få
+eventuell inlining av ic-anrop från nativekod att funka!
 
 Sedan:
 	Hjälpfunktion för att läsa ut alla offsetter + längder +

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.9 2007-06-15 17:02:38 debug Exp $
+ *  $Id: timer.c,v 1.10 2007-06-16 17:16:30 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -64,7 +64,7 @@ static double timer_current_time_step;
 
 static int timer_is_running;
 
-#define	SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH	1.65
+#define	SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH	1.95
 
 
 /*

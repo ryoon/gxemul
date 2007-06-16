@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.118 2007-06-15 21:43:09 debug Exp $
+$Id: intro.html,v 1.119 2007-06-16 03:21:49 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -73,8 +73,11 @@ processors and surrounding hardware components are emulated well enough to
 let <a href="#emulmodes">unmodified operating systems (e.g. NetBSD)
 run</a> as if they were running on a real machine.
 
-<p>The emulator is written in C, does not depend on third-party libraries,
-and should compile and run on most 64-bit and 32-bit Unix-like systems, 
+<p>The emulator is written in
+<a href="http://en.wikipedia.org/wiki/C_(programming_language)">C</a>, 
+does not depend on third-party libraries, and should compile and run on 
+most 64-bit and 32-bit
+<a href="http://en.wikipedia.org/wiki/Unix-like">Unix-like</a> systems,
 with few or no modifications.
 
 <p>Devices and processors are not simulated with 100% accuracy. They are 
@@ -143,8 +146,9 @@ The "easiest way out" if you plan to redistribute code from GXemul is, of
 course, to let it remain open source and simply supply the source code.
 
 <p>In case you want to reuse parts of GXemul, but you need to do that 
-under a different license (e.g. the GPL), then contact me and I might 
-re-license/dual-license files on a case-by-case basis.
+under a different license (e.g. the
+<a href="http://www.gnu.org/licenses/gpl.html">GPL</a>), then contact me and 
+I can probably re-license/dual-license files on a case-by-case basis.
 
 
 
@@ -164,10 +168,18 @@ Uncompress the .tar.gz distribution file, and run
 specific libraries to build, however, if you build on a system which does 
 not have X11 libraries installed, some functionality will be lost.
 
-<p>The emulator's performance is highly dependent on both runtime settings
-and on compiler settings, so you might want to experiment with 
-using different CC and CFLAGS environment variable values when running the 
-<tt>configure</tt> script.
+<p>The emulator's performance is highly dependent on both runtime settings 
+and on compiler settings, so you might want to experiment with using 
+different <tt>CC</tt> and <tt>CFLAGS</tt> environment variable values when 
+running the <tt>configure</tt> script.
+
+<p>On some platforms, it is possible that building GXemul will fail 
+because of too high optimization. When using GCC (the GNU compiler), 
+<tt>-O3</tt> is the default optimization level. This works fine on e.g. 
+amd64 and i386 systems, but on some more uncommon platforms, <tt>-O3</tt> 
+might trigger internal bugs in GCC itself. If this happens, try setting 
+<tt>CFLAGS</tt> to <tt>-O2</tt> before running <tt>./configure</tt>, and 
+try again,
 
 <p>Note that there is no <tt>make install</tt> functionality; package
 maintainers for individual operating systems solve this for their 
@@ -226,8 +238,11 @@ their original meaning in those xterm windows.
 <h3>Which processor architectures does GXemul emulate?</h3>
 
 The architectures that are emulated well enough to let at least one 
-guest operating system run (per architecture) are ARM, MIPS, PowerPC,
-and SuperH.
+guest operating system run (per architecture) are 
+<a href="http://en.wikipedia.org/wiki/ARM_architecture">ARM</a>,   
+<a href="http://en.wikipedia.org/wiki/MIPS_architecture">MIPS</a>,   
+<a href="http://en.wikipedia.org/wiki/Powerpc">PowerPC</a>, and   
+<a href="http://en.wikipedia.org/wiki/SuperH">SuperH</a>.
 
 <p>Please read the page about <a href="guestoses.html">guest operating
 systems</a> for more information about the machines and operating systems 
@@ -245,9 +260,12 @@ complete enough to be listed among the "working" architectures.)
 <h3>Which host architectures/platforms are supported?</h3>
 
 GXemul should compile and run on any modern host architecture (64-bit or 
-32-bit word-length). I generally test it on FreeBSD/amd64 6.x, 
-FreeBSD/alpha 4.x, sometimes also on Linux (various platforms), and every
-now and then also on NetBSD inside the emulator itself (various platforms).
+32-bit word-length). I generally test it on
+<a href="http://www.freebsd.org/platforms/amd64.html">FreeBSD/amd64</a> 6.x, 
+<a href="http://www.freebsd.org/platforms/alpha.html">FreeBSD/alpha</a> 4.x,
+sometimes also on Linux (various platforms), and every
+now and then also on <a href="http://www.netbsd.org/">NetBSD</a> inside
+the emulator itself (various platforms).
 
 <p>Note 1: The <a href="translation.html">dynamic translation</a> engine 
 does <i>not</i> require backends for native code generation to be written 
@@ -255,8 +273,8 @@ for each individual host architecture; the intermediate representation
 that the dyntrans system uses can be executed on any host architecture.
 
 <p>Note 2: Although GXemul may build and run on non-Unix-like platforms,
-such as Cygwin, Unix-like systems are the primary platform. Some 
-functionality may be lost when running on Cygwin.
+such as <a href="http://www.cygwin.com/">Cygwin</a>, Unix-like systems are
+the primary platform. Some functionality may be lost when running on Cygwin.
 
 
 

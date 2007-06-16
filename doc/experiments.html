@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.110 2007-06-15 18:07:08 debug Exp $
+$Id: experiments.html,v 1.111 2007-06-16 03:21:49 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -67,9 +67,9 @@ that you do two things:
 <ul>
   <li>Build and install a cross-compiler for your chosen target,
 	e.g. <tt>mips64-unknown-elf</tt>.
-	GCC is usually a good compiler choice, because it is portable
-	and in wide-spread use. (Other compilers should work too.)
-
+	<a href="http://gcc.gnu.org/">GCC</a> is usually a good compiler
+	choice, because it is portable and in wide-spread use.
+	(Other compilers should work too.)
   <p>
   <li>Compile the Hello World demo program for your chosen target, and run 
 	it in the emulator.
@@ -79,6 +79,31 @@ that you do two things:
 code distribution, in the <a href="../demos/hello/"><tt>demos/hello/</tt></a>
 subdirectory. The README files in the demo directories have several 
 examples of how the demo programs can be built.
+
+<p>Once you have tried running the Hello World program from the command 
+line, e.g.<pre>
+	<b>gxemul -E testmips hello_mips</b>
+</pre>
+you can experiment with adding one or more of the following command line 
+options:
+
+<p><ul>
+  <li><b><tt>-t</tt></b>, to show a function call trace,
+  <li><b><tt>-i</tt></b>, to show instruction disassembly (for each
+	executed instruction),
+  <li>and finally <b><tt>-V</tt></b> to start the emulator in a "paused"
+	state.
+</ul>
+
+<p>If you start the emulator in the paused state, or if you press CTRL-C 
+during normal execution, you will end up with a <tt><b>GXemul></b></tt> 
+prompt. This is the built-in debugger.
+
+<p>Using the built-in debugger, you can single step (<tt><b>s</b></tt>), 
+show the current contents of the emulated registers (<tt><b>r</b></tt>),
+turn on/off the function call trace mode (<tt><b>trace</b></tt>), or 
+continue at full speed (<tt><b>c</b></tt>). Typing <tt><b>quit</b></tt> 
+exits the emulator.
 
 <p>Hopefully this is enough to get you inspired. :-)
 

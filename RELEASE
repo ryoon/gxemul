@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.287 2007-06-15 21:09:39 debug Exp $
+$Id: RELEASE,v 1.288 2007-06-16 01:10:31 debug Exp $
 
-Currently working on what will become 0.4.6.
+Currently working on what will (most likely) become 0.5.0.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.6
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.5.0
 ================================================================
 
 Copyright (C) 2003-2007  Anders Gavare.
@@ -25,21 +25,9 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax and NetBSD/cats.
 
 
-The changes between release 0.4.5.1 and 0.4.6 include, among other things:
+The changes between release 0.4.6 and 0.5.0 include, among other things:
 
-    o)	NetBSD/pmppc can now run in the emulator (with root-on-nfs), on
-	an emulated Artesyn PM/PPC board.
-
-    o)	An instruction combination has been implemented for the idle loop
-	used by NetBSD/arm (cats, netwinder, and iq80321). In plain English,
-	this means that if the guest OS inside the emulator is not using
-	any CPU, the emulator should not use much CPU on the host either.
-
-    o)	Some minor SuperH emulation speed improvements.
-
-    o)	General code cleanup: Non-working (skeleton) emulation modes have
-	been removed, to make it easier to maintain the source code in
-	the long run, and many unused/legacy constructs have been removed.
+    o)	...
 
 Please read the HISTORY file for more details.
 

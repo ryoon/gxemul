@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1613 2007-06-15 20:11:26 debug Exp $
+$Id: HISTORY,v 1.1614 2007-06-16 01:10:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3608,3 +3608,6 @@ Changelog for GXemul:
 		Adding a COMMENT to each machine and device (for automagic
 		.index comment generation).
 		Doing regression testing for the next release.
+
+==============  RELEASE 0.4.6  ==============
+

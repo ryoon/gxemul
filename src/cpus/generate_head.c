@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.26 2007-04-10 17:26:20 debug Exp $
+ *  $Id: generate_head.c,v 1.27 2007-06-16 17:18:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -110,6 +110,8 @@ int main(int argc, char *argv[])
 	    uppercase(a));
 	printf("#define DYNTRANS_TC_ALLOCATE "
 	    "%s_tc_allocate_default_page\n", a);
+	printf("#define DYNTRANS_TC_ADD_TRANSLATABLE_RANGE "
+	    "%s_add_translatable_range\n", a);
 	printf("#define DYNTRANS_TC_PHYSPAGE %s_tc_physpage\n", a);
 	printf("#define DYNTRANS_PC_TO_POINTERS %s_pc_to_pointers\n", a);
 	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC "

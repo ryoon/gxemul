@@ -25,9 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.166 2007-06-16 14:39:17 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.167 2007-06-16 17:18:34 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
+ *
+ *  Note: This might be a bit hard to follow, if you are reading this source
+ *  code for the first time. It is basically a hack to implement "templates"
+ *  with normal C code, by using suitable defines/macros, and then including
+ *  this file.
  */
 
 
@@ -624,10 +629,85 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 	cpu->translation_cache_cur_ofs += sizeof(struct DYNTRANS_TC_PHYSPAGE);
 
 	cpu->translation_cache_cur_ofs --;
-	cpu->translation_cache_cur_ofs |= 127;
+	cpu->translation_cache_cur_ofs |= 63;
 	cpu->translation_cache_cur_ofs ++;
 }
 #endif	/*  DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE  */
+
+
+
+#ifdef DYNTRANS_ADD_TRANSLATABLE_RANGE
+/*  Helper function which allocates a physpage_ranges struct.  */
+static void allocate_physpage_ranges_struct(struct cpu *cpu, uint32_t *offsetp)
+{
+	struct physpage_ranges *physpage_ranges = (struct physpage_ranges *)
+	    (cpu->translation_cache + cpu->translation_cache_cur_ofs);
+
+	*offsetp = cpu->translation_cache_cur_ofs;
+
+	physpage_ranges->next_ofs = 0;
+	physpage_ranges->n_entries_used = 0;
+
+	cpu->translation_cache_cur_ofs += sizeof(struct physpage_ranges);
+
+	cpu->translation_cache_cur_ofs --;
+	cpu->translation_cache_cur_ofs |= 63;
+	cpu->translation_cache_cur_ofs ++;
+}
+
+/*
+ *  XXX_add_translatable_range():
+ *
+ *  Adds a range (base, length) to the list of translatable ranges of the
+ *  current page.
+ */
+static void DYNTRANS_ADD_TRANSLATABLE_RANGE(struct cpu *cpu,
+	uint16_t base, uint16_t length)
+{ 
+	struct DYNTRANS_TC_PHYSPAGE *ppp = (struct DYNTRANS_TC_PHYSPAGE *)
+	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+	uint32_t offset;
+
+	/*
+	 *  If there is no allocated physpage_ranges struct yet, then
+	 *  allocate one.
+	 */
+	if (ppp->translation_ranges_ofs == 0)
+		allocate_physpage_ranges_struct(cpu,
+		    &ppp->translation_ranges_ofs);
+
+	/*
+	 *  Loop until a physpage_ranges struct is found where there is
+	 *  room to add the new range:
+	 */
+	offset = ppp->translation_ranges_ofs;
+	for (;;) {
+		struct physpage_ranges *physpage_ranges =
+		    (struct physpage_ranges *)(cpu->translation_cache + offset);
+
+		/*  printf("adding base=%04x length=%04x (offset = %i)\n",
+		    base, length, offset);  */
+
+		if (physpage_ranges->n_entries_used <
+		    PHYSPAGE_RANGES_ENTRIES_PER_LIST) {
+			/*  There's room. Add the new range, and return:  */
+			int i = physpage_ranges->n_entries_used ++;
+			physpage_ranges->base[i] = base;
+			physpage_ranges->length[i] = length;
+			return;
+		}
+
+		/*  No room. Go to the next struct.  */
+
+		/*  If there is no next, let's create one.  */
+		if (physpage_ranges->next_ofs == 0)
+			allocate_physpage_ranges_struct(cpu,
+			    &physpage_ranges->next_ofs);
+
+		offset = physpage_ranges->next_ofs;
+	}
+}
+#endif	/*  DYNTRANS_ADD_TRANSLATABLE_RANGE  */
 
 
 
@@ -964,6 +1044,7 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 
 	ppp->next_ofs = 0;
 	ppp->translations_bitmap = 0;
+	ppp->translation_ranges_ofs = 0;
 	/*  ppp->physaddr is filled in by the page allocator  */
 
 	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
@@ -1365,6 +1446,16 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 			}
 
 			ppp->translations_bitmap = 0;
+
+			/*  Clear the list of translatable ranges:  */
+			if (ppp->translation_ranges_ofs != 0) {
+				struct physpage_ranges *physpage_ranges =
+				    (struct physpage_ranges *)
+				    (cpu->translation_cache +
+				    ppp->translation_ranges_ofs);
+				physpage_ranges->next_ofs = 0;
+				physpage_ranges->n_entries_used = 0;
+			}
 		}
 #endif
 	}
@@ -1840,6 +1931,12 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 		}
 
 		/*  Note: The length translated was i-1 instructions.  */
+
+		if (native_code_translation_enabled && i > 1)
+			DYNTRANS_TC_ADD_TRANSLATABLE_RANGE(cpu, baseaddr
+			    & ((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+			    DYNTRANS_INSTR_ALIGNMENT_SHIFT),
+			    (i-1) << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 
 		cpu->translation_readahead = 0;
 	}

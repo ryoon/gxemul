@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.16 2007-06-07 15:36:24 debug Exp $
+ *  $Id: generate_tail.c,v 1.17 2007-06-16 17:18:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -93,6 +93,11 @@ int main(int argc, char *argv[])
 	    "%s_tc_allocate_default_page\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE\n\n");
+
+	printf("#define DYNTRANS_ADD_TRANSLATABLE_RANGE "
+	    "%s_add_translatable_range\n", a);
+	printf("#include \"cpu_dyntrans.c\"\n");
+	printf("#undef DYNTRANS_ADD_TRANSLATABLE_RANGE\n\n");
 
 	printf("#define DYNTRANS_INVAL_ENTRY\n");
 	printf("#include \"cpu_dyntrans.c\"\n");

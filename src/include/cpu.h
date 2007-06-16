@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.129 2007-06-16 14:39:18 debug Exp $
+ *  $Id: cpu.h,v 1.130 2007-06-16 17:18:34 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -65,11 +65,11 @@
  *  1 to the second-lowest 1/32th, and so on. This speeds up page invalidations,
  *  since only part of the page need to be reset.
  *
- *  translation_areas_ofs is an offset within the translation cache to a short
- *  list of areas for this physpage which contain code. The list is of fixed
+ *  translation_ranges_ofs is an offset within the translation cache to a short
+ *  list of ranges for this physpage which contain code. The list is of fixed
  *  length; to extend the list, the list should be made to point to another
  *  list, and so forth. (Bad, O(n) find/insert complexity. Should be fixed some
- *  day. TODO)
+ *  day. TODO)  See definition of physpage_ranges below.
  */
 #define DYNTRANS_MISC_DECLARATIONS(arch,ARCH,addrtype)  struct \
 	arch ## _instr_call {					\
@@ -82,7 +82,7 @@
 		struct arch ## _instr_call ics[ARCH ## _IC_ENTRIES_PER_PAGE+2];\
 		uint32_t	next_ofs;	/*  (0 for end of chain)  */ \
 		uint32_t	translations_bitmap;			\
-		uint32_t	translation_areas_ofs;			\
+		uint32_t	translation_ranges_ofs;			\
 		addrtype	physaddr;				\
 	};								\
 									\
@@ -109,6 +109,20 @@
 		struct arch ## _l2_64_table	*next;			\
 		int				refcount;		\
 	};
+
+
+/*
+ *  This structure contains a list of ranges within an emulated
+ *  physical page that contain translatable code.
+ */
+#define	PHYSPAGE_RANGES_ENTRIES_PER_LIST		30
+struct physpage_ranges {
+	uint32_t	next_ofs;	/*  0 for end of chain  */
+	uint32_t	n_entries_used;
+	uint16_t	base[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
+	uint16_t	length[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
+};
+
 
 /*
  *  Dyntrans "Instruction Translation Cache":
@@ -307,7 +321,7 @@ struct cpu_family {
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 
 #define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
-#define	N_PADDR_SAMPLES			64
+#define	N_PADDR_SAMPLES			((int)TIMER_BASE_FREQUENCY)
 
 
 /*

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.70 2007-06-15 06:26:20 debug Exp $
+$Id: misc.html,v 1.71 2007-06-16 04:22:31 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -113,8 +113,8 @@ complement to testing on real hardware.
 	<p>
 	<li>Caches. There is no cache emulation in GXemul right now. Caches
 	for R2000/R3000 are faked well enough to run NetBSD, Ultrix, etc
-	in the DECstation emulation mode, but other than that, cache
-	operations are treated as nops.
+	in the <a href="http://en.wikipedia.org/wiki/DECstation">DECstation</a>
+	emulation mode, but other than that, cache operations are treated as nops.
 </ul>
 
 <p>The bottom line is that GXemul can be useful as yet another way to test 
@@ -139,10 +139,10 @@ might be suitable choices.
 	then compile into object format, and then you need to link this
 	into an executable image. This is much closer to how things work
 	in real life than running assembly language listings in a simulator
-	(e.g. SPIM).
+	(e.g. <a href="http://pages.cs.wisc.edu/~larus/spim.html">SPIM</a>).
   <p>
-  <li><b>(-)</b>&nbsp;&nbsp;GXemul does not simulate out-of-order
-	execution, penalties related to instruction scheduling, or
+  <li><b>(-)</b>&nbsp;&nbsp;GXemul does not simulate <a href="http://en.wikipedia.org/wiki/Out-of-order_execution">out-of-order
+	execution</a>, penalties related to instruction scheduling, or
 	load-delays, so it cannot be used to create optimizing compilers
 	that take advantage of such processor features. GXemul keeps
 	track of the number of instructions executed, but that's it.
@@ -162,8 +162,9 @@ are one or more single-character options. Run <b>gxemul -h</b>
 to get a list of possible options.
 
 <p>
-Here are some examples. If you want to run a NetBSD/pmax kernel on an
-emulated DECstation machine, you would use a command line such as this:
+Here are some examples. If you want to run a <a href="http://www.netbsd.org/ports/pmax/">NetBSD/pmax</a>
+kernel on an emulated <a href="http://en.wikipedia.org/wiki/DECstation">DECstation</a>
+machine, you would use a command line such as this:
 <pre>
 	$ <b>gxemul -e 3max -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
 </pre>
@@ -499,8 +500,10 @@ are, so don't expect any PROM image to just magically work.
 
 <p>
 <h4>Dumping the PROM on a DECstation 5000/125:</h4>
+
 The image first needs to be extracted from the machine. There are
 several ways to do this.
+
 <ul>
   <li>Use hardware to read the PROM chip(s) directly. Not easy if you
 	don't have such a hardware reader.
@@ -511,11 +514,11 @@ several ways to do this.
   <li>Hook up a serial console and dump using the PROM's own dump
 	command.
 </ul>
-<p>
-The easiest way is to hook up a serial console. The terminal must be
+
+<p>The easiest way is to hook up a serial console. The terminal must be
 able to capture output to a file.
-<p>
-These are approximately the commands that I used:
+
+<p>These are approximately the commands that I used:
 <pre>
         >><b>cnfg</b>                             <i>Show machine configuration</i>
 
@@ -525,26 +528,27 @@ These are approximately the commands that I used:
 
         >><b>e -x 0xbfc00000:0xbfffffff</b>       <i>Dump the PROM data</i>
 </pre>
-<p>
-Remember that DECstations are little endian, so if the dump data
+
+<p>Remember that DECstations are little endian, so if the dump data
 looks like this:
 <pre>
         bfc00000:  0x0bf0007e
 </pre>
 then the bytes in memory are actually 0x7e, 0x00, 0xf0, and 0x0b.
-<p>
-At 9600 bps, about 10KB can be dumped per minute, so it takes a while.
+
+<p>At 9600 bps, about 10KB can be dumped per minute, so it takes a while.
 Once enough of the PROM has been dumped, you can press CTRL-C to break out.
 Then, restore the more environment variable:
 <pre>
         >><b>setenv more 24</b>
 </pre>
-<p>
-Now, convert the data you just saved (little-endian words -> bytes),
+
+<p>Now, convert the data you just saved (little-endian words -> bytes),
 and store in a file. Let's call this file DECstation5000_125_promdump.bin.
 <pre>
         $ <b>decprom_dump_txt_to_bin DECstation5000_125_promdump.txt DECstation5000_125_promdump.bin</b>
 </pre>
+
 This binary image can now be used in the emulator:
 <pre>
 	$ <b>gxemul -e 3min -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>

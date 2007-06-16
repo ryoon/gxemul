@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.226 2007-06-15 06:26:19 debug Exp $
+$Id: guestoses.html,v 1.227 2007-06-16 23:48:22 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -1857,19 +1857,12 @@ DECstation onto a harddisk image in the emulator:
 </pre>
   <li>Download David Muse' install kernel, and a Debian Netinstall CD-ROM:<pre>
 	<a href="http://www.firstworks.com/mips-linux-2.4.31/vmlinux-2.4.31">http://www.firstworks.com/mips-linux-2.4.31/vmlinux-2.4.31</a>
-	<a href="http://cdimage.debian.org/debian-cd/3.1_r0a/mipsel/iso-cd/debian-31r0a-mipsel-netinst.iso">http://cdimage.debian.org/debian-cd/3.1_r0a/mipsel/iso-cd/debian-31r0a-mipsel-netinst.iso</a>
+	<a href="http://cdimage.debian.org/cdimage/archive/3.1_r6a/mipsel/iso-cd/">http://cdimage.debian.org/cdimage/archive/3.1_r6a/mipsel/iso-cd</a>/<a href="http://cdimage.debian.org/cdimage/archive/3.1_r6a/mipsel/iso-cd/debian-31r6a-mipsel-netinst.iso">debian-31r6a-mipsel-netinst.iso</a>
 
 </pre>
-	<font color="#ff0000"><b>NOTE 2007-04-14:</b></font> It seems that the ISO image
-	has been removed from the cdimage site. You may need to search
-	for it elsewhere. Alternatively, you can follow Michel Lespinasse's instructions at
-	<a href="http://people.zoy.org/~walken/gxemul-etch/HOWTO.html">http://people.zoy.org/~walken/gxemul-etch/HOWTO.html</a>.
-
-	<p><font color="#ff0000"><b>NOTE 2007-05-05:</b></font> John Reiser has been kind enough to
-	place a copy of debian-31r0a-mipsel-netinst.iso <a href="http://bitwagon.com/ftp/debian-31r0a-mipsel-netinst.iso">here</a>.
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -X -e3max -d debian_pmax.img -d debian-31r0a-mipsel-netinst.iso vmlinux-2.4.31</b>
+	<b>gxemul -X -e3max -d debian_pmax.img -d debian-31r6a-mipsel-netinst.iso vmlinux-2.4.31</b>
 </pre>
 
 	<p>If everything goes well, you will see Linux' boot messages, and then

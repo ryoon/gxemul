@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.135 2007-06-16 14:39:17 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.136 2007-06-16 17:17:46 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2226,7 +2226,7 @@ X(idle)
 
 		cpu->sampling = 0;
 
-		if ((++x) == 300) {
+		if ((++x) == 100) {
 			usleep(20);
 			x = 0;
 		}
@@ -2681,7 +2681,7 @@ X(multi_addu_3)
 	reg(ic[1].arg[2]) = (int32_t)(reg(ic[1].arg[0]) + reg(ic[1].arg[1]));
 	reg(ic[2].arg[2]) = (int32_t)(reg(ic[2].arg[0]) + reg(ic[2].arg[1]));
 	cpu->n_translated_instrs += 2;
-	cpu->cd.mips.next_ic += 2;
+	cpu->cd.mips.next_ic = ic + 3;
 }
 
 
@@ -2713,7 +2713,7 @@ X(netbsd_r3k_picache_do_inv)
 	cpu->n_translated_instrs += (ry - rx + 4) / 4 * 3 + 4;
 
 	/*  Run the last mtc0 instruction:  */
-	cpu->cd.mips.next_ic = (struct mips_instr_call *) &ic[8];
+	cpu->cd.mips.next_ic = ic + 8;
 }
 
 
@@ -2831,9 +2831,9 @@ X(netbsd_strlen)
 
 	/*  Done with the loop? Or continue on the next rx page?  */
 	if (rv == 0)
-		cpu->cd.mips.next_ic = (struct mips_instr_call *) &ic[4];
+		cpu->cd.mips.next_ic = ic + 4;
 	else
-		cpu->cd.mips.next_ic = (struct mips_instr_call *) &ic[0];
+		cpu->cd.mips.next_ic = ic;
 }
 #endif
 
@@ -2860,7 +2860,7 @@ X(addiu_bne_samepage_addiu)
 	if (rs != rt)
 		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic[1].arg[2];
 	else
-		cpu->cd.mips.next_ic += 2;
+		cpu->cd.mips.next_ic = ic + 3;
 }
 
 
@@ -2880,7 +2880,7 @@ X(xor_andi_sll)
 	reg(ic[2].arg[2]) = (int32_t)(reg(ic[2].arg[0])<<(int32_t)ic[2].arg[1]);
 
 	cpu->n_translated_instrs += 2;
-	cpu->cd.mips.next_ic += 2;
+	cpu->cd.mips.next_ic = ic + 3;
 }
 
 
@@ -2899,7 +2899,7 @@ X(andi_sll)
 	reg(ic[1].arg[2]) = (int32_t)(reg(ic[1].arg[0])<<(int32_t)ic[1].arg[1]);
 
 	cpu->n_translated_instrs ++;
-	cpu->cd.mips.next_ic ++;
+	cpu->cd.mips.next_ic = ic + 2;
 }
 
 
@@ -2918,7 +2918,7 @@ X(lui_ori)
 	reg(ic[1].arg[1]) = reg(ic[1].arg[0]) | (uint32_t)ic[1].arg[2];
 
 	cpu->n_translated_instrs ++;
-	cpu->cd.mips.next_ic ++;
+	cpu->cd.mips.next_ic = ic + 2;
 }
 
 
@@ -2938,7 +2938,7 @@ X(lui_addiu)
 	    ((int32_t)reg(ic[1].arg[0]) + (int32_t)ic[1].arg[2]);
 
 	cpu->n_translated_instrs ++;
-	cpu->cd.mips.next_ic ++;
+	cpu->cd.mips.next_ic = ic + 2;
 }
 
 

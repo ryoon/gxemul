@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.61 2007-06-04 06:32:25 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.62 2007-06-16 14:39:17 debug Exp $
  *
  *  SH instructions.
  *
@@ -101,11 +101,18 @@ X(sleep)
 	 */
 
 	if (cpu->machine->ncpus == 1) {
+		/*  Don't sample during sleep:  */
+		int old_sampling = cpu->sampling;
 		static int x = 0;
+
+		cpu->sampling = 0;
+
 		if ((++x) == 600) {
 			usleep(10);
 			x = 0;
 		}
+
+		cpu->sampling = old_sampling;
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 	}
 }

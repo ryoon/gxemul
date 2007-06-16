@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.84 2007-06-15 18:13:04 debug Exp $
+ *  $Id: bus_pci.c,v 1.85 2007-06-16 14:39:18 debug Exp $
  *  
  *  COMMENT: Generic PCI bus framework
  *
@@ -1094,7 +1094,8 @@ PCIINIT(symphony_82c105)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	CHECK_ALLOCATION(pd->extra = malloc(sizeof(struct symphony_82c105_extra)));
+	CHECK_ALLOCATION(pd->extra =
+	    malloc(sizeof(struct symphony_82c105_extra)));
 	((struct symphony_82c105_extra *)pd->extra)->wdc0 = NULL;
 	((struct symphony_82c105_extra *)pd->extra)->wdc1 = NULL;
 

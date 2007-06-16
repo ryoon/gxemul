@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.165 2007-06-15 21:43:53 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.166 2007-06-16 14:39:17 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -567,7 +567,9 @@ void DYNTRANS_TIMER_SAMPLE_TICK(struct timer *timer, void *extra)
 	 *  Don't sample if:
 	 *
 	 *  1)  Sampling is not enabled. It should only be enabled during
-	 *      the core dyntrans loop.
+	 *      the core dyntrans loop. Also, when idling (i.e. when running
+	 *      usleep or similar) in cpu_*_instr.c, sampling should be
+	 *	disabled.
 	 *  2)  Enough samples have already been gathered.
 	 */
 
@@ -838,7 +840,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	 *  as non-writable. If there are already translations, then it
 	 *  should already have been marked as non-writable.
 	 */
-	if (ppp->translations == 0) {
+	if (ppp->translations_bitmap == 0) {
 		cpu->invalidate_translation_caches(cpu, physaddr,
 		    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
 	}
@@ -928,6 +930,13 @@ static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #endif
 
+#ifdef DYNTRANS_DUALMODE_32
+#define TO_BE_TRANSLATED    ( cpu->is_32bit? instr32(to_be_translated) : \
+			      instr(to_be_translated) )
+#else
+#define TO_BE_TRANSLATED    ( instr(to_be_translated) )
+#endif
+
 #ifdef DYNTRANS_DELAYSLOT
 static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
 #ifdef DYNTRANS_DUALMODE_32
@@ -954,16 +963,11 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 	CHECK_ALLOCATION(ppp = malloc(sizeof(struct DYNTRANS_TC_PHYSPAGE)));
 
 	ppp->next_ofs = 0;
-	ppp->translations = 0;
+	ppp->translations_bitmap = 0;
 	/*  ppp->physaddr is filled in by the page allocator  */
 
-	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {
-		ppp->ics[i].f =
-#ifdef DYNTRANS_DUALMODE_32
-		    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-		    instr(to_be_translated);
-	}
+	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
+		ppp->ics[i].f = TO_BE_TRANSLATED;
 
 	/*  End-of-page:  */
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].f =
@@ -1343,9 +1347,9 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 		 *  it might be faster since we don't risk wasting cache
 		 *  memory as quickly (which would force unnecessary Restarts).
 		 */
-		if (ppp != NULL && ppp->translations != 0) {
-			uint32_t x = ppp->translations;	/*  TODO:
-				urk Should be same type as ppp->translations */
+		if (ppp != NULL && ppp->translations_bitmap != 0) {
+			uint32_t x = ppp->translations_bitmap;	/*  TODO:
+				urk Should be same type as the bitmap */
 			int i, j, n, m;
 			n = 8 * sizeof(x);
 			m = DYNTRANS_IC_ENTRIES_PER_PAGE / n;
@@ -1354,17 +1358,13 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 				if (x & 1) {
 					for (j=0; j<m; j++)
 						ppp->ics[i*m + j].f =
-#ifdef DYNTRANS_DUALMODE_32
-						    cpu->is_32bit?
-						    instr32(to_be_translated) :
-#endif
-						    instr(to_be_translated);
+						    TO_BE_TRANSLATED;
 				}
 
 				x >>= 1;
 			}
 
-			ppp->translations = 0;
+			ppp->translations_bitmap = 0;
 		}
 #endif
 	}
@@ -1746,10 +1746,12 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	{
 		int x = addr & (DYNTRANS_PAGESIZE - 1);
 		int addr_per_translation_range = DYNTRANS_PAGESIZE / (8 *
-		    sizeof(cpu->cd.DYNTRANS_ARCH.cur_physpage->translations));
+		    sizeof(cpu->cd.DYNTRANS_ARCH.cur_physpage->
+		    translations_bitmap));
 		x /= addr_per_translation_range;
 
-		cpu->cd.DYNTRANS_ARCH.cur_physpage->translations |= (1 << x);
+		cpu->cd.DYNTRANS_ARCH.cur_physpage->
+		    translations_bitmap |= (1 << x);
 	}
 
 	/*
@@ -1774,11 +1776,7 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	cpu->cd.DYNTRANS_ARCH.combination_check = NULL;
 
 	/*  An additional check, to catch some bugs:  */
-	if (ic->f == (
-#ifdef DYNTRANS_DUALMODE_32
-	    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-	    instr(to_be_translated))) {
+	if (ic->f == TO_BE_TRANSLATED) {
 		fatal("INTERNAL ERROR: ic->f not set!\n");
 		goto bad;
 	}
@@ -1787,7 +1785,10 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 		goto bad;
 	}
 
-	/*  ... and finally execute the translated instruction:  */
+
+	/*
+	 *  ... and finally execute the translated instruction:
+	 */
 
 	/*  (Except when doing read-ahead!)  */
 	if (cpu->translation_readahead)
@@ -1805,21 +1806,15 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	    ) {
 		single_step_breakpoint = 0;
 		ic->f(cpu, ic);
-		ic->f =
-#ifdef DYNTRANS_DUALMODE_32
-		    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-		    instr(to_be_translated);
-
+		ic->f = TO_BE_TRANSLATED;
 		return;
 	}
 
 	/*  Translation read-ahead:  */
 	if (!single_step && !cpu->machine->instruction_trace) {
-		/*  Do readahead:  */
-		int i = 1;
-		uint64_t pagenr = DYNTRANS_ADDR_TO_PAGENR(cpu->pc);
 		uint64_t baseaddr = cpu->pc;
+		uint64_t pagenr = DYNTRANS_ADDR_TO_PAGENR(baseaddr);
+		int i = 1;
 
 		cpu->translation_readahead = MAX_DYNTRANS_READAHEAD;
 
@@ -1830,11 +1825,7 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 			    struct DYNTRANS_IC *) = ic[i].f;
 
 			/*  Already translated? Then abort:  */
-			if (old_f != (
-#ifdef DYNTRANS_DUALMODE_32
-			    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-			    instr(to_be_translated)))
+			if (old_f != TO_BE_TRANSLATED)
 				break;
 
 			/*  Translate the instruction:  */
@@ -1847,6 +1838,8 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 			cpu->translation_readahead --;
 			++i;
 		}
+
+		/*  Note: The length translated was i-1 instructions.  */
 
 		cpu->translation_readahead = 0;
 	}
@@ -1869,11 +1862,7 @@ bad:	/*
 	 */
 
 	/*  Clear the translation, in case it was "half-way" done:  */
-	ic->f =
-#ifdef DYNTRANS_DUALMODE_32
-	    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-	    instr(to_be_translated);
+	ic->f = TO_BE_TRANSLATED;
 
 	if (cpu->translation_readahead)
 		return;
@@ -1881,13 +1870,12 @@ bad:	/*
 	quiet_mode = 0;
 	fatal("to_be_translated(): TODO: unimplemented instruction");
 
-	if (cpu->machine->instruction_trace)
-#ifdef MODE32
-		fatal(" at 0x%"PRIx32"\n", (uint32_t)cpu->pc);
-#else
-		fatal(" at 0x%"PRIx64"\n", (uint64_t)cpu->pc);
-#endif
-	else {
+	if (cpu->machine->instruction_trace) {
+		if (cpu->is_32bit)
+			fatal(" at 0x%"PRIx32"\n", (uint32_t)cpu->pc);
+		else
+			fatal(" at 0x%"PRIx64"\n", (uint64_t)cpu->pc);
+	} else {
 		fatal(":\n");
 		DISASSEMBLE(cpu, ib, 1, 0);
 	}

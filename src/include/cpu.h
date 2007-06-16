@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.128 2007-06-14 04:53:14 debug Exp $
+ *  $Id: cpu.h,v 1.129 2007-06-16 14:39:18 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -47,25 +47,29 @@
 /*
  *  Dyntrans misc declarations, used throughout the dyntrans code.
  *
- *  Note that there is space for all instruction calls within a page,
- *  and then 2 more. The first one of these "extra" instruction slots is
- *  the end-of-page slot. It transfers control to the first instruction
- *  slot on the next (virtual) page.
+ *  Note that there is space for all instruction calls within a page, and then
+ *  two more. The first one of these "extra" instruction slots is the end-of-
+ *  page slot. It transfers control to the first instruction slot on the next
+ *  (virtual) page.
  *
- *  The second of these extra instruction slots is an additional 
- *  end-of-page slot for delay-slot architectures. On e.g. MIPS, a branch
- *  instruction can "nullify" (skip) the delay-slot. If the end-of-page
- *  slot is skipped, then we end up one step after that. That's where the
- *  end_of_page2 slot is. :)
+ *  The second of these extra instruction slots is an additional end-of-page
+ *  slot for delay-slot architectures. On e.g. MIPS, a branch instruction can
+ *  "nullify" (skip) the delay-slot. If the end-of-page slot is skipped, then
+ *  we end up one step after that. That's where the end_of_page2 slot is. :)
  *
- *  next_ofs points to the next page in a chain of possible pages.
- *  (several pages can be in the same chain, but only one matches the
- *  specific physaddr.)
+ *  next_ofs points to the next page in a chain of possible pages. (Several
+ *  pages can be in the same chain, but only one matches the specific physaddr.)
  *
- *  translations is a tiny bitmap indicating which parts of the page have
- *  actual translations. Bit 0 corresponds to the lowest 1/32th of the page,
- *  bit 1 to the second-lowest 1/32th, and so on. This speeds up page
- *  invalidations, since only part of the page need to be reset.
+ *  translations_bitmap is a tiny bitmap indicating which parts of the page have
+ *  actual translations. Bit 0 corresponds to the lowest 1/32th of the page, bit
+ *  1 to the second-lowest 1/32th, and so on. This speeds up page invalidations,
+ *  since only part of the page need to be reset.
+ *
+ *  translation_areas_ofs is an offset within the translation cache to a short
+ *  list of areas for this physpage which contain code. The list is of fixed
+ *  length; to extend the list, the list should be made to point to another
+ *  list, and so forth. (Bad, O(n) find/insert complexity. Should be fixed some
+ *  day. TODO)
  */
 #define DYNTRANS_MISC_DECLARATIONS(arch,ARCH,addrtype)  struct \
 	arch ## _instr_call {					\
@@ -77,7 +81,8 @@
 	struct arch ## _tc_physpage {					\
 		struct arch ## _instr_call ics[ARCH ## _IC_ENTRIES_PER_PAGE+2];\
 		uint32_t	next_ofs;	/*  (0 for end of chain)  */ \
-		uint32_t	translations;				\
+		uint32_t	translations_bitmap;			\
+		uint32_t	translation_areas_ofs;			\
 		addrtype	physaddr;				\
 	};								\
 									\

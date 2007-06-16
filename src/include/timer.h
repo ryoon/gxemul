@@ -28,12 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.h,v 1.4 2007-06-07 15:36:25 debug Exp $
+ *  $Id: timer.h,v 1.5 2007-06-16 14:39:18 debug Exp $
  */
 
 struct timer;
 
-#define	TIMER_BASE_FREQUENCY	60.0	/*  Hz  */
+#define	TIMER_BASE_FREQUENCY	100.0	/*  Hz  */
 
 struct timer *timer_add(double freq, void (*timer_tick)(struct timer *timer,
 	void *extra), void *extra);

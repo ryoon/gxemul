@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.74 2007-06-14 04:53:46 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.75 2007-06-16 14:39:17 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1569,6 +1569,9 @@ X(netbsd_idle)
 	}
 
 	if (rZ == 0) {
+		/*  Don't sample during sleep:  */
+		int old_sampling = cpu->sampling;
+
 		/*  Synch the program counter.  */
 		uint32_t low_pc = ((size_t)ic - (size_t)
 		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
@@ -1576,10 +1579,14 @@ X(netbsd_idle)
 		    << ARM_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
+		cpu->sampling = 0;
+
 		/*  Quasi-idle for a while:  */
 		cpu->has_been_idling = 1;
 	        if (cpu->machine->ncpus == 1)
 			usleep(50);
+
+		cpu->sampling = old_sampling;
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT;
 
 		cpu->cd.arm.next_ic = &nothing_call;

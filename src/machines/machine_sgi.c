@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.22 2007-06-15 18:08:10 debug Exp $
+ *  $Id: machine_sgi.c,v 1.23 2007-06-16 14:39:18 debug Exp $
  *
  *  COMMENT: Silicon Graphics' MIPS-based machines
  *
@@ -120,8 +120,8 @@ MACHINE_SETUP(sgi)
 		    " (Everest IP19)", MACHINE_NAME_MAXBUF);
 		machine->main_console_handle = (size_t)device_add(machine,
 		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
-		dev_scc_init(machine, mem, 0x10086000, 0, machine->x11_md.in_use,
-		    0, 8);	/*  serial? irix?  */
+		dev_scc_init(machine, mem, 0x10086000, 0,
+		    machine->x11_md.in_use, 0, 8);	/*  serial? irix?  */
 
 		device_add(machine, "sgi_ip19 addr=0x18000000");
 
@@ -394,7 +394,8 @@ abort();
 
 		/*  TODO: irq!  */
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
-		    "0x1f620170 name2=tty0 in_use=%i", machine->x11_md.in_use? 0 : 1);
+		    "0x1f620170 name2=tty0 in_use=%i",
+		    machine->x11_md.in_use? 0 : 1);
 		machine->main_console_handle = (size_t)device_add(machine,
 		    tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
@@ -429,7 +430,7 @@ abort();
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
 		    machine->path, machine->bootstrap_cpu);
 		dev_crime_init(machine, mem, 0x14000000, tmpstr,
-		    machine->x11_md.in_use);				/*  crime0  */
+		    machine->x11_md.in_use);			/*  crime0  */
 		dev_sgi_mte_init(mem, 0x15000000);		/*  mte ???  */
 		dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  */
 
@@ -508,7 +509,8 @@ abort();
 		if (machine->x11_md.in_use) {
 			i = dev_pckbc_init(machine, mem, 0x1f320000,
 			    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-			    0x800 + MACE_PERIPH_MISC, machine->x11_md.in_use, 0);
+			    0x800 + MACE_PERIPH_MISC, machine->x11_md.in_use,
+				0);
 				/*  keyb+mouse (mace irq numbers)  */
 			machine->main_console_handle = i;
 		}

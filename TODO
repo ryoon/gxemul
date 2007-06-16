@@ -1,10 +1,9 @@
-$Id: TODO,v 1.536 2007-06-15 22:30:17 debug Exp $
+$Id: TODO,v 1.537 2007-06-16 02:34:25 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
 
 M88K:
-	o)  Neither NIP nor FIP valid in rte?
 	o)  FIP != NIP + 4, in rte! (Simulate delayed branch stuff.)
 	o)  cpu_dyntrans.c: MEMORY_USER_ACCESS implementation for M88K!
 	o)  xmem: Set transaction registers!

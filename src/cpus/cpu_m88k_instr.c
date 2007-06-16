@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.33 2007-06-05 06:41:30 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.34 2007-06-16 02:34:25 debug Exp $
  *
  *  M88K instructions.
  *
@@ -769,19 +769,10 @@ X(rte)
 	m88k_stcr(cpu, cpu->cd.m88k.cr[M88K_CR_EPSR], M88K_CR_PSR, 1);
 
 	/*  First try the NIP, if it is Valid:  */
-	if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_V) {
-		cpu->pc = cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR;
-		if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_E) {
-			fatal("rte: NIP: TODO: single-step support\n");
-			goto abort_dump;
-		}
-	} else {
-		/*  The FIP must be valid...  */
-		if (!(cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_NIP_V)) {
-			fatal("rte: neither FIP nor NIP valid? TODO\n");
-			goto abort_dump;
-		}
-		cpu->pc = cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_ADDR;
+	cpu->pc = cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR;
+	if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_E) {
+		fatal("rte: NIP: TODO: single-step support\n");
+		goto abort_dump;
 	}
 
 	if (cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_E) {
@@ -789,9 +780,12 @@ X(rte)
 		goto abort_dump;
 	}
 
-	if (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_FIP_V &&
-	    cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_V &&
-	    (cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_ADDR)
+	if ((cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_ADDR)
+	    == (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR)) {
+		cpu->cd.m88k.cr[M88K_CR_SFIP] = cpu->pc + 4;
+	}
+
+	if ((cpu->cd.m88k.cr[M88K_CR_SFIP] & M88K_FIP_ADDR)
 	    != (cpu->cd.m88k.cr[M88K_CR_SNIP] & M88K_NIP_ADDR) + 4) {
 		/*
 		 *  The NIP instruction should first be executed (this

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.133 2007-06-13 02:08:03 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.134 2007-06-16 05:00:16 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1576,6 +1576,16 @@ X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
 X(movn) { if (reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
 X(movz) { if (!reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
+
+X(ror)
+{
+	uint32_t result = reg(ic->arg[0]);
+	int sa = ic->arg[1];
+
+	result = (result >> sa) | (result << (32-sa));
+
+	reg(ic->arg[2]) = (int32_t) result;
+}
 
 
 /*
@@ -3563,18 +3573,37 @@ X(to_be_translated)
 			else
 				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
-			if (rd == MIPS_GPR_ZERO)
-				ic->f = instr(nop);
-			if (ic->f == instr(sll))
-				cpu->cd.mips.combination_check = COMBINE(sll);
-			if (ic->f == instr(nop))
-				cpu->cd.mips.combination_check = COMBINE(nop);
 
 			/*  Special checks for MIPS32/64 revision 2 opcodes,
 			    such as rotation instructions:  */
 			if (sa >= 0 && rs != 0x00) {
+				if (cpu->cd.mips.cpu_type.isa_level < 32 ||
+				    cpu->cd.mips.cpu_type.isa_revision < 2) {
+					static int warning_rotate = 0;
+					if (!warning_rotate &&
+					    !cpu->translation_readahead) {
+						fatal("[ WARNING! MIPS32/64 "
+						    "revision 2 rotate opcode"
+						    " used, but the %s process"
+						    "or does not implement "
+						    "such instructions. Only "
+						    "printing this "
+						    "warning once. ]\n",
+						    cpu->cd.mips.cpu_type.name);
+						warning_rotate = 1;
+					}
+					ic->f = instr(reserved);
+					break;
+				}
 				switch (rs) {
-				/*  TODO: [d]ror, etc.  */
+				case 0x01:
+					switch (s6) {
+					case SPECIAL_SRL:	/*  ror  */
+						ic->f = instr(ror);
+						break;
+					default:goto bad;
+					}
+					break;
 				default:goto bad;
 				}
 			}
@@ -3584,6 +3613,13 @@ X(to_be_translated)
 				default:goto bad;
 				}
 			}
+
+			if (rd == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			if (ic->f == instr(sll))
+				cpu->cd.mips.combination_check = COMBINE(sll);
+			if (ic->f == instr(nop))
+				cpu->cd.mips.combination_check = COMBINE(nop);
 			break;
 
 		case SPECIAL_ADD:

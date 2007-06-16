@@ -1,4 +1,15 @@
-$Id: TODO,v 1.537 2007-06-16 02:34:25 debug Exp $
+$Id: TODO,v 1.538 2007-06-16 05:09:55 debug Exp $
+
+-------------------------------------------------------------------------------
+
+./gxemul -x -o 'rd_start=0x80800000 rd_size=10000000 init=/bin/sh' -C 4KEc
+	-e malta 0x80800000:people.debian.org/~ths/qemu/malta/initrd.gz 
+	people.debian.org/~ths/qemu/malta/vmlinux
+
+funkar om PCI IDE:n i machine_evbmips.c är utkommenterad.
+(Ta bort "init=/bin/sh" för att komma till debian-installern direkt.)
+
+-------------------------------------------------------------------------------
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)

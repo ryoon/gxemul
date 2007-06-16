@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.27 2007-06-15 18:08:10 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.28 2007-06-16 05:09:55 debug Exp $
  *
  *  COMMENT: MIPS evaluation boards (e.g. Malta)
  */
@@ -180,7 +180,7 @@ MACHINE_DEFAULT_CPU(evbmips)
 
 MACHINE_DEFAULT_RAM(evbmips)
 {
-	machine->physical_ram_in_mb = 64;
+	machine->physical_ram_in_mb = 128;
 }
 
 

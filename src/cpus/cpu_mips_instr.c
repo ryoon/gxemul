@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.136 2007-06-16 17:17:46 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.137 2007-06-16 23:47:52 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2226,7 +2226,7 @@ X(idle)
 
 		cpu->sampling = 0;
 
-		if ((++x) == 100) {
+		if ((++x) == 300) {
 			usleep(20);
 			x = 0;
 		}

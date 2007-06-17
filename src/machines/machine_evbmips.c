@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.29 2007-06-17 02:08:35 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.30 2007-06-17 02:17:45 debug Exp $
  *
  *  COMMENT: MIPS evaluation boards (e.g. Malta)
  */
@@ -100,9 +100,6 @@ MACHINE_SETUP(evbmips)
 		    0, 9, 0, "piix4_isa");
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 9, 1, "piix4_ide");
-
-		/*  bus_pci_add(machine, pci_data, machine->memory,
-		    0, 10, 0, "dec21143");  */
 
 		/*  pcn: Not yet, since it is just a bogus device, so far.  */
 		/*  bus_pci_add(machine, pci_data, machine->memory,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.168 2007-06-17 04:05:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.169 2007-06-17 04:17:20 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -555,9 +555,9 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 			else {
 				/*  printf("base=%016"PRIx64" has %i hits\n", phys_ranges[i].base, n_hits);  */
 				if (n_hits >= SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION) {
-					/*  printf("[ TODO: Translate 0x%016"PRIx64" - 0x%016"PRIx64" into native code (%i of %i samples were in this range) ]\n",
+					printf("[ TODO: Translate 0x%016"PRIx64" - 0x%016"PRIx64" into native code (%i of %i samples were in this range) ]\n",
 					    phys_ranges[i].base, phys_ranges[i].base + phys_ranges[i].length - 1,
-					    n_hits, cpu->sampling_curindex);  */
+					    n_hits, cpu->sampling_curindex);
 				}
 
 				n_hits = 1;
@@ -2059,13 +2059,11 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 			++i;
 		}
 
-		/*  Note: The length translated was i-1 instructions.  */
-
-		if (native_code_translation_enabled && i > 1)
+		if (native_code_translation_enabled)
 			DYNTRANS_TC_ADD_TRANSLATABLE_RANGE(cpu, baseaddr
 			    & ((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 			    DYNTRANS_INSTR_ALIGNMENT_SHIFT),
-			    (i-1) << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+			    i << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 
 		cpu->translation_readahead = 0;
 	}

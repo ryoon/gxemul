@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.167 2007-06-16 17:18:34 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.168 2007-06-17 04:05:46 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -34,6 +34,29 @@
  *  with normal C code, by using suitable defines/macros, and then including
  *  this file.
  */
+
+
+#ifndef UINT64_T_COMPAR
+#define UINT64_T_COMPAR
+static int uint64_t_compar(const void *a, const void *b)
+{
+	const uint64_t *pa = a, *pb = b;
+	if (*pa < *pb)
+		return -1;
+	if (*pa > *pb)
+		return 1;
+	return 0;
+}
+static int phys_range_compar(const void *a, const void *b)
+{
+	const struct phys_range *pa = a, *pb = b;
+	if (pa->base < pb->base)
+		return -1;
+	if (pa->base > pb->base)
+		return 1;
+	return 0;
+}
+#endif	/*  UINT64_T_COMPAR  */
 
 
 #ifndef STATIC_STUFF
@@ -433,7 +456,113 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 	 *  perform native code generation:
 	 */
 	if (cpu->sampling_curindex == N_PADDR_SAMPLES) {
-		/*  TODO: Check against known blocks, etc.  */
+		uint64_t physaddr;
+		uint32_t physpage_ofs;
+		uint64_t pagenr, last_pagenr = -1;
+		int table_index;
+		uint32_t *physpage_entryp;
+		struct DYNTRANS_TC_PHYSPAGE *ppp;
+		int i;
+		uint32_t physpage_ranges_offset;
+		struct phys_range phys_ranges[N_PADDR_SAMPLES];
+		int n_hits;
+
+		/*  Note: This qsort is not really necessary. It could
+		    be worth experimenting with removing it? TODO  */
+		qsort(cpu->sampling_paddr, cpu->sampling_curindex,
+		    sizeof(uint64_t), uint64_t_compar);
+
+		ppp = NULL;
+
+		for (i=0; i<cpu->sampling_curindex; i++)
+		{
+			phys_ranges[i].base = 0;
+			phys_ranges[i].length = 0;
+
+			physaddr = cpu->sampling_paddr[i];
+			pagenr = DYNTRANS_ADDR_TO_PAGENR(physaddr);
+
+			if (pagenr != last_pagenr || ppp == NULL) {
+				table_index = PAGENR_TO_TABLE_INDEX(pagenr);
+
+				physpage_entryp = &(((uint32_t *)cpu->translation_cache)[table_index]);
+				physpage_ofs = *physpage_entryp;
+				ppp = NULL;
+
+				/*  Traverse the physical page chain:  */
+				while (physpage_ofs != 0) {
+					ppp = (struct DYNTRANS_TC_PHYSPAGE *)(cpu->translation_cache
+					    + physpage_ofs);
+
+					/*  If we found the page in the cache, then we're done:  */
+					if (ppp->physaddr == physaddr)
+						break;
+
+					/*  Try the next page in the chain:  */
+					physpage_ofs = ppp->next_ofs;
+				}
+
+				last_pagenr = pagenr;
+			}
+
+			if (ppp == NULL)
+				continue;
+
+			/*  ppp now points to the curpage. Find the range in which physaddr is contained:  */
+
+			physpage_ranges_offset = ppp->translation_ranges_ofs;
+			for (;;) {
+				int j;
+				struct physpage_ranges *physpage_ranges =
+				    (struct physpage_ranges *)(cpu->translation_cache + physpage_ranges_offset);
+
+				if (physpage_ranges_offset == 0)
+					break;
+
+				for (j=0; j<physpage_ranges->n_entries_used; j++) {
+					uint64_t start = ppp->physaddr + physpage_ranges->base[j];
+					uint64_t end = start + physpage_ranges->length[j];
+					if (physaddr >= start && physaddr < end) {
+						phys_ranges[i].base = start;
+						phys_ranges[i].length = physpage_ranges->length[j];
+						break;
+					}
+				}
+
+				if (j < physpage_ranges->n_entries_used)
+					break;
+
+				physpage_ranges_offset = physpage_ranges->next_ofs;
+			}
+		}
+
+		qsort(phys_ranges, cpu->sampling_curindex,
+		    sizeof(struct phys_range), phys_range_compar);
+
+		/*  for (i=0; i<cpu->sampling_curindex; i++)
+			printf("%2i base=%016"PRIx64"\n", i, phys_ranges[i].base);  */
+
+		n_hits = 1;
+		for (i=0; i<cpu->sampling_curindex; i++) {
+			if (phys_ranges[i].length == 0) {
+				n_hits = 1;
+				continue;
+			}
+
+			if (i < cpu->sampling_curindex - 1 &&
+			    phys_ranges[i].base == phys_ranges[i+1].base)
+				n_hits ++;
+			else {
+				/*  printf("base=%016"PRIx64" has %i hits\n", phys_ranges[i].base, n_hits);  */
+				if (n_hits >= SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION) {
+					/*  printf("[ TODO: Translate 0x%016"PRIx64" - 0x%016"PRIx64" into native code (%i of %i samples were in this range) ]\n",
+					    phys_ranges[i].base, phys_ranges[i].base + phys_ranges[i].length - 1,
+					    n_hits, cpu->sampling_curindex);  */
+				}
+
+				n_hits = 1;
+			}
+		}
 
 		cpu->sampling_curindex = 0;
 	}

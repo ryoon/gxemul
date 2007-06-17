@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.130 2007-06-16 17:18:34 debug Exp $
+ *  $Id: cpu.h,v 1.131 2007-06-17 04:05:46 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -121,6 +121,11 @@ struct physpage_ranges {
 	uint32_t	n_entries_used;
 	uint16_t	base[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
 	uint16_t	length[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
+};
+
+struct phys_range {
+	uint64_t	base;
+	uint64_t	length;
 };
 
 
@@ -321,7 +326,8 @@ struct cpu_family {
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 
 #define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
-#define	N_PADDR_SAMPLES			((int)TIMER_BASE_FREQUENCY)
+#define	N_PADDR_SAMPLES			((int)CPU_SAMPLE_TIMER_HZ)
+#define	SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION  	3
 
 
 /*

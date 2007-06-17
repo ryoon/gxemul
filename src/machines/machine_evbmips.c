@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.28 2007-06-16 05:09:55 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.29 2007-06-17 02:08:35 debug Exp $
  *
  *  COMMENT: MIPS evaluation boards (e.g. Malta)
  */
@@ -55,6 +55,7 @@ MACHINE_SETUP(evbmips)
 	/*  See http://www.netbsd.org/ports/evbmips/ for more info.  */
 
 	switch (machine->machine_subtype) {
+
 	case MACHINE_EVBMIPS_MALTA:
 	case MACHINE_EVBMIPS_MALTA_BE:
 		if (machine->emulated_hz == 0)
@@ -100,6 +101,9 @@ MACHINE_SETUP(evbmips)
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 9, 1, "piix4_ide");
 
+		/*  bus_pci_add(machine, pci_data, machine->memory,
+		    0, 10, 0, "dec21143");  */
+
 		/*  pcn: Not yet, since it is just a bogus device, so far.  */
 		/*  bus_pci_add(machine, pci_data, machine->memory,
 		    0, 11, 0, "pcn");  */
@@ -140,13 +144,7 @@ MACHINE_SETUP(evbmips)
 	cpu->cd.mips.gpr[MIPS_GPR_A3] = machine->physical_ram_in_mb * 1048576;
 	/*  Hm. Linux ignores a3.  */
 
-	/*
-	 *  TODO:
-	 *	Core ID numbers.
-	 *	How much of this is not valid for PBxxxx?
-	 *
-	 *  See maltareg.h for more info.
-	 */
+	/*  Set the Core ID. See maltareg.h for more info.  */
 	store_32bit_word(cpu, (int32_t)(0x80000000 + MALTA_REVISION),
 	    (1 << 10) + 0x26);
 

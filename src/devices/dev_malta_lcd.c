@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta_lcd.c,v 1.11 2007-06-15 19:11:15 debug Exp $
+ *  $Id: dev_malta_lcd.c,v 1.12 2007-06-17 02:05:51 debug Exp $
  *
  *  COMMENT: Malta (evbmips) LCD display
  *
- *  TODO. This is mostly a dummy device.
+ *  TODO: Write output to somewhere else, not just as a debug message.
  */
 
 #include <stdio.h>
@@ -43,12 +43,16 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "maltareg.h"
+
 
 #define	DEV_MALTA_LCD_LENGTH		0x80
-#define	MALTA_LCD_TICK_SHIFT		15
+#define	MALTA_LCD_TICK_SHIFT		16
 #define	LCD_LEN				8
 
 struct malta_lcd_data {
+	uint64_t	base_addr;
+
 	int		display_modified;
 	unsigned char	display[LCD_LEN];
 };
@@ -66,11 +70,13 @@ DEVICE_TICK(malta_lcd)
 		return;
 	}
 
-	debug("[ malta_lcd:  ");
+	debug("[ malta_lcd: \"");
 	for (i=0; i<LCD_LEN; i++)
 		if (d->display[i] >= ' ')
 			debug("%c", d->display[i]);
-	debug("  ]\n");
+		else
+			debug("?");
+	debug("\" ]\n");
 
 	d->display_modified = 0;
 }
@@ -80,30 +86,34 @@ DEVICE_ACCESS(malta_lcd)
 {
 	struct malta_lcd_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int i;
+	int pos;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+	relative_addr += d->base_addr;
+
 	switch (relative_addr) {
 
-	case 0x18:
-	case 0x20:
-	case 0x28:
-	case 0x30:
-	case 0x38:
-	case 0x40:
-	case 0x48:
-	case 0x50:
-		i = (relative_addr - 0x18) / 8;
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS0:
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS1:
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS2:
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS3:
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS4:
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS5:
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS6:
+	case MALTA_ASCII_BASE + MALTA_ASCIIPOS7:
+		pos = (relative_addr - MALTA_ASCII_BASE) / 8;
 		if (writeflag == MEM_WRITE) {
-			d->display[i] = idata;
+			d->display[pos] = idata;
 			d->display_modified = 1;
-		} else
-			odata = d->display[i];
+		} else {
+			odata = d->display[pos];
+		}
 		break;
 
-	default:if (writeflag == MEM_WRITE) {
+	default:
+		if (writeflag == MEM_WRITE) {
 			fatal("[ malta_lcd: unimplemented write to "
 			    "offset 0x%x: data=0x%02x ]\n", (int)
 			    relative_addr, (int)idata);
@@ -126,6 +136,8 @@ DEVINIT(malta_lcd)
 
 	CHECK_ALLOCATION(d = malloc(sizeof(struct malta_lcd_data)));
 	memset(d, 0, sizeof(struct malta_lcd_data));
+
+	d->base_addr = devinit->addr;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_MALTA_LCD_LENGTH,

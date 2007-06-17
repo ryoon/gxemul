@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.120 2007-06-16 04:08:52 debug Exp $
+$Id: intro.html,v 1.121 2007-06-17 01:55:29 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -350,7 +350,8 @@ are emulated well enough to run at least one "guest OS":
   <ul>
     <li><b>IBM 6050/6070 (PReP, PowerPC Reference Platform)</b> (<a href="guestoses.html#netbsdprepinstall">NetBSD/prep</a>)
     <li><b>MacPPC (generic "G4" Macintosh)</b> (<a href="guestoses.html#netbsdmacppcinstall">NetBSD/macppc</a>)
-    <li><b>Artesyn PM/PPC</b> (<a href="guestoses.html#netbsdpmppc">NetBSD/pmppc</a>)
+    <li><b>Artesyn PM/PPC</b> <font color="#0000e0">(<super>*2</super>)</font>
+	(<a href="guestoses.html#netbsdpmppc">NetBSD/pmppc</a>)
   </ul>
   <p>
   <li><b><u>SuperH</u></b>
@@ -368,7 +369,8 @@ tested for every release of the emulator; sometimes it works, sometimes
 it doesn't.</small>
 
 <br><small><font color="#0000e0">(<super>*2</super>)</font> =
-SGI O2 emulation is enough for root-on-nfs, but not for disk boot.</small>
+The emulation is enough for root-on-nfs, but no disk controller (SCSI nor 
+IDE) is emulated yet for this machine type.</small>
 
 <p>Note that of all of the machines above, none of them is emulated to 
 100%. The most complete emulation mode is probably the DECstation 

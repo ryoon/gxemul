@@ -1,15 +1,9 @@
-$Id: TODO,v 1.540 2007-06-16 16:58:27 debug Exp $
+$Id: TODO,v 1.541 2007-06-17 03:53:16 debug Exp $
 
 -------------------------------------------------------------------------------
 
 ÄNDRA ALLA NEXT_IC++ TILL NEXT_IC=ic+2 OCH LIKNANDE! Detta för att få
 eventuell inlining av ic-anrop från nativekod att funka!
-
-Sedan:
-	Hjälpfunktion för att läsa ut alla offsetter + längder +
-	sortera dessa. Sortera listan över samplade PC-värden.
-	Matcha dessa (dvs räkna antalet gånger en offset+längd-
-	chunk är använd).
 
 -------------------------------------------------------------------------------
 

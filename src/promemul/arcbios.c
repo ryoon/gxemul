@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.16 2007-06-15 17:02:40 debug Exp $
+ *  $Id: arcbios.c,v 1.17 2007-06-17 23:32:20 debug Exp $
  *
- *  ARCBIOS emulation.
+ *  COMMENT: ARCBIOS emulation
  */
 
 #include <stdio.h>

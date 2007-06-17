@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_netbsd.c,v 1.3 2007-06-15 01:08:14 debug Exp $
+ *  $Id: useremul_netbsd.c,v 1.4 2007-06-17 23:32:20 debug Exp $
  *
- *  NetBSD userland (syscall) emulation.
+ *  COMMENT: NetBSD userland (syscall) emulation implementation
  */
 
 #include <stdio.h>

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_macho.c,v 1.2 2007-06-15 17:02:39 debug Exp $
+ *  $Id: file_macho.c,v 1.3 2007-06-17 23:32:20 debug Exp $
  *
- *  Mach-O file support.
+ *  COMMENT: Mach-O file support
  */
 
 /*  Note: Included from file.c.  */

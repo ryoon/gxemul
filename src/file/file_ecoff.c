@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_ecoff.c,v 1.2 2007-06-15 17:02:39 debug Exp $
+ *  $Id: file_ecoff.c,v 1.3 2007-06-17 23:32:20 debug Exp $
  *
- *  ECOFF file support.
+ *  COMMENT: ECOFF file support
  */
 
 /*  Note: Included from file.c.  */

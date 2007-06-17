@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.13 2007-06-14 16:13:30 debug Exp $
+ *  $Id: yamon.c,v 1.14 2007-06-17 23:32:21 debug Exp $
  *
- *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
+ *  COMMENT: YAMON emulation
+ *
+ *  (Very basic, only what is needed to get NetBSD booting.)
  */
 
 #include <stdio.h>

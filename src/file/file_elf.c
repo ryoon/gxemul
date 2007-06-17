@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_elf.c,v 1.5 2007-06-15 17:02:39 debug Exp $
+ *  $Id: file_elf.c,v 1.6 2007-06-17 23:32:20 debug Exp $
  *
- *  ELF file support.
+ *  COMMENT: ELF file support
  */
 
 /*  Note: Included from file.c.  */

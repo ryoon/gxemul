@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_raw.c,v 1.1 2007-04-10 16:33:44 debug Exp $
+ *  $Id: file_raw.c,v 1.2 2007-06-17 23:32:20 debug Exp $
  *
- *  Raw file support (simply loads raw data into emulated memory space).
+ *  COMMENT: Raw file support
+ *
+ *  (Simply loads raw data into emulated memory space).
  */
 
 /*  Note: Included from file.c.  */

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_aout.c,v 1.3 2007-06-15 17:02:39 debug Exp $
+ *  $Id: file_aout.c,v 1.4 2007-06-17 23:32:20 debug Exp $
  *
- *  a.out file support.
+ *  COMMENT: a.out executable file support
  */
 
 /*  Note: Included from file.c.  */

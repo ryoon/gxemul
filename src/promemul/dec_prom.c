@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.13 2007-06-15 17:02:40 debug Exp $
+ *  $Id: dec_prom.c,v 1.14 2007-06-17 23:32:20 debug Exp $
  *
- *  DECstation PROM emulation.
+ *  COMMENT: DECstation PROM emulation
  *
  *  Implementation note: Remember that only the lowest 32 bits of GPRs are
  *  actually valid when using dyntrans with e.g. R3000 CPUs.

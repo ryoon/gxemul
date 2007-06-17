@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_srec.c,v 1.1 2007-04-10 16:33:44 debug Exp $
+ *  $Id: file_srec.c,v 1.2 2007-06-17 23:32:20 debug Exp $
  *
- *  SREC file support.
+ *  COMMENT: SREC file support
  */
 
 /*  Note: Included from file.c.  */

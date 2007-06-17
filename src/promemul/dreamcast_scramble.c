@@ -1,5 +1,7 @@
 /*
- *  GXemul: $Id: dreamcast_scramble.c,v 1.2 2006-11-08 03:03:27 debug Exp $
+ *  GXemul: $Id: dreamcast_scramble.c,v 1.3 2007-06-17 23:32:20 debug Exp $
+ *
+ *  COMMENT: Dreamcast emulation (helper module)
  *
  *  This is from Marcus Comstedt's Dreamcast development files
  *  (http://mc.pp.se/dc/files/scramble.c). Public Domain, according to

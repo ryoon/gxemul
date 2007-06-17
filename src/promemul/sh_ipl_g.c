@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: sh_ipl_g.c,v 1.4 2007-06-14 16:13:30 debug Exp $
+ *  $Id: sh_ipl_g.c,v 1.5 2007-06-17 23:32:20 debug Exp $
  *
- *  SH-IPL+G emulation; very basic, only what is needed to get OpenBSD/landisk
- *  booting. (SH-IPL+G stands for SuperH Initial Program Loader + GDB stub.)
+ *  COMMENT: SH-IPL+G emulation
+ *
+ *  Very basic, only what is needed to get OpenBSD/landisk booting.
+ *  (SH-IPL+G stands for SuperH Initial Program Loader + GDB stub.)
  */
 
 #include <stdio.h>

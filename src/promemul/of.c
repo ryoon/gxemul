@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.24 2007-06-15 17:02:40 debug Exp $
+ *  $Id: of.c,v 1.25 2007-06-17 23:32:20 debug Exp $
  *
- *  OpenFirmware emulation.
+ *  COMMENT: OpenFirmware emulation
  *
  *  NOTE: OpenFirmware is used on quite a variety of different hardware archs,
  *        at least POWER/PowerPC, ARM, and SPARC, so the code in this module

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.6 2007-06-14 16:13:30 debug Exp $
+ *  $Id: ps2_bios.c,v 1.7 2007-06-17 23:32:20 debug Exp $
  *
- *  Playstation 2 SIFBIOS emulation.
+ *  COMMENT: Playstation 2 SIFBIOS emulation
  */
 
 #include <stdio.h>

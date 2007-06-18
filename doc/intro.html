@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.121 2007-06-17 01:55:29 debug Exp $
+$Id: intro.html,v 1.122 2007-06-18 04:35:06 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -244,11 +244,14 @@ guest operating system run (per architecture) are
 <a href="http://en.wikipedia.org/wiki/Powerpc">PowerPC</a>, and   
 <a href="http://en.wikipedia.org/wiki/SuperH">SuperH</a>.
 
-<p>Please read the page about <a href="guestoses.html">guest operating
-systems</a> for more information about the machines and operating systems 
-that can be considered "working" in the emulator. (There is some code in 
-GXemul for emulation of other architectures, but they are not stable or
-complete enough to be listed among the "working" architectures.)
+<p>Please read the sections about <a href="#emulmodes">emulation 
+modes</a> and <a href="guestoses.html">guest operating
+systems</a> for more information about the machines and operating systems, 
+respectively, that can be considered "working" in the emulator.
+
+<p>(There is some code in GXemul for emulation of other architectures, but
+they are not stable or complete enough to be listed among the "working"
+architectures.)
 
 
 
@@ -264,8 +267,9 @@ GXemul should compile and run on any modern host architecture (64-bit or
 <a href="http://www.freebsd.org/platforms/amd64.html">FreeBSD/amd64</a> 6.x, 
 <a href="http://www.freebsd.org/platforms/alpha.html">FreeBSD/alpha</a> 4.x,
 sometimes also on Linux (various platforms), and every
-now and then also on <a href="http://www.netbsd.org/">NetBSD</a> inside
-the emulator itself (various platforms).
+now and then also on <a href="http://www.netbsd.org/">NetBSD</a> or
+<a href="http://www.openbsd.org/">OpenBSD</a> inside the emulator itself
+(various platforms).
 
 <p>Note 1: The <a href="translation.html">dynamic translation</a> engine 
 does <i>not</i> require backends for native code generation to be written 

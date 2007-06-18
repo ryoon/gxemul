@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.170 2007-06-18 04:23:19 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.171 2007-06-18 04:38:00 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -353,7 +353,7 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 		 *  (This is the core dyntrans loop.)
 		 */
 		n_instrs = 0;
-		cpu->sampling = 1;
+		cpu->sampling = native_code_translation_enabled;
 
 		for (;;) {
 			struct DYNTRANS_IC *ic;

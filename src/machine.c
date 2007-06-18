@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.704 2007-06-15 17:02:38 debug Exp $
+ *  $Id: machine.c,v 1.705 2007-06-18 04:29:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -857,8 +857,7 @@ void machine_list_available_types_and_cpus(void)
 	debug("\n");
 
 	useremul_list_emuls();
-	debug("Userland emulation works for programs with the complexity"
-	    " of Hello World,\nbut not much more.\n");
+	debug("Userland emulation is not really working yet.\n");
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.10 2007-06-16 17:16:30 debug Exp $
+ *  $Id: timer.c,v 1.11 2007-06-18 04:23:19 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -64,7 +64,7 @@ static double timer_current_time_step;
 
 static int timer_is_running;
 
-#define	SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH	1.95
+#define	SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH	1.65
 
 
 /*
@@ -176,7 +176,10 @@ static void timer_tick(int signal_nr)
 		}
 #endif
 
-		timer_current_time = tv.tv_usec * 0.000001 + tv.tv_sec;
+		/*  Get exponentially closer to the real time, instead of
+		    just changing to it directly:  */
+		timer_current_time = ( (tv.tv_usec * 0.000001 + tv.tv_sec) +
+		    timer_current_time ) / 2;
 
 		timer_countdown_to_next_gettimeofday = timer_freq *
 		    SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH;

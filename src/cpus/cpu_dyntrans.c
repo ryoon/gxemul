@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.169 2007-06-17 04:17:20 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.170 2007-06-18 04:23:19 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -521,10 +521,13 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 
 				for (j=0; j<physpage_ranges->n_entries_used; j++) {
 					uint64_t start = ppp->physaddr + physpage_ranges->base[j];
-					uint64_t end = start + physpage_ranges->length[j];
+					uint64_t length = physpage_ranges->length_and_flag[j] & PHYSPAGE_LENGTH_MASK;
+					uint64_t end = start + length;
+					if (physpage_ranges->length_and_flag[j] & PHYSPAGE_TRANSLATED_TO_NATIVE_CODE)
+						continue;
 					if (physaddr >= start && physaddr < end) {
 						phys_ranges[i].base = start;
-						phys_ranges[i].length = physpage_ranges->length[j];
+						phys_ranges[i].length = length;
 						break;
 					}
 				}
@@ -555,9 +558,63 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 			else {
 				/*  printf("base=%016"PRIx64" has %i hits\n", phys_ranges[i].base, n_hits);  */
 				if (n_hits >= SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION) {
+
 					printf("[ TODO: Translate 0x%016"PRIx64" - 0x%016"PRIx64" into native code (%i of %i samples were in this range) ]\n",
 					    phys_ranges[i].base, phys_ranges[i].base + phys_ranges[i].length - 1,
 					    n_hits, cpu->sampling_curindex);
+
+					/*  TODO.  */
+
+					/*  For now, let's just mark the page as translated  :-]  */
+
+					physaddr = phys_ranges[i].base;
+					pagenr = DYNTRANS_ADDR_TO_PAGENR(physaddr);
+					table_index = PAGENR_TO_TABLE_INDEX(pagenr);
+
+					physpage_entryp = &(((uint32_t *)cpu->translation_cache)[table_index]);
+					physpage_ofs = *physpage_entryp;
+					ppp = NULL;
+
+					/*  Traverse the physical page chain:  */
+					while (physpage_ofs != 0) {
+						ppp = (struct DYNTRANS_TC_PHYSPAGE *)(cpu->translation_cache
+						    + physpage_ofs);
+
+						/*  If we found the page in the cache, then we're done:  */
+						if (ppp->physaddr == physaddr)
+							break;
+
+						/*  Try the next page in the chain:  */
+						physpage_ofs = ppp->next_ofs;
+					}
+
+					if (ppp != NULL) {
+						physpage_ranges_offset = ppp->translation_ranges_ofs;
+						for (;;) {
+							int j;
+							struct physpage_ranges *physpage_ranges =
+							    (struct physpage_ranges *)(cpu->translation_cache + physpage_ranges_offset);
+
+							if (physpage_ranges_offset == 0)
+								break;
+
+							for (j=0; j<physpage_ranges->n_entries_used; j++) {
+								uint64_t start = ppp->physaddr + physpage_ranges->base[j];
+								uint64_t length = physpage_ranges->length_and_flag[j] & PHYSPAGE_LENGTH_MASK;
+								uint64_t end = start + length;
+								if (physaddr >= start && physaddr < end) {
+									physpage_ranges->length_and_flag[j] |= PHYSPAGE_TRANSLATED_TO_NATIVE_CODE;
+									break;
+								}
+							}
+
+							if (j < physpage_ranges->n_entries_used)
+								break;
+
+							physpage_ranges_offset = physpage_ranges->next_ofs;
+						}
+
+					}
 				}
 
 				n_hits = 1;
@@ -693,18 +750,24 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 void DYNTRANS_TIMER_SAMPLE_TICK(struct timer *timer, void *extra)
 {
 	struct cpu *cpu = extra;
+	struct DYNTRANS_TC_PHYSPAGE *ppp;
 	struct DYNTRANS_IC *next_ic;
 	size_t low_pc;
 	uint64_t paddr;
+	uint32_t physpage_ranges_offset;
 
 	/*
-	 *  Don't sample if:
+	 *  Don't record a sample if any one of these is true:
 	 *
 	 *  1)  Sampling is not enabled. It should only be enabled during
 	 *      the core dyntrans loop. Also, when idling (i.e. when running
 	 *      usleep or similar) in cpu_*_instr.c, sampling should be
 	 *	disabled.
-	 *  2)  Enough samples have already been gathered.
+	 *
+	 *  2)  The physical page which contains this sample has a range
+	 *      which is already translated.
+	 *
+	 *  3)  Enough samples have already been gathered.
 	 */
 
 	if (!cpu->sampling || cpu->sampling_curindex == N_PADDR_SAMPLES)
@@ -720,12 +783,43 @@ void DYNTRANS_TIMER_SAMPLE_TICK(struct timer *timer, void *extra)
 	if (low_pc > DYNTRANS_IC_ENTRIES_PER_PAGE)
 		return;
 
-	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+	ppp = cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+
 	paddr = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
 	paddr &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 	    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 	paddr += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
+
+	/*  Scan for this range in the current page.  If this paddr is
+	    known to already be translated, then DON'T add this sample.  */
+
+	physpage_ranges_offset = ppp->translation_ranges_ofs;
+	for (;;) {
+		int j;
+		struct physpage_ranges *physpage_ranges =
+		    (struct physpage_ranges *)
+		    (cpu->translation_cache + physpage_ranges_offset);
+
+		if (physpage_ranges_offset == 0)
+			break;
+
+		for (j=0; j<physpage_ranges->n_entries_used; j++) {
+			uint64_t start = physpage_ranges->base[j];
+			uint64_t length = physpage_ranges->length_and_flag[j]
+			    & PHYSPAGE_LENGTH_MASK;
+
+			if (low_pc >= start && low_pc < start + length) {
+				/*  Don't sample if this range is already
+				    translated to native code:  */
+				if (physpage_ranges->length_and_flag[j] &
+				    PHYSPAGE_TRANSLATED_TO_NATIVE_CODE)
+					return;
+			}
+		}
+
+		physpage_ranges_offset = physpage_ranges->next_ofs;
+	}
 
 	/*  ... and finally add the sample to the sampling array:  */
 	cpu->sampling_paddr[cpu->sampling_curindex ++] = paddr;
@@ -822,7 +916,7 @@ static void DYNTRANS_ADD_TRANSLATABLE_RANGE(struct cpu *cpu,
 			/*  There's room. Add the new range, and return:  */
 			int i = physpage_ranges->n_entries_used ++;
 			physpage_ranges->base[i] = base;
-			physpage_ranges->length[i] = length;
+			physpage_ranges->length_and_flag[i] = length;
 			return;
 		}
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1617 2007-06-17 04:05:46 debug Exp $
+$Id: HISTORY,v 1.1618 2007-06-18 04:23:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3622,3 +3622,7 @@ Changelog for GXemul:
 		range" information, to figure out which physical address ranges
 		would be worth translating to native code (if the number of
 		samples falling within a range is above a certain threshold).
+20070618	Adding automagic building of .index comment files for
+		src/file/, src/promemul/, src src/useremul/ as well.
+		Adding a "has been translated" bit to the ranges, so that only
+		not-yet-translated ranges will be sampled.

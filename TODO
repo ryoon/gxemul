@@ -1,18 +1,26 @@
-$Id: TODO,v 1.541 2007-06-17 03:53:16 debug Exp $
+$Id: TODO,v 1.542 2007-06-18 04:23:19 debug Exp $
 
 -------------------------------------------------------------------------------
 
-ÄNDRA ALLA NEXT_IC++ TILL NEXT_IC=ic+2 OCH LIKNANDE! Detta för att få
-eventuell inlining av ic-anrop från nativekod att funka!
+* Change all next_ic ++  into next_ic = ic + 2 and similar. This makes
+  inlining of ic calls from native code work. Hopefully.
 
--------------------------------------------------------------------------------
+	g0(cpu, ic + 3);
+	g1(cpu, ic + 4);
+	g2(cpu, ic + 5);  etc
 
-./gxemul -x -o 'rd_start=0x80800000 rd_size=10000000 init=/bin/sh' -C 4KEc
-	-e malta 0x80800000:people.debian.org/~ths/qemu/malta/initrd.gz 
-	people.debian.org/~ths/qemu/malta/vmlinux
+* TODO: How about instructions that branch, i.e. change the next_ic and/or
+  the current page?
 
-funkar om PCI IDE:n i machine_evbmips.c är utkommenterad.
-(Ta bort "init=/bin/sh" för att komma till debian-installern direkt.)
+* Perhaps _ALL_ instructions must be specifically known to the native translator;
+  if there is any instruction in the range which was not known, then no
+  translation is performed (but the page is marked as translated anyway?
+  perhaps).   Then, each instruction can be known to be "normal", "normal but
+  may branch", "normal but may cause exception", etc.
+
+* TODO: How to deal with instruction combinations this way? Perhaps the range
+  should be retranslated _without_ instruction combinations, when generating
+  native code? That would be a safe way out.
 
 -------------------------------------------------------------------------------
 
@@ -186,6 +194,17 @@ BeBox:
 	o)  Interrupts. There seems to be a problem with WDC interrupts
 	    "after a short while", although a few interrupts get through?
 	o)  Perhaps find a copy of BeOS and try it?
+
+Malta:
+	o)  The Linux/Malta kernel at people.debian.org/~ths/qemu/malta/
+	    almost works:
+		./gxemul -x -o 'rd_start=0x80800000 rd_size=10000000 init=/bin/sh' -C 4KEc
+		  -e malta 0x80800000:people.debian.org/~ths/qemu/malta/initrd.gz 
+		  people.debian.org/~ths/qemu/malta/vmlinux
+	    (Remove "init=/bin/sh" to boot into the Debian installer.)
+	    There are at least two things that need to be fixed:
+		1. PCI IDE; make Linux oops.
+		2. Implement the NIC.
 
 HPCmips:
 	x)  Mouse/pad support! :)

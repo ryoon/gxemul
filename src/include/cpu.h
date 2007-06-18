@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.131 2007-06-17 04:05:46 debug Exp $
+ *  $Id: cpu.h,v 1.132 2007-06-18 04:23:19 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -120,8 +120,19 @@ struct physpage_ranges {
 	uint32_t	next_ofs;	/*  0 for end of chain  */
 	uint32_t	n_entries_used;
 	uint16_t	base[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
-	uint16_t	length[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
+	uint16_t	length_and_flag[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
 };
+
+/*
+ *  length_and_flag field:
+ *
+ *  Comment about PHYSPAGE_TRANSLATED_TO_NATIVE_CODE: This flag is also used in
+ *  the case that an attempt was made to translate a range to native code, but
+ *  it failed for some reason (e.g. the code was too complex in some way to
+ *  translate). No new translation attempt will then be made to that range.
+ */
+#define	PHYSPAGE_TRANSLATED_TO_NATIVE_CODE	0x8000
+#define	PHYSPAGE_LENGTH_MASK			0x7fff
 
 struct phys_range {
 	uint64_t	base;
@@ -327,7 +338,7 @@ struct cpu_family {
 
 #define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
 #define	N_PADDR_SAMPLES			((int)CPU_SAMPLE_TIMER_HZ)
-#define	SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION  	3
+#define	SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION  	4
 
 
 /*

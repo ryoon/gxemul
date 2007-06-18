@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.171 2007-06-18 04:38:00 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.172 2007-06-18 04:48:18 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -563,7 +563,7 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 					    phys_ranges[i].base, phys_ranges[i].base + phys_ranges[i].length - 1,
 					    n_hits, cpu->sampling_curindex);
 
-					/*  TODO.  */
+					/*  TODO: Really translate the physrange.  */
 
 					/*  For now, let's just mark the page as translated  :-]  */
 

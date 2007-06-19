@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.137 2007-06-16 23:47:52 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.138 2007-06-19 03:38:10 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2383,7 +2383,7 @@ X(sc)
 
 	/*  If rmw is 0, then the store failed.  (This cache-line was written
 	    to by someone else.)  */
-	if (cpu->cd.mips.rmw == 0 || cpu->cd.mips.rmw_addr != addr
+	if (cpu->cd.mips.rmw == 0 || (MODE_int_t)cpu->cd.mips.rmw_addr != addr
 	    || cpu->cd.mips.rmw_len != sizeof(word)) {
 		reg(ic->arg[0]) = 0;
 		cpu->cd.mips.rmw = 0;
@@ -2443,7 +2443,7 @@ X(scd)
 
 	/*  If rmw is 0, then the store failed.  (This cache-line was written
 	    to by someone else.)  */
-	if (cpu->cd.mips.rmw == 0 || cpu->cd.mips.rmw_addr != addr
+	if (cpu->cd.mips.rmw == 0 || (MODE_int_t)cpu->cd.mips.rmw_addr != addr
 	    || cpu->cd.mips.rmw_len != sizeof(word)) {
 		reg(ic->arg[0]) = 0;
 		cpu->cd.mips.rmw = 0;

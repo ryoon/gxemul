@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.172 2007-06-18 04:48:18 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.173 2007-06-19 03:38:10 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -512,7 +512,7 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 
 			physpage_ranges_offset = ppp->translation_ranges_ofs;
 			for (;;) {
-				int j;
+				size_t j;
 				struct physpage_ranges *physpage_ranges =
 				    (struct physpage_ranges *)(cpu->translation_cache + physpage_ranges_offset);
 
@@ -591,7 +591,7 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 					if (ppp != NULL) {
 						physpage_ranges_offset = ppp->translation_ranges_ofs;
 						for (;;) {
-							int j;
+							size_t j;
 							struct physpage_ranges *physpage_ranges =
 							    (struct physpage_ranges *)(cpu->translation_cache + physpage_ranges_offset);
 
@@ -796,7 +796,7 @@ void DYNTRANS_TIMER_SAMPLE_TICK(struct timer *timer, void *extra)
 
 	physpage_ranges_offset = ppp->translation_ranges_ofs;
 	for (;;) {
-		int j;
+		size_t j;
 		struct physpage_ranges *physpage_ranges =
 		    (struct physpage_ranges *)
 		    (cpu->translation_cache + physpage_ranges_offset);

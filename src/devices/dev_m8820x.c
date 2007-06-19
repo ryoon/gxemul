@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_m8820x.c,v 1.8 2007-06-15 19:11:15 debug Exp $
+ *  $Id: dev_m8820x.c,v 1.9 2007-06-19 03:38:10 debug Exp $
  *
  *  COMMENT: M88200/M88204 CMMU (Cache/Memory Management Unit)
  */
@@ -60,7 +60,8 @@ static void m8820x_command(struct cpu *cpu, struct m8820x_data *d)
 	uint32_t *regs = cpu->cd.m88k.cmmu[d->cmmu_nr]->reg;
 	int cmd = regs[CMMU_SCR];
 	uint32_t sar = regs[CMMU_SAR];
-	int i, super, all;
+	size_t i;
+	uint32_t super, all;
 
 	switch (cmd) {
 

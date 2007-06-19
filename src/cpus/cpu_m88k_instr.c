@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.34 2007-06-16 02:34:25 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.35 2007-06-19 03:38:10 debug Exp $
  *
  *  M88K instructions.
  *
@@ -479,14 +479,14 @@ X(mak)
 X(clr)
 {
 	int w = (reg(ic->arg[2]) >> 5) & 0x1f, o = reg(ic->arg[2]) & 0x1f;
-	uint32_t x = w == 0? 0xffffffff : (1 << w) - 1;
+	uint32_t x = w == 0? 0xffffffff : ((uint32_t)1 << w) - 1;
 	x <<= o;
 	reg(ic->arg[0]) = reg(ic->arg[1]) & ~x;
 }
 X(set)
 {
 	int w = (reg(ic->arg[2]) >> 5) & 0x1f, o = reg(ic->arg[2]) & 0x1f;
-	uint32_t x = w == 0? 0xffffffff : (1 << w) - 1;
+	uint32_t x = w == 0? 0xffffffff : ((uint32_t)1 << w) - 1;
 	x <<= o;
 	reg(ic->arg[0]) = reg(ic->arg[1]) | x;
 }
@@ -1395,7 +1395,7 @@ X(to_be_translated)
 					int w = ic->arg[2] >> 5;
 					int o = ic->arg[2] & 0x1f;
 					uint32_t x = w == 0? 0xffffffff
-					    : (1 << w) - 1;
+					    : ((uint32_t)1 << w) - 1;
 					x <<= o;
 					ic->arg[2] = ~x;
 				   }
@@ -1405,7 +1405,7 @@ X(to_be_translated)
 					int w = ic->arg[2] >> 5;
 					int o = ic->arg[2] & 0x1f;
 					uint32_t x = w == 0? 0xffffffff
-					    : (1 << w) - 1;
+					    : ((uint32_t)1 << w) - 1;
 					x <<= o;
 					ic->arg[2] = x;
 				   }

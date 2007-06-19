@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.179 2007-06-15 17:02:39 debug Exp $
+ *  $Id: machine.h,v 1.180 2007-06-19 04:14:59 debug Exp $
  */
 
 #include <sys/types.h>
@@ -63,6 +63,13 @@ struct breakpoints {
 	uint64_t	*addr;
 };
 
+struct statistics {
+	char	*filename;
+	FILE	*file;
+	int	enabled;
+	char	*fields;		/*  "vpi" etc.  */
+};
+
 struct tick_functions {
 	int	n_entries;
 
@@ -86,6 +93,10 @@ struct x11_md {
 	struct fb_window **fb_windows;
 };
 
+
+/*
+ *  The machine struct:
+ */
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
 	struct emul *emul;
@@ -166,10 +177,7 @@ struct machine {
 	int	n_gfx_cards;
 
 	/*  Instruction statistics:  */
-	char	*statistics_filename;
-	FILE	*statistics_file;
-	int	statistics_enabled;
-	char	*statistics_fields;	/*  "vpi" etc.  */
+	struct statistics statistics;
 
 	/*  X11/framebuffer stuff (per machine):  */
 	struct x11_md x11_md;

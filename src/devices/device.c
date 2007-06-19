@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.1 2007-06-19 02:11:46 debug Exp $
+ *  $Id: device.c,v 1.2 2007-06-19 04:14:59 debug Exp $
  *
  *  COMMENT: Device registry framework
  */
@@ -56,9 +56,7 @@ static int n_pci_entries = 0;
  */
 static int device_entry_compar(const void *a, const void *b)
 {
-	struct device_entry *pa = (struct device_entry *) a;
-	struct device_entry *pb = (struct device_entry *) b;
-
+	const struct device_entry *pa = a, *pb = b;
 	return strcmp(pa->name, pb->name);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.173 2007-06-19 03:38:10 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.174 2007-06-19 04:14:59 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -73,7 +73,7 @@ static void gather_statistics(struct cpu *cpu)
 	int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - (size_t)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page) / sizeof(struct DYNTRANS_IC);
 
-	if (cpu->machine->statistics_file == NULL) {
+	if (cpu->machine->statistics.file == NULL) {
 		fatal("statistics gathering with no filename set is"
 		    " meaningless\n");
 		return;
@@ -85,7 +85,7 @@ static void gather_statistics(struct cpu *cpu)
 
 	buf[0] = '\0';
 
-	while ((ch = cpu->machine->statistics_fields[i]) != '\0') {
+	while ((ch = cpu->machine->statistics.fields[i]) != '\0') {
 		if (i != 0)
 			strlcat(buf, " ", sizeof(buf));
 
@@ -126,7 +126,7 @@ static void gather_statistics(struct cpu *cpu)
 		i++;
 	}
 
-	fprintf(cpu->machine->statistics_file, "%s\n", buf);
+	fprintf(cpu->machine->statistics.file, "%s\n", buf);
 }
 
 
@@ -322,14 +322,14 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 			}
 		}
 
-		if (cpu->machine->statistics_enabled)
+		if (cpu->machine->statistics.enabled)
 			S;
 
 		/*  Execute just one instruction:  */
 		I;
 
 		n_instrs = 1;
-	} else if (cpu->machine->statistics_enabled) {
+	} else if (cpu->machine->statistics.enabled) {
 		/*  Gather statistics while executing multiple instructions:  */
 		n_instrs = 0;
 		for (;;) {

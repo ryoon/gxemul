@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.1 2007-06-19 02:11:46 debug Exp $
+ *  $Id: machine.c,v 1.2 2007-06-19 04:14:59 debug Exp $
  */
 
 #include <stdio.h>
@@ -116,7 +116,7 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	    (void *) &m->n_gfx_cards);
 	settings_add(m->settings, "statistics_enabled", 1,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
-	    (void *) &m->statistics_enabled);
+	    (void *) &m->statistics.enabled);
 
 	return m;
 }
@@ -332,14 +332,14 @@ void machine_statistics_init(struct machine *machine, char *fname)
 
 	machine->allow_instruction_combinations = 0;
 
-	if (machine->statistics_fields != NULL) {
+	if (machine->statistics.fields != NULL) {
 		fprintf(stderr, "Only one -s option is allowed.\n");
 		exit(1);
 	}
 
-	machine->statistics_enabled = 1;
-	CHECK_ALLOCATION(machine->statistics_fields = malloc(1));
-	machine->statistics_fields[0] = '\0';
+	machine->statistics.enabled = 1;
+	CHECK_ALLOCATION(machine->statistics.fields = malloc(1));
+	machine->statistics.fields[0] = '\0';
 
 	while (*pcolon && *pcolon != ':')
 		pcolon ++;
@@ -358,11 +358,11 @@ void machine_statistics_init(struct machine *machine, char *fname)
 		case 'v':
 		case 'i':
 		case 'p':
-			CHECK_ALLOCATION(machine->statistics_fields = realloc(
-			    machine->statistics_fields, strlen(
-			    machine->statistics_fields) + 2));
-			machine->statistics_fields[n_fields ++] = *fname;
-			machine->statistics_fields[n_fields] = '\0';
+			CHECK_ALLOCATION(machine->statistics.fields = realloc(
+			    machine->statistics.fields, strlen(
+			    machine->statistics.fields) + 2));
+			machine->statistics.fields[n_fields ++] = *fname;
+			machine->statistics.fields[n_fields] = '\0';
 			break;
 
 		/*  Optional flags:  */
@@ -370,7 +370,7 @@ void machine_statistics_init(struct machine *machine, char *fname)
 			mode = "w";
 			break;
 		case 'd':
-			machine->statistics_enabled = 0;
+			machine->statistics.enabled = 0;
 			break;
 
 		default:fprintf(stderr, "Unknown flag '%c' used with the"
@@ -382,8 +382,8 @@ void machine_statistics_init(struct machine *machine, char *fname)
 
 	fname ++;	/*  point to the filename after the colon  */
 
-	CHECK_ALLOCATION(machine->statistics_filename = strdup(fname));
-	machine->statistics_file = fopen(machine->statistics_filename, mode);
+	CHECK_ALLOCATION(machine->statistics.filename = strdup(fname));
+	machine->statistics.file = fopen(machine->statistics.filename, mode);
 }
 
 

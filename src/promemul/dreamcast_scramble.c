@@ -1,5 +1,5 @@
 /*
- *  GXemul: $Id: dreamcast_scramble.c,v 1.3 2007-06-17 23:32:20 debug Exp $
+ *  GXemul: $Id: dreamcast_scramble.c,v 1.4 2007-06-19 03:52:07 debug Exp $
  *
  *  COMMENT: Dreamcast emulation (helper module)
  *
@@ -51,7 +51,7 @@ void load_chunk(FILE *fh, unsigned char *ptr, unsigned long sz)
 
   /* Initialize index table with unity,
      so that each slice gets loaded exactly once */
-  for(i = 0; i < sz; i++)
+  for(i = 0; i < (int)sz; i++)
     idx[i] = i;
 
   for(i = sz-1; i >= 0; --i)
@@ -138,7 +138,7 @@ void save_chunk(FILE *fh, unsigned char *ptr, unsigned long sz)
 
   /* Initialize index table with unity,
      so that each slice gets saved exactly once */
-  for(i = 0; i < sz; i++)
+  for(i = 0; i < (int)sz; i++)
     idx[i] = i;
 
   for(i = sz-1; i >= 0; --i)

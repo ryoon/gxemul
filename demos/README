@@ -19,6 +19,8 @@ Simple demos:
   o)  disk		Reads sectors from a disk image, and dumps the
 			contents in hex and ascii to the console.
 
+  o)  mp                Multi-Processor demo (not very functional yet)
+
 
 License note
 ------------

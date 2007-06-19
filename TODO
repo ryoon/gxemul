@@ -1,22 +1,24 @@
-$Id: TODO,v 1.542 2007-06-18 04:23:19 debug Exp $
+$Id: TODO,v 1.543 2007-06-19 02:11:22 debug Exp $
 
 -------------------------------------------------------------------------------
 
 * Change all next_ic ++  into next_ic = ic + 2 and similar. This makes
   inlining of ic calls from native code work. Hopefully.
 
-	g0(cpu, ic + 3);
-	g1(cpu, ic + 4);
-	g2(cpu, ic + 5);  etc
+	ic[3].f(cpu, ic + 3);
+	ic[4].f(cpu, ic + 4);
+	ic[5].f(cpu, ic + 5);  etc  (if the calls do not cause exceptions etc)
 
 * TODO: How about instructions that branch, i.e. change the next_ic and/or
   the current page?
 
-* Perhaps _ALL_ instructions must be specifically known to the native translator;
-  if there is any instruction in the range which was not known, then no
-  translation is performed (but the page is marked as translated anyway?
-  perhaps).   Then, each instruction can be known to be "normal", "normal but
-  may branch", "normal but may cause exception", etc.
+* Perhaps _ALL_ instructions must be specifically known to the native
+  translator; fallback is to assume that each instruction may modify the
+  program counter, next_ic, and cur_ic_page!  If this is not the case, each
+  instruction must be taken care of on a case by case basis, marking the
+  instruction as "non-branching", etc.
+
+* TODO: Delay-slots? :)
 
 * TODO: How to deal with instruction combinations this way? Perhaps the range
   should be retranslated _without_ instruction combinations, when generating

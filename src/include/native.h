@@ -28,14 +28,31 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native.h,v 1.2 2007-03-28 09:02:52 debug Exp $
+ *  $Id: native.h,v 1.3 2007-06-19 03:37:50 debug Exp $
  *
+ *  Framework for native code generation during runtime.
  *  See src/native/ for more details.
  */
 
-#include "misc.h"
+struct native_code_generation_backend {
+	struct native_code_generation_backend *next;
+
+	char		*name;
+	void		*extra;
+};
+
 
 /*  native.c:  */
-/*  TODO  */
+void native_init(void);
+
+
+/*
+ *  Individual native code generation backends:
+ */
+
+/*  native_ccld.c:  */
+struct native_ccld;
+struct native_ccld *native_ccld_init(void);
+
 
 #endif	/*  NATIVE_H  */

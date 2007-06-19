@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.305 2007-06-15 17:02:38 debug Exp $
+ *  $Id: main.c,v 1.306 2007-06-19 03:37:50 debug Exp $
  */
 
 #include <stdio.h>
@@ -43,6 +43,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "misc.h"
+#include "native.h"
 #include "settings.h"
 #include "timer.h"
 #include "useremul.h"
@@ -739,6 +740,9 @@ int main(int argc, char *argv[])
 		gettimeofday(&tv, NULL);
 		srandom(tv.tv_sec ^ getpid() ^ tv.tv_usec);
 	}
+
+	if (native_code_translation_enabled)
+		native_init();
 
 	/*  Print startup message:  */
 	debug("GXemul");

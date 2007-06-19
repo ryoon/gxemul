@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.39 2007-06-15 17:02:38 debug Exp $
+ *  $Id: symbol.c,v 1.40 2007-06-19 04:04:03 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -317,7 +317,7 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 		addr = strtoull(b1, NULL, 16);
 		len  = strtoull(b2, NULL, 16);
 		type = b3[0];
-		/*  printf("addr=%016llx len=%016llx type=%i\n",
+		/*  printf("addr=%016"PRIx64" len=%016"PRIx64" type=%i\n",
 		    addr, len, type);  */
 
 		if (type == 't' || type == 'r' || type == 'g')

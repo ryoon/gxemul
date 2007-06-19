@@ -1,8 +1,10 @@
-$Id: TODO,v 1.543 2007-06-19 02:11:22 debug Exp $
+$Id: TODO,v 1.544 2007-06-19 04:04:02 debug Exp $
 
 -------------------------------------------------------------------------------
 
-* Change all next_ic ++  into next_ic = ic + 2 and similar. This makes
+* TODO: native_ccld_detect_cc()
+
+* TODO: Change all next_ic ++  into next_ic = ic + 2 and similar. This makes
   inlining of ic calls from native code work. Hopefully.
 
 	ic[3].f(cpu, ic + 3);
@@ -12,7 +14,7 @@ $Id: TODO,v 1.543 2007-06-19 02:11:22 debug Exp $
 * TODO: How about instructions that branch, i.e. change the next_ic and/or
   the current page?
 
-* Perhaps _ALL_ instructions must be specifically known to the native
+* TODO: Perhaps _ALL_ instructions must be specifically known to the native
   translator; fallback is to assume that each instruction may modify the
   program counter, next_ic, and cur_ic_page!  If this is not the case, each
   instruction must be taken care of on a case by case basis, marking the

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.205 2007-06-19 02:11:46 debug Exp $
+ *  $Id: memory.c,v 1.206 2007-06-19 04:04:02 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -638,7 +638,7 @@ void memory_warn_about_unimplemented_addr(struct cpu *cpu, struct memory *mem,
 		debug("} ");
 	}
 
-	fatal("paddr=0x%llx >= physical_max; pc=", (long long)paddr);
+	fatal("paddr=0x%"PRIx64" >= physical_max; pc=", paddr);
 	if (cpu->is_32bit)
 		fatal("0x%08"PRIx32, (uint32_t) old_pc);
 	else

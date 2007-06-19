@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.297 2007-06-15 17:02:37 debug Exp $
+ *  $Id: emul.c,v 1.298 2007-06-19 04:04:02 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -121,7 +121,7 @@ static void add_breakpoints(struct machine *m)
 
 		m->breakpoints.addr[i] = dp;
 
-		debug("breakpoint %i: 0x%llx", i, (long long)dp);
+		debug("breakpoint %i: 0x%"PRIx64, i, dp);
 		if (string_flag)
 			debug(" (%s)", m->breakpoints.string[i]);
 		debug("\n");

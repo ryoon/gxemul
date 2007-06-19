@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.8 2007-06-17 23:32:20 debug Exp $
+#  $Id: Makefile.skel,v 1.9 2007-06-19 02:11:46 debug Exp $
 #
 #  Makefile for GXemul src/promemul
 #
@@ -10,7 +10,7 @@ OBJS=arcbios.o dec_prom.o dreamcast.o dreamcast_scramble.o \
 	mvmeprom.o of.o ps2_bios.o sh_ipl_g.o yamon.o
 
 all: $(OBJS)
-	../make_index.sh
+	../../experiments/make_index.sh
 
 $(OBJS): Makefile
 

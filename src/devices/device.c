@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.34 2007-06-15 17:02:37 debug Exp $
+ *  $Id: device.c,v 1.1 2007-06-19 02:11:46 debug Exp $
  *
- *  Device registry framework.
+ *  COMMENT: Device registry framework
  */
 
 #include <stdio.h>

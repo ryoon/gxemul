@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.17 2007-06-16 17:18:34 debug Exp $
+ *  $Id: generate_tail.c,v 1.18 2007-06-19 02:11:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 
 	printf("#define MEMORY_RW %s_memory_rw\n", a);
 	printf("#define MEM_%s\n", uppercase(a));
-	printf("#include \"../memory_rw.c\"\n");
+	printf("#include \"memory_rw.c\"\n");
 	printf("#undef MEM_%s\n", uppercase(a));
 	printf("#undef MEMORY_RW\n\n");
 

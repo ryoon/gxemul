@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.389 2007-06-15 17:02:37 debug Exp $
+ *  $Id: cpu.c,v 1.1 2007-06-19 02:11:46 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */

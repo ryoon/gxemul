@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.306 2007-06-19 03:37:50 debug Exp $
+ *  $Id: main.c,v 1.307 2007-06-19 04:45:11 debug Exp $
  */
 
 #include <stdio.h>
@@ -741,9 +741,6 @@ int main(int argc, char *argv[])
 		srandom(tv.tv_sec ^ getpid() ^ tv.tv_usec);
 	}
 
-	if (native_code_translation_enabled)
-		native_init();
-
 	/*  Print startup message:  */
 	debug("GXemul");
 #ifdef VERSION
@@ -752,6 +749,9 @@ int main(int argc, char *argv[])
 	debug("    Copyright (C) 2003-2007  Anders Gavare\n");
 	debug("Read the source code and/or documentation for "
 	    "other Copyright messages.\n\n");
+
+	if (native_code_translation_enabled)
+		native_init();
 
 	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE) {
 		n_emuls --;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.2 2007-06-19 04:14:59 debug Exp $
+ *  $Id: machine.c,v 1.3 2007-06-19 04:45:11 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,11 +45,6 @@
 #include "settings.h"
 #include "symbol.h"
 #include "useremul.h"
-
-
-/*  See main.c:  */
-extern int quiet_mode;
-extern int verbose;
 
 
 /*  This is initialized by machine_init():  */

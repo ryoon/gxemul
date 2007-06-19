@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1619 2007-06-19 02:11:44 debug Exp $
+$Id: HISTORY,v 1.1620 2007-06-19 04:45:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3629,3 +3629,5 @@ Changelog for GXemul:
 20070619	Moving src/cpu.c and src/memory_rw.c into src/cpus/,
 		src/device.c into src/devices/, and src/machine.c into
 		src/machines/.
+		Creating a skeleton cc/ld native backend module; beginning on
+		the function which will detect cc command line, etc.

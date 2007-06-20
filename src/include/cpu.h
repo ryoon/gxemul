@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.133 2007-06-19 02:11:22 debug Exp $
+ *  $Id: cpu.h,v 1.134 2007-06-20 04:47:20 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -457,6 +457,9 @@ struct cpu {
 
 	/*  Non-zero when translating ahead of the current instruction:  */
 	int		translation_readahead;
+
+	/*  Non-NULL when translating a physical range of memory:  */
+	void		*translation_phys_page;
 
 	/*  Instruction translation cache:  */
 	int		n_translated_instrs;

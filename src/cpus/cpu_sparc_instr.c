@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.27 2007-03-16 15:43:58 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.28 2007-06-20 04:47:20 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -1201,6 +1201,9 @@ X(to_be_translated)
 		page = l3->host_load[x3];
 	}
 #endif
+
+	if (cpu->translation_phys_page != NULL)
+		page = cpu->translation_phys_page;
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

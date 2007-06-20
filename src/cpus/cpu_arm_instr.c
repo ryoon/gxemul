@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.75 2007-06-16 14:39:17 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.76 2007-06-20 04:47:19 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1569,6 +1569,8 @@ X(netbsd_idle)
 	}
 
 	if (rZ == 0) {
+		static int x = 0;
+
 		/*  Don't sample during sleep:  */
 		int old_sampling = cpu->sampling;
 
@@ -1583,11 +1585,13 @@ X(netbsd_idle)
 
 		/*  Quasi-idle for a while:  */
 		cpu->has_been_idling = 1;
-	        if (cpu->machine->ncpus == 1)
+	        if (cpu->machine->ncpus == 1 && (++x) == 100) {
 			usleep(50);
+			x = 0;
+		}
 
 		cpu->sampling = old_sampling;
-		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT;
+		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 
 		cpu->cd.arm.next_ic = &nothing_call;
 		return;
@@ -2535,7 +2539,11 @@ X(to_be_translated)
 	addr &= ~((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
-	page = cpu->cd.arm.host_load[addr >> 12];
+	if (cpu->translation_phys_page != NULL)
+		page = cpu->translation_phys_page;
+	else
+		page = cpu->cd.arm.host_load[addr >> 12];
+
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT! 0x%08x\n", addr);  */
 		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
@@ -2930,17 +2938,13 @@ X(to_be_translated)
 				/*  ic->f = cond_instr(mov);  */
 				ic->f = arm_dpi_instr[condition_code + 16*0xd];
 				ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
-				p = cpu->cd.arm.host_load[a >> 12];
+				p = page;
 				if (p != NULL) {
 					memcpy(c, p + (a & 0xfff), len);
 				} else {
-					if (!cpu->memory_rw(cpu, cpu->mem, a,
-					    c, len, MEM_READ, CACHE_DATA)) {
-						if (!cpu->translation_readahead)
-							fatal("read failed X:"
-							    " TODO\n");
-						goto bad;
-					}
+					fatal("Hm? Internal error in "
+					    "cpu_arm_instr.c!\n");
+					goto bad;
 				}
 				if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 					x = c[0] + (c[1]<<8) +

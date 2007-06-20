@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.138 2007-06-19 03:38:10 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.139 2007-06-20 04:47:20 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3487,6 +3487,9 @@ X(to_be_translated)
 		page = l3->host_load[x3];
 	}
 #endif
+
+	if (cpu->translation_phys_page != NULL)
+		page = cpu->translation_phys_page;
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

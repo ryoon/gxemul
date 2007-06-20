@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.62 2007-06-16 14:39:17 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.63 2007-06-20 04:47:20 debug Exp $
  *
  *  SH instructions.
  *
@@ -2929,6 +2929,9 @@ X(to_be_translated)
 		page = l3->host_load[x3];
 	}
 #endif
+
+	if (cpu->translation_phys_page != NULL)
+		page = cpu->translation_phys_page;
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

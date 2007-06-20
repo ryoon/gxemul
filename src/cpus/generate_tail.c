@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.18 2007-06-19 02:11:46 debug Exp $
+ *  $Id: generate_tail.c,v 1.19 2007-06-20 04:47:20 debug Exp $
  */
 
 #include <stdio.h>
@@ -74,30 +74,40 @@ int main(int argc, char *argv[])
 	printf("#define MODE32\n");
 	printf("#endif\n");
 
-	printf("#define DYNTRANS_FUNCTION_TRACE "
+	printf("#define DYNTRANS_FUNCTION_TRACE_DEF "
 	    "%s_cpu_functioncall_trace\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_FUNCTION_TRACE\n\n");
+	printf("#undef DYNTRANS_FUNCTION_TRACE_DEF\n\n");
 
 	printf("#define DYNTRANS_INIT_TABLES "
 	    "%s_cpu_init_tables\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_INIT_TABLES\n\n");
 
-	printf("#define DYNTRANS_TIMER_SAMPLE_TICK "
+	printf("#define DYNTRANS_TIMER_SAMPLE_TICK_DEF "
 	    "%s_timer_sample_tick\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_TIMER_SAMPLE_TICK\n\n");
+	printf("#undef DYNTRANS_TIMER_SAMPLE_TICK_DEF\n\n");
 
-	printf("#define DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE "
+	printf("#define DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE_DEF "
 	    "%s_tc_allocate_default_page\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE\n\n");
+	printf("#undef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE_DEF\n\n");
 
-	printf("#define DYNTRANS_ADD_TRANSLATABLE_RANGE "
+	printf("#define DYNTRANS_ADD_TRANSLATABLE_RANGE_DEF "
 	    "%s_add_translatable_range\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_ADD_TRANSLATABLE_RANGE\n\n");
+	printf("#undef DYNTRANS_ADD_TRANSLATABLE_RANGE_DEF\n\n");
+
+	printf("#define DYNTRANS_TRANSLATE_INTO_NATIVE_DEF "
+	    "%s_translate_into_native\n", a);
+	printf("#include \"cpu_dyntrans.c\"\n");
+	printf("#undef DYNTRANS_TRANSLATE_INTO_NATIVE_DEF\n\n");
+
+	printf("#define DYNTRANS_CHECK_SAMPLES_DEF "
+	    "%s_check_samples\n", a);
+	printf("#include \"cpu_dyntrans.c\"\n");
+	printf("#undef DYNTRANS_CHECK_SAMPLES_DEF\n\n");
 
 	printf("#define DYNTRANS_INVAL_ENTRY\n");
 	printf("#include \"cpu_dyntrans.c\"\n");
@@ -146,9 +156,9 @@ int main(int argc, char *argv[])
 	printf("#include \"quick_pc_to_pointers.h\"\n");
 	printf("#include \"cpu_%s_instr.c\"\n\n", a);
 
-	printf("#define DYNTRANS_RUN_INSTR %s_run_instr\n", a);
+	printf("#define DYNTRANS_RUN_INSTR_DEF %s_run_instr\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_RUN_INSTR\n\n");
+	printf("#undef DYNTRANS_RUN_INSTR_DEF\n\n");
 
 
 	printf("#ifdef DYNTRANS_DUALMODE_32\n");
@@ -203,9 +213,9 @@ int main(int argc, char *argv[])
 	    "#define DYNTRANS_PC_TO_POINTERS %s_pc_to_pointers\n"
 	    "#define DYNTRANS_PC_TO_POINTERS32 %s32_pc_to_pointers\n\n", a, a);
 
-	printf("#define DYNTRANS_RUN_INSTR %s32_run_instr\n", a);
+	printf("#define DYNTRANS_RUN_INSTR_DEF %s32_run_instr\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_RUN_INSTR\n\n");
+	printf("#undef DYNTRANS_RUN_INSTR_DEF\n\n");
 
 	printf("#endif /*  DYNTRANS_DUALMODE_32  */\n\n\n");
 

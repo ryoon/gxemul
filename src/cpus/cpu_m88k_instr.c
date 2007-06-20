@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.36 2007-06-20 03:10:08 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.37 2007-06-20 04:47:20 debug Exp $
  *
  *  M88K instructions.
  *
@@ -1083,7 +1083,10 @@ X(to_be_translated)
 	addr &= ~((1 << M88K_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
-	page = cpu->cd.m88k.host_load[(uint32_t)addr >> 12];
+	if (cpu->translation_phys_page != NULL)
+		page = cpu->translation_phys_page;
+	else
+		page = cpu->cd.m88k.host_load[(uint32_t)addr >> 12];
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

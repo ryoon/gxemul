@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.177 2007-06-20 06:13:01 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.178 2007-06-20 07:10:52 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -656,14 +656,14 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 	int i, table_index;
 	void (*resulting_function)(struct cpu *, struct DYNTRANS_IC *);
 
-	fatal("[ Translating into native: paddr 0x%"PRIx64" ]\n", base);
+	debug("[ translating physaddr 0x%"PRIx64" into native code ]\n", base);
 
 	cpu->translation_phys_page = memory_paddr_to_hostaddr(cpu->mem,
 	    base & ~((DYNTRANS_IC_ENTRIES_PER_PAGE << DYNTRANS_INSTR_ALIGNMENT_SHIFT) - 1), MEM_READ);
 
 	if (cpu->translation_phys_page == NULL) {
 		fatal("[ hm? no hostaddr for physpage, during native code "
-		    "generation? ]\n");
+		    "generation? TODO ]\n");
 		return;
 	}
 

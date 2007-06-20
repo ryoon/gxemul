@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_vme.c,v 1.4 2007-06-15 19:57:34 debug Exp $
+ *  $Id: dev_vme.c,v 1.5 2007-06-20 15:46:54 debug Exp $
  *
  *  COMMENT: VME bus
  *
@@ -83,7 +83,7 @@ DEVICE_ACCESS(vme)
 			d->reg[relative_addr / sizeof(uint32_t)] = idata;
 		else {
 			/*  NOTE! This is a quick hack. TODO: Fix!  */
-			d->reg[relative_addr / sizeof(uint32_t)] += 10;
+			d->reg[relative_addr / sizeof(uint32_t)] += 100;
 		}
 		break;
 

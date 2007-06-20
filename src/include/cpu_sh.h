@@ -28,10 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.47 2007-06-20 06:52:28 debug Exp $
+ *  $Id: cpu_sh.h,v 1.48 2007-06-20 06:55:15 debug Exp $
  *
- *  Note: Many things here are SH4-specific, so it probably doesn't work
- *        for SH3 emulation.
+ *  Note 1: Many things here are SH4-specific, so it probably doesn't work
+ *          for SH3 emulation.
+ *
+ *  Note 2: The SuperH emulation in GXemul does not include SH5/SH64 at
+ *          this time. There doesn't seem to be that much interesting code
+ *          to run in the emulator for SH5. :-/
  */
 
 #include "interrupt.h"
@@ -61,14 +65,9 @@ struct sh_cpu_type_def {
 	{ NULL,       0, 0, 0,              0	                 }  }
 
 
-/*
- *  TODO: Figure out how to nicely support multiple instruction encodings!
- *  For now, I'm reverting this to SH4. SH5 will have to wait until later.
- */
-
-#define	SH_N_IC_ARGS			2	/*  3 for SH5/SH64  */
-#define	SH_INSTR_ALIGNMENT_SHIFT	1	/*  2 for SH5/SH64  */
-#define	SH_IC_ENTRIES_SHIFT		11	/*  10 for SH5/SH64  */
+#define	SH_N_IC_ARGS			2
+#define	SH_INSTR_ALIGNMENT_SHIFT	1
+#define	SH_IC_ENTRIES_SHIFT		11
 #define	SH_IC_ENTRIES_PER_PAGE		(1 << SH_IC_ENTRIES_SHIFT)
 #define	SH_PC_TO_IC_ENTRY(a)		(((a)>>SH_INSTR_ALIGNMENT_SHIFT) \
 					& (SH_IC_ENTRIES_PER_PAGE-1))

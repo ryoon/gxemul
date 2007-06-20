@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.46 2007-06-07 15:36:25 debug Exp $
+ *  $Id: cpu_sh.h,v 1.47 2007-06-20 06:52:28 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -87,6 +87,8 @@ DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 #define	SH_N_ITLB_ENTRIES	4
 #define	SH_N_UTLB_ENTRIES	64
 
+/*  An instruction with an invalid encoding; used for software
+    emulation of PROM calls within GXemul:  */
 #define	SH_INVALID_INSTR	0x00fb
 
 

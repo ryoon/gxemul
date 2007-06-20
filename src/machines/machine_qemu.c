@@ -25,15 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.13 2007-06-15 18:08:10 debug Exp $
+ *  $Id: machine_qemu.c,v 1.14 2007-06-20 18:59:16 debug Exp $
  *
  *  COMMENT: Machine mimicing QEMU's default MIPS emulation mode
  *
- *  This file contains semi-bogus machine descriptions for experimental
- *  machines, mimicing those emulated by Fabrice Bellard's QEMU.
- *
- *  See e.g. http://fabrice.bellard.free.fr/qemu/mips-test-0.1.tar.gz
- *  (available from http://fabrice.bellard.free.fr/qemu/download.html).
+ *  See e.g. http://fabrice.bellard.free.fr/qemu/mips-test-0.2.tar.gz
  */
 
 #include <stdio.h>
@@ -47,84 +43,6 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-
-
-/*****************************************************************************/
-
-
-MACHINE_SETUP(qemu_arm)
-{
-	/*
-	 *  The ARM machine in QEMU isn't really a bogus machine, I think.
-	 *  It is supposed to emulate a specific ARM board. But for now,
-	 *  treat it as "QEMU ARM".
-	 */
-
-	machine->machine_name = "QEMU ARM";
-	cpu->byte_order = EMUL_LITTLE_ENDIAN;
-
-	device_add(machine, "ns16550 addr=0x16000000");
-
-	if (!machine->prom_emulation)
-		return;
-
-	/*
-	 *  QEMU's ARM emulation mode uses the following hardcoded addresses:
-	 *
-	 *	0x00000100 = kernel boot arguments
-	 *	0x00010000 = kernel load address
-	 *	0x00800000 = initrd load address
-	 *
-	 *  QEMU's arm_boot.c puts these values at 0x100:
-	 *
-	 *  TODO: Yuck. Don't hardcode these.
-	 */
-
-	store_32bit_word(cpu, 0x100, 5);
-	store_32bit_word(cpu, 0x104, 0x54410001);
-	store_32bit_word(cpu, 0x108, 1);
-	store_32bit_word(cpu, 0x10c, 0x1000);
-	store_32bit_word(cpu, 0x110, 0);
-	store_32bit_word(cpu, 0x114, 4);
-	store_32bit_word(cpu, 0x118, 0x54410002);
-	store_32bit_word(cpu, 0x11c, machine->physical_ram_in_mb * 1048576);
-	store_32bit_word(cpu, 0x120, 0);
-	/*  TODO: 0x54410009 for the kernel command line args  */
-
-	/*
-	 *  board ids:
-	 *	0x25e for "AB", 0x183 for "PB".
-	 */
-
-	cpu->cd.arm.r[0] = 0x5e;	/*  low byte of board id  */
-	cpu->cd.arm.r[1] = 0x02;	/*  high byte of board id  */
-	cpu->cd.arm.r[5] = 0x100;	/*  address of boot args  */
-	cpu->cd.arm.r[6] = 0x10000;	/*  address of loaded kernel  */
-}
-
-
-MACHINE_DEFAULT_CPU(qemu_arm)
-{
-	/*  TODO: ARM926EJ-S  */
-	machine->cpu_name = strdup("ARM922T");
-}
-
-
-MACHINE_DEFAULT_RAM(qemu_arm)
-{
-	machine->physical_ram_in_mb = 64;
-}
-
-
-MACHINE_REGISTER(qemu_arm)
-{
-	MR_DEFAULT(qemu_arm, "QEMU ARM", ARCH_ARM, MACHINE_QEMU_ARM);
-	me->set_default_ram = machine_default_ram_qemu_arm;
-	machine_entry_add_alias(me, "qemu_arm");
-}
-
-
-/*****************************************************************************/
 
 
 MACHINE_SETUP(qemu_mips)

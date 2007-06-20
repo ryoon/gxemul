@@ -1,30 +1,62 @@
-$Id: TODO,v 1.544 2007-06-19 04:04:02 debug Exp $
+$Id: TODO,v 1.545 2007-06-20 00:28:17 debug Exp $
 
 -------------------------------------------------------------------------------
 
-* TODO: native_ccld_detect_cc()
+* native_ccld_detect_cc()
+	.c vs .i
+	-fomit-frame-pointer
+	-O, O2, -O3, -fast
+	-fno-builtin
+	-fpeephole
+	ELF vs other binary types
+	cc/ld vs only cc (.o)  (don't rely on this! yet...)
+	ld:  -static, -e nameoffunction, -Ttext 0x123456  etc.
+	dlopen()?
 
-* TODO: Change all next_ic ++  into next_ic = ic + 2 and similar. This makes
+* Change all next_ic ++  into next_ic = ic + 2 and similar. This makes
   inlining of ic calls from native code work. Hopefully.
 
-	ic[3].f(cpu, ic + 3);
-	ic[4].f(cpu, ic + 4);
-	ic[5].f(cpu, ic + 5);  etc  (if the calls do not cause exceptions etc)
+* Experiment with keeping registers and such in local variables, instead
+  of accessing memory all the time.
 
-* TODO: How about instructions that branch, i.e. change the next_ic and/or
+* How about instructions that branch, i.e. change the next_ic and/or
   the current page?
 
-* TODO: Perhaps _ALL_ instructions must be specifically known to the native
-  translator; fallback is to assume that each instruction may modify the
-  program counter, next_ic, and cur_ic_page!  If this is not the case, each
-  instruction must be taken care of on a case by case basis, marking the
-  instruction as "non-branching", etc.
+	/*  NOTE: flush all modified local variables that correspond
+	    to registers, before calling doing a generic ic->f call!  */
 
-* TODO: Delay-slots? :)
+	cpu->cd.ARCH.next_ic = ic + 4;
+	ic[3].f(cpu, ic + 3);
+	if (cpu->cd.ARCH.next_ic != ic + 4)
+		return;
 
-* TODO: How to deal with instruction combinations this way? Perhaps the range
-  should be retranslated _without_ instruction combinations, when generating
-  native code? That would be a safe way out.
+  or, if the instruction is known to be "safe" (no branch, no exceptions):
+
+	ic[3].f(cpu, ic + 3);
+
+* Default is to assume:
+	INSTRUCTION_MAY_MODIFY_NEXT_IC
+	other than that, it is up to individual instructions to become:
+	INSTRUCTION_IS_SAFE   (i.e. no implicit branch or exception!)
+
+	if no native instruction was selected, then an ic->f call
+	(either with next_ic = the ic + 1 or + 2, depending on if it
+	has a delay slot or not) is emitted.
+
+* Delay-slots:
+
+	/*  NOTE: flush all modified local variables that correspond
+	    to registers, before calling doing a generic ic->f call!  */
+
+	cpu->cd.ARCH.next_ic = ic + 5;	/*  NOTE: +5  */
+	ic[3].f(cpu, ic + 3);
+	if (cpu->cd.ARCH.next_ic != ic + 5)
+		return;
+
+* How to deal with instruction combinations this way? Since the whole range
+  needs to be retranslated anyway (for the native opcodes), it is probably
+  best to temporarily turn off instruction combinations during the native
+  translation. (Safe way out of the problem.)
 
 -------------------------------------------------------------------------------
 

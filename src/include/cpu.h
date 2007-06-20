@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.134 2007-06-20 04:47:20 debug Exp $
+ *  $Id: cpu.h,v 1.135 2007-06-20 05:41:47 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -258,6 +258,7 @@ struct cpu;
 struct emul;
 struct machine;
 struct memory;
+struct native_instruction;
 struct settings;
 
 
@@ -339,6 +340,8 @@ struct cpu_family {
 #define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
 #define	N_PADDR_SAMPLES			((int)CPU_SAMPLE_TIMER_HZ)
 #define	SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION  	2
+
+#define	NATIVE_BUFFER_SIZE_NINSTRS	16384
 
 
 /*
@@ -452,19 +455,26 @@ struct cpu {
 	 *  everything restarts from scratch.
 	 *
 	 *  translation_readahead is non-zero when translating instructions
-	 *  ahead of the current (emulated) instruction pointer.
+	 *  ahead of the current (emulated) instruction pointer. (Note: Not
+	 *  necessarily into native code.)
+	 *
+ 	 *  translation_phys_page is non-NULL when translating a physical
+	 *  range of addresses into native code. It points to the page in
+	 *  host memory which corresponds to the emulated physical page.
 	 */
-
-	/*  Non-zero when translating ahead of the current instruction:  */
-	int		translation_readahead;
-
-	/*  Non-NULL when translating a physical range of memory:  */
-	void		*translation_phys_page;
 
 	/*  Instruction translation cache:  */
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
+
+	int		translation_readahead;
+
+	void		*translation_phys_page;
+
+	struct native_instruction *native_instruction_buffer;
+	int		native_instruction_buffer_curpos;
+	int		native_instruction_buffer_lastpos;
 
 
 	/*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.37 2007-06-20 04:47:20 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.38 2007-06-20 05:41:47 debug Exp $
  *
  *  M88K instructions.
  *
@@ -1217,7 +1217,9 @@ X(to_be_translated)
 		case 0x15: ic->f = instr(xor_imm); shift = 16; break;
 		case 0x16: ic->f = instr(or_imm); break;
 		case 0x17: ic->f = instr(or_imm); shift = 16; break;
-		case 0x18: ic->f = instr(addu_imm); break;
+		case 0x18: ic->f = instr(addu_imm);
+			   NATIVE_FALLBACK_SIMPLE;
+			   break;
 		case 0x19: ic->f = instr(subu_imm); break;
 		case 0x1a: ic->f = instr(divu_imm); break;
 		case 0x1b: ic->f = instr(mulu_imm); break;
@@ -1430,6 +1432,8 @@ X(to_be_translated)
 			case 0x26: ic->f = instr(extu_imm); break;
 			case 0x28: ic->f = instr(mak_imm); break;
 			}
+
+			NATIVE_FALLBACK_SIMPLE;
 
 			if (d == M88K_ZERO_REG)
 				ic->f = instr(nop);

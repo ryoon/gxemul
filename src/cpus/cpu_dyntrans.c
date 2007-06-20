@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.175 2007-06-20 04:47:19 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.176 2007-06-20 05:41:47 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -699,7 +699,14 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 	cpu->translation_readahead = MAX_DYNTRANS_READAHEAD;
 	i = 0;
 
+	cpu->native_instruction_buffer_curpos = 0;
+
 	while (DYNTRANS_ADDR_TO_PAGENR(base + (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr && cpu->translation_readahead > 0) {
+		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].opcode = NATIVE_OPCODE_MAKE_FALLBACK_SAFE;
+		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg1 = i;
+		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg2 = i;
+		cpu->native_instruction_buffer_lastpos = cpu->native_instruction_buffer_curpos;
+
 		ic[i].f = TO_BE_TRANSLATED;
 
 		/*  Translate the instruction:  */
@@ -2161,6 +2168,32 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 		cpu->cd.DYNTRANS_ARCH.cur_physpage->
 		    translations_bitmap |= (1 << x);
 	}
+
+
+	/*
+	 *  When translating to native code, if the instruction was not
+	 *  specifically implemented, then do a fallback to a generic
+	 *  ic->f caller opcode.
+	 */
+	if (cpu->translation_phys_page != NULL &&
+	    cpu->native_instruction_buffer_lastpos == cpu->native_instruction_buffer_curpos) {
+		switch (cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].opcode) {
+		case NATIVE_OPCODE_MAKE_FALLBACK_SAFE:
+			cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].opcode = NATIVE_OPCODE_FALLBACK_SAFE;
+			if (cpu->instruction_has_delayslot != NULL && cpu->instruction_has_delayslot(cpu, ib))
+				cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg2 ++;
+			break;
+		case NATIVE_OPCODE_MAKE_FALLBACK_SIMPLE:
+			cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].opcode = NATIVE_OPCODE_FALLBACK_SIMPLE;
+			break;
+		default:fatal("\nInternal error in the native code generator.\n"
+			    "Inconsistent state of the instruction buffer.\n");
+			abort();
+		}
+
+		cpu->native_instruction_buffer_curpos ++;
+	}
+
 
 	/*
 	 *  Now it is time to check for combinations of instructions that can

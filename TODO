@@ -1,51 +1,32 @@
-$Id: TODO,v 1.547 2007-06-20 04:47:19 debug Exp $
+$Id: TODO,v 1.548 2007-06-20 05:41:46 debug Exp $
 
 -------------------------------------------------------------------------------
-
-* all memory_rw must be made to work with cpu->translation_phys_page!
-  in all cpu_*_instr.c!
 
 * superh -- no hostpage for e.g. 0x8c000000. devices as ram!
 
 * native_ccld_detect_cc()
-	.c vs .i
-	-fomit-frame-pointer
-	-O, O2, -O3, -fast
-	-fno-builtin
-	-fpeephole
-	ELF vs other binary types
+	.c vs .i, ELF vs other binary types, dlopen?
+	-fomit-frame-pointer  -O, O2, -O3, -fast  -fno-builtin  -fpeephole
 	cc/ld vs only cc (.o)  (don't rely on this! yet...)
 	ld:  -static, -e nameoffunction, -Ttext 0x123456  etc.
-	dlopen()?
 
-* Experiment with keeping registers and such in local variables, instead
-  of accessing memory all the time.
-
-* Fallback instruction:
-
-	If no native instruction was selected, then an ic->f call
-	(either with next_ic = the ic + 1 or + 2, depending on if it
-	has a delay slot or not) is emitted.
-
-* Delay-slots:
+* Fallback instruction: If no native instruction was selected, then an 
+  ic->f call (either with next_ic = the ic + 1 or + 2, depending on if it
+  has a delay slot or not) is emitted.
 
 	/*  NOTE: flush all modified local variables that correspond
 	    to registers, before calling doing a generic ic->f call!  */
 
-	cpu->cd.ARCH.next_ic = ic + 4;	/*  NOTE: +4  */
-	ic[3].f(cpu, ic + 3);
-	if (cpu->cd.ARCH.next_ic != ic + 5)  <-- +4 for no delay slot,
-		return;				 +5 for delay slot!
+	cpu->cd.ARCH.next_ic = ic + X + 1;
+	ic[X].f(cpu, ic + X);
+	if (cpu->cd.ARCH.next_ic != ic + X + 1 + D)
+		return;
 
-  or
+  where D = 1 for delayslot instructions, 0 otherwise.
+
 	ic[3].f(cpu, ic + 3);
 
   for safe instructions (like arithmetic stuff).
-
-* How to deal with instruction combinations this way? Since the whole range
-  needs to be retranslated anyway (for the native opcodes), it is probably
-  best to temporarily turn off instruction combinations during the native
-  translation. (Safe way out of the problem.)
 
 -------------------------------------------------------------------------------
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.1 2007-06-19 02:11:46 debug Exp $
+ *  $Id: cpu.c,v 1.2 2007-06-20 05:41:47 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -39,6 +39,7 @@
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
+#include "native.h"
 #include "settings.h"
 #include "timer.h"
 
@@ -304,6 +305,10 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 		if (native_code_translation_enabled) {
 			mprotect(cpu->translation_cache, s,
 			    PROT_READ | PROT_WRITE | PROT_EXEC);
+
+			cpu->native_instruction_buffer = zeroed_alloc(
+			    sizeof(struct native_instruction) *
+			    NATIVE_BUFFER_SIZE_NINSTRS);
 		}
 	}
 

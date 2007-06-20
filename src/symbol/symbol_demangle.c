@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol_demangle.c,v 1.8 2007-06-15 17:02:38 debug Exp $
+ *  $Id: symbol_demangle.c,v 1.1 2007-06-20 14:25:14 debug Exp $
  *
  *  C++ symbol name demangling.
  *

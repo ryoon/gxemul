@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.40 2007-06-19 04:04:03 debug Exp $
+ *  $Id: symbol.c,v 1.1 2007-06-20 14:25:14 debug Exp $
  *
  *  Address to symbol translation routines.
  *

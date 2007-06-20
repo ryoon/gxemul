@@ -1,21 +1,24 @@
 #
-#  $Id: Makefile.skel,v 1.101 2007-06-19 02:11:45 debug Exp $
+#  $Id: Makefile.skel,v 1.102 2007-06-20 14:25:14 debug Exp $
 #
 #  Makefile for GXemul src
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
-OBJS=console.o emul.o emul_parse.o float_emul.o interrupt.o main.o \
-	memory.o misc.o net.o settings.o symbol.o symbol_demangle.o \
-	timer.o useremul.o x11.o
+OBJS=emul.o emul_parse.o float_emul.o interrupt.o main.o memory.o misc.o \
+	net.o settings.o timer.o useremul.o
 
 all: do_include
-	$(MAKE) do_src do_cpus do_debugger do_devices do_disk do_file \
-	do_machines do_native do_net do_promemul do_useremul
+	$(MAKE) do_src do_console do_cpus do_debugger do_devices do_disk \
+		do_file do_machines do_native do_net do_promemul \
+		do_symbol do_useremul
 
 do_include:
 	cd include; $(MAKE); cd ..
+
+do_console:
+	cd console; $(MAKE); cd ..
 
 do_cpus:
 	cd cpus; $(MAKE); cd ..
@@ -44,6 +47,9 @@ do_net:
 do_promemul:
 	cd promemul; $(MAKE); cd ..
 
+do_symbol:
+	cd symbol; $(MAKE); cd ..
+
 do_useremul:
 	cd useremul; $(MAKE); cd ..
 
@@ -54,6 +60,7 @@ $(OBJS): Makefile
 clean:
 	rm -f $(OBJS) *core tmp_*.c
 	cd include; $(MAKE) clean; cd ..
+	cd console; $(MAKE) clean; cd ..
 	cd cpus; $(MAKE) clean; cd ..
 	cd debugger; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
@@ -63,10 +70,12 @@ clean:
 	cd native; $(MAKE) clean; cd ..
 	cd net; $(MAKE) clean; cd ..
 	cd promemul; $(MAKE) clean; cd ..
+	cd symbol; $(MAKE) clean; cd ..
 	cd useremul; $(MAKE) clean; cd ..
 
 clean_all: clean
 	cd include; $(MAKE) clean_all; cd ..
+	cd console; $(MAKE) clean_all; cd ..
 	cd cpus; $(MAKE) clean_all; cd ..
 	cd debugger; $(MAKE) clean_all; cd ..
 	cd devices; $(MAKE) clean_all; cd ..
@@ -76,6 +85,7 @@ clean_all: clean
 	cd native; $(MAKE) clean_all; cd ..
 	cd net; $(MAKE) clean_all; cd ..
 	cd promemul; $(MAKE) clean_all; cd ..
+	cd symbol; $(MAKE) clean_all; cd ..
 	cd useremul; $(MAKE) clean_all; cd ..
 	rm -f Makefile
 

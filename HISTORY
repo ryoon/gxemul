@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1621 2007-06-20 04:47:19 debug Exp $
+$Id: HISTORY,v 1.1622 2007-06-20 14:25:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3632,3 +3632,7 @@ Changelog for GXemul:
 		Creating a skeleton cc/ld native backend module; beginning on
 		the function which will detect cc command line, etc.
 20070620	Continuing on the native code generation infrastructure.
+20070621	Moving src/x11.c and src/console.c into a new src/console/
+		subdir (for everything that is console or framebuffer related).
+		Moving src/symbol*.c into a new src/symbol/, which should
+		contain anything that is symbol handling related.

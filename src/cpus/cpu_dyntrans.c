@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.176 2007-06-20 05:41:47 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.177 2007-06-20 06:13:01 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -654,6 +654,7 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 	uint32_t physpage_ofs = 0, *physpage_entryp;
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 	int i, table_index;
+	void (*resulting_function)(struct cpu *, struct DYNTRANS_IC *);
 
 	fatal("[ Translating into native: paddr 0x%"PRIx64" ]\n", base);
 
@@ -704,7 +705,7 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 	while (DYNTRANS_ADDR_TO_PAGENR(base + (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr && cpu->translation_readahead > 0) {
 		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].opcode = NATIVE_OPCODE_MAKE_FALLBACK_SAFE;
 		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg1 = i;
-		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg2 = i;
+		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg2 = i + 1;
 		cpu->native_instruction_buffer_lastpos = cpu->native_instruction_buffer_curpos;
 
 		ic[i].f = TO_BE_TRANSLATED;
@@ -721,6 +722,14 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 	}
 
 	cpu->translation_readahead = 0;
+
+	/*  Tell the native code generation backend to generate code:  */
+	resulting_function =
+	    (void (*)(struct cpu *, struct DYNTRANS_IC *))
+	    native_generate_code(cpu);
+
+	if (resulting_function != NULL)
+		ic[0].f = resulting_function;
 
 	/*  Restore state:  */
 	cpu->translation_phys_page = NULL;

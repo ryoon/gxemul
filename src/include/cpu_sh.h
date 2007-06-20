@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.48 2007-06-20 06:55:15 debug Exp $
+ *  $Id: cpu_sh.h,v 1.49 2007-06-20 07:06:05 debug Exp $
  *
  *  Note 1: Many things here are SH4-specific, so it probably doesn't work
  *          for SH3 emulation.
@@ -229,11 +229,6 @@ void sh_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void sh_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void sh_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
-int sh32_run_instr(struct cpu *cpu);
-void sh32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-	unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void sh32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
-void sh32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 void sh_init_64bit_dummy_tables(struct cpu *cpu);
 void sh_timer_sample_tick(struct timer *, void *);
 int sh_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,

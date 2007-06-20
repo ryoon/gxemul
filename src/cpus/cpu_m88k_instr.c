@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.35 2007-06-19 03:38:10 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.36 2007-06-20 03:10:08 debug Exp $
  *
  *  M88K instructions.
  *
@@ -58,6 +58,7 @@ X(nop)
  *  bsr_samepage:   Branch to subroutine (to within the same translated page)
  *
  *  arg[0] = pointer to new instr_call
+ *  arg[2] = offset to return address, from start of page
  */
 X(br_samepage)
 {
@@ -65,8 +66,9 @@ X(br_samepage)
 }
 X(bsr_samepage)
 {
-	SYNCH_PC;
-	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + sizeof(uint32_t);
+	cpu->cd.m88k.r[M88K_RETURN_REG] = (cpu->pc &
+	    ~((M88K_IC_ENTRIES_PER_PAGE-1) << M88K_INSTR_ALIGNMENT_SHIFT))
+	    + ic->arg[2];
 	cpu->cd.m88k.next_ic = (struct m88k_instr_call *) ic->arg[0];
 }
 
@@ -78,6 +80,7 @@ X(bsr_samepage)
  *  bsr.n: Branch to subroutine (to a different page) with delay slot
  *
  *  arg[1] = relative offset from start of page
+ *  arg[2] = offset to return address, from start of page
  */
 X(br)
 {
@@ -101,17 +104,18 @@ X(br_n)
 }
 X(bsr)
 {
-	SYNCH_PC;
-	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + sizeof(uint32_t);
-	cpu->pc = (uint32_t)((cpu->pc & 0xfffff000) + (int32_t)ic->arg[1]);
+	cpu->pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
+	    M88K_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + ic->arg[2];
+	cpu->pc = (uint32_t) (cpu->pc + ic->arg[1]);
 	quick_pc_to_pointers(cpu);
 }
 X(bsr_n)
 {
-	cpu->cd.m88k.delay_target = (cpu->pc & ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
-	    M88K_INSTR_ALIGNMENT_SHIFT)) + (int32_t)ic->arg[1];
-	SYNCH_PC;
-	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + sizeof(uint32_t) * 2;
+	cpu->pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
+	    M88K_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + ic->arg[2] + 4;
+	cpu->cd.m88k.delay_target = cpu->pc + ic->arg[1];
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -125,18 +129,19 @@ X(bsr_n)
 }
 X(bsr_trace)
 {
-	SYNCH_PC;
-	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + sizeof(uint32_t);
-	cpu->pc = (uint32_t)((cpu->pc & 0xfffff000) + (int32_t)ic->arg[1]);
+	cpu->pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
+	    M88K_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + ic->arg[2];
+	cpu->pc = (uint32_t) (cpu->pc + ic->arg[1]);
 	cpu_functioncall_trace(cpu, cpu->pc);
 	quick_pc_to_pointers(cpu);
 }
 X(bsr_n_trace)
 {
-	cpu->cd.m88k.delay_target = (cpu->pc & ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
-	    M88K_INSTR_ALIGNMENT_SHIFT)) + (int32_t)ic->arg[1];
-	SYNCH_PC;
-	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + sizeof(uint32_t) * 2;
+	cpu->pc &= ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
+	    M88K_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.m88k.r[M88K_RETURN_REG] = cpu->pc + ic->arg[2] + 4;
+	cpu->cd.m88k.delay_target = cpu->pc + ic->arg[1];
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -174,7 +179,7 @@ X(bb0_samepage)
 }
 X(bb0_n)
 {
-	int cond = !(reg(ic->arg[0]) & ic->arg[1]);
+	int cond = !(reg(ic->arg[0]) & (uint32_t)ic->arg[1]);
 	cpu->cd.m88k.delay_target = (cpu->pc & ~((M88K_IC_ENTRIES_PER_PAGE-1) <<
 	    M88K_INSTR_ALIGNMENT_SHIFT)) + (int32_t)ic->arg[2];
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -1019,6 +1024,12 @@ X(end_of_page2)
 	    << M88K_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << M88K_INSTR_ALIGNMENT_SHIFT);
 
+	if (low_pc < 0 || low_pc > ((M88K_IC_ENTRIES_PER_PAGE+1)
+	    << M88K_INSTR_ALIGNMENT_SHIFT)) {
+		printf("[ end_of_page2: HUH? low_pc=%i, cpu->pc = %08"
+		    PRIx32" ]\n", low_pc, (uint32_t) cpu->pc);
+	}
+
 	/*  This doesn't count as an executed instruction.  */
 	cpu->n_translated_instrs --;
 
@@ -1307,6 +1318,8 @@ X(to_be_translated)
 		ic->arg[0] = (size_t) ( cpu->cd.m88k.cur_ic_page +
 		    (offset >> M88K_INSTR_ALIGNMENT_SHIFT) );
 		ic->arg[1] = offset;
+		ic->arg[2] = (addr & 0xffc) + 4;    /*  Return offset
+							for bsr_samepage  */
 
 		if (offset >= 0 && offset <= 0xffc &&
 		    samepage_function != NULL)

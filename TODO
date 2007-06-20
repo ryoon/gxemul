@@ -1,4 +1,4 @@
-$Id: TODO,v 1.545 2007-06-20 00:28:17 debug Exp $
+$Id: TODO,v 1.546 2007-06-20 03:10:08 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ $Id: TODO,v 1.545 2007-06-20 00:28:17 debug Exp $
 	/*  NOTE: flush all modified local variables that correspond
 	    to registers, before calling doing a generic ic->f call!  */
 
-	cpu->cd.ARCH.next_ic = ic + 5;	/*  NOTE: +5  */
+	cpu->cd.ARCH.next_ic = ic + 4;	/*  NOTE: +4  */
 	ic[3].f(cpu, ic + 3);
 	if (cpu->cd.ARCH.next_ic != ic + 5)
 		return;

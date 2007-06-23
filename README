@@ -1,4 +1,4 @@
-$Id: README,v 1.127 2007-06-23 16:59:35 debug Exp $
+$Id: README,v 1.128 2007-06-23 17:04:18 debug Exp $
 
 Working on what will become 0.5.0.
 
@@ -10,7 +10,8 @@ Working on what will become 0.5.0.
 
 
 
-Copyright (C) 2003-2007  Anders Gavare.
+Copyright (C) 2003-2007  Anders Gavare
+
 
 
 Overview  --  What is GXemul?
@@ -23,8 +24,9 @@ run inside the emulator, as if they were running on real hardware.
 
 The emulator emulates (networks of) real machines. The machines may 
 consist of ARM, MIPS, PowerPC, and SuperH processors, and various 
-surrounding hardware components such as framebuffers, interrupt 
-controllers, busses, disk controllers, and serial port controllers.
+surrounding hardware components such as framebuffers, busses, interrupt 
+controllers, ethernet controllers, disk controllers, and serial port 
+controllers.
 
 GXemul, including the dynamic translation system, is implemented in 
 portable C, which means that the emulator will run on practically any host 
@@ -56,6 +58,7 @@ Possible uses of GXemul include:
 Use your imagination :-)
 
 
+
 GXemul's limitations
 --------------------
 
@@ -71,6 +74,7 @@ GXemul's limitations
      (A consequence of this is that a machine mode may be implemented well
      enough to run NetBSD for that machine mode, but other guest operating
      systems may not run at all, or behave strangely.)
+
 
 
 Quick start
@@ -91,6 +95,7 @@ listed here:  doc/experiments.html#hello
 
 Please read the rest of the documentation in the doc/ sub-directory for
 more detailed information on how to use the emulator.
+
 
 
 Feedback

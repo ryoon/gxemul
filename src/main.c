@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.307 2007-06-19 04:45:11 debug Exp $
+ *  $Id: main.c,v 1.308 2007-06-23 17:38:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -198,11 +198,7 @@ void internal_w(char *arg)
  */
 static void usage(int longusage)
 {
-	printf("GXemul");
-#ifdef VERSION
-	printf(" " VERSION);
-#endif
-	printf("    Copyright (C) 2003-2007  Anders Gavare\n");
+	printf("GXemul "VERSION"    Copyright (C) 2003-2007  Anders Gavare\n");
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 
@@ -742,11 +738,7 @@ int main(int argc, char *argv[])
 	}
 
 	/*  Print startup message:  */
-	debug("GXemul");
-#ifdef VERSION
-	debug(" " VERSION);
-#endif
-	debug("    Copyright (C) 2003-2007  Anders Gavare\n");
+	debug("GXemul "VERSION"    Copyright (C) 2003-2007  Anders Gavare\n");
 	debug("Read the source code and/or documentation for "
 	    "other Copyright messages.\n\n");
 

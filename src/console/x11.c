@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.1 2007-06-20 14:25:14 debug Exp $
+ *  $Id: x11.c,v 1.2 2007-06-23 17:38:52 debug Exp $
  *
  *  X11-related functions.
  */
@@ -376,12 +376,7 @@ void x11_fb_resize(struct fb_window *win, int new_xsize, int new_ysize)
 void x11_set_standard_properties(struct fb_window *fb_window, char *name)
 {
 	XSetStandardProperties(fb_window->x11_display,
-	    fb_window->x11_fb_window, name,
-#ifdef VERSION
-	    "GXemul-" VERSION,
-#else
-	    "GXemul",
-#endif
+	    fb_window->x11_fb_window, name, "GXemul "VERSION,
 	    None, NULL, 0, NULL);
 }
 

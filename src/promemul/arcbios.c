@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.17 2007-06-17 23:32:20 debug Exp $
+ *  $Id: arcbios.c,v 1.18 2007-06-23 17:38:53 debug Exp $
  *
  *  COMMENT: ARCBIOS emulation
  */
@@ -2449,11 +2449,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		machine->md.arc->console_curx = 0;
 		machine->md.arc->console_cury = 0;
 
-		arcbios_putstring(cpu, "GXemul");
-#ifdef VERSION
-		arcbios_putstring(cpu, " "VERSION);
-#endif
-		arcbios_putstring(cpu, "   ARCBIOS emulation\n");
+		arcbios_putstring(cpu, "GXemul "VERSION"  ARCBIOS emulation\n");
 
 		snprintf(tmpstr, sizeof(tmpstr), "%i cpu%s (%s), %i MB "
 		    "memory\n\n", machine->ncpus, machine->ncpus > 1? "s" : "",

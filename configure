@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.271 2007-06-20 14:25:14 debug Exp $
+#  $Id: configure,v 1.272 2007-06-23 17:38:52 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -112,7 +112,7 @@ printf "/*
 #  Figure out if VERSION should be defined.
 X=`basename \`pwd\`|cut -d \- -f 2-`
 if [ z"$X" = zgxemul ]; then
-	echo '/*  No VERSION defined.  */' >> config.h
+	printf "#define VERSION \"(no version)\"\n" >> config.h
 else
 	printf "#define VERSION \"$X\"\n" >> config.h
 fi

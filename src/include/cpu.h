@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.136 2007-06-20 07:10:52 debug Exp $
+ *  $Id: cpu.h,v 1.137 2007-06-23 17:38:53 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -339,7 +339,7 @@ struct cpu_family {
 
 #define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
 #define	N_PADDR_SAMPLES			((int)CPU_SAMPLE_TIMER_HZ)
-#define	SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION  	3
+#define	DEFAULT_THRESHOLD_FOR_NATIVE_TRANSLATION  	3
 
 #define	NATIVE_BUFFER_SIZE_NINSTRS	16384
 
@@ -378,6 +378,7 @@ struct cpu {
 	struct timer	*sampling_timer;
 	uint8_t		sampling;	/*  1 = turned on  */
 	int16_t		sampling_curindex;
+	int16_t		sampling_threshold;
 	uint64_t	*sampling_paddr;
 
 	/*  EMUL_LITTLE_ENDIAN or EMUL_BIG_ENDIAN.  */

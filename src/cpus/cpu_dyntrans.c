@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.178 2007-06-20 07:10:52 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.179 2007-06-23 17:38:52 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -567,7 +567,7 @@ void DYNTRANS_CHECK_SAMPLES_DEF(struct cpu *cpu)
 			n_hits ++;
 		} else {
 			/*  printf("base=%016"PRIx64" has %i hits\n", phys_ranges[i].base, n_hits);  */
-			if (n_hits >= SAMPLES_THRESHOLD_FOR_NATIVE_TRANSLATION) {
+			if (n_hits >= cpu->sampling_threshold) {
 
 				/*  fatal("[ Translating 0x%"PRIx64" - 0x%"PRIx64" into native code (%i of %i samples were in this range) ]\n",
 				    phys_ranges[i].base, phys_ranges[i].base + phys_ranges[i].length - 1,

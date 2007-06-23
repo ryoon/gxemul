@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.3 2007-06-20 15:46:54 debug Exp $
+ *  $Id: cpu.c,v 1.4 2007-06-23 17:38:52 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -89,6 +89,7 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	cpu->running    = 0;
 
 	cpu->sampling_paddr = zeroed_alloc(N_PADDR_SAMPLES * sizeof(uint64_t));
+	cpu->sampling_threshold = DEFAULT_THRESHOLD_FOR_NATIVE_TRANSLATION;
 
 	/*  Create settings, and attach to the machine:  */
 	cpu->settings = settings_new();
@@ -100,6 +101,9 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	    SETTINGS_FORMAT_STRING, (void *) &cpu->name);
 	settings_add(cpu->settings, "running", 0, SETTINGS_TYPE_UINT8,
 	    SETTINGS_FORMAT_YESNO, (void *) &cpu->running);
+	settings_add(cpu->settings, "sampling_threshold", 1,
+	    SETTINGS_TYPE_UINT16, SETTINGS_FORMAT_DECIMAL,
+	    (void *) &cpu->sampling_threshold);
 
 	cpu_create_or_reset_tc(cpu);
 
@@ -150,6 +154,7 @@ void cpu_destroy(struct cpu *cpu)
 
 	settings_remove(cpu->settings, "name");
 	settings_remove(cpu->settings, "running");
+	settings_remove(cpu->settings, "sampling_threshold");
 
 	/*  Remove any remaining level-1 settings:  */
 	settings_remove_all(cpu->settings);

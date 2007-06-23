@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.12 2007-06-15 17:02:39 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.13 2007-06-23 17:38:52 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -1205,11 +1205,7 @@ static void debugger_cmd_version(struct machine *m, char *cmd_line)
 		return;
 	}
 
-#ifdef VERSION
 	printf("%s, %s\n", VERSION, COMPILE_DATE);
-#else
-	printf("(no version), %s\n", COMPILE_DATE);
-#endif
 }
 
 

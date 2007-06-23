@@ -8,7 +8,7 @@
 <font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.4 2007-06-23 17:08:43 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.5 2007-06-23 17:26:09 debug Exp $  -->
 
 <h2>Release notes for GXemul 0.5.0</h2>
 
@@ -16,8 +16,9 @@
 
 <p>GXemul is a framework for full-system computer architecture emulation. 
 Several processor architectures and machine types have been implemented. 
-It is working well enough to allow unmodified "guest" operating systems to 
-run inside the emulator, as if they were running on real hardware.
+It is working well enough to allow <a href="doc/guestoses.html">unmodified
+"guest" operating systems to run inside the emulator</a>,
+as if they were running on real hardware.
 
 <p>The emulator emulates (networks of) real machines. The machines may 
 consist of ARM, MIPS, PowerPC, and SuperH processors, and various 
@@ -27,10 +28,11 @@ controllers.
 
 <p>The documentation lists the machines and guest operating systems that 
 can be regarded as "working" in GXemul. The best working guest operating 
-systems are NetBSD/pmax and NetBSD/cats.
+systems are <a href="doc/guestoses.html#netbsdpmaxinstall">NetBSD/pmax</a>
+and <a href="doc/guestoses.html#netbsdcatsinstall">NetBSD/cats</a>.
 
 
-<p>The changes between release 0.4.6 and 0.5.0 include, among other things:
+<p><br>The changes between release 0.4.6 and 0.5.0 include, among other things:
 
 <ul>
 
@@ -41,17 +43,18 @@ systems are NetBSD/pmax and NetBSD/cats.
 <p>Please read the HISTORY file for more details.
 
 
-<p>Files included in this release are:<pre>
+<p><br>Files included in this release are:<pre>
     HISTORY                       Detailed revision history / changelog.
     LICENSE                       Copyright message / license.
     README                        Quick start instructions, for the impatient.
     RELEASE.html                  This file.
     TODO                          TODO notes.
     configure, Makefile.skel      sh and make scripts for building GXemul.
-    demos                         Tutorial-like demos of testmachine functionality.
-    doc                           Documentation.
-    experiments                   Experimental code. (Usually not needed.)
-    src                           Source code.
+    <a href="demos/">demos/</a>                        Tutorial-like demos of testmachine functionality.
+    <a href="doc/">doc/</a>                          Documentation.
+    <a href="experiments/">experiments/</a>                  Experimental code. (Usually not needed.)
+    <a href="man/">man/</a>                          Man page.
+    <a href="src/">src/</a>                          Source code.
 </pre>
 
 <p>To build the emulator, run the <tt>configure</tt> script, and then run 
@@ -71,7 +74,7 @@ this is in order:<pre>
     California, Berkeley and its contributors.
 
     This product includes software developed for the
-    NetBSD Project.  See http://www.netbsd.org/ for
+    NetBSD Project.  See <a href="http://www.netbsd.org/">http://www.netbsd.org/</a> for
     information about NetBSD.
 
     This product includes software developed by Jonathan Stone for
@@ -98,7 +101,7 @@ this is in order:<pre>
 
     This product includes software developed by Charles M. Hannum.
 
-    This product includes software developed under OpenBSD by Per Fogelström.
+    This product includes software developed under <a href="http://www.openbsd.org/">OpenBSD</a> by Per Fogelström.
 
     This product includes software developed by Per Fogelström.
 

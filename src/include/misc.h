@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.258 2007-06-23 21:02:59 debug Exp $
+ *  $Id: misc.h,v 1.259 2007-06-23 21:04:17 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -171,9 +171,9 @@ struct memory;
 #define	FAILURE(error_msg)					{	\
 		char where_msg[400];					\
 		snprintf(where_msg, sizeof(where_msg),			\
-		    "%s, line %i, function '%s'\n",			\
+		    "%s, line %i, function %s().\n",			\
 		    __FILE__, __LINE__, __FUNCTION__);			\
-        	fprintf(stderr, "%s, in %s\n", error_msg, where_msg);	\
+        	fprintf(stderr, "\n%s, in %s\n", error_msg, where_msg);	\
 		exit(1);						\
 	}
 
@@ -183,7 +183,7 @@ struct memory;
 		char where_msg[400];					\
 		snprintf(where_msg, sizeof(where_msg),			\
 		    "%s, line %i\n", __FILE__, __LINE__);		\
-        	fprintf(stderr, "%s, in %s\n", error_msg, where_msg);	\
+        	fprintf(stderr, "\n%s, in %s.\n", error_msg, where_msg);\
 		exit(1);						\
 	}
 

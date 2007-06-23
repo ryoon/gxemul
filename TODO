@@ -1,4 +1,4 @@
-$Id: TODO,v 1.548 2007-06-20 05:41:46 debug Exp $
+$Id: TODO,v 1.549 2007-06-23 16:59:35 debug Exp $
 
 -------------------------------------------------------------------------------
 
@@ -61,6 +61,9 @@ MIPS:
 	o)  Fix this? Triggered by NetBSD/sgimips? Hm:
 		to_be_translated(): TODO: unimplemented instruction:
 		000000000065102c: 00200800 (d)  rot_00  at,zr,0
+	o)  NOTE: ARM etc. that load pc-relative constants, on writes to
+	    pages that contain translations, the ENTIRE page must be
+	    invalidated, not just the 1/32th that was code.
 	o)  Some more work on opcodes.
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
@@ -341,11 +344,53 @@ mips-test-0.2:
 
 			Test 1		Test 2		Test 3
 			------		------		------
-QEMU 0.9.0:		2 min 20 sec	45 sec		4 min 41 seconds
-GXemul-20070608:	1 min 59 sec	3 min 18 sec	18 min 10 seconds  [A]
+QEMU 0.9.0 [*]:		2 min 20 sec	      45 sec	 4 min 41 seconds
+GXemul-20070608 [A]:	1 min 59 sec	3 min 18 sec	18 min 10 seconds
+GXemul-20070621 [B]:	1 min 57 sec	3 min 17 sec	18 min 30 seconds
 
+[*] = Installed as a binary package via pkg_add.
 
 [A] = Normal portable dyntrans, no native code generation.
+      (Compiled with gcc version 3.4.6 [FreeBSD] 20060305, I think.)
+
+[B] = With the part of the native code generation framework enabled that
+      keeps track of which areas of physpages could be worth translating.
+      However, the cc/ld backend simply returns NULL (failure), so no native
+      code is actually produced. It is expected to give some more overhead
+      than plain [A].
+      (Compiled with gcc version 4.3.0 20070323 (experimental).)
+
+-------------------------------------------------------------------------------
+
+Performance comparison, compiling GXemul 0.4.6 inside NetBSD/pmax inside
+the emulator.
+
+1. Install NetBSD/pmax.
+2. Download http://gavare.se/gxemul/src/gxemul-0.4.6.tar.gz
+3. Extract and configure it:   tar zxf gxemul-0.4.6.tar.gz
+                               cd gxemul-0.4.6
+                               ./configure
+4. Halt the emulator, make a disk image overlay (for simple roll-back):
+	touch overlay.img overlay.img.map
+5. Boot up again:  -M256 -xe3max -d nbsd_pmax.img -d 0V:overlay.img
+   (add -b for native code generation tests)
+6  cd gxemul-0.4.6, and then:
+
+			time make (full GXemul 0.4.6 build)
+			-----------------------------------
+GXemul 0.4.6 [A]:	5181 seconds
+GXemul-20070621 [B]:	5444 seconds
+
+[A] = Normal portable dyntrans, no native code generation.
+      (Compiled with gcc version 4.3.0 20070323 (experimental).)
+
+[B] = With the part of the native code generation framework enabled that
+      keeps track of which areas of physpages could be worth translating.
+      However, the cc/ld backend simply returns NULL (failure), so no native
+      code is actually produced. It is expected to give some more overhead
+      than plain [A].
+      (Compiled with gcc version 4.3.0 20070323 (experimental).)
+
 
 -------------------------------------------------------------------------------
 

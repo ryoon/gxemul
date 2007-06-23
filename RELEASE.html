@@ -1,0 +1,177 @@
+<html><head><title>Gavare's eXperimental Emulator:&nbsp;&nbsp;&nbsp;Release notes</title>
+<meta name="robots" content="noarchive,nofollow,noindex"></head>
+<body bgcolor="#f8f8f8" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<table border=0 width=100% bgcolor="#d0d0d0"><tr>
+<td width=100% align=center valign=center><table border=0 width=100%><tr>
+<td align="left" valign=center bgcolor="#d0efff"><font color="#6060e0" size="6">
+<b>GXemul:</b></font>&nbsp;&nbsp;
+<font color="#000000" size="6"><b>Release notes</b>
+</font></td></tr></table></td></tr></table><p>
+
+<!--
+
+$Id: RELEASE.html,v 1.1 2007-06-23 16:59:35 debug Exp $
+
+Currently working on what will become release 0.5.0.
+
+-->
+
+
+<h2>Release notes for GXemul 0.5.0</h2>
+
+<p><i>Copyright (C) 2003-2007  Anders Gavare</i>
+
+<p>GXemul is a framework for full-system computer architecture emulation. 
+Several processor architectures and machine types have been implemented. 
+It is working well enough to allow unmodified "guest" operating systems to 
+run inside the emulator, as if they were running on real hardware.
+
+<p>The emulator emulates (networks of) real machines. The machines may 
+consist of ARM, MIPS, PowerPC, and SuperH processors, and various 
+surrounding hardware components such as framebuffers, interrupt 
+controllers, busses, disk controllers, and serial port controllers.
+
+<p>The documentation lists the machines and guest operating systems that 
+can be regarded as "working" in GXemul. The best working guest operating 
+systems are NetBSD/pmax and NetBSD/cats.
+
+
+<p>The changes between release 0.4.6 and 0.5.0 include, among other things:
+
+<ul>
+
+  <li>...
+
+</ul>
+
+<p>Please read the HISTORY file for more details.
+
+
+<p>Files included in this release are:<pre>
+   HISTORY                     Detailed revision history / changelog.
+   LICENSE                     Copyright message / license.
+   README                      Quick start instructions, for the impatient.
+   RELEASE.html                This file.
+   TODO                        TODO notes.
+   configure, Makefile.skel    sh and make scripts for building GXemul.
+   demos                       Tutorial-like demos of testmachine functionality.
+   doc                         Documentation.
+   experiments                 Experimental code. (Usually not needed.)
+   src                         Source code.
+</pre>
+
+<p>To build the emulator, run the <tt>configure</tt> script, and then run 
+<tt>make</tt>. This should work on most Unix-like systems, with few or no 
+modifications to the source code.
+
+<p>Regarding files in the <tt>src/include/</tt> directory: only some of 
+these are written by me, the rest are from other sources (such as NetBSD). 
+The license text says that "All advertising materials mentioning features 
+or use of this software" must display acknowledgements. Even though I do 
+<i>not</i> feel that I mention features or use of the header files (the 
+"software") in any advertising materials, I am still very grateful for the 
+fact that these people have made their files available for re-use, as Free 
+software, so regardless of legal requirements, I guess thanking them like 
+this is in order:<pre>
+    This product includes software developed by the University of
+    California, Berkeley and its contributors.
+
+    This product includes software developed for the
+    NetBSD Project.  See http://www.netbsd.org/ for
+    information about NetBSD.
+
+    This product includes software developed by Jonathan Stone for
+    the NetBSD Project.
+
+    This product includes software developed for the NetBSD Project
+    by Matthias Drochner.
+
+    This product includes software developed by the NetBSD
+    Foundation, Inc. and its contributors.
+
+    This product includes software developed by Christopher G. Demetriou.
+    [for the NetBSD Project.]
+
+    This product includes software developed by Adam Glass.
+
+    This product includes software developed by the PocketBSD project
+    and its contributors.
+
+    This product includes software developed by Peter Galbavy.
+
+    Carnegie Mellon University   (multiple header files,
+    no specific advertisement text required)
+
+    This product includes software developed by Charles M. Hannum.
+
+    This product includes software developed under OpenBSD by Per Fogelström.
+
+    This product includes software developed by Per Fogelström.
+
+    This product includes software developed at Ludd, University of
+    Luleå, Sweden and its contributors.
+
+    This product includes software developed by Hellmuth Michaelis
+    and Joerg Wunsch
+
+    The font(s) in devices/fonts are Copyright (c) 1992, 1993, 1994
+    by Hellmuth Michaelis and Joerg Wunsch.  ("This product includes software
+    developed by Hellmuth Michaelis and Joerg Wunsch", well, the font
+    is maybe not software, but still...)
+
+    impactsr-bsd.h is Copyright (C) 2004 by Stanislaw Skowronek.
+
+    This product includes software developed for the NetBSD Project by
+    Wasabi Systems, Inc.  [by Simon Burge]
+
+    arcbios_other.h is Copyright (c) 1996 M. Warner Losh.
+
+    This product includes software developed by Marc Horowitz.
+
+    This product includes software developed by Brini.
+
+    This product includes software developed by Mark Brinicombe
+    for the NetBSD Project.
+
+    This product includes software developed by TooLs GmbH.
+
+    This product includes software developed by Manuel Bouyer.
+
+    This product includes software developed by the Alice Group.
+
+    This product includes software developed by Ichiro FUKUHARA.
+
+    This product includes software developed by Marcus Comstedt.
+
+    This product includes software developed by Bill Paul.
+
+    This product includes software developed by Nivas Madhur.
+</pre>
+
+<p>Also, <tt>src/include/alpha_rpb.h</tt> requires the following:<pre>
+    Copyright (c) 1994, 1995, 1996 Carnegie-Mellon University.
+    All rights reserved.
+
+    Author: Keith Bostic, Chris G. Demetriou
+
+    Permission to use, copy, modify and distribute this software and
+    its documentation is hereby granted, provided that both the copyright
+    notice and this permission notice appear in all copies of the
+    software, derivative works or modified versions, and any portions
+    thereof, and that both notices appear in supporting documentation.
+</pre>
+
+<p>See individual files for license details, if you plan to redistribute 
+GXemul or reuse code.
+
+
+<p>If you have found GXemul useful in some way, or feel like sending me 
+comments or feedback in general, then mail me at
+<tt>anders(<i>@At</i>)gavare.se</tt>.
+
+
+
+
+
+</body>
+</html>

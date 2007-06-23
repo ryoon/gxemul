@@ -1,11 +1,14 @@
-$Id: README,v 1.126 2007-06-16 01:10:31 debug Exp $
+$Id: README,v 1.127 2007-06-23 16:59:35 debug Exp $
 
 Working on what will become 0.5.0.
 
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.5.0
-==================================================
+          ------------------------------------------------------
+            Gavare's eXperimental Emulator   --   GXemul 0.5.0
+          ------------------------------------------------------
+
+
 
 Copyright (C) 2003-2007  Anders Gavare.
 
@@ -13,26 +16,25 @@ Copyright (C) 2003-2007  Anders Gavare.
 Overview  --  What is GXemul?
 -----------------------------
 
-GXemul is an experimental instruction-level machine emulator. Several
-emulation modes are available. In some modes, processors and surrounding
-hardware components are emulated well enough to let unmodified operating
-systems (e.g. NetBSD) run as if they were running on a real machine.
+GXemul is a framework for full-system computer architecture emulation. 
+Several processor architectures and machine types have been implemented. 
+It is working well enough to allow unmodified "guest" operating systems to 
+run inside the emulator, as if they were running on real hardware.
 
-Processors (ARM, MIPS, PowerPC, and SuperH) are emulated using dynamic 
-translation. Unlike some other dynamically translating emulators, GXemul 
-does not need to generate native code, only a "runnable intermediate 
-representation", and will thus run on any host architecture.
+The emulator emulates (networks of) real machines. The machines may 
+consist of ARM, MIPS, PowerPC, and SuperH processors, and various 
+surrounding hardware components such as framebuffers, interrupt 
+controllers, busses, disk controllers, and serial port controllers.
+
+GXemul, including the dynamic translation system, is implemented in 
+portable C, which means that the emulator will run on practically any host 
+architecture.
 
 The documentation lists the machines and guest operating systems that can 
 be regarded as "working" in GXemul. The best working guest operating 
 systems are probably NetBSD/pmax and NetBSD/cats.
 
-Possible uses of the emulator include:
-
- o)  educational purposes, e.g. to learn how to write code for MIPS
-
- o)  hobby operating system development; the emulator can be used as a
-     complement to testing your code on real hardware
+Possible uses of GXemul include:
 
  o)  running guest operating systems in a "sandboxed" environment
 
@@ -40,6 +42,11 @@ Possible uses of the emulator include:
      otherwise would not have access to (e.g. various exotic ports of
      NetBSD), to make sure that your source code is portable to those
      platforms
+
+ o)  educational purposes, e.g. to learn how to write code for MIPS
+
+ o)  hobby operating system development; the emulator can be used as a
+     complement to testing your code on real hardware
 
  o)  simulating (ethernet) networks of computers running various
      operating systems, to study their interaction with each other
@@ -52,18 +59,18 @@ Use your imagination :-)
 GXemul's limitations
 --------------------
 
- o)  GXemul is not (in general) a cycle-accurate simulator, because it does
-     not simulate things smaller than an instruction. Pipe-line stalls,
-     instruction latency effects etc. are more or less completely ignored.
+ o)  GXemul is not a cycle-accurate simulator, because it does not simulate
+     things smaller than an instruction. Pipe-line stalls, instruction latency
+     effects etc. are more or less completely ignored.
 
- o)  Hardware devices have been implemented in an ad-hoc and as-needed
-     manner, usually only enough to fool certain guest operating systems
-     (e.g. NetBSD) that the hardware devices exist and function well
-     enough for those guest operating systems to use them.
+ o)  Hardware devices have been implemented in an ad-hoc and as-needed manner,
+     usually only enough to fool certain guest operating systems, e.g. NetBSD,
+     that the hardware devices exist and function well enough for those guest
+     operating systems to use them.
 
-     A consequence of this is that a machine mode may be implemented well
+     (A consequence of this is that a machine mode may be implemented well
      enough to run NetBSD for that machine mode, but other guest operating
-     systems may not run at all, or behave strangely.
+     systems may not run at all, or behave strangely.)
 
 
 Quick start

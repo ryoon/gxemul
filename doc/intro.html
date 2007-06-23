@@ -4,13 +4,13 @@
 <table border=0 width=100% bgcolor="#d0d0d0"><tr>
 <td width=100% align=center valign=center><table border=0 width=100%><tr>
 <td align="left" valign=center bgcolor="#d0efff"><font color="#6060e0" size="6">
-<b>Gavare's eXperimental Emulator:</b></font><br>
+<b>GXemul:</b></font>&nbsp;&nbsp;
 <font color="#000000" size="6"><b>Introduction</b>
 </font></td></tr></table></td></tr></table><p>
 
 <!--
 
-$Id: intro.html,v 1.122 2007-06-18 04:35:06 debug Exp $
+$Id: intro.html,v 1.123 2007-06-23 16:59:35 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -67,21 +67,30 @@ SUCH DAMAGE.
 <a name="overview"></a>
 <h3>Overview:</h3>
 
-GXemul is an experimental <a href="#accuracy">instruction-level</a> 
-machine emulator. Several emulation modes are available. In some modes, 
-processors and surrounding hardware components are emulated well enough to 
-let <a href="#emulmodes">unmodified operating systems (e.g. NetBSD)
-run</a> as if they were running on a real machine.
+GXemul is a framework for full-system computer architecture emulation. 
+Several processor architectures and machine types have been implemented. 
+It is working well enough to allow <a href="#emulmodes">unmodified 
+"guest" operating systems to run inside the emulator</a>, as if they were 
+running on real hardware.
 
-<p>The emulator is written in
-<a href="http://en.wikipedia.org/wiki/C_(programming_language)">C</a>, 
-does not depend on third-party libraries, and should compile and run on 
-most 64-bit and 32-bit
+<p>The emulator emulates (networks of) real machines. The machines may 
+consist of <a 
+href="http://en.wikipedia.org/wiki/ARM_architecture">ARM</a>, <a 
+href="http://en.wikipedia.org/wiki/MIPS_architecture">MIPS</a>, <a 
+href="http://en.wikipedia.org/wiki/Powerpc">PowerPC</a>, and <a 
+href="http://en.wikipedia.org/wiki/SuperH">SuperH</a> processors, and 
+various surrounding hardware components such as framebuffers, interrupt 
+controllers, busses, disk controllers, and serial port controllers.
+
+<p>GXemul, including the dynamic translation system, is implemented in
+portable
+<a href="http://en.wikipedia.org/wiki/C_(programming_language)">C</a>,
+which means that the emulator will run on practically any 64-bit or 32-bit
 <a href="http://en.wikipedia.org/wiki/Unix-like">Unix-like</a> systems,
 with few or no modifications.
 
 <p>Devices and processors are not simulated with 100% accuracy. They are 
-only ``faked'' well enough to allow guest operating systems to run without 
+only "faked" well enough to allow guest operating systems to run without 
 complaining too much. Still, the emulator could be of interest for 
 academic research and experiments, such as when learning how to write 
 operating system code.

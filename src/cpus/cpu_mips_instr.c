@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.139 2007-06-20 04:47:20 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.140 2007-06-23 23:59:14 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3577,6 +3577,9 @@ X(to_be_translated)
 			case SPECIAL_DSRA32:ic->f = instr(dsra); x64=1;
 					   sa += 32; break;
 			}
+
+			NATIVE_FALLBACK_SIMPLE;
+
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 			if (sa >= 0)
 				ic->arg[1] = sa;
@@ -3702,6 +3705,27 @@ X(to_be_translated)
 			case SPECIAL_MOVN:  ic->f = instr(movn); break;
 			case SPECIAL_MOVZ:  ic->f = instr(movz); break;
 			}
+
+			switch (s6) {
+			case SPECIAL_ADD:
+			case SPECIAL_SUB:
+			case SPECIAL_DADD:
+			case SPECIAL_DSUB:
+			case SPECIAL_DIV:
+			case SPECIAL_DIVU:
+			case SPECIAL_DDIV:
+			case SPECIAL_DDIVU:
+			case SPECIAL_TGE:
+			case SPECIAL_TGEU:
+			case SPECIAL_TLT:
+			case SPECIAL_TLTU:
+			case SPECIAL_TEQ:
+			case SPECIAL_TNE:
+				break;
+			default:
+				NATIVE_FALLBACK_SIMPLE;
+			}
+
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
 			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
@@ -3823,6 +3847,7 @@ X(to_be_translated)
 
 		case SPECIAL_SYNC:
 			ic->f = instr(nop);
+			NATIVE_FALLBACK_SIMPLE;
 			break;
 
 		default:goto bad;
@@ -3935,6 +3960,9 @@ X(to_be_translated)
 		case HI6_XORI:    ic->f = instr(xori); break;
 		}
 
+		if (main_opcode != HI6_ADDI && main_opcode != HI6_DADDI)
+			NATIVE_FALLBACK_SIMPLE;
+
 		if (ic->arg[2] == 0) {
 			if ((cpu->is_32bit && ic->f == instr(addiu)) ||
 			    (!cpu->is_32bit && ic->f == instr(daddiu))) {
@@ -3962,6 +3990,7 @@ X(to_be_translated)
 		    instruction combinations, to do lui + addiu, etc.  */
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
+		NATIVE_FALLBACK_SIMPLE;
 		break;
 
 	case HI6_J:

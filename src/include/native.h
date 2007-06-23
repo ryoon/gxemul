@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native.h,v 1.6 2007-06-23 17:38:53 debug Exp $
+ *  $Id: native.h,v 1.7 2007-06-23 23:59:14 debug Exp $
  *
  *  Framework for native code generation during runtime.
  *  See src/native/ for more details.
@@ -41,6 +41,7 @@ struct cpu;
 #define	NATIVE_OPCODE_MAKE_FALLBACK_SAFE	-1
 #define	NATIVE_OPCODE_FALLBACK_SAFE		0
 #define	NATIVE_OPCODE_FALLBACK_SIMPLE		1
+#define	NATIVE_OPCODE_SET_NEXT_IC		2
 
 #define	NATIVE_FALLBACK_SIMPLE						\
 	( cpu->native_instruction_buffer[				\
@@ -52,6 +53,7 @@ struct native_instruction {
 
 	size_t		arg1;
 	size_t		arg2;
+	size_t		arg3;
 };
 
 struct native_code_generation_backend {

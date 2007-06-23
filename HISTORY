@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1623 2007-06-23 17:38:52 debug Exp $
+$Id: HISTORY,v 1.1624 2007-06-23 23:59:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3640,3 +3640,7 @@ Changelog for GXemul:
 		variable" (sampling_threshold), i.e. it can now be changed
 		during runtime.
 		Switching the RELEASE notes format from plain text to HTML.
+		If the TMPDIR environment variable is set, it is used instead
+		of "/tmp" for temporary files.
+		Continuing on the cc/ld backend: simple .c code is generated,
+		the compiler and linker are called, etc.

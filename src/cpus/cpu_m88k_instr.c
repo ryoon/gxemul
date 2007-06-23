@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.38 2007-06-20 05:41:47 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.39 2007-06-23 23:59:14 debug Exp $
  *
  *  M88K instructions.
  *
@@ -1217,9 +1217,7 @@ X(to_be_translated)
 		case 0x15: ic->f = instr(xor_imm); shift = 16; break;
 		case 0x16: ic->f = instr(or_imm); break;
 		case 0x17: ic->f = instr(or_imm); shift = 16; break;
-		case 0x18: ic->f = instr(addu_imm);
-			   NATIVE_FALLBACK_SIMPLE;
-			   break;
+		case 0x18: ic->f = instr(addu_imm); break;
 		case 0x19: ic->f = instr(subu_imm); break;
 		case 0x1a: ic->f = instr(divu_imm); break;
 		case 0x1b: ic->f = instr(mulu_imm); break;
@@ -1227,6 +1225,9 @@ X(to_be_translated)
 		case 0x1e: ic->f = instr(div_imm); break;
 		case 0x1f: ic->f = instr(cmp_imm); break;
 		}
+
+		if (op26 != 0x1a && op26 != 0x1e && op26 != 0x1b)
+			NATIVE_FALLBACK_SIMPLE;
 
 		ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
 		ic->arg[1] = (size_t) &cpu->cd.m88k.r[s1];
@@ -1598,6 +1599,15 @@ X(to_be_translated)
 			case 0x90: ic->f = instr(ext);   break;
 			case 0x98: ic->f = instr(extu);  break;
 			case 0xa0: ic->f = instr(mak);   break;
+			}
+
+			switch ((iword >> 8) & 0xff) {
+			case 0x68:
+			case 0x6c:
+			case 0x78:
+				break;
+			default:
+				NATIVE_FALLBACK_SIMPLE;
 			}
 
 			/*  Optimization for  or rX,r0,rY  etc:  */

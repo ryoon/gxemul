@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.179 2007-06-23 17:38:52 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.180 2007-06-23 23:59:14 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -703,15 +703,21 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 	cpu->native_instruction_buffer_curpos = 0;
 
 	while (DYNTRANS_ADDR_TO_PAGENR(base + (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr && cpu->translation_readahead > 0) {
-		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].opcode = NATIVE_OPCODE_MAKE_FALLBACK_SAFE;
-		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg1 = i;
-		cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg2 = i + 1;
-		cpu->native_instruction_buffer_lastpos = cpu->native_instruction_buffer_curpos;
+		int lastpos = cpu->native_instruction_buffer_lastpos = cpu->native_instruction_buffer_curpos;
+		cpu->native_instruction_buffer[lastpos].opcode = NATIVE_OPCODE_MAKE_FALLBACK_SAFE;
+		cpu->native_instruction_buffer[lastpos].arg1 = i;
+		cpu->native_instruction_buffer[lastpos].arg2 = i + 1;
+		cpu->native_instruction_buffer[lastpos].arg3 = 0;
 
 		ic[i].f = TO_BE_TRANSLATED;
 
 		/*  Translate the instruction:  */
 		ic[i].f(cpu, ic+i);
+
+		if (i == 0 && (
+		    cpu->native_instruction_buffer[lastpos].opcode == NATIVE_OPCODE_FALLBACK_SAFE ||
+		    cpu->native_instruction_buffer[lastpos].opcode == NATIVE_OPCODE_FALLBACK_SIMPLE))
+			cpu->native_instruction_buffer[lastpos].arg3 = (size_t) (void *) ic[i].f;
 
 		/*  Translation failed? Then abort.  */
 		if (ic[i].f == TO_BE_TRANSLATED)
@@ -721,11 +727,21 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 		++i;
 	}
 
+	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].opcode = NATIVE_OPCODE_SET_NEXT_IC;
+	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg1 = i;
+	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg2 = 0;
+	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].arg3 = 0;
+	cpu->native_instruction_buffer_curpos ++;
+
 	cpu->translation_readahead = 0;
 
-	/*  Tell the native code generation backend to generate code:  */
-	resulting_function =
-	    (void (*)(struct cpu *, struct DYNTRANS_IC *))
+	/*
+	 *  Tell the native code generation backend to generate code:
+	 */
+	cpu->native_nextic_offset =
+	    (size_t) &cpu->cd.DYNTRANS_ARCH.next_ic - (size_t) cpu;
+	cpu->native_ic_size = sizeof(struct DYNTRANS_IC);
+	resulting_function = (void (*)(struct cpu *, struct DYNTRANS_IC *))
 	    native_generate_code(cpu);
 
 	if (resulting_function != NULL)

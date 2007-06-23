@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bootblock_iso9660.c,v 1.3 2007-06-15 17:02:39 debug Exp $
+ *  $Id: bootblock_iso9660.c,v 1.4 2007-06-23 23:59:14 debug Exp $
  *
  *  ISO9660 CD-ROM "bootblock" handling.
  *
@@ -102,7 +102,11 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	unsigned char *dirbuf = NULL, *dp, *match_entry = NULL, *filebuf = NULL;
 	char *p, *filename_orig, *filename, *tmpfname = NULL;
 	char **new_array;
+	char *tmpdir = getenv("TMPDIR");
 	int tmpfile_handle;
+
+	if (tmpdir == NULL)
+		tmpdir = DEFAULT_TMP_DIR;
 
 	CHECK_ALLOCATION(filename = strdup(cpu->machine->boot_kernel_filename));
 	filename_orig = filename;
@@ -302,7 +306,9 @@ printf("\n");
 	    (long long)fileofs);  */
 
 	CHECK_ALLOCATION(filebuf = malloc(filelen));
-	tmpfname = strdup("/tmp/gxemul.XXXXXXXXXXXX");
+
+	CHECK_ALLOCATION(tmpfname = malloc(300));
+	snprintf(tmpfname, 300, "%s/gxemul.XXXXXXXXXXXX", tmpdir);
 
 	res2 = diskimage_access(m, disk_id, disk_type, 0, fileofs, filebuf,
 	    filelen);
@@ -347,6 +353,9 @@ ret:
 
 	if (match_entry != NULL)
 		free(match_entry);
+
+	if (tmpfname != NULL)
+		free(tmpfname);
 
 	free(filename_orig);
 

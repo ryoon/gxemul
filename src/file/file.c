@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.4 2007-05-22 09:49:31 debug Exp $
+ *  $Id: file.c,v 1.5 2007-06-23 23:59:14 debug Exp $
  *
  *  This module contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -123,8 +123,11 @@ void file_load(struct machine *machine, struct memory *mem,
 {
 	int iadd = DEBUG_INDENTATION, old_quiet_mode;
 	FILE *f;
+	char *tmpdir = getenv("TMPDIR") == NULL?
+	    DEFAULT_TMP_DIR : getenv("TMPDIR");
 	unsigned char buf[12];
 	unsigned char buf2[2];
+	char tmpname[400];
 	size_t len, len2, i;
 	off_t size;
 
@@ -298,8 +301,9 @@ void file_load(struct machine *machine, struct memory *mem,
 	 *  is a "scrambled" raw binary. This code unscrambles it, and loads
 	 *  it as a raw binary.
 	 */
+	snprintf(tmpname, sizeof(tmpname), "%s/gxemul.", tmpdir);
 	if (machine->machine_type == MACHINE_DREAMCAST &&
-	    strncmp(filename, "/tmp/gxemul.", 12) == 0) {
+	    strncmp(filename, tmpname, strlen(tmpname)) == 0) {
 		char *tmp_filename = malloc(strlen(filename) + 100);
 		snprintf(tmp_filename, strlen(filename) + 100,
 		    "%s.descrambled", filename);

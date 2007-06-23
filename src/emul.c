@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.298 2007-06-19 04:04:02 debug Exp $
+ *  $Id: emul.c,v 1.299 2007-06-23 23:59:14 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -554,8 +554,16 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 					/*  gunzip into new temp file:  */
 					int tmpfile_handle;
 					char *new_temp_name;
+					char *tmpdir = getenv("TMPDIR");
+
+					if (tmpdir == NULL)
+						tmpdir = DEFAULT_TMP_DIR;
+
 					CHECK_ALLOCATION(new_temp_name =
-					    strdup("/tmp/gxemul.XXXXXXXXXXXX"));
+					    malloc(300));
+					snprintf(new_temp_name, 300,
+					    "%s/gxemul.XXXXXXXXXXXX", tmpdir);
+
 					tmpfile_handle = mkstemp(new_temp_name);
 					close(tmpfile_handle);
 					snprintf(zz, zzlen, "gunzip -c '%s' > "

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.257 2007-06-15 17:12:31 debug Exp $
+ *  $Id: misc.h,v 1.258 2007-06-23 21:02:59 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -105,6 +105,10 @@ static void *no_map_anon_mmap(void *addr, size_t len, int prot, int flags,
 #endif
 
 
+/*  tmp dir to use if the TMPDIR environment variable isn't set:  */
+#define	DEFAULT_TMP_DIR		"/tmp"
+
+
 struct cpu;
 struct emul;
 struct machine;
@@ -169,7 +173,7 @@ struct memory;
 		snprintf(where_msg, sizeof(where_msg),			\
 		    "%s, line %i, function '%s'\n",			\
 		    __FILE__, __LINE__, __FUNCTION__);			\
-        	fprintf(stderr, "%s: %s\n", error_msg, where_msg);	\
+        	fprintf(stderr, "%s, in %s\n", error_msg, where_msg);	\
 		exit(1);						\
 	}
 
@@ -179,7 +183,7 @@ struct memory;
 		char where_msg[400];					\
 		snprintf(where_msg, sizeof(where_msg),			\
 		    "%s, line %i\n", __FILE__, __LINE__);		\
-        	fprintf(stderr, "%s: %s\n", error_msg, where_msg);	\
+        	fprintf(stderr, "%s, in %s\n", error_msg, where_msg);	\
 		exit(1);						\
 	}
 

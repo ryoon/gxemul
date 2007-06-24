@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.140 2007-06-23 23:59:14 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.141 2007-06-24 01:57:33 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3960,8 +3960,21 @@ X(to_be_translated)
 		case HI6_XORI:    ic->f = instr(xori); break;
 		}
 
-		if (main_opcode != HI6_ADDI && main_opcode != HI6_DADDI)
+		switch (main_opcode) {
+		case HI6_ADDIU:
+			if (cpu->is_32bit) {
+				NATIVE_ADD_O32_O32_S32(cpu->cd.mips.gpr[rt],
+				    cpu->cd.mips.gpr[rs], (int16_t)iword);
+			} else {
+				NATIVE_FALLBACK_SIMPLE;
+			}
+			break;
+		case HI6_ADDI:
+		case HI6_DADDI:
+			break;
+		default:
 			NATIVE_FALLBACK_SIMPLE;
+		}
 
 		if (ic->arg[2] == 0) {
 			if ((cpu->is_32bit && ic->f == instr(addiu)) ||

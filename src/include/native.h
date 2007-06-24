@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native.h,v 1.8 2007-06-24 00:28:42 debug Exp $
+ *  $Id: native.h,v 1.9 2007-06-24 01:57:33 debug Exp $
  *
  *  Framework for native code generation during runtime.
  *  See src/native/ for more details.
@@ -44,9 +44,38 @@ struct cpu;
 #define	NATIVE_OPCODE_SET_NEXT_IC		2
 
 #define	NATIVE_FALLBACK_SIMPLE						\
-	( cpu->native_instruction_buffer[				\
-		cpu->native_instruction_buffer_curpos].opcode =		\
-		NATIVE_OPCODE_MAKE_FALLBACK_SIMPLE )
+	if (cpu->translation_phys_page != NULL) {			\
+		cpu->native_instruction_buffer[				\
+		    cpu->native_instruction_buffer_curpos].opcode =	\
+		    NATIVE_OPCODE_MAKE_FALLBACK_SIMPLE;			\
+	}
+
+#define	NATIVE_OPCODE_ADD_O32_O32_S32		10
+#define	NATIVE_ADD_O32_O32_S32(dest,src,simm32)				\
+	if (cpu->translation_phys_page != NULL) {			\
+		int p = cpu->native_instruction_buffer_curpos ++;	\
+		cpu->native_instruction_buffer[p].opcode =		\
+		    NATIVE_OPCODE_ADD_O32_O32_S32;			\
+		cpu->native_instruction_buffer[p].arg1 = (size_t) &(dest) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg2 = (size_t) &(src) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg3 = (int32_t) (simm32); \
+	}
+
+#define	NATIVE_OPCODE_SUB_O32_O32_S32		11
+#define	NATIVE_SUB_O32_O32_S32(dest,src,simm32)				\
+	if (cpu->translation_phys_page != NULL) {			\
+		int p = cpu->native_instruction_buffer_curpos ++;	\
+		cpu->native_instruction_buffer[p].opcode =		\
+		    NATIVE_OPCODE_SUB_O32_O32_S32;			\
+		cpu->native_instruction_buffer[p].arg1 = (size_t) &(dest) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg2 = (size_t) &(src) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg3 = (int32_t) (simm32); \
+	}
+
 
 struct native_instruction {
 	int		opcode;

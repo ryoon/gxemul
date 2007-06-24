@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native.h,v 1.9 2007-06-24 01:57:33 debug Exp $
+ *  $Id: native.h,v 1.10 2007-06-24 02:30:50 debug Exp $
  *
  *  Framework for native code generation during runtime.
  *  See src/native/ for more details.
@@ -48,6 +48,14 @@ struct cpu;
 		cpu->native_instruction_buffer[				\
 		    cpu->native_instruction_buffer_curpos].opcode =	\
 		    NATIVE_OPCODE_MAKE_FALLBACK_SIMPLE;			\
+	}
+
+#define	NATIVE_OPCODE_NOP			5
+#define	NATIVE_NOP							\
+	if (cpu->translation_phys_page != NULL) {			\
+		int p = cpu->native_instruction_buffer_curpos ++;	\
+		cpu->native_instruction_buffer[p].opcode =		\
+		    NATIVE_OPCODE_NOP;					\
 	}
 
 #define	NATIVE_OPCODE_ADD_O32_O32_S32		10
@@ -74,6 +82,34 @@ struct cpu;
 		cpu->native_instruction_buffer[p].arg2 = (size_t) &(src) - \
 		    (size_t) cpu;					\
 		cpu->native_instruction_buffer[p].arg3 = (int32_t) (simm32); \
+	}
+
+#define	NATIVE_OPCODE_ADD_O32_O32_O32		20
+#define	NATIVE_ADD_O32_O32_O32(dest,src1,src2)				\
+	if (cpu->translation_phys_page != NULL) {			\
+		int p = cpu->native_instruction_buffer_curpos ++;	\
+		cpu->native_instruction_buffer[p].opcode =		\
+		    NATIVE_OPCODE_ADD_O32_O32_O32;			\
+		cpu->native_instruction_buffer[p].arg1 = (size_t) &(dest) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg2 = (size_t) &(src1) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg3 = (size_t) &(src2) - \
+		    (size_t) cpu;					\
+	}
+
+#define	NATIVE_OPCODE_OR_O32_O32_O32		22
+#define	NATIVE_OR_O32_O32_O32(dest,src1,src2)				\
+	if (cpu->translation_phys_page != NULL) {			\
+		int p = cpu->native_instruction_buffer_curpos ++;	\
+		cpu->native_instruction_buffer[p].opcode =		\
+		    NATIVE_OPCODE_OR_O32_O32_O32;			\
+		cpu->native_instruction_buffer[p].arg1 = (size_t) &(dest) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg2 = (size_t) &(src1) - \
+		    (size_t) cpu;					\
+		cpu->native_instruction_buffer[p].arg3 = (size_t) &(src2) - \
+		    (size_t) cpu;					\
 	}
 
 

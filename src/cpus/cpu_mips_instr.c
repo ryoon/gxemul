@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.141 2007-06-24 01:57:33 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.142 2007-06-24 02:30:50 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3706,29 +3706,10 @@ X(to_be_translated)
 			case SPECIAL_MOVZ:  ic->f = instr(movz); break;
 			}
 
-			switch (s6) {
-			case SPECIAL_ADD:
-			case SPECIAL_SUB:
-			case SPECIAL_DADD:
-			case SPECIAL_DSUB:
-			case SPECIAL_DIV:
-			case SPECIAL_DIVU:
-			case SPECIAL_DDIV:
-			case SPECIAL_DDIVU:
-			case SPECIAL_TGE:
-			case SPECIAL_TGEU:
-			case SPECIAL_TLT:
-			case SPECIAL_TLTU:
-			case SPECIAL_TEQ:
-			case SPECIAL_TNE:
-				break;
-			default:
-				NATIVE_FALLBACK_SIMPLE;
-			}
-
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
 			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+
 			switch (s6) {
 			case SPECIAL_MFHI:
 				ic->arg[0] = (size_t)&cpu->cd.mips.hi;
@@ -3785,6 +3766,50 @@ X(to_be_translated)
 				break;
 			default:if (rd == MIPS_GPR_ZERO)
 					ic->f = instr(nop);
+			}
+
+			if (ic->f == instr(nop)) {
+				NATIVE_NOP;
+			} else {
+				switch (s6) {
+				case SPECIAL_ADD:
+				case SPECIAL_SUB:
+				case SPECIAL_DADD:
+				case SPECIAL_DSUB:
+				case SPECIAL_DIV:
+				case SPECIAL_DIVU:
+				case SPECIAL_DDIV:
+				case SPECIAL_DDIVU:
+				case SPECIAL_TGE:
+				case SPECIAL_TGEU:
+				case SPECIAL_TLT:
+				case SPECIAL_TLTU:
+				case SPECIAL_TEQ:
+				case SPECIAL_TNE:
+					break;
+				case SPECIAL_ADDU:
+					if (cpu->is_32bit) {
+						NATIVE_ADD_O32_O32_O32(
+						    cpu->cd.mips.gpr[rd],
+						    cpu->cd.mips.gpr[rs],
+						    cpu->cd.mips.gpr[rt]);
+					} else {
+						NATIVE_FALLBACK_SIMPLE;
+					}
+					break;
+				case SPECIAL_OR:
+					if (cpu->is_32bit) {
+						NATIVE_OR_O32_O32_O32(
+						    cpu->cd.mips.gpr[rd],
+						    cpu->cd.mips.gpr[rs],
+						    cpu->cd.mips.gpr[rt]);
+					} else {
+						NATIVE_FALLBACK_SIMPLE;
+					}
+					break;
+				default:
+					NATIVE_FALLBACK_SIMPLE;
+				}
 			}
 
 			if (ic->f == instr(addu))
@@ -3960,22 +3985,6 @@ X(to_be_translated)
 		case HI6_XORI:    ic->f = instr(xori); break;
 		}
 
-		switch (main_opcode) {
-		case HI6_ADDIU:
-			if (cpu->is_32bit) {
-				NATIVE_ADD_O32_O32_S32(cpu->cd.mips.gpr[rt],
-				    cpu->cd.mips.gpr[rs], (int16_t)iword);
-			} else {
-				NATIVE_FALLBACK_SIMPLE;
-			}
-			break;
-		case HI6_ADDI:
-		case HI6_DADDI:
-			break;
-		default:
-			NATIVE_FALLBACK_SIMPLE;
-		}
-
 		if (ic->arg[2] == 0) {
 			if ((cpu->is_32bit && ic->f == instr(addiu)) ||
 			    (!cpu->is_32bit && ic->f == instr(daddiu))) {
@@ -3986,6 +3995,28 @@ X(to_be_translated)
 
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
+
+		if (ic->f == instr(nop)) {
+			NATIVE_NOP;
+		} else {
+			switch (main_opcode) {
+			case HI6_ADDIU:
+				if (cpu->is_32bit) {
+					NATIVE_ADD_O32_O32_S32(
+					    cpu->cd.mips.gpr[rt],
+					    cpu->cd.mips.gpr[rs],
+					    (int16_t)iword);
+				} else {
+					NATIVE_FALLBACK_SIMPLE;
+				}
+				break;
+			case HI6_ADDI:
+			case HI6_DADDI:
+				break;
+			default:
+				NATIVE_FALLBACK_SIMPLE;
+			}
+		}
 
 		if (ic->f == instr(ori))
 			cpu->cd.mips.combination_check = COMBINE(ori);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.40 2007-06-24 01:57:33 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.41 2007-06-24 02:30:50 debug Exp $
  *
  *  M88K instructions.
  *
@@ -1616,6 +1616,18 @@ X(to_be_translated)
 			}
 
 			switch ((iword >> 8) & 0xff) {
+			case 0x58:
+				if (s1 == M88K_ZERO_REG) {
+					NATIVE_ADD_O32_O32_S32(
+					    cpu->cd.m88k.r[d],
+					    cpu->cd.m88k.r[s2], 0);
+				} else {
+					NATIVE_OR_O32_O32_O32(
+					    cpu->cd.m88k.r[d],
+					    cpu->cd.m88k.r[s1],
+					    cpu->cd.m88k.r[s2]);
+				}
+				break;
 			case 0x68:
 			case 0x6c:
 			case 0x78:

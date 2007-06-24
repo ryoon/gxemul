@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.139 2007-06-24 01:57:33 debug Exp $
+ *  $Id: cpu.h,v 1.140 2007-06-24 22:46:46 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -115,28 +115,13 @@
  *  This structure contains a list of ranges within an emulated
  *  physical page that contain translatable code.
  */
-#define	PHYSPAGE_RANGES_ENTRIES_PER_LIST		30
+#define	PHYSPAGE_RANGES_ENTRIES_PER_LIST		20
 struct physpage_ranges {
 	uint32_t	next_ofs;	/*  0 for end of chain  */
 	uint32_t	n_entries_used;
 	uint16_t	base[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
-	uint16_t	length_and_flag[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
-};
-
-/*
- *  length_and_flag field:
- *
- *  Comment about PHYSPAGE_TRANSLATED_TO_NATIVE_CODE: This flag is also used in
- *  the case that an attempt was made to translate a range to native code, but
- *  it failed for some reason (e.g. the code was too complex in some way to
- *  translate). No new translation attempt will then be made to that range.
- */
-#define	PHYSPAGE_TRANSLATED_TO_NATIVE_CODE	0x8000
-#define	PHYSPAGE_LENGTH_MASK			0x7fff
-
-struct phys_range {
-	uint64_t	base;
-	uint64_t	length;
+	uint16_t	length[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
+	uint16_t	count[PHYSPAGE_RANGES_ENTRIES_PER_LIST];
 };
 
 
@@ -331,15 +316,20 @@ struct cpu_family {
 
 #define	MAX_DYNTRANS_READAHEAD		1024
 
-#define	DEFAULT_DYNTRANS_CACHE_SIZE	(48*1048576)
+#define	DEFAULT_DYNTRANS_CACHE_SIZE	(64*1048576)
 #define	DYNTRANS_CACHE_MARGIN		200000
 
 #define	N_BASE_TABLE_ENTRIES		65536
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 
 #define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
-#define	N_PADDR_SAMPLES			((int)CPU_SAMPLE_TIMER_HZ)
-#define	DEFAULT_THRESHOLD_FOR_NATIVE_TRANSLATION  	8
+#define	DEFAULT_THRESHOLD_FOR_NATIVE_TRANSLATION  ((int)TIMER_BASE_FREQUENCY/2)
+
+#define	MAX_RANGES_TO_TRANSLATE		8
+struct range_to_translate {
+	uint64_t	base;
+	uint64_t	length;
+};
 
 #define	NATIVE_BUFFER_SIZE_NINSTRS	16384
 
@@ -373,13 +363,15 @@ struct cpu {
 	 *  emulated program counter:
 	 *
 	 *  (Used to decide whether or not native code generation is worth
-	 *  the effort.)
+	 *  the effort. When the number of samples in a range of instructions
+	 *  on a physical page reaches sampling_threshold, the range is
+	 *  recompiled/translated to native code.)
 	 */
 	struct timer	*sampling_timer;
-	uint8_t		sampling;	/*  1 = turned on  */
-	int16_t		sampling_curindex;
+	uint8_t		sampling;		/*  1 = turned on, 0 = off  */
 	int16_t		sampling_threshold;
-	uint64_t	*sampling_paddr;
+	int16_t		sampling_ranges_to_translate;
+	struct range_to_translate ranges_to_translate[MAX_RANGES_TO_TRANSLATE];
 
 	/*  EMUL_LITTLE_ENDIAN or EMUL_BIG_ENDIAN.  */
 	uint8_t		byte_order;

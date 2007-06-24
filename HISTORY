@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1625 2007-06-24 00:28:41 debug Exp $
+$Id: HISTORY,v 1.1626 2007-06-24 22:46:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3647,3 +3647,4 @@ Changelog for GXemul:
 		Adding detection of host architecture to the configure script
 		(again), and adding icache invalidation support (only
 		implemented for Alpha hosts so far).
+20070625	Simplifying the program counter sampling mechanism.

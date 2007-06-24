@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.28 2007-06-20 04:47:20 debug Exp $
+ *  $Id: generate_head.c,v 1.29 2007-06-24 22:46:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -112,8 +112,6 @@ int main(int argc, char *argv[])
 	    "%s_tc_allocate_default_page\n", a);
 	printf("#define DYNTRANS_TC_ADD_TRANSLATABLE_RANGE "
 	    "%s_add_translatable_range\n", a);
-	printf("#define DYNTRANS_CHECK_SAMPLES "
-	    "%s_check_samples\n", a);
 	printf("#define DYNTRANS_TRANSLATE_INTO_NATIVE "
 	    "%s_translate_into_native\n", a);
 	printf("#define DYNTRANS_TC_PHYSPAGE %s_tc_physpage\n", a);

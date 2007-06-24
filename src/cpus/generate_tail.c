@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.19 2007-06-20 04:47:20 debug Exp $
+ *  $Id: generate_tail.c,v 1.20 2007-06-24 22:46:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -103,11 +103,6 @@ int main(int argc, char *argv[])
 	    "%s_translate_into_native\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_TRANSLATE_INTO_NATIVE_DEF\n\n");
-
-	printf("#define DYNTRANS_CHECK_SAMPLES_DEF "
-	    "%s_check_samples\n", a);
-	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_CHECK_SAMPLES_DEF\n\n");
 
 	printf("#define DYNTRANS_INVAL_ENTRY\n");
 	printf("#include \"cpu_dyntrans.c\"\n");

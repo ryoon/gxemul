@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.4 2007-06-23 17:38:52 debug Exp $
+ *  $Id: cpu.c,v 1.5 2007-06-24 22:46:46 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -88,7 +88,6 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	cpu->byte_order = EMUL_UNDEFINED_ENDIAN;
 	cpu->running    = 0;
 
-	cpu->sampling_paddr = zeroed_alloc(N_PADDR_SAMPLES * sizeof(uint64_t));
 	cpu->sampling_threshold = DEFAULT_THRESHOLD_FOR_NATIVE_TRANSLATION;
 
 	/*  Create settings, and attach to the machine:  */

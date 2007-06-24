@@ -1,4 +1,4 @@
-$Id: TODO,v 1.550 2007-06-23 23:59:14 debug Exp $
+$Id: TODO,v 1.551 2007-06-24 00:29:47 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -325,6 +325,7 @@ QEMU 0.9.0 [*]:		2 min 20 sec	      45 sec	 4 min 41 seconds
 GXemul-20070608 [A]:	1 min 59 sec	3 min 18 sec	18 min 10 seconds
 GXemul-20070621 [B]:	1 min 57 sec	3 min 17 sec	18 min 30 seconds
 GXemul-20070624 [C]:	1 min 59 sec	4 min 18 sec	22 min  9 seconds
+GXemul-20070624 [D]:	2 min  1 sec	4 min 46 sec	(not tested)
 
 [*] = Installed as a binary package via pkg_add.
 
@@ -346,6 +347,8 @@ GXemul-20070624 [C]:	1 min 59 sec	4 min 18 sec	22 min  9 seconds
       The cc and ld called during runtime are the FreeBSD 6.2/amd64 defaults:
       gcc version 3.4.6 [FreeBSD] 20060305
       GNU ld version 2.15 [FreeBSD] 2004-05-23
+
+[D] = Same as [C], but the generated code is actually read back, and executed.
 
 -------------------------------------------------------------------------------
 

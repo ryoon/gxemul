@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.181 2007-06-24 00:28:42 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.182 2007-06-24 00:29:47 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -745,8 +745,8 @@ void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
 	    native_generate_code(cpu);
 
 	if (resulting_function != NULL) {
-		size_t function_len = (cpu->translation_cache
-		    + cpu->translation_cache_cur_ofs) - resulting_function;
+		size_t function_len = (size_t)(cpu->translation_cache
+		    + cpu->translation_cache_cur_ofs) - (size_t)resulting_function;
 		ic[0].f = resulting_function;
 		native_icache_invalidate(resulting_function, function_len);
 	}

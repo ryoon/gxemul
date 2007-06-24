@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.308 2007-06-23 17:38:52 debug Exp $
+ *  $Id: main.c,v 1.309 2007-06-24 02:37:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -720,8 +720,7 @@ int main(int argc, char *argv[])
 	timer_init();
 	useremul_init();
 
-	emuls = malloc(sizeof(struct emul *));
-	CHECK_ALLOCATION(emuls);
+	CHECK_ALLOCATION(emuls = malloc(sizeof(struct emul *)));
 
 	/*  Allocate space for a simple emul setup:  */
 	n_emuls = 1;

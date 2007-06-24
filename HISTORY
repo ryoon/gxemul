@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1624 2007-06-23 23:59:13 debug Exp $
+$Id: HISTORY,v 1.1625 2007-06-24 00:28:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3644,3 +3644,6 @@ Changelog for GXemul:
 		of "/tmp" for temporary files.
 		Continuing on the cc/ld backend: simple .c code is generated,
 		the compiler and linker are called, etc.
+		Adding detection of host architecture to the configure script
+		(again), and adding icache invalidation support (only
+		implemented for Alpha hosts so far).

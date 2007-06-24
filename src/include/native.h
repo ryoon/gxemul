@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: native.h,v 1.7 2007-06-23 23:59:14 debug Exp $
+ *  $Id: native.h,v 1.8 2007-06-24 00:28:42 debug Exp $
  *
  *  Framework for native code generation during runtime.
  *  See src/native/ for more details.
@@ -74,6 +74,7 @@ struct native_code_generation_backend {
 
 void native_init(void);
 void *native_generate_code(struct cpu *);
+void native_icache_invalidate(void *p, size_t len);
 
 
 /*

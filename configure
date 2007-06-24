@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.272 2007-06-23 17:38:52 debug Exp $
+#  $Id: configure,v 1.273 2007-06-24 00:28:41 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1161,6 +1161,18 @@ else
 	fi
 fi
 rm -f _test_end*
+
+
+###############################################################################
+
+printf "detecting host architecture... "
+X=`uname -m`
+echo $X
+
+if [ z$X = zalpha ]; then
+	printf "#define HOST_ALPHA\n" >> config.h
+	printf "#define NATIVE_ICACHE_INVALIDATE\n" >> config.h
+fi
 
 
 ###############################################################################

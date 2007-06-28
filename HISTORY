@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1627 2007-06-28 13:36:44 debug Exp $
+$Id: HISTORY,v 1.1628 2007-06-28 14:58:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3652,3 +3652,6 @@ Changelog for GXemul:
 		counter sampling, etc; it would not have worked well in the
 		general case.
 20070627	Removing everything related to native code generation.
+20070629	Removing the (practically unusable) support for multiple
+		emulations. (The single emulation allowed now still supports
+		multiple simultaneous machines, as before.)

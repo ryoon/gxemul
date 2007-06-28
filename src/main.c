@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.310 2007-06-28 13:36:45 debug Exp $
+ *  $Id: main.c,v 1.311 2007-06-28 14:58:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -61,7 +61,7 @@ char **extra_argv;
 char *progname;
 
 size_t dyntrans_cache_size = DEFAULT_DYNTRANS_CACHE_SIZE;
-int skip_srandom_call = 0;
+static int skip_srandom_call = 0;
 
 
 /*****************************************************************************
@@ -348,7 +348,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	char *type = NULL, *subtype = NULL;
 	int n_cpus_set = 0;
 	int msopts = 0;		/*  Machine-specific options used  */
-	struct machine *m = emul_add_machine(emul, "default");
+	struct machine *m = emul_add_machine(emul, NULL);
 
 	char *opts =
 	    "C:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtUu:VvW:"
@@ -658,11 +658,13 @@ int main(int argc, char *argv[])
 	const int constant_no = 0;
 	const int constant_false = 0;
 
-	struct emul **emuls;
+	struct emul *emul;
+	int config_file = 0;
+
 	char **diskimages = NULL;
 	int n_diskimages = 0;
-	int n_emuls;
 	int i;
+
 
 	progname = argv[0];
 
@@ -705,15 +707,12 @@ int main(int argc, char *argv[])
 	timer_init();
 	useremul_init();
 
-	CHECK_ALLOCATION(emuls = malloc(sizeof(struct emul *)));
+	/*  Create a simple emulation setup:  */
+	emul = emul_new(NULL);
+	settings_add(global_settings, "emul", 1,
+	    SETTINGS_TYPE_SUBSETTINGS, 0, emul->settings);
 
-	/*  Allocate space for a simple emul setup:  */
-	n_emuls = 1;
-	emuls[0] = emul_new(NULL, 0);
-	settings_add(global_settings, "emul[0]", 1,
-	    SETTINGS_TYPE_SUBSETTINGS, 0, emuls[0]->settings);
-
-	get_cmd_args(argc, argv, emuls[0], &diskimages, &n_diskimages);
+	get_cmd_args(argc, argv, emul, &diskimages, &n_diskimages);
 
 	if (!skip_srandom_call) {
 		struct timeval tv;
@@ -722,19 +721,15 @@ int main(int argc, char *argv[])
 	}
 
 	/*  Print startup message:  */
-	debug("GXemul "VERSION"    Copyright (C) 2003-2007  Anders Gavare\n");
-	debug("Read the source code and/or documentation for "
-	    "other Copyright messages.\n\n");
-
-	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE) {
-		n_emuls --;
-	} else {
-		for (i=0; i<n_diskimages; i++)
-			diskimage_add(emuls[0]->machines[0], diskimages[i]);
-	}
+	debug("GXemul "VERSION"    Copyright (C) 2003-2007  Anders Gavare\n"
+	    "Read the source code and/or documentation for other Copyright "
+	    "messages.\n\n");
 
 	/*  Simple initialization, from command line arguments:  */
-	if (n_emuls > 0) {
+	if (emul->machines[0]->machine_type != MACHINE_NONE) {
+		for (i=0; i<n_diskimages; i++)
+			diskimage_add(emul->machines[0], diskimages[i]);
+
 		/*  Make sure that there are no configuration files as well:  */
 		for (i=1; i<argc; i++)
 			if (argv[i][0] == '@') {
@@ -747,45 +742,44 @@ int main(int argc, char *argv[])
 			}
 
 		/*  Initialize one emul:  */
-		emul_simple_init(emuls[0]);
+		emul_simple_init(emul);
 	}
 
-	/*  Initialize emulations from config files:  */
+	/*  Initialize an emulation from a config file:  */
 	for (i=1; i<argc; i++) {
 		if (argv[i][0] == '@') {
-			char tmpstr[50];
 			char *s = argv[i] + 1;
-			if (strlen(s) == 0 && i+1 < argc &&
-			    argv[i+1][0] != '@') {
-				i++;
-				s = argv[i];
-			}
-			n_emuls ++;
-			CHECK_ALLOCATION(emuls = realloc(emuls,
-			    sizeof(struct emul *) * n_emuls));
 
-			/*  Always allow slave xterms when using multiple
-			    emulations:  */
+			if (config_file) {
+				fprintf(stderr, "More than one configuration "
+				    "file cannot be used.\n");
+				exit(1);
+			}
+
+			if (strlen(s) == 0 && i+1 < argc && *argv[i+1] != '@')
+				s = argv[++i];
+
+			/*  Always allow slave xterms:  */
 			console_allow_slaves(1);
 
-			/*  Destroy the temporary emuls[0], since it will
+			/*  Destroy the temporary emul, since it will
 			    be overwritten:  */
-			if (n_emuls == 1) {
-				emul_destroy(emuls[0]);
-				settings_remove(global_settings, "emul[0]");
+			if (emul != NULL) {
+				emul_destroy(emul);
+				settings_remove(global_settings, "emul");
+				emul = NULL;
 			}
 
-			emuls[n_emuls - 1] =
-			    emul_create_from_configfile(s, n_emuls - 1);
+			emul = emul_create_from_configfile(s);
 
-			snprintf(tmpstr, sizeof(tmpstr), "emul[%i]", n_emuls-1);
-			settings_add(global_settings, tmpstr, 1,
-			    SETTINGS_TYPE_SUBSETTINGS, 0,
-			    emuls[n_emuls-1]->settings);
+			settings_add(global_settings, "emul", 1,
+			    SETTINGS_TYPE_SUBSETTINGS, 0, emul->settings);
+
+			config_file = 1;
 		}
 	}
 
-	if (n_emuls == 0) {
+	if (emul->n_machines == 0) {
 		fprintf(stderr, "No emulations defined. Maybe you forgot to "
 		    "use -E xx and/or -e yy, to specify\nthe machine type."
 		    " For example:\n\n    %s -e 3max -d disk.img\n\n"
@@ -798,8 +792,8 @@ int main(int argc, char *argv[])
 	console_warn_if_slaves_are_needed(1);
 
 
-	/*  Run all emulations:  */
-	emul_run(emuls, n_emuls);
+	/*  Run the emulation:  */
+	emul_run(emul);
 
 
 	/*
@@ -808,8 +802,7 @@ int main(int argc, char *argv[])
 
 	console_deinit();
 
-	for (i=0; i<n_emuls; i++)
-		emul_destroy(emuls[i]);
+	emul_destroy(emul);
 
 	settings_remove_all(global_settings);
 	settings_destroy(global_settings);

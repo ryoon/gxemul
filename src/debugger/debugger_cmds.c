@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.13 2007-06-23 17:38:52 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.14 2007-06-28 14:58:38 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -355,33 +355,25 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 
 
 /*
- *  debugger_cmd_emuls():
+ *  debugger_cmd_emul():
  *
- *  Dump info about all current emuls.
+ *  Dump info about the current emulation.
  */
-static void debugger_cmd_emuls(struct machine *m, char *cmd_line)
+static void debugger_cmd_emul(struct machine *m, char *cmd_line)
 {
-	int i, iadd = DEBUG_INDENTATION;
+	int iadd = DEBUG_INDENTATION;
 
 	if (*cmd_line) {
-		printf("syntax: emuls\n");
+		printf("syntax: emul\n");
 		return;
 	}
 
-	for (i=0; i<debugger_n_emuls; i++) {
-		struct emul *e = debugger_emuls[i];
+	debug("emulation \"%s\":\n", debugger_emul->name == NULL?
+	    "(simple setup)" : debugger_emul->name);
 
-		if (e == NULL)
-			continue;
-
-		debug("emulation %i: \"%s\"\n", i,
-		    e->name == NULL? "(no name)" : e->name);
-		debug_indentation(iadd);
-
-		emul_dumpinfo(e);
-
-		debug_indentation(-iadd);
-	}
+	debug_indentation(iadd);
+	emul_dumpinfo(debugger_emul);
+	debug_indentation(-iadd);
 }
 
 
@@ -393,13 +385,13 @@ static void debugger_cmd_emuls(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_focus(struct machine *m, char *cmd_line)
 {
-	int x = -1, y = -1, z = -1;
+	int x = -1, y = -1;
 	char *p, *p2;
 
 	if (!cmd_line[0]) {
-		printf("syntax: focus x[,y,[,z]]\n");
-		printf("where x (cpu id), y (machine number), and z (emul "
-		    "number) are integers as\nreported by the 'emuls'"
+		printf("syntax: focus x[,y]\n");
+		printf("where x (cpu id) and y (machine number) "
+		    "are integers as\nreported by the 'emul'"
 		    " command.\n");
 		goto print_current_focus_and_return;
 	}
@@ -418,23 +410,6 @@ static void debugger_cmd_focus(struct machine *m, char *cmd_line)
 			printf("No machine number specified?\n");
 			return;
 		}
-
-		if (p2 != NULL)
-			z = atoi(p2 + 1);
-	}
-
-	if (z != -1) {
-		/*  Change emul:  */
-		if (z < 0 || z >= debugger_n_emuls) {
-			printf("Invalid emul number: %i\n", z);
-			return;
-		}
-
-		debugger_cur_emul = z;
-		debugger_emul = debugger_emuls[z];
-
-		/*  This is just in case the machine change below fails...  */
-		debugger_machine = debugger_emul->machines[0];
 	}
 
 	if (y != -1) {
@@ -457,11 +432,6 @@ static void debugger_cmd_focus(struct machine *m, char *cmd_line)
 	debugger_cur_cpu = x;
 
 print_current_focus_and_return:
-	if (debugger_n_emuls > 1)
-		printf("current emul (%i): \"%s\"\n",
-		    debugger_cur_emul, debugger_emul->name == NULL?
-		    "(no name)" : debugger_emul->name);
-
 	if (debugger_emul->n_machines > 1)
 		printf("current machine (%i): \"%s\"\n",
 		    debugger_cur_machine, debugger_machine->name == NULL?
@@ -549,14 +519,18 @@ static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
-	int iadd = DEBUG_INDENTATION;
+	int iadd = 0;
 
 	if (*cmd_line) {
 		printf("syntax: machine\n");
 		return;
 	}
 
-	debug("machine \"%s\":\n", m->name);
+	if (m->name != NULL) {
+		debug("machine \"%s\":\n", m->name);
+		iadd = DEBUG_INDENTATION;
+	}
+
 	debug_indentation(iadd);
 	machine_dumpinfo(m);
 	debug_indentation(-iadd);
@@ -910,28 +884,24 @@ static void debugger_cmd_quiet(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_quit(struct machine *m, char *cmd_line)
 {
-	int i, j, k;
-	struct emul *e;
+	int j, k;
 
 	if (*cmd_line) {
 		printf("syntax: quit\n");
 		return;
 	}
 
-	for (i=0; i<debugger_n_emuls; i++) {
-		single_step = NOT_SINGLE_STEPPING;
+	single_step = NOT_SINGLE_STEPPING;
 
-		e = debugger_emuls[i];
-		force_debugger_at_exit = 0;
+	force_debugger_at_exit = 0;
 
-		for (j=0; j<e->n_machines; j++) {
-			struct machine *m = e->machines[j];
+	for (j=0; j<debugger_emul->n_machines; j++) {
+		struct machine *m = debugger_emul->machines[j];
 
-			for (k=0; k<m->ncpus; k++)
-				m->cpus[k]->running = 0;
+		for (k=0; k<m->ncpus; k++)
+			m->cpus[k]->running = 0;
 
-			m->exit_without_entering_debugger = 1;
-		}
+		m->exit_without_entering_debugger = 1;
 	}
 
 	exit_debugger = 1;
@@ -1239,8 +1209,8 @@ static struct cmd cmds[] = {
 	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
-	{ "emuls", "", 0, debugger_cmd_emuls,
-		"print a summary of all current emuls" },
+	{ "emul", "", 0, debugger_cmd_emul,
+		"print a summary of the current emulation" },
 
 	{ "focus", "x[,y[,z]]", 0, debugger_cmd_focus,
 		"changes focus to cpu x, machine x, emul z" },

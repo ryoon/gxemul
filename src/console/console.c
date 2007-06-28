@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.1 2007-06-20 14:25:14 debug Exp $
+ *  $Id: console.c,v 1.2 2007-06-28 14:58:38 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -715,7 +715,13 @@ int console_start_slave_inputonly(struct machine *machine, char *consolename,
 	chp = console_new_handle(consolename, &handle);
 	chp->inputonly = 1;
 	chp->in_use_for_input = use_for_input;
-	CHECK_ALLOCATION(chp->machine_name = strdup(machine->name));
+
+	if (machine->name != NULL) {
+		CHECK_ALLOCATION(chp->machine_name = strdup(machine->name));
+	} else {
+		CHECK_ALLOCATION(chp->machine_name = strdup(""));
+	}
+
 	CHECK_ALLOCATION(chp->name = strdup(consolename));
 
 	return handle;

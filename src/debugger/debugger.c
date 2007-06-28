@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.26 2007-06-15 17:02:39 debug Exp $
+ *  $Id: debugger.c,v 1.27 2007-06-28 14:58:38 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -85,13 +85,11 @@ int old_show_trace_tree = 0;
 
 static volatile int ctrl_c;
 
-static int debugger_n_emuls;
-static struct emul **debugger_emuls;
+static struct emul *debugger_emul;
 
 /*  Currently focused CPU, machine, and emulation:  */
 int debugger_cur_cpu;
 int debugger_cur_machine;
-int debugger_cur_emul;
 static struct machine *debugger_machine;
 static struct emul *debugger_emul;
 
@@ -117,7 +115,7 @@ char debugger_readchar(void)
 
 	while ((ch = console_readchar(MAIN_CONSOLE)) < 0 && !exit_debugger) {
 		/*  Check for X11 events:  */
-		x11_check_event(debugger_emuls, debugger_n_emuls);
+		x11_check_event(debugger_emul);
 
 		/*  Give up some CPU time:  */
 		usleep(10000);
@@ -712,30 +710,22 @@ void debugger_reset(void)
  *
  *  Must be called before any other debugger function is used.
  */
-void debugger_init(struct emul **emuls, int n_emuls)
+void debugger_init(struct emul *emul)
 {
 	int i;
 
-	debugger_n_emuls = n_emuls;
-	debugger_emuls = emuls;
+	debugger_emul = emul;
 
-	if (n_emuls < 1) {
-		fprintf(stderr, "\nERROR: No emuls (?)\n");
-		exit(1);
-	}
-
-	debugger_emul = emuls[0];
-	if (emuls[0]->n_machines < 1) {
-		fprintf(stderr, "\nERROR: No machines in emuls[0], "
+	if (emul->n_machines < 1) {
+		fprintf(stderr, "\nERROR: No machines, "
 		    "cannot handle this situation yet.\n\n");
 		exit(1);
 	}
 
-	debugger_machine = emuls[0]->machines[0];
+	debugger_machine = emul->machines[0];
 
 	debugger_cur_cpu = 0;
 	debugger_cur_machine = 0;
-	debugger_cur_emul = 0;
 
 	for (i=0; i<N_PREVIOUS_CMDS; i++) {
 		CHECK_ALLOCATION(last_cmd[i] = malloc(MAX_CMD_BUFLEN));

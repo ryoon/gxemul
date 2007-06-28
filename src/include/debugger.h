@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.h,v 1.9 2006-12-30 13:31:00 debug Exp $
+ *  $Id: debugger.h,v 1.10 2007-06-28 14:58:38 debug Exp $
  *
  *  See src/debugger/debugger.c.
  */
@@ -43,7 +43,7 @@ void debugger_activate(int x);
 void debugger_execute_cmd(char *cmd, int cmd_len);
 void debugger(void);
 void debugger_reset(void);
-void debugger_init(struct emul **emuls, int n_emuls);
+void debugger_init(struct emul *emul);
 
 /*  single_step values:  */
 #define	NOT_SINGLE_STEPPING		0

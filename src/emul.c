@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.299 2007-06-23 23:59:14 debug Exp $
+ *  $Id: emul.c,v 1.300 2007-06-28 14:58:38 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -68,7 +68,6 @@ extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int quiet_mode;
-extern int native_code_translation_enabled;
 
 
 /*
@@ -143,15 +142,14 @@ static void fix_console(void)
  *
  *  Returns a reasonably initialized struct emul.
  */
-struct emul *emul_new(char *name, int id)
+struct emul *emul_new(char *name)
 {
 	struct emul *e;
 
 	CHECK_ALLOCATION(e = malloc(sizeof(struct emul)));
 	memset(e, 0, sizeof(struct emul));
 
-	CHECK_ALLOCATION(e->path = malloc(15));
-	snprintf(e->path, 15, "emul[%i]", id);
+	CHECK_ALLOCATION(e->path = strdup("emul"));
 
 	e->settings = settings_new();
 
@@ -199,6 +197,8 @@ void emul_destroy(struct emul *emul)
 	/*  Remove any remaining level-1 settings:  */
 	settings_remove_all(emul->settings);
 	settings_destroy(emul->settings);
+
+	free(emul->path);
 
 	free(emul);
 }
@@ -365,7 +365,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	uint64_t memory_amount, entrypoint = 0, gp = 0, toc = 0;
 	int byte_order;
 
-	debug("machine \"%s\":\n", m->name);
+	if (m->name != NULL)
+		debug("machine \"%s\":\n", m->name);
+	else
+		debug("machine:\n");
+
 	debug_indentation(iadd);
 
 	/*  For userland-only, this decides which ARCH/cpu_name to use:  */
@@ -707,13 +711,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		add_arc_components(m);
 
-	debug("starting cpu%i at ", m->bootstrap_cpu);
-	switch (m->arch) {
+	debug("cpu%i: starting at ", m->bootstrap_cpu);
 
-	case ARCH_ARM:
-		/*  ARM cpus aren't 64-bit:  */
-		debug("0x%08"PRIx32, (uint32_t) entrypoint);
-		break;
+	switch (m->arch) {
 
 	case ARCH_MIPS:
 		if (cpu->is_32bit) {
@@ -730,13 +730,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				debug(" (gp=0x%016"PRIx64")", (uint64_t)
 				    cpu->cd.mips.gpr[MIPS_GPR_GP]);
 		}
-		break;
-
-	case ARCH_PPC:
-		if (cpu->cd.ppc.bits == 32)
-			debug("0x%08"PRIx32, (uint32_t) entrypoint);
-		else
-			debug("0x%016"PRIx64, (uint64_t) entrypoint);
 		break;
 
 	default:
@@ -758,17 +751,22 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
  */
 void emul_dumpinfo(struct emul *e)
 {
-	int j, nm, iadd = DEBUG_INDENTATION;
+	int i;
 
 	if (e->net != NULL)
 		net_dumpinfo(e->net);
 
-	nm = e->n_machines;
-	for (j=0; j<nm; j++) {
-		debug("machine %i: \"%s\"\n", j, e->machines[j]->name);
-		debug_indentation(iadd);
-		machine_dumpinfo(e->machines[j]);
-		debug_indentation(-iadd);
+	for (i = 0; i < e->n_machines; i++) {
+		if (e->n_machines > 1)
+			debug("machine %i: \"%s\"\n", i, e->machines[i]->name);
+		else
+			debug("machine:\n");
+
+		debug_indentation(DEBUG_INDENTATION);
+
+		machine_dumpinfo(e->machines[i]);
+
+		debug_indentation(-DEBUG_INDENTATION);
 	}
 }
 
@@ -824,10 +822,10 @@ void emul_simple_init(struct emul *emul)
  *
  *  Create an emul struct by reading settings from a configuration file.
  */
-struct emul *emul_create_from_configfile(char *fname, int id)
+struct emul *emul_create_from_configfile(char *fname)
 {
 	int iadd = DEBUG_INDENTATION;
-	struct emul *e = emul_new(fname, id);
+	struct emul *e = emul_new(fname);
 
 	debug("Creating emulation from configfile \"%s\":\n", fname);
 	debug_indentation(iadd);
@@ -842,39 +840,30 @@ struct emul *emul_create_from_configfile(char *fname, int id)
 /*
  *  emul_run():
  *
- *	o)  Set up things needed before running emulations.
+ *	o)  Set up things needed before running an emulation.
  *
- *	o)  Run emulations (one or more, in parallel).
+ *	o)  Run instructions in all machines.
  *
  *	o)  De-initialize things.
  */
-void emul_run(struct emul **emuls, int n_emuls)
+void emul_run(struct emul *emul)
 {
-	struct emul *e;
 	int i = 0, j, go = 1, n, anything;
-
-	if (n_emuls < 1) {
-		fprintf(stderr, "emul_run(): no thing to do\n");
-		return;
-	}
 
 	atexit(fix_console);
 
 	/*  Initialize the interactive debugger:  */
-	debugger_init(emuls, n_emuls);
+	debugger_init(emul);
 
 	/*  Run any additional debugger commands before starting:  */
-	for (i=0; i<n_emuls; i++) {
-		struct emul *emul = emuls[i];
-		if (emul->n_debugger_cmds > 0) {
-			int j;
-			if (i == 0)
-				print_separator_line();
-			for (j = 0; j < emul->n_debugger_cmds; j ++) {
-				debug("> %s\n", emul->debugger_cmds[j]);
-				debugger_execute_cmd(emul->debugger_cmds[j],
-				    strlen(emul->debugger_cmds[j]));
-			}
+	if (emul->n_debugger_cmds > 0) {
+		int j;
+		if (i == 0)
+			print_separator_line();
+		for (j = 0; j < emul->n_debugger_cmds; j ++) {
+			debug("> %s\n", emul->debugger_cmds[j]);
+			debugger_execute_cmd(emul->debugger_cmds[j],
+			    strlen(emul->debugger_cmds[j]));
 		}
 	}
 
@@ -892,7 +881,8 @@ void emul_run(struct emul **emuls, int n_emuls)
 	 *  (or sends SIGSTOP) and then continues. It makes sure that the
 	 *  terminal is in an expected state.
 	 */
-	console_init_main(emuls[0]);	/*  TODO: what is a good argument?  */
+	console_init_main(emul);
+
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
 
@@ -900,38 +890,35 @@ void emul_run(struct emul **emuls, int n_emuls)
 	if (!verbose)
 		quiet_mode = 1;
 
-	/*  Initialize all CPUs in all machines in all emulations:  */
-	for (i=0; i<n_emuls; i++) {
-		e = emuls[i];
-		if (e == NULL)
-			continue;
-		for (j=0; j<e->n_machines; j++)
-			cpu_run_init(e->machines[j]);
-	}
+
+	/*  Initialize all CPUs in all machines:  */
+	for (j=0; j<emul->n_machines; j++)
+		cpu_run_init(emul->machines[j]);
 
 	/*  TODO: Generalize:  */
-	if (emuls[0]->machines[0]->show_trace_tree)
-		cpu_functioncall_trace(emuls[0]->machines[0]->cpus[0],
-		    emuls[0]->machines[0]->cpus[0]->pc);
+	if (emul->machines[0]->show_trace_tree)
+		cpu_functioncall_trace(emul->machines[0]->cpus[0],
+		    emul->machines[0]->cpus[0]->pc);
 
 	/*  Start emulated clocks:  */
 	timer_start();
+
 
 	/*
 	 *  MAIN LOOP:
 	 *
 	 *  Run all emulations in parallel, running instructions from each
-	 *  cpu in each machine in each emulation.
+	 *  cpu in each machine.
 	 */
 	while (go) {
-		struct cpu *bootcpu = emuls[0]->machines[0]->cpus[
-		    emuls[0]->machines[0]->bootstrap_cpu];
+		struct cpu *bootcpu = emul->machines[0]->cpus[
+		    emul->machines[0]->bootstrap_cpu];
 
 		go = 0;
 
 		/*  Flush X11 and serial console output every now and then:  */
 		if (bootcpu->ninstrs > bootcpu->ninstrs_flush + (1<<19)) {
-			x11_check_event(emuls, n_emuls);
+			x11_check_event(emul);
 			console_flush();
 			bootcpu->ninstrs_flush = bootcpu->ninstrs;
 		}
@@ -939,19 +926,19 @@ void emul_run(struct emul **emuls, int n_emuls)
 		if (bootcpu->ninstrs > bootcpu->ninstrs_show + (1<<25)) {
 			bootcpu->ninstrs_since_gettimeofday +=
 			    (bootcpu->ninstrs - bootcpu->ninstrs_show);
-			cpu_show_cycles(emuls[0]->machines[0], 0);
+			cpu_show_cycles(emul->machines[0], 0);
 			bootcpu->ninstrs_show = bootcpu->ninstrs;
 		}
 
 		if (single_step == ENTER_SINGLE_STEPPING) {
 			/*  TODO: Cleanup!  */
 			old_instruction_trace =
-			    emuls[0]->machines[0]->instruction_trace;
+			    emul->machines[0]->instruction_trace;
 			old_quiet_mode = quiet_mode;
 			old_show_trace_tree =
-			    emuls[0]->machines[0]->show_trace_tree;
-			emuls[0]->machines[0]->instruction_trace = 1;
-			emuls[0]->machines[0]->show_trace_tree = 1;
+			    emul->machines[0]->show_trace_tree;
+			emul->machines[0]->instruction_trace = 1;
+			emul->machines[0]->show_trace_tree = 1;
 			quiet_mode = 0;
 			single_step = SINGLE_STEPPING;
 		}
@@ -959,28 +946,19 @@ void emul_run(struct emul **emuls, int n_emuls)
 		if (single_step == SINGLE_STEPPING)
 			debugger();
 
-		for (i=0; i<n_emuls; i++) {
-			e = emuls[i];
-
-			for (j=0; j<e->n_machines; j++) {
-				anything = machine_run(e->machines[j]);
-				if (anything)
-					go = 1;
-			}
+		for (j=0; j<emul->n_machines; j++) {
+			anything = machine_run(emul->machines[j]);
+			if (anything)
+				go = 1;
 		}
 	}
 
 	/*  Stop any running timers:  */
 	timer_stop();
 
-	/*  Deinitialize all CPUs in all machines in all emulations:  */
-	for (i=0; i<n_emuls; i++) {
-		e = emuls[i];
-		if (e == NULL)
-			continue;
-		for (j=0; j<e->n_machines; j++)
-			cpu_run_deinit(e->machines[j]);
-	}
+	/*  Deinitialize all CPUs in all machines:  */
+	for (j=0; j<emul->n_machines; j++)
+		cpu_run_deinit(emul->machines[j]);
 
 	/*  force_debugger_at_exit flag set? Then enter the debugger:  */
 	if (force_debugger_at_exit) {
@@ -991,14 +969,14 @@ void emul_run(struct emul **emuls, int n_emuls)
 
 	/*  Any machine using X11? Then wait before exiting:  */
 	n = 0;
-	for (i=0; i<n_emuls; i++)
-		for (j=0; j<emuls[i]->n_machines; j++)
-			if (emuls[i]->machines[j]->x11_md.in_use)
-				n++;
+	for (j=0; j<emul->n_machines; j++)
+		if (emul->machines[j]->x11_md.in_use)
+			n++;
+
 	if (n > 0) {
 		printf("Press enter to quit.\n");
 		while (!console_charavail(MAIN_CONSOLE)) {
-			x11_check_event(emuls, n_emuls);
+			x11_check_event(emul);
 			usleep(10000);
 		}
 		console_readchar(MAIN_CONSOLE);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.10 2007-06-15 17:02:39 debug Exp $
+ *  $Id: net.c,v 1.11 2007-06-28 14:58:38 debug Exp $
  *
  *  Emulated network.
  *
@@ -658,15 +658,16 @@ void net_dumpinfo(struct net *net)
 	int iadd = DEBUG_INDENTATION;
 	struct remote_net *rnp;
 
-	debug("net: simulating ");
+	debug("net:\n");
 
+	debug_indentation(iadd);
+
+	debug("simulated network: ");
 	net_debugaddr(&net->netmask_ipv4, NET_ADDR_IPV4);
 	debug("/%i", net->netmask_ipv4_len);
 
 	debug(" (max outgoing: TCP=%i, UDP=%i)\n",
 	    MAX_TCP_CONNECTIONS, MAX_UDP_CONNECTIONS);
-
-	debug_indentation(iadd);
 
 	debug("simulated gateway: ");
 	net_debugaddr(&net->gateway_ipv4_addr, NET_ADDR_IPV4);
@@ -674,17 +675,16 @@ void net_dumpinfo(struct net *net)
 	net_debugaddr(&net->gateway_ethernet_addr, NET_ADDR_ETHERNET);
 	debug(")\n");
 
-	debug_indentation(iadd);
 	if (!net->nameserver_known) {
-		debug("(could not determine nameserver)");
+		debug("(could not determine nameserver)\n");
 	} else {
-		debug("using nameserver ");
+		debug("simulated nameserver uses real nameserver ");
 		net_debugaddr(&net->nameserver_ipv4, NET_ADDR_IPV4);
+		debug("\n");
 	}
+
 	if (net->domain_name != NULL && net->domain_name[0])
-		debug(", domain \"%s\"", net->domain_name);
-	debug("\n");
-	debug_indentation(-iadd);
+		debug("domain: %s\n", net->domain_name);
 
 	rnp = net->remote_nets;
 	if (net->local_port != 0)

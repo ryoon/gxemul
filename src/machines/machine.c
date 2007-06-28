@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.3 2007-06-19 04:45:11 debug Exp $
+ *  $Id: machine.c,v 1.4 2007-06-28 14:58:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -66,7 +66,8 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	/*  Pointer back to the emul object that this machine belongs to:  */
 	m->emul = emul;
 
-	CHECK_ALLOCATION(m->name = strdup(name));
+	if (name != NULL)
+		CHECK_ALLOCATION(m->name = strdup(name));
 
 	/*  Full path, e.g. "emul[0].machine[0]":  */
 	CHECK_ALLOCATION(m->path = malloc(strlen(emul->path) + 20));

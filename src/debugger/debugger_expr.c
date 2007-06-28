@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.11 2007-06-15 17:02:39 debug Exp $
+ *  $Id: debugger_expr.c,v 1.12 2007-06-28 14:58:38 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -53,7 +53,6 @@ extern struct settings *global_settings;
 
 extern int debugger_cur_cpu;
 extern int debugger_cur_machine;
-extern int debugger_cur_emul;
 
 
 /*
@@ -143,8 +142,7 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 
 		if (!match_settings) {
 			snprintf(setting_name, sizeof(setting_name),
-			    GLOBAL_SETTINGS_NAME".emul[%i].%s",
-			    debugger_cur_emul, name);
+			    GLOBAL_SETTINGS_NAME".emul.%s", name);
 			res = settings_access(global_settings, setting_name,
 			    writeflag, valuep);
 			if (res == SETTINGS_OK)
@@ -153,8 +151,8 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 
 		if (!match_settings) {
 			snprintf(setting_name, sizeof(setting_name),
-			    GLOBAL_SETTINGS_NAME".emul[%i].machine[%i].%s",
-			    debugger_cur_emul, debugger_cur_machine, name);
+			    GLOBAL_SETTINGS_NAME".emul.machine[%i].%s",
+			    debugger_cur_machine, name);
 			res = settings_access(global_settings, setting_name,
 			    writeflag, valuep);
 			if (res == SETTINGS_OK)
@@ -163,9 +161,9 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 
 		if (!match_settings) {
 			snprintf(setting_name, sizeof(setting_name),
-			    GLOBAL_SETTINGS_NAME".emul[%i].machine[%i]."
-			    "cpu[%i].%s", debugger_cur_emul,
-			    debugger_cur_machine, debugger_cur_cpu, name);
+			    GLOBAL_SETTINGS_NAME".emul.machine[%i]."
+			    "cpu[%i].%s", debugger_cur_machine,
+			    debugger_cur_cpu, name);
 			res = settings_access(global_settings, setting_name,
 			    writeflag, valuep);
 			if (res == SETTINGS_OK)

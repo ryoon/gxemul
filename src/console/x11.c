@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.2 2007-06-23 17:38:52 debug Exp $
+ *  $Id: x11.c,v 1.3 2007-06-28 14:58:38 debug Exp $
  *
  *  X11-related functions.
  */
@@ -52,7 +52,7 @@ void x11_init(struct machine *machine) { }
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	int scaledown, struct machine *machine)
     { return NULL; }
-void x11_check_event(struct emul **emuls, int n_emuls) { }
+void x11_check_event(struct emul *emul) { }
 
 
 #else	/*  WITH_X11  */
@@ -565,15 +565,14 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
  *         and _then_ only those windows that are actually exposed should
  *         be redrawn!
  */
-static void x11_check_events_machine(struct emul **emuls, int n_emuls,
-	struct machine *m)
+static void x11_check_events_machine(struct emul *emul, struct machine *m)
 {
 	int fb_nr;
 
 	for (fb_nr = 0; fb_nr < m->x11_md.n_fb_windows; fb_nr ++) {
 		struct fb_window *fbwin = m->x11_md.fb_windows[fb_nr];
 		XEvent event;
-		int need_redraw = 0, found, i, j, k;
+		int need_redraw = 0, found, i, j;
 
 		while (XPending(fbwin->x11_display)) {
 			XNextEvent(fbwin->x11_display, &event);
@@ -602,25 +601,23 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 				/*  Which window in which machine in
 				    which emulation?  */
 				found = -1;
-				for (k=0; k<n_emuls; k++)
-					for (j=0; j<emuls[k]->n_machines; j++) {
-						struct machine *m2 = emuls[k]->
-						    machines[j];
-						for (i=0; i<m2->x11_md.
-						    n_fb_windows; i++)
-							if (m->x11_md.
-							    fb_windows[fb_nr]->
-							    x11_display == m2->
-							    x11_md.
-							    fb_windows[i]->
-							    x11_display &&
-							    event.xmotion.
-							    window == m2->
-							    x11_md.
-							    fb_windows[i]->
-							    x11_fb_window)
-								found = i;
-					}
+				for (j=0; j<emul->n_machines; j++) {
+					struct machine *m2 = emul->machines[j];
+					for (i=0; i<m2->x11_md.
+					    n_fb_windows; i++)
+						if (m->x11_md.
+						    fb_windows[fb_nr]->
+						    x11_display == m2->
+						    x11_md.
+						    fb_windows[i]->
+						    x11_display &&
+						    event.xmotion.
+						    window == m2->
+						    x11_md.
+						    fb_windows[i]->
+						    x11_fb_window)
+							found = i;
+				}
 				if (found < 0) {
 					printf("Internal error in x11.c.\n");
 					exit(1);
@@ -840,14 +837,12 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
  *
  *  Check for X11 events.
  */
-void x11_check_event(struct emul **emuls, int n_emuls)
+void x11_check_event(struct emul *emul)
 {
-	int i, j;
+	int i;
 
-	for (i=0; i<n_emuls; i++)
-		for (j=0; j<emuls[i]->n_machines; j++)
-			x11_check_events_machine(emuls, n_emuls,
-			    emuls[i]->machines[j]);
+	for (i=0; i<emul->n_machines; i++)
+		x11_check_events_machine(emul, emul->machines[i]);
 }
 
 #endif	/*  WITH_X11  */

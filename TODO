@@ -1,32 +1,7 @@
-$Id: TODO,v 1.552 2007-06-28 13:36:45 debug Exp $
+$Id: TODO,v 1.553 2007-06-28 13:39:56 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
-
--------------------------------------------------------------------------------
-
-1. Ta tid på qemu-test-looparna igen, både med QEMU och med gxemul-0.4.6, som referens.
-
-2. Experimentera med (32-bits) TLB-index-cache-per-ASID (för åtminstone MIPS och M88K).
-   Mät prestanda. Någon skillnad? Isåfall behåll det.
-
-   MIPS: 65 MB extra per cpu :-/
-   M88K: 2 MB extra per cpu.
-
-   Notera: index in i arrayen = virtual_page_nr * 65 + asid
-   (där asid=64 för "global"). Detta är nog bättre (mer sparse) än
-       index = asid * 1048576 + virtual_page_nr
-   ty alla asids kommer användas vid normal körning, men inte alla
-   virtual_page_nrs.
-
-   Values: 0 = no hit. 1..255 = TLB entry 0..254.
-
-3. Planera/experimentera med intermediatekod, till nativekod.
-
-	o)  Registeråteranvändning. (för loads)
-	o)  Senarelägg stores till minnet så långt det går.
-	o)  Räkna ut vart branches går, och börja om kodgenerering där (för
-	    att möjliggöra multipla entrypoints in i den genererade koden).
 
 -------------------------------------------------------------------------------
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.59 2007-06-07 15:36:25 debug Exp $
+ *  $Id: cpu_mips.h,v 1.60 2007-06-28 14:58:17 debug Exp $
  */
 
 #include "interrupt.h"
@@ -196,7 +196,7 @@ struct r3000_cache_line {
 #define	MIPS_L2N		17
 #define	MIPS_L3N		18
 
-#define	MIPS_MAX_VPH_TLB_ENTRIES	128
+#define	MIPS_MAX_VPH_TLB_ENTRIES	192
 
 DYNTRANS_MISC_DECLARATIONS(mips,MIPS,uint64_t)
 DYNTRANS_MISC64_DECLARATIONS(mips,MIPS,uint8_t)

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.553 2007-06-28 13:39:56 debug Exp $
+$Id: TODO,v 1.554 2007-06-28 15:06:05 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -43,7 +43,6 @@ MIPS:
 		x) _MAYBE_ TX79 and R5900 actually differ in their
 		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
-	o)  Refactor code for performance and readability/maintainability.
 	o)  (Re)implement 128-bit loads/stores for R5900.
 	o)  Coprocessor 1x (i.e. 3) should cause cp1 exceptions, not 3?
 		(See http://lists.gnu.org/archive/html/qemu-devel/2007-05/msg00005.html)
@@ -82,16 +81,15 @@ SuperH:
 	x)  NetBSD/evbsh3, hpcsh! Linux?
 	x)  Floating point speed!
 	x)  Floating point exception correctness.
-	x)  NetBSD HEAD (as of April 2007) hangs during bootup, because it
-	    turns on/off interrupts in an unfortunately synchronized way
-	    with dyntrans. This needs to be fixed.
 	x)  Exceptions for unaligned load/stores. OpenBSD/landisk uses
 	    this mechanism for its reboot code (machine_reset).
-	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Landisk SH4:
 	x)  When NetBSD/landisk 4.0 has been released, make sure it works
 	    in the emulator. (Update documentation, etc.)
+	    NetBSD HEAD (as of April 2007) hangs during bootup, because it
+	    turns on/off interrupts in an unfortunately synchronized way
+	    with dyntrans. This needs to be fixed.
 
 Dreamcast:
 	x)  G2 DMA
@@ -214,8 +212,6 @@ Debugger:
 	    What if the guest OS (running on an emulated SMP machine)
 	    has a usertask running, with userland threads?
 	o)  Try to make the debugger more modular and, if possible, reentrant!
-	o)  Remove the emul command? (But show network info if showing
-	    machines?)
 	o)  Memory dumps should be able to dump both physical and
 	    virtual emulated memory.
 	o)  Evaluate expressions within []? That would allow stuff like
@@ -282,24 +278,9 @@ Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
-	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
+	x)  16-bit encodings? (MIPS16, ARM Thumb, etc)
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
-	x)  Native code generation backends:
-		o)  Slow backends called "every now and then" did not
-		    really work, so producing code "live" during instruction
-		    translation is probably the way to go.
-		o)  Important cases to think about:
-			x)  register reuse of already loaded/stored values
-			x)  accumulation of next_ic and ninstrs updates
-			x)  loads/stores
-			x)  delay branches (samepage, simple instruction vs
-				non-simple in the delay slot, etc)
-			x)  other kinds of calls, branches
-			x)  fallbacks to complex ic->f instructions
-		o)  branches to already translated code blocks can
-		    link the blocks together (block-chaining), although
-		    I'll probably want to wait with this until other
-		    things work.
+	x)  Native code generation backends... think carefully about this.
 
 Simple Valgrind-like checks?
 	o)  Mark every address with bits which tell whether or not the address
@@ -381,12 +362,6 @@ Documentation:
 		securely".
 	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
 	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
-	x)  BETTER DEVICE EXAMPLES!
-		o)  Move away from technical.html to somewhere new.
-		o)  DEVICE_TICK
-		o)  Implement example devices using interrupts, dyntrans
-		    memory access, etc.?
-	x)  Document the dyntrans core?
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
 	    written. (Symbolic names instead of numbers; example
@@ -395,15 +370,6 @@ Documentation:
 	x)  "a very simple linear framebuffer device (for graphics output)"
 	    under "which machines does gxemul emulate" ==> better
 	    description?
-	x)  Better description on how to set up a cross compiler?
-	    Example for MIPS64.
-	o)  Automagic documentation generation?
-		x)  machines, cpus, devices.
-		x)  REMEMBER that several machines/devices can be in
-			the same source file!
-	o)  Try to rewrite the install instructions for those machines
-	    that use 3MAX into using CATS or hpcmips? (To remove the need
-	    to use a raw ffs partition, using up all of the disk image.)
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
@@ -413,10 +379,6 @@ The Device subsystem:
 	    registering new devices, and for moving existing ones.
 	    cpu->invalidate translation caches, for all CPUs that
 	    are connected to a specific memory.
-	x)  keep track of interrupts and busses? actually, allowing any device
-	    to be a bus might be a nice idea.
-	x)  turn interrupt controllers into devices? :-)
-	x)  refactor various clocks/nvram/cmos into one device?
 
 PCI:
 	x)  Pretty much everything related to runtime configuration, device

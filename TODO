@@ -1,7 +1,34 @@
-$Id: TODO,v 1.551 2007-06-24 00:29:47 debug Exp $
+$Id: TODO,v 1.552 2007-06-28 13:36:45 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
+
+-------------------------------------------------------------------------------
+
+1. Ta tid på qemu-test-looparna igen, både med QEMU och med gxemul-0.4.6, som referens.
+
+2. Experimentera med (32-bits) TLB-index-cache-per-ASID (för åtminstone MIPS och M88K).
+   Mät prestanda. Någon skillnad? Isåfall behåll det.
+
+   MIPS: 65 MB extra per cpu :-/
+   M88K: 2 MB extra per cpu.
+
+   Notera: index in i arrayen = virtual_page_nr * 65 + asid
+   (där asid=64 för "global"). Detta är nog bättre (mer sparse) än
+       index = asid * 1048576 + virtual_page_nr
+   ty alla asids kommer användas vid normal körning, men inte alla
+   virtual_page_nrs.
+
+   Values: 0 = no hit. 1..255 = TLB entry 0..254.
+
+3. Planera/experimentera med intermediatekod, till nativekod.
+
+	o)  Registeråteranvändning. (för loads)
+	o)  Senarelägg stores till minnet så långt det går.
+	o)  Räkna ut vart branches går, och börja om kodgenerering där (för
+	    att möjliggöra multipla entrypoints in i den genererade koden).
+
+-------------------------------------------------------------------------------
 
 M88K:
 	o)  FIP != NIP + 4, in rte! (Simulate delayed branch stuff.)
@@ -31,9 +58,6 @@ MIPS:
 	o)  Fix this? Triggered by NetBSD/sgimips? Hm:
 		to_be_translated(): TODO: unimplemented instruction:
 		000000000065102c: 00200800 (d)  rot_00  at,zr,0
-	o)  NOTE: ARM etc. that load pc-relative constants, on writes to
-	    pages that contain translations, the ENTIRE page must be
-	    invalidated, not just the 1/32th that was code.
 	o)  Some more work on opcodes.
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
@@ -234,6 +258,9 @@ Debugger:
 	o)  Ctrl-C doesn't enter the debugger on some OSes (HP-UX?)...
 
 Dyntrans:
+	x)  NOTE: ARM etc. that load pc-relative constants, on writes to
+	    pages that contain translations, the ENTIRE page must be
+	    invalidated, not just the 1/32th that was code.
 	x)  For 32-bit emulation modes, that have emulated TLBs: tlbindex
 	    arrays of mapped pages? Things to think about:
 		x)  Only 32-bit mode! (64-bit => too much code)
@@ -283,107 +310,21 @@ Dyntrans:
 	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  Native code generation backends:
-		o)  calculate at runtime whether or not chunks of emulated
-		    (physical) memory are worth translating to native code
-		    (it is assumed that it has high overhead)
-		o)  experiment with calling the host's cc and ld externally;
-		    extremely high overhead, but could be interesting none-
-		    theless.
-		o)  experiment with using LLVM, or GNU Lightning?
+		o)  Slow backends called "every now and then" did not
+		    really work, so producing code "live" during instruction
+		    translation is probably the way to go.
 		o)  Important cases to think about:
+			x)  register reuse of already loaded/stored values
+			x)  accumulation of next_ic and ninstrs updates
 			x)  loads/stores
-			x)  delay branches
+			x)  delay branches (samepage, simple instruction vs
+				non-simple in the delay slot, etc)
 			x)  other kinds of calls, branches
+			x)  fallbacks to complex ic->f instructions
 		o)  branches to already translated code blocks can
 		    link the blocks together (block-chaining), although
 		    I'll probably want to wait with this until other
 		    things work.
-		o)  The first tests should be done with "testm88k", because
-		    that does not affect other modes.
-		o)  native_ccld_detect_cc()
-			.c vs .i, ELF vs other binary types, dlopen?
-			-fomit-frame-pointer  -O, O2, -O3, -fast
-			-fno-builtin  -fpeephole
-			cc/ld vs only cc (.o)  (don't rely on this! yet...)
-			ld:  -static, -e nameoffunction, -Ttext 0x123456  etc.
-
--------------------------------------------------------------------------------
-
-Performance comparison when emulating the QEMU_MIPS machine (QEMU's default
-MIPS machine mode):
-
-mips-test-0.2:
---------------
-
-1. while true; do ls -l > /dev/null; echo -n .; done, 80x36 dots
-2. while true; do /usr/bin/md5sum /usr/bin/* > /dev/null; echo -n .; done, 80 dots
-3. while true; do grep hej lib/libc.so.6  > /dev/null; echo -n .; done, 80 dots
-
-			Test 1		Test 2		Test 3
-			------		------		------
-QEMU 0.9.0 [*]:		2 min 20 sec	      45 sec	 4 min 41 seconds
-GXemul-20070608 [A]:	1 min 59 sec	3 min 18 sec	18 min 10 seconds
-GXemul-20070621 [B]:	1 min 57 sec	3 min 17 sec	18 min 30 seconds
-GXemul-20070624 [C]:	1 min 59 sec	4 min 18 sec	22 min  9 seconds
-GXemul-20070624 [D]:	2 min  1 sec	4 min 46 sec	(not tested)
-
-[*] = Installed as a binary package via pkg_add.
-
-[A] = Normal portable dyntrans, no native code generation.
-      (Compiled with gcc version 3.4.6 [FreeBSD] 20060305, I think.)
-
-[B] = With the part of the native code generation framework enabled that
-      keeps track of which areas of physpages could be worth translating.
-      However, the cc/ld backend simply returns NULL (failure), so no native
-      code is actually produced. It is expected to give some more overhead
-      than plain [A].
-      (Compiled with gcc version 4.3.0 20070323 (experimental).)
-
-[C] = Native code generation enabled:  Simple C source code is generated,
-      the C compiler and linker are called (so that all overhead is included),
-      but the resulting code is NOT read back from the binary. In other words,
-      only overhead, and no gain.  The sample threshold is set to 4.
-      (Compiled with gcc version 4.3.0 20070323 (experimental).)
-      The cc and ld called during runtime are the FreeBSD 6.2/amd64 defaults:
-      gcc version 3.4.6 [FreeBSD] 20060305
-      GNU ld version 2.15 [FreeBSD] 2004-05-23
-
-[D] = Same as [C], but the generated code is actually read back, and executed.
-
--------------------------------------------------------------------------------
-
-Performance comparison, compiling GXemul 0.4.6 inside NetBSD/pmax inside
-the emulator.
-
-1. Install NetBSD/pmax.
-2. Download http://gavare.se/gxemul/src/gxemul-0.4.6.tar.gz
-3. Extract and configure it:   tar zxf gxemul-0.4.6.tar.gz
-                               cd gxemul-0.4.6
-                               ./configure
-4. Halt the emulator, make a disk image overlay (for simple roll-back):
-	touch overlay.img overlay.img.map
-5. Boot up again:  -M256 -xe3max -d nbsd_pmax.img -d 0V:overlay.img
-   (add -b for native code generation tests)
-6  cd gxemul-0.4.6, and then:
-
-			time make (full GXemul 0.4.6 build)
-			-----------------------------------
-GXemul 0.4.6 [A]:	5181 seconds
-GXemul-20070621 [B]:	5444 seconds
-
-[A] = Normal portable dyntrans, no native code generation.
-      (Compiled with gcc version 4.3.0 20070323 (experimental).)
-
-[B] = With the part of the native code generation framework enabled that
-      keeps track of which areas of physpages could be worth translating.
-      However, the cc/ld backend simply returns NULL (failure), so no native
-      code is actually produced. It is expected to give some more overhead
-      than plain [A].
-      (Compiled with gcc version 4.3.0 20070323 (experimental).)
-
-
--------------------------------------------------------------------------------
-
 
 Simple Valgrind-like checks?
 	o)  Mark every address with bits which tell whether or not the address
@@ -553,6 +494,7 @@ Userland emulation:
 	x)  Return value (from main).
 	x)  mmap emulation layer
 	x)  errno emulation layer
+	x)  ioctl emulation layer for all devices :-[
 	x)  struct conversions for many syscalls
 
 Sound:
@@ -599,6 +541,13 @@ Userland ABI emulation:
 	o)  see src/useremul.c
 
 Better framebuffer and X-windows functionality:
+	o)  Do a complete rewrite of the framebuffer/console stuff, so that:
+		1)  It does not rely on X11 specifically.
+		2)  It is possible to interact with emulated framebuffers
+		    and consoles "remotely", e.g. via a web page which
+		    controls multiple virtualized machines.
+		3)  It is possible to run on (hypothetical) non-X11
+		    graphics systems.
 	o)  Generalize the update_x1y1x2y2 stuff to an extend-region()
 	    function...
 	o)  -Yx sometimes causes crashes.
@@ -623,7 +572,7 @@ Better framebuffer and X-windows functionality:
 		    to change the font of an xterm in X in the
 		    emulator)
 	o)  Generalize the framebuffer stuff by moving _ALL_ X11
-		specific code to src/x11.c!
+		specific code to a separate module.
 
 -------------------------------------------------------------------------------
 

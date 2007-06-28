@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.38 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu_m88k.c,v 1.39 2007-06-28 13:36:46 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -43,7 +43,6 @@
 #include "mvmeprom.h"
 #include "settings.h"
 #include "symbol.h"
-#include "timer.h"
 
 #include "m8820x_pte.h"
 #include "m88k_dmt.h"
@@ -52,8 +51,6 @@
 #define DYNTRANS_DELAYSLOT
 #include "tmp_m88k_head.c"
 
-
-extern int native_code_translation_enabled;
 
 void m88k_pc_to_pointers(struct cpu *);
 
@@ -182,10 +179,6 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	/*  Initial stack pointer:  */
 	cpu->cd.m88k.r[31] = 1048576 * cpu->machine->physical_ram_in_mb - 1024;
-
-	if (native_code_translation_enabled)
-		cpu->sampling_timer = timer_add(CPU_SAMPLE_TIMER_HZ,
-		    m88k_timer_sample_tick, cpu);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.142 2007-06-24 02:30:50 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.143 2007-06-28 13:36:46 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2220,18 +2220,13 @@ X(idle)
 	 */
 
 	if (cpu->machine->ncpus == 1) {
-		/*  Don't sample during sleep:  */
-		int old_sampling = cpu->sampling;
 		static int x = 0;
-
-		cpu->sampling = 0;
 
 		if ((++x) == 300) {
 			usleep(20);
 			x = 0;
 		}
 
-		cpu->sampling = old_sampling;
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 	}
 }
@@ -3488,9 +3483,6 @@ X(to_be_translated)
 	}
 #endif
 
-	if (cpu->translation_phys_page != NULL)
-		page = cpu->translation_phys_page;
-
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
 		memcpy(ib, page + (addr & 0xffc), sizeof(ib));
@@ -3577,8 +3569,6 @@ X(to_be_translated)
 			case SPECIAL_DSRA32:ic->f = instr(dsra); x64=1;
 					   sa += 32; break;
 			}
-
-			NATIVE_FALLBACK_SIMPLE;
 
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 			if (sa >= 0)
@@ -3768,50 +3758,6 @@ X(to_be_translated)
 					ic->f = instr(nop);
 			}
 
-			if (ic->f == instr(nop)) {
-				NATIVE_NOP;
-			} else {
-				switch (s6) {
-				case SPECIAL_ADD:
-				case SPECIAL_SUB:
-				case SPECIAL_DADD:
-				case SPECIAL_DSUB:
-				case SPECIAL_DIV:
-				case SPECIAL_DIVU:
-				case SPECIAL_DDIV:
-				case SPECIAL_DDIVU:
-				case SPECIAL_TGE:
-				case SPECIAL_TGEU:
-				case SPECIAL_TLT:
-				case SPECIAL_TLTU:
-				case SPECIAL_TEQ:
-				case SPECIAL_TNE:
-					break;
-				case SPECIAL_ADDU:
-					if (cpu->is_32bit) {
-						NATIVE_ADD_O32_O32_O32(
-						    cpu->cd.mips.gpr[rd],
-						    cpu->cd.mips.gpr[rs],
-						    cpu->cd.mips.gpr[rt]);
-					} else {
-						NATIVE_FALLBACK_SIMPLE;
-					}
-					break;
-				case SPECIAL_OR:
-					if (cpu->is_32bit) {
-						NATIVE_OR_O32_O32_O32(
-						    cpu->cd.mips.gpr[rd],
-						    cpu->cd.mips.gpr[rs],
-						    cpu->cd.mips.gpr[rt]);
-					} else {
-						NATIVE_FALLBACK_SIMPLE;
-					}
-					break;
-				default:
-					NATIVE_FALLBACK_SIMPLE;
-				}
-			}
-
 			if (ic->f == instr(addu))
 				cpu->cd.mips.combination_check = COMBINE(addu);
 
@@ -3872,7 +3818,6 @@ X(to_be_translated)
 
 		case SPECIAL_SYNC:
 			ic->f = instr(nop);
-			NATIVE_FALLBACK_SIMPLE;
 			break;
 
 		default:goto bad;
@@ -3996,28 +3941,6 @@ X(to_be_translated)
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 
-		if (ic->f == instr(nop)) {
-			NATIVE_NOP;
-		} else {
-			switch (main_opcode) {
-			case HI6_ADDIU:
-				if (cpu->is_32bit) {
-					NATIVE_ADD_O32_O32_S32(
-					    cpu->cd.mips.gpr[rt],
-					    cpu->cd.mips.gpr[rs],
-					    (int16_t)iword);
-				} else {
-					NATIVE_FALLBACK_SIMPLE;
-				}
-				break;
-			case HI6_ADDI:
-			case HI6_DADDI:
-				break;
-			default:
-				NATIVE_FALLBACK_SIMPLE;
-			}
-		}
-
 		if (ic->f == instr(ori))
 			cpu->cd.mips.combination_check = COMBINE(ori);
 		if (ic->f == instr(addiu))
@@ -4034,7 +3957,6 @@ X(to_be_translated)
 		    instruction combinations, to do lui + addiu, etc.  */
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
-		NATIVE_FALLBACK_SIMPLE;
 		break;
 
 	case HI6_J:

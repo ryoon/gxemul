@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1626 2007-06-24 22:46:45 debug Exp $
+$Id: HISTORY,v 1.1627 2007-06-28 13:36:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3648,3 +3648,7 @@ Changelog for GXemul:
 		(again), and adding icache invalidation support (only
 		implemented for Alpha hosts so far).
 20070625	Simplifying the program counter sampling mechanism.
+20070626	Removing the cc/ld native code generation stuff, program
+		counter sampling, etc; it would not have worked well in the
+		general case.
+20070627	Removing everything related to native code generation.

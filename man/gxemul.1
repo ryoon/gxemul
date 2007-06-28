@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.98 2007-06-24 22:46:46 debug Exp $
+.\" $Id: gxemul.1,v 1.99 2007-06-28 13:36:45 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -321,12 +321,9 @@ commands.
 .Pp
 When gathering instruction statistics using the
 .Fl s
-option, instruction combinations and native code generation
-are always disabled (i.e. implicit
+option, instruction combinations are always disabled (i.e. an implicit
 .Fl J
-and
-.Fl B
-flags are added to the command line).
+flag is added to the command line).
 .It Fl T
 Halt if the emulated program attempts to access non-existing memory.
 .It Fl t
@@ -385,13 +382,6 @@ Note: Userland (syscall) emulation does not really work yet.
 .Pp
 General options:
 .Bl -tag -width Ds
-.It Fl b
-Enable native code generation at runtime. This is not really implemented
-yet. Don't use it unless you know what you are doing. It will most
-likely not work.
-.It Fl B
-Disable native code generation at runtime. This is the default in this
-release of GXemul.
 .It Fl c Ar cmd
 Add
 .Ar cmd
@@ -418,7 +408,7 @@ Display a list of all available command line options.
 .It Fl k Ar n
 Set the size of the dyntrans cache (per emulated CPU) to
 .Ar n
-MB. The default size is 64 MB.
+MB. The default size is 48 MB.
 .It Fl K
 Force the single-step debugger to be entered at the end of a simulation.
 .It Fl q

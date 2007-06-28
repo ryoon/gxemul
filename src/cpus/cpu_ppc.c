@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.71 2007-06-19 04:04:03 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.72 2007-06-28 13:36:46 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -49,15 +49,12 @@
 #include "ppc_spr_strings.h"
 #include "settings.h"
 #include "symbol.h"
-#include "timer.h"
 #include "useremul.h"
 
 
 #define	DYNTRANS_DUALMODE_32
 #include "tmp_ppc_head.c"
 
-
-extern int native_code_translation_enabled;
 
 void ppc_pc_to_pointers(struct cpu *);
 void ppc32_pc_to_pointers(struct cpu *);
@@ -237,10 +234,6 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		template.interrupt_deassert = ppc_irq_interrupt_deassert;
 		interrupt_handler_register(&template);
 	}
-
-	if (native_code_translation_enabled)
-		cpu->sampling_timer = timer_add(CPU_SAMPLE_TIMER_HZ,
-		    ppc_timer_sample_tick, cpu);
 
 	return 1;
 }

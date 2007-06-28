@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.41 2007-06-24 02:30:50 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.42 2007-06-28 13:36:46 debug Exp $
  *
  *  M88K instructions.
  *
@@ -1083,10 +1083,7 @@ X(to_be_translated)
 	addr &= ~((1 << M88K_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
-	if (cpu->translation_phys_page != NULL)
-		page = cpu->translation_phys_page;
-	else
-		page = cpu->cd.m88k.host_load[(uint32_t)addr >> 12];
+	page = cpu->cd.m88k.host_load[(uint32_t)addr >> 12];
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
@@ -1224,23 +1221,6 @@ X(to_be_translated)
 		case 0x1d: ic->f = instr(sub_imm); break;
 		case 0x1e: ic->f = instr(div_imm); break;
 		case 0x1f: ic->f = instr(cmp_imm); break;
-		}
-
-		switch (op26) {
-		case 0x18:
-			NATIVE_ADD_O32_O32_S32(cpu->cd.m88k.r[d],
-			    cpu->cd.m88k.r[s1], imm16 << shift);
-			break;
-		case 0x19:
-			NATIVE_SUB_O32_O32_S32(cpu->cd.m88k.r[d],
-			    cpu->cd.m88k.r[s1], imm16 << shift);
-			break;
-		case 0x1a:
-		case 0x1e:
-		case 0x1b:
-			break;
-		default:
-			NATIVE_FALLBACK_SIMPLE;
 		}
 
 		ic->arg[0] = (size_t) &cpu->cd.m88k.r[d];
@@ -1448,8 +1428,6 @@ X(to_be_translated)
 			case 0x28: ic->f = instr(mak_imm); break;
 			}
 
-			NATIVE_FALLBACK_SIMPLE;
-
 			if (d == M88K_ZERO_REG)
 				ic->f = instr(nop);
 			break;
@@ -1613,27 +1591,6 @@ X(to_be_translated)
 			case 0x90: ic->f = instr(ext);   break;
 			case 0x98: ic->f = instr(extu);  break;
 			case 0xa0: ic->f = instr(mak);   break;
-			}
-
-			switch ((iword >> 8) & 0xff) {
-			case 0x58:
-				if (s1 == M88K_ZERO_REG) {
-					NATIVE_ADD_O32_O32_S32(
-					    cpu->cd.m88k.r[d],
-					    cpu->cd.m88k.r[s2], 0);
-				} else {
-					NATIVE_OR_O32_O32_O32(
-					    cpu->cd.m88k.r[d],
-					    cpu->cd.m88k.r[s1],
-					    cpu->cd.m88k.r[s2]);
-				}
-				break;
-			case 0x68:
-			case 0x6c:
-			case 0x78:
-				break;
-			default:
-				NATIVE_FALLBACK_SIMPLE;
 			}
 
 			/*  Optimization for  or rX,r0,rY  etc:  */

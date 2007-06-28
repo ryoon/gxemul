@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.63 2007-06-20 04:47:20 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.64 2007-06-28 13:36:47 debug Exp $
  *
  *  SH instructions.
  *
@@ -101,18 +101,13 @@ X(sleep)
 	 */
 
 	if (cpu->machine->ncpus == 1) {
-		/*  Don't sample during sleep:  */
-		int old_sampling = cpu->sampling;
 		static int x = 0;
-
-		cpu->sampling = 0;
 
 		if ((++x) == 600) {
 			usleep(10);
 			x = 0;
 		}
 
-		cpu->sampling = old_sampling;
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 	}
 }
@@ -2887,8 +2882,7 @@ X(end_of_page2)
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc;
-	uint32_t iword;
+	uint32_t addr, low_pc, iword;
 	unsigned char *page;
 	unsigned char ib[2];
 	int main_opcode, isize = sizeof(ib);
@@ -2913,25 +2907,7 @@ X(to_be_translated)
 	addr &= ~((1 << SH_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
-#ifdef MODE32
 	page = cpu->cd.sh.host_load[(uint32_t)addr >> 12];
-#else
-	{
-		const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
-		const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
-		const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
-		uint32_t x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
-		uint32_t x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
-		uint32_t x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-
-		    DYNTRANS_L3N)) & mask3;
-		struct DYNTRANS_L2_64_TABLE *l2 = cpu->cd.sh.l1_64[x1];
-		struct DYNTRANS_L3_64_TABLE *l3 = l2->l3[x2];
-		page = l3->host_load[x3];
-	}
-#endif
-
-	if (cpu->translation_phys_page != NULL)
-		page = cpu->translation_phys_page;
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

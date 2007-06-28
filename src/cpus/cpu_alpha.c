@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.28 2007-06-19 02:11:46 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.29 2007-06-28 13:36:46 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -47,14 +47,11 @@
 #include "misc.h"
 #include "settings.h"
 #include "symbol.h"
-#include "timer.h"
 
 #define	DYNTRANS_8K
 #define	DYNTRANS_PAGESIZE	8192
 #include "tmp_alpha_head.c"
 
-
-extern int native_code_translation_enabled;
 
 /*  Alpha symbolic register names:  */
 static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES; 
@@ -132,10 +129,6 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 		template.interrupt_deassert = alpha_irq_interrupt_deassert; 
 		interrupt_handler_register(&template);
 	}
-
-	if (native_code_translation_enabled)
-		cpu->sampling_timer = timer_add(CPU_SAMPLE_TIMER_HZ,
-		    alpha_timer_sample_tick, cpu);
 
 	return 1;
 }

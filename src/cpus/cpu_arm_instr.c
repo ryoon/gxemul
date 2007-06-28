@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.76 2007-06-20 04:47:19 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.77 2007-06-28 13:36:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1571,17 +1571,12 @@ X(netbsd_idle)
 	if (rZ == 0) {
 		static int x = 0;
 
-		/*  Don't sample during sleep:  */
-		int old_sampling = cpu->sampling;
-
 		/*  Synch the program counter.  */
 		uint32_t low_pc = ((size_t)ic - (size_t)
 		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 		cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
 		    << ARM_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-		cpu->sampling = 0;
 
 		/*  Quasi-idle for a while:  */
 		cpu->has_been_idling = 1;
@@ -1590,9 +1585,7 @@ X(netbsd_idle)
 			x = 0;
 		}
 
-		cpu->sampling = old_sampling;
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
-
 		cpu->cd.arm.next_ic = &nothing_call;
 		return;
 	}
@@ -2539,10 +2532,7 @@ X(to_be_translated)
 	addr &= ~((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
-	if (cpu->translation_phys_page != NULL)
-		page = cpu->translation_phys_page;
-	else
-		page = cpu->cd.arm.host_load[addr >> 12];
+	page = cpu->cd.arm.host_load[addr >> 12];
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT! 0x%08x\n", addr);  */

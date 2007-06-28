@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.20 2007-06-24 22:46:46 debug Exp $
+ *  $Id: generate_tail.c,v 1.21 2007-06-28 13:36:47 debug Exp $
  */
 
 #include <stdio.h>
@@ -67,8 +67,6 @@ int main(int argc, char *argv[])
 	printf("\n/*\n *  AUTOMATICALLY GENERATED! Do not edit.\n */\n\n");
 
 	printf("extern size_t dyntrans_cache_size;\n");
-	printf("extern int native_code_translation_enabled;\n");
-	printf("#include \"native.h\"\n");
 
 	printf("#ifdef DYNTRANS_32\n");
 	printf("#define MODE32\n");
@@ -84,25 +82,10 @@ int main(int argc, char *argv[])
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_INIT_TABLES\n\n");
 
-	printf("#define DYNTRANS_TIMER_SAMPLE_TICK_DEF "
-	    "%s_timer_sample_tick\n", a);
-	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_TIMER_SAMPLE_TICK_DEF\n\n");
-
 	printf("#define DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE_DEF "
 	    "%s_tc_allocate_default_page\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE_DEF\n\n");
-
-	printf("#define DYNTRANS_ADD_TRANSLATABLE_RANGE_DEF "
-	    "%s_add_translatable_range\n", a);
-	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_ADD_TRANSLATABLE_RANGE_DEF\n\n");
-
-	printf("#define DYNTRANS_TRANSLATE_INTO_NATIVE_DEF "
-	    "%s_translate_into_native\n", a);
-	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_TRANSLATE_INTO_NATIVE_DEF\n\n");
 
 	printf("#define DYNTRANS_INVAL_ENTRY\n");
 	printf("#include \"cpu_dyntrans.c\"\n");

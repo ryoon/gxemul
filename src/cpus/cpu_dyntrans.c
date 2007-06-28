@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.183 2007-06-24 22:46:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.184 2007-06-28 13:36:46 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -330,7 +330,6 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 		 *  (This is the core dyntrans loop.)
 		 */
 		n_instrs = 0;
-		cpu->sampling = native_code_translation_enabled;
 
 		for (;;) {
 			struct DYNTRANS_IC *ic;
@@ -355,8 +354,6 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 			if (cpu->n_translated_instrs >= N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
-
-		cpu->sampling = 0;
 	}
 
 	n_instrs += cpu->n_translated_instrs;
@@ -428,162 +425,11 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 
 	cpu->ninstrs += n_instrs;
 
-	if (native_code_translation_enabled) {
-		int i;
-
-		for (i=0; i<cpu->sampling_ranges_to_translate; i++) {
-			DYNTRANS_TRANSLATE_INTO_NATIVE(cpu,
-			    cpu->ranges_to_translate[i].base,
-			    cpu->ranges_to_translate[i].length);
-		}
-
-		cpu->sampling_ranges_to_translate = 0;
-	}
-
 	/*  Return the nr of instructions executed:  */
 	return n_instrs;
 }
 #endif	/*  DYNTRANS_RUN_INSTR  */
 
-
-
-#ifdef DYNTRANS_TRANSLATE_INTO_NATIVE_DEF
-/*
- *  XXX_translate_into_native():
- */
-void DYNTRANS_TRANSLATE_INTO_NATIVE_DEF(struct cpu *cpu, uint64_t base,
-	uint64_t length)
-{
-	int saved_allow_instrcombs = cpu->machine->
-	    allow_instruction_combinations;
-	uint64_t saved_pc = cpu->pc;
-	struct DYNTRANS_TC_PHYSPAGE *saved_ic_page =
-	    (struct DYNTRANS_TC_PHYSPAGE *) cpu->cd.DYNTRANS_ARCH.cur_ic_page;
-	struct DYNTRANS_IC *saved_next_ic = cpu->cd.DYNTRANS_ARCH.next_ic;
-	struct DYNTRANS_IC *ic;
-	uint64_t pagenr;
-	uint32_t physpage_ofs = 0, *physpage_entryp;
-	struct DYNTRANS_TC_PHYSPAGE *ppp;
-	int i, table_index;
-	void (*resulting_function)(struct cpu *, struct DYNTRANS_IC *);
-
-fatal("[ translating physaddr 0x%"PRIx64" into native code ]\n", base);
-
-	cpu->translation_phys_page = memory_paddr_to_hostaddr(cpu->mem,
-	    base & ~((DYNTRANS_IC_ENTRIES_PER_PAGE <<
-	    DYNTRANS_INSTR_ALIGNMENT_SHIFT) - 1), MEM_READ);
-
-	if (cpu->translation_phys_page == NULL) {
-		fatal("[ hm? no hostaddr for physpage, during native code "
-		    "generation? TODO ]\n");
-		return;
-	}
-
-	pagenr = DYNTRANS_ADDR_TO_PAGENR(base);
-	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
-	physpage_entryp = &(((uint32_t *)cpu->translation_cache)[table_index]);
-	physpage_ofs = *physpage_entryp;
-	ppp = NULL;
-
-	/*  Traverse the physical page chain:  */
-	while (physpage_ofs != 0) {
-		ppp = (struct DYNTRANS_TC_PHYSPAGE *)(cpu->translation_cache
-		    + physpage_ofs);
-
-		/*  If we found the page in the cache, then we're done:  */
-		if (DYNTRANS_ADDR_TO_PAGENR(ppp->physaddr) == pagenr)
-			break;
-
-		/*  Try the next page in the chain:  */
-		physpage_ofs = ppp->next_ofs;
-	}
-
-	if (physpage_ofs == 0) {
-		fatal("XXX_translate_into_native: internal error! No"
-		    " physpage while translating to native?\n");
-		abort();
-	}
-
-	/*  Translate everything:  */
-	cpu->machine->allow_instruction_combinations = 0;
-	cpu->pc = base;
-	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
-	ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page + DYNTRANS_PC_TO_IC_ENTRY(base);
-	cpu->translation_readahead = MAX_DYNTRANS_READAHEAD;
-	i = 0;
-
-	cpu->native_instruction_buffer_curpos = 0;
-
-	while (cpu->translation_readahead > 0 && DYNTRANS_ADDR_TO_PAGENR(base +
-	    (i << DYNTRANS_INSTR_ALIGNMENT_SHIFT)) == pagenr) {
-		int lastpos = cpu->native_instruction_buffer_lastpos =
-		    cpu->native_instruction_buffer_curpos;
-		cpu->native_instruction_buffer[lastpos].opcode =
-		    NATIVE_OPCODE_MAKE_FALLBACK_SAFE;
-		cpu->native_instruction_buffer[lastpos].arg1 = i;
-		cpu->native_instruction_buffer[lastpos].arg2 = i + 1;
-		cpu->native_instruction_buffer[lastpos].arg3 = 0;
-
-		ic[i].f = TO_BE_TRANSLATED;
-
-		/*  Translate the instruction:  */
-		ic[i].f(cpu, ic+i);
-
-		if (i == 0 && (
-		    cpu->native_instruction_buffer[lastpos].opcode ==
-		    NATIVE_OPCODE_FALLBACK_SAFE ||
-		    cpu->native_instruction_buffer[lastpos].opcode ==
-		    NATIVE_OPCODE_FALLBACK_SIMPLE)) {
-			cpu->native_instruction_buffer[lastpos].arg3 =
-			    (size_t) (void *) ic[i].f;
-		}
-
-		/*  Translation failed? Then abort.  */
-		if (ic[i].f == TO_BE_TRANSLATED)
-			break;
-
-		cpu->translation_readahead --;
-		++i;
-	}
-
-	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].
-	    opcode = NATIVE_OPCODE_SET_NEXT_IC;
-	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].
-	    arg1 = i;
-	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].
-	    arg2 = 0;
-	cpu->native_instruction_buffer[cpu->native_instruction_buffer_curpos].
-	    arg3 = 0;
-	cpu->native_instruction_buffer_curpos ++;
-
-	cpu->translation_readahead = 0;
-
-	/*
-	 *  Tell the native code generation backend to generate code:
-	 */
-	cpu->native_nextic_offset =
-	    (size_t) &cpu->cd.DYNTRANS_ARCH.next_ic - (size_t) cpu;
-	cpu->native_ic_size = sizeof(struct DYNTRANS_IC);
-	resulting_function = (void (*)(struct cpu *, struct DYNTRANS_IC *))
-	    native_generate_code(cpu);
-
-	if (resulting_function != NULL) {
-		size_t function_len = (size_t)(cpu->translation_cache
-		    + cpu->translation_cache_cur_ofs) -
-		    (size_t)resulting_function;
-		ic[0].f = resulting_function;
-		native_icache_invalidate(resulting_function, function_len);
-	}
-
-	/*  Restore state:  */
-	cpu->translation_phys_page = NULL;
-	cpu->pc = saved_pc;
-	cpu->cd.DYNTRANS_ARCH.cur_ic_page =
-	    (struct DYNTRANS_IC *) saved_ic_page;
-	cpu->cd.DYNTRANS_ARCH.next_ic = saved_next_ic;
-	cpu->machine->allow_instruction_combinations = saved_allow_instrcombs;
-}
-#endif  /*  DYNTRANS_TRANSLATE_INTO_NATIVE_DEF  */
 
 
 #ifdef DYNTRANS_FUNCTION_TRACE_DEF
@@ -693,114 +539,6 @@ void DYNTRANS_FUNCTION_TRACE_DEF(struct cpu *cpu, uint64_t f, int n_args)
 
 
 
-#ifdef DYNTRANS_TIMER_SAMPLE_TICK_DEF
-/*
- *  XXX_timer_sample_tick():
- *
- *  Gathers statistics about which translation blocks are being executed.
- *  This can then be used to calculate if it is worth the effort to perform
- *  native code generation (which is assumed to have a large overhead, but
- *  will result in faster code).
- */
-void DYNTRANS_TIMER_SAMPLE_TICK_DEF(struct timer *timer, void *extra)
-{
-	struct cpu *cpu = extra;
-	struct DYNTRANS_TC_PHYSPAGE *ppp;
-	struct DYNTRANS_IC *next_ic;
-	size_t low_pc;
-	uint64_t paddr;
-	uint32_t physpage_ranges_offset;
-
-	/*
-	 *  Don't record a sample if any one of these is true:
-	 *
-	 *  1)  Sampling is not enabled. It should only be enabled during
-	 *      the core dyntrans loop. Also, when idling (i.e. when running
-	 *      usleep or similar) in cpu_*_instr.c, sampling should be
-	 *	disabled.
-	 *
-	 *  2)  Too many ranges to be translated are already in the queue.
-	 *
-	 *  3)  The physical page which contains this sample has a range
-	 *      which is already translated.
-	 */
-
-	if (!cpu->sampling ||
-	    cpu->sampling_ranges_to_translate >= MAX_RANGES_TO_TRANSLATE)
-		return;
-
-	/*  Get the physical address of the program counter:  */
-
-	next_ic = cpu->cd.DYNTRANS_ARCH.next_ic;
-	low_pc = ((size_t)next_ic - (size_t)cpu->cd.DYNTRANS_ARCH.cur_ic_page)
-	    / sizeof(struct DYNTRANS_IC);
-
-	/*  Not possible to represent as a physical address? Then abort.  */
-	if (low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE)
-		return;
-
-	ppp = cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
-	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
-
-	paddr = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
-	paddr &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
-	    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
-	paddr += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
-
-	/*  Scan for this range in the current page.  If this paddr is
-	    known to already be translated, then abort. Otherwise, increase
-	    the range's count.  */
-
-	physpage_ranges_offset = ppp->translation_ranges_ofs;
-
-	low_pc <<= DYNTRANS_INSTR_ALIGNMENT_SHIFT;
-
-	for (;;) {
-		size_t j;
-		struct physpage_ranges *physpage_ranges =
-		    (struct physpage_ranges *)
-		    (cpu->translation_cache + physpage_ranges_offset);
-
-		if (physpage_ranges_offset == 0)
-			break;
-
-		for (j=0; j<physpage_ranges->n_entries_used; j++) {
-			uint64_t start = physpage_ranges->base[j];
-			uint64_t length = physpage_ranges->length[j];
-
-			if (low_pc >= start && low_pc < start + length) {
-				/*  Don't sample if this range is already
-				    translated to native code:  */
-				if (physpage_ranges->count[j] >=
-				    cpu->sampling_threshold)
-					return;
-
-				physpage_ranges->count[j] ++;
-
-				if (physpage_ranges->count[j] >=
-				    cpu->sampling_threshold) {
-					cpu->ranges_to_translate[
-					    cpu->sampling_ranges_to_translate]
-					    .base = start + ppp->physaddr;
-					cpu->ranges_to_translate[
-					    cpu->sampling_ranges_to_translate]
-					    .length = length;
-					cpu->sampling_ranges_to_translate ++;
-				}
-
-				return;
-			}
-		}
-
-		physpage_ranges_offset = physpage_ranges->next_ofs;
-	}
-
-	/*  Hm... if we end up here, then no range had the paddr in it.  */
-}
-#endif	/*  DYNTRANS_TIMER_SAMPLE_TICK_DEF  */
-
-
-
 #ifdef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE_DEF
 /*
  *  XXX_tc_allocate_default_page():
@@ -829,82 +567,6 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE_DEF(struct cpu *cpu,
 	cpu->translation_cache_cur_ofs ++;
 }
 #endif	/*  DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE_DEF  */
-
-
-
-#ifdef DYNTRANS_ADD_TRANSLATABLE_RANGE_DEF
-/*  Helper function which allocates a physpage_ranges struct.  */
-static void allocate_physpage_ranges_struct(struct cpu *cpu, uint32_t *offsetp)
-{
-	struct physpage_ranges *physpage_ranges = (struct physpage_ranges *)
-	    (cpu->translation_cache + cpu->translation_cache_cur_ofs);
-
-	*offsetp = cpu->translation_cache_cur_ofs;
-
-	physpage_ranges->next_ofs = 0;
-	physpage_ranges->n_entries_used = 0;
-
-	cpu->translation_cache_cur_ofs += sizeof(struct physpage_ranges);
-
-	cpu->translation_cache_cur_ofs --;
-	cpu->translation_cache_cur_ofs |= 63;
-	cpu->translation_cache_cur_ofs ++;
-}
-
-/*
- *  XXX_add_translatable_range():
- *
- *  Adds a range (base, length) to the list of translatable ranges of the
- *  current page.
- */
-static void DYNTRANS_ADD_TRANSLATABLE_RANGE_DEF(struct cpu *cpu,
-	uint16_t base, uint16_t length)
-{ 
-	struct DYNTRANS_TC_PHYSPAGE *ppp = (struct DYNTRANS_TC_PHYSPAGE *)
-	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
-	uint32_t offset;
-
-	/*
-	 *  If there is no allocated physpage_ranges struct yet, then
-	 *  allocate one.
-	 */
-	if (ppp->translation_ranges_ofs == 0)
-		allocate_physpage_ranges_struct(cpu,
-		    &ppp->translation_ranges_ofs);
-
-	/*
-	 *  Loop until a physpage_ranges struct is found where there is
-	 *  room to add the new range:
-	 */
-	offset = ppp->translation_ranges_ofs;
-	for (;;) {
-		struct physpage_ranges *physpage_ranges =
-		    (struct physpage_ranges *)(cpu->translation_cache + offset);
-
-		/*  printf("adding base=%04x length=%04x (offset = %i)\n",
-		    base, length, offset);  */
-
-		if (physpage_ranges->n_entries_used <
-		    PHYSPAGE_RANGES_ENTRIES_PER_LIST) {
-			/*  There's room. Add the new range, and return:  */
-			int i = physpage_ranges->n_entries_used ++;
-			physpage_ranges->base[i] = base;
-			physpage_ranges->length[i] = length;
-			physpage_ranges->count[i] = 0;
-			return;
-		}
-
-		/*  No room. Go to the next struct.  */
-
-		/*  If there is no next, let's create one.  */
-		if (physpage_ranges->next_ofs == 0)
-			allocate_physpage_ranges_struct(cpu,
-			    &physpage_ranges->next_ofs);
-
-		offset = physpage_ranges->next_ofs;
-	}
-}
-#endif	/*  DYNTRANS_ADD_TRANSLATABLE_RANGE_DEF  */
 
 
 
@@ -2044,42 +1706,6 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 
 
 	/*
-	 *  When translating to native code, if the instruction was not
-	 *  specifically implemented, then do a fallback to a generic
-	 *  ic->f caller opcode.
-	 */
-	if (cpu->translation_phys_page != NULL &&
-	    cpu->native_instruction_buffer_lastpos ==
-	    cpu->native_instruction_buffer_curpos) {
-		switch (cpu->native_instruction_buffer[
-		    cpu->native_instruction_buffer_curpos].opcode) {
-
-		case NATIVE_OPCODE_MAKE_FALLBACK_SAFE:
-			cpu->native_instruction_buffer[
-			    cpu->native_instruction_buffer_curpos].opcode =
-			    NATIVE_OPCODE_FALLBACK_SAFE;
-			if (cpu->instruction_has_delayslot != NULL &&
-			    cpu->instruction_has_delayslot(cpu, ib))
-				cpu->native_instruction_buffer[cpu->
-				    native_instruction_buffer_curpos].arg2 ++;
-			break;
-
-		case NATIVE_OPCODE_MAKE_FALLBACK_SIMPLE:
-			cpu->native_instruction_buffer[cpu->
-			    native_instruction_buffer_curpos].opcode =
-			    NATIVE_OPCODE_FALLBACK_SIMPLE;
-			break;
-
-		default:fatal("\nInternal error in the native code generator.\n"
-			    "Inconsistent state of the instruction buffer.\n");
-			abort();
-		}
-
-		cpu->native_instruction_buffer_curpos ++;
-	}
-
-
-	/*
 	 *  Now it is time to check for combinations of instructions that can
 	 *  be converted into a single function call.
 	 *
@@ -2163,12 +1789,6 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 			cpu->translation_readahead --;
 			++i;
 		}
-
-		if (native_code_translation_enabled)
-			DYNTRANS_TC_ADD_TRANSLATABLE_RANGE(cpu, baseaddr
-			    & ((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
-			    DYNTRANS_INSTR_ALIGNMENT_SHIFT),
-			    i << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 
 		cpu->translation_readahead = 0;
 	}

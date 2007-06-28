@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.140 2007-06-24 22:46:46 debug Exp $
+ *  $Id: cpu.h,v 1.141 2007-06-28 13:36:47 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -243,7 +243,6 @@ struct cpu;
 struct emul;
 struct machine;
 struct memory;
-struct native_instruction;
 struct settings;
 
 
@@ -314,24 +313,13 @@ struct cpu_family {
 #define	N_SAFE_DYNTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_DYNTRANS_LIMIT	((1 << (N_SAFE_DYNTRANS_LIMIT_SHIFT - 1)) - 1)
 
-#define	MAX_DYNTRANS_READAHEAD		1024
+#define	MAX_DYNTRANS_READAHEAD		128
 
-#define	DEFAULT_DYNTRANS_CACHE_SIZE	(64*1048576)
+#define	DEFAULT_DYNTRANS_CACHE_SIZE	(48*1048576)
 #define	DYNTRANS_CACHE_MARGIN		200000
 
 #define	N_BASE_TABLE_ENTRIES		65536
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
-
-#define	CPU_SAMPLE_TIMER_HZ		TIMER_BASE_FREQUENCY
-#define	DEFAULT_THRESHOLD_FOR_NATIVE_TRANSLATION  ((int)TIMER_BASE_FREQUENCY/2)
-
-#define	MAX_RANGES_TO_TRANSLATE		8
-struct range_to_translate {
-	uint64_t	base;
-	uint64_t	length;
-};
-
-#define	NATIVE_BUFFER_SIZE_NINSTRS	16384
 
 
 /*
@@ -357,21 +345,6 @@ struct cpu {
 	int64_t		ninstrs_flush;
 	int64_t		ninstrs_since_gettimeofday;
 	struct timeval	starttime;
-
-	/*
-	 *  Periodic sampling of the physical address corresponding to the
-	 *  emulated program counter:
-	 *
-	 *  (Used to decide whether or not native code generation is worth
-	 *  the effort. When the number of samples in a range of instructions
-	 *  on a physical page reaches sampling_threshold, the range is
-	 *  recompiled/translated to native code.)
-	 */
-	struct timer	*sampling_timer;
-	uint8_t		sampling;		/*  1 = turned on, 0 = off  */
-	int16_t		sampling_threshold;
-	int16_t		sampling_ranges_to_translate;
-	struct range_to_translate ranges_to_translate[MAX_RANGES_TO_TRANSLATE];
 
 	/*  EMUL_LITTLE_ENDIAN or EMUL_BIG_ENDIAN.  */
 	uint8_t		byte_order;
@@ -448,28 +421,15 @@ struct cpu {
 	 *  everything restarts from scratch.
 	 *
 	 *  translation_readahead is non-zero when translating instructions
-	 *  ahead of the current (emulated) instruction pointer. (Note: Not
-	 *  necessarily into native code.)
-	 *
- 	 *  translation_phys_page is non-NULL when translating a physical
-	 *  range of addresses into native code. It points to the page in
-	 *  host memory which corresponds to the emulated physical page.
+	 *  ahead of the current (emulated) instruction pointer.
 	 */
+
+	int		translation_readahead;
 
 	/*  Instruction translation cache:  */
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
-
-	int		translation_readahead;
-
-	void		*translation_phys_page;
-
-	size_t		native_nextic_offset;
-	size_t		native_ic_size;
-	struct native_instruction *native_instruction_buffer;
-	int		native_instruction_buffer_curpos;
-	int		native_instruction_buffer_lastpos;
 
 
 	/*

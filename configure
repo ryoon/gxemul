@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.273 2007-06-24 00:28:41 debug Exp $
+#  $Id: configure,v 1.274 2007-06-28 13:36:45 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1165,18 +1165,6 @@ rm -f _test_end*
 
 ###############################################################################
 
-printf "detecting host architecture... "
-X=`uname -m`
-echo $X
-
-if [ z$X = zalpha ]; then
-	printf "#define HOST_ALPHA\n" >> config.h
-	printf "#define NATIVE_ICACHE_INVALIDATE\n" >> config.h
-fi
-
-
-###############################################################################
-
 INCLUDE=-Iinclude/
 DINCLUDE=-I../include/
 
@@ -1197,7 +1185,7 @@ echo "" >> _Makefile.header
 
 #  Create the Makefiles:
 D=". src src/include src/console src/cpus src/debugger src/devices"
-D="$D src/devices/fonts src/disk src/file src/machines src/native"
+D="$D src/devices/fonts src/disk src/file src/machines"
 D="$D src/net src/promemul src/symbol src/useremul"
 for a in $D; do
 	echo "creating $a/Makefile"

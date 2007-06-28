@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.309 2007-06-24 02:37:19 debug Exp $
+ *  $Id: main.c,v 1.310 2007-06-28 13:36:45 debug Exp $
  */
 
 #include <stdio.h>
@@ -43,7 +43,6 @@
 #include "emul.h"
 #include "machine.h"
 #include "misc.h"
-#include "native.h"
 #include "settings.h"
 #include "timer.h"
 #include "useremul.h"
@@ -62,7 +61,6 @@ char **extra_argv;
 char *progname;
 
 size_t dyntrans_cache_size = DEFAULT_DYNTRANS_CACHE_SIZE;
-int native_code_translation_enabled = 0;
 int skip_srandom_call = 0;
 
 
@@ -305,9 +303,6 @@ static void usage(int longusage)
 	    " get a list of\n            available emulation modes)\n");
 
 	printf("\nGeneral options:\n");
-	printf("  -b        enable native code generation, if available\n");
-	printf("  -B        disable native code generation (this is "
-	    "the default)\n");
 	printf("  -c cmd    add cmd as a command to run before starting "
 	    "the simulation\n");
 	printf("  -D        skip the srandom call at startup\n");
@@ -356,7 +351,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "bBC:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtUu:VvW:"
+	    "C:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtUu:VvW:"
 #ifdef WITH_X11
 	    "XxY:"
 #endif
@@ -364,12 +359,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
-		case 'b':
-			native_code_translation_enabled = 1;
-			break;
-		case 'B':
-			native_code_translation_enabled = 0;
-			break;
 		case 'C':
 			CHECK_ALLOCATION(m->cpu_name = strdup(optarg));
 			msopts = 1;
@@ -493,7 +482,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 's':
 			machine_statistics_init(m, optarg);
-			native_code_translation_enabled = 0;
 			msopts = 1;
 			break;
 		case 'T':
@@ -697,9 +685,6 @@ int main(int argc, char *argv[])
 	    SETTINGS_FORMAT_BOOL, (void *)&constant_false);
 
 	/*  Read-only settings:  */
-	settings_add(global_settings, "native_code_translation_enabled", 0,
-	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
-	    (void *)&native_code_translation_enabled);
 	settings_add(global_settings, "single_step", 0,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&single_step);
 
@@ -740,9 +725,6 @@ int main(int argc, char *argv[])
 	debug("GXemul "VERSION"    Copyright (C) 2003-2007  Anders Gavare\n");
 	debug("Read the source code and/or documentation for "
 	    "other Copyright messages.\n\n");
-
-	if (native_code_translation_enabled)
-		native_init();
 
 	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE) {
 		n_emuls --;

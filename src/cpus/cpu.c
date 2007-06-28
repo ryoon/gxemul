@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.5 2007-06-24 22:46:46 debug Exp $
+ *  $Id: cpu.c,v 1.6 2007-06-28 13:36:45 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -39,13 +39,11 @@
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
-#include "native.h"
 #include "settings.h"
 #include "timer.h"
 
 
 extern size_t dyntrans_cache_size;
-extern int native_code_translation_enabled;
 
 static struct cpu_family *first_cpu_family = NULL;
 
@@ -88,8 +86,6 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	cpu->byte_order = EMUL_UNDEFINED_ENDIAN;
 	cpu->running    = 0;
 
-	cpu->sampling_threshold = DEFAULT_THRESHOLD_FOR_NATIVE_TRANSLATION;
-
 	/*  Create settings, and attach to the machine:  */
 	cpu->settings = settings_new();
 	snprintf(tmpstr, sizeof(tmpstr), "cpu[%i]", cpu_id);
@@ -100,9 +96,6 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	    SETTINGS_FORMAT_STRING, (void *) &cpu->name);
 	settings_add(cpu->settings, "running", 0, SETTINGS_TYPE_UINT8,
 	    SETTINGS_FORMAT_YESNO, (void *) &cpu->running);
-	settings_add(cpu->settings, "sampling_threshold", 1,
-	    SETTINGS_TYPE_UINT16, SETTINGS_FORMAT_DECIMAL,
-	    (void *) &cpu->sampling_threshold);
 
 	cpu_create_or_reset_tc(cpu);
 
@@ -148,12 +141,8 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
  */
 void cpu_destroy(struct cpu *cpu)
 {
-	if (cpu->sampling_timer != NULL)
-		timer_remove(cpu->sampling_timer);
-
 	settings_remove(cpu->settings, "name");
 	settings_remove(cpu->settings, "running");
-	settings_remove(cpu->settings, "sampling_threshold");
 
 	/*  Remove any remaining level-1 settings:  */
 	settings_remove_all(cpu->settings);
@@ -303,17 +292,8 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 {
 	size_t s = dyntrans_cache_size + DYNTRANS_CACHE_MARGIN;
 
-	if (cpu->translation_cache == NULL) {
+	if (cpu->translation_cache == NULL)
 		cpu->translation_cache = zeroed_alloc(s);
-
-		if (native_code_translation_enabled)
-			mprotect(cpu->translation_cache, s,
-			    PROT_READ | PROT_WRITE | PROT_EXEC);
-
-		cpu->native_instruction_buffer = zeroed_alloc(
-		    sizeof(struct native_instruction) *
-		    NATIVE_BUFFER_SIZE_NINSTRS);
-	}
 
 	/*  Create an empty table at the beginning of the translation cache:  */
 	memset(cpu->translation_cache, 0, sizeof(uint32_t)

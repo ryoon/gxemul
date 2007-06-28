@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.17 2007-06-20 04:47:19 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.18 2007-06-28 13:36:46 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -786,9 +786,6 @@ X(to_be_translated)
 		struct DYNTRANS_L3_64_TABLE *l3 = l2->l3[x2];
 		page = l3->host_load[x3];
 	}
-
-	if (cpu->translation_phys_page != NULL)
-		page = cpu->translation_phys_page;
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

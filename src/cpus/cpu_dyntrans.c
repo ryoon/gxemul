@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.184 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.185 2007-06-29 02:49:17 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -203,6 +203,11 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 #ifdef DYNTRANS_ARM
 	if (cpu->cd.arm.irq_asserted && !(cpu->cd.arm.cpsr & ARM_FLAG_I))
 		arm_exception(cpu, ARM_EXCEPTION_IRQ);
+#endif
+#ifdef DYNTRANS_M88K
+	if (cpu->cd.m88k.irq_asserted &&
+	    !(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_IND))
+		m88k_exception(cpu, M88K_EXCEPTION_INTERRUPT, 0);
 #endif
 #ifdef DYNTRANS_MIPS
 	{

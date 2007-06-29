@@ -25,11 +25,17 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_pcc2.c,v 1.4 2007-06-15 19:57:33 debug Exp $
+ *  $Id: dev_pcc2.c,v 1.5 2007-06-29 02:49:17 debug Exp $
  *
- *  COMMENT: PCC2 bus (used in MVME machine)
+ *  COMMENT: Peripheral Channel Controller (PCC2) bus (used in MVME machine)
  *
- *  TODO
+ *  See "Single Board Computers Programmer's Reference Guide (Part 2 of 2)",
+ *  "VMESBCA2/PG1" (vmesbcp2.pdf) for more details.
+ *
+ *  Note: This is somewhat MVME187-specific, at the moment.
+ *
+ *
+ *  TODO: Lots of stuff.
  */
 
 #include <stdio.h>
@@ -39,25 +45,47 @@
 #include "cpu.h"
 #include "device.h"
 #include "emul.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
+#include "mvme187.h"
 #include "mvme_pcctworeg.h"
+
+#define	INTERRUPT_LEVEL_MASK	0x07
 
 
 /*  #define	debug fatal  */
 
 struct pcc2_data {
+	struct interrupt	cpu_irq;
+
 	uint8_t			pcctwo_reg[PCC2_SIZE];
+
+	uint8_t			cur_int_vec;
 };
+
+
+static void reassert_interrupts(struct pcc2_data *d)
+{
+	/*  Block interrupts at the mask level or lower:  */
+	if ((d->pcctwo_reg[PCCTWO_IPL] & INTERRUPT_LEVEL_MASK) <=
+	    (d->pcctwo_reg[PCCTWO_MASK] & INTERRUPT_LEVEL_MASK))
+		INTERRUPT_DEASSERT(d->cpu_irq);
+	else
+		INTERRUPT_ASSERT(d->cpu_irq);
+}
 
 
 DEVICE_ACCESS(pcc2)
 {
 	uint64_t idata = 0, odata = 0;
 	struct pcc2_data *d = extra;
+
+	/*  0xfff42000..0xfff42fff, but only 0x40 unique registers:  */
+	relative_addr %= PCC2_SIZE;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -75,20 +103,30 @@ DEVICE_ACCESS(pcc2)
 		}
 		break;
 
-	case PCCTWO_GENCTL:
 	case PCCTWO_VECBASE:
-		if (writeflag == MEM_WRITE)
-			d->pcctwo_reg[relative_addr] = idata;
+		if (writeflag == MEM_WRITE) {
+			d->pcctwo_reg[PCCTWO_VECBASE] = idata & 0xf0;
+			if (idata & ~0xf0)
+				fatal("[ pcc2: HUH? write to PCCTWO_VECBASE"
+				    " with value 0x%02x. ]\n", (int) idata);
+		}
+		break;
+
+	case PCCTWO_IPL:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ pcc2: HUH? Write attempt to PCCTWO_IPL. ]\n");
+		}
 		break;
 
 	case PCCTWO_MASK:
 		if (writeflag == MEM_WRITE) {
 			d->pcctwo_reg[relative_addr] = idata;
-			/*  TODO: Re-Assert interrupts!  */
+			reassert_interrupts(d);
 		}
 		break;
 
-	default:debug("[ pcc2: unimplemented %s offset 0x%x",
+	default:
+		debug("[ pcc2: unimplemented %s offset 0x%x",
 		    writeflag == MEM_WRITE? "write to" : "read from",
 		    (int) relative_addr);
 		if (writeflag == MEM_WRITE)
@@ -104,6 +142,22 @@ DEVICE_ACCESS(pcc2)
 }
 
 
+DEVICE_ACCESS(mvme187_iack)
+{
+	uint64_t odata = 0;
+	struct pcc2_data *d = extra;
+
+	if (writeflag == MEM_WRITE) {
+		fatal("[ pcc2: write to mvme187_iack? ]\n");
+	} else {
+		odata = d->cur_int_vec;
+		memory_writemax64(cpu, data, len, odata);
+	}
+
+	return 1;
+}
+
+
 DEVINIT(pcc2)
 {
 	struct pcc2_data *d;
@@ -111,10 +165,20 @@ DEVINIT(pcc2)
 	CHECK_ALLOCATION(d = malloc(sizeof(struct pcc2_data)));
 	memset(d, 0, sizeof(struct pcc2_data));
 
+	/*  Initial values, according to the manual:  */
 	d->pcctwo_reg[PCCTWO_CHIPID] = PCC2_ID;
+	d->pcctwo_reg[PCCTWO_CHIPREV] = 0x00;
+	d->pcctwo_reg[PCCTWO_VECBASE] = 0x0f;
+
+	/*  Connect to the CPU's interrupt pin:  */
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->cpu_irq);
 
 	memory_device_register(devinit->machine->memory, "pcc2",
-	    devinit->addr, PCC2_SIZE, dev_pcc2_access, (void *)d,
+	    devinit->addr, 4096, dev_pcc2_access, (void *)d,
+	    DM_DEFAULT, NULL);
+
+	memory_device_register(devinit->machine->memory, "mvme187_iack",
+	    M187_IACK, 32, dev_mvme187_iack_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
 	return 1;

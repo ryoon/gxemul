@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1628 2007-06-28 14:58:37 debug Exp $
+$Id: HISTORY,v 1.1629 2007-06-29 02:49:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3655,3 +3655,4 @@ Changelog for GXemul:
 20070629	Removing the (practically unusable) support for multiple
 		emulations. (The single emulation allowed now still supports
 		multiple simultaneous machines, as before.)
+		Beginning on PCCTWO and M88K interrupts.

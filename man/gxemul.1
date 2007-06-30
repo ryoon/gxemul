@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.100 2007-06-30 13:38:02 debug Exp $
+.\" $Id: gxemul.1,v 1.101 2007-06-30 13:55:02 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -34,7 +34,7 @@
 .Os
 .Sh NAME
 .Nm gxemul
-.Nd an experimental machine emulation framework
+.Nd an experimental framework for full-system machine emulation
 .Sh SYNOPSIS
 .Nm
 .Op machine, other, and general options
@@ -55,8 +55,9 @@ on real hardware.
 .Pp
 The emulator emulates (networks of) real machines. The machines may
 consist of ARM, MIPS, PowerPC, and SuperH processors, and various
-surrounding hardware components such as framebuffers, interrupt
-controllers, busses, disk controllers, and serial port controllers.  
+surrounding hardware components such as framebuffers, busses, interrupt
+controllers, ethernet controllers, disk controllers, and serial port
+controllers.
 .Pp
 The emulator can be invoked in the following ways:
 .Pp

@@ -1,4 +1,4 @@
-/*  gxemul: $Id: exec_elf.h,v 1.6 2005-09-08 20:06:49 debug Exp $  */
+/*  gxemul: $Id: exec_elf.h,v 1.7 2007-07-20 09:03:33 debug Exp $  */
 
 #ifndef	__EXEC_ELF_H
 #define	__EXEC_ELF_H
@@ -218,6 +218,7 @@ typedef struct {
 #define	EM_AMD64	62	/* AMD64  (GXemul addition)  */
 #define	EM_VAX		75	/* DIGITAL VAX */
 #define	EM_AVR		83	/* Atmel AVR  (GXemul addition)  */
+#define	EM_M32R		88	/* Renesas M32R  (GXemul addition)  */
 #define	EM_ALPHA_EXP	36902	/* used by NetBSD/alpha; obsolete */
 #define	EM_NUM		36903
 

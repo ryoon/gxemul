@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.21 2007-06-07 15:36:24 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.22 2007-07-20 09:03:33 debug Exp $
  */
 
 #include "misc.h"
@@ -37,7 +37,6 @@
 #include "m88k_psl.h"
 
 struct cpu_family;
-struct timer;
 
 /*  M88K CPU types:  */
 struct m88k_cpu_type_def {
@@ -272,7 +271,6 @@ void m88k_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void m88k_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void m88k_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
-void m88k_timer_sample_tick(struct timer *, void *);
 int m88k_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int m88k_cpu_family_init(struct cpu_family *);

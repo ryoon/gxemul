@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.71 2007-06-07 15:36:25 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.72 2007-07-20 09:03:33 debug Exp $
  */
 
 #include "misc.h"
@@ -212,7 +212,6 @@ void ppc32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void ppc_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 void ppc32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 void ppc_init_64bit_dummy_tables(struct cpu *cpu);
-void ppc_timer_sample_tick(struct timer *, void *);
 int ppc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int ppc_cpu_family_init(struct cpu_family *);

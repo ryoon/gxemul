@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.141 2007-06-28 13:36:47 debug Exp $
+ *  $Id: cpu.h,v 1.142 2007-07-20 09:03:33 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -233,6 +233,7 @@ struct physpage_ranges {
 /*  Include all CPUs' header files here:  */
 #include "cpu_alpha.h"
 #include "cpu_arm.h"
+#include "cpu_m32r.h"
 #include "cpu_m88k.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
@@ -442,6 +443,7 @@ struct cpu {
 	union {
 		struct alpha_cpu      alpha;
 		struct arm_cpu        arm;
+		struct m32r_cpu       m32r;
 		struct m88k_cpu       m88k;
 		struct mips_cpu       mips;
 		struct ppc_cpu        ppc;

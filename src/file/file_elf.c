@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_elf.c,v 1.6 2007-06-17 23:32:20 debug Exp $
+ *  $Id: file_elf.c,v 1.7 2007-07-20 09:03:33 debug Exp $
  *
  *  COMMENT: ELF file support
  */
@@ -36,29 +36,31 @@
 #include "exec_elf.h"
 
 /*  ELF machine types as strings: (same as exec_elf.h)  */
-#define N_ELF_MACHINE_TYPES     84
+#define N_ELF_MACHINE_TYPES     89
 static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
-        "NONE", "M32", "SPARC", "386",                          /*  0..3  */
-        "68K", "88K", "486", "860",                             /*  4..7  */  
-        "MIPS", "S370", "MIPS_RS3_LE", "RS6000",                /*  8..11  */
-        "unknown12", "unknown13", "unknown14", "PARISC",        /*  12..15  */
-        "NCUBE", "VPP500", "SPARC32PLUS", "960",                /*  16..19  */
-        "PPC", "PPC64", "unknown22", "unknown23",               /*  20..23  */
-        "unknown24", "unknown25", "unknown26", "unknown27",     /*  24..27  */
-        "unknown28", "unknown29", "unknown30", "unknown31",     /*  28..31  */
-        "unknown32", "unknown33", "unknown34", "unknown35",     /*  32..35  */
-        "V800", "FR20", "RH32", "RCE",                          /*  36..39  */
-        "ARM", "ALPHA", "SH", "SPARCV9",                        /*  40..43  */
-        "TRICORE", "ARC", "H8_300", "H8_300H",                  /*  44..47  */
-        "H8S", "H8_500", "IA_64", "MIPS_X",                     /*  48..51  */
-        "COLDFIRE", "68HC12", "unknown54", "unknown55",         /*  52..55  */
-        "unknown56", "unknown57", "unknown58", "unknown59",     /*  56..59  */
-        "unknown60", "unknown61", "AMD64", "unknown63",         /*  60..63  */
-        "unknown64", "unknown65", "unknown66", "unknown67",     /*  64..67  */
-        "unknown68", "unknown69", "unknown70", "unknown71",     /*  68..71  */
-        "unknown72", "unknown73", "unknown74", "unknown75",     /*  72..75  */
-        "unknown76", "unknown77", "unknown78", "unknown79",     /*  76..79  */
-        "unknown80", "unknown81", "unknown82", "AVR"            /*  80..83  */
+        "NONE", "M32", "SPARC", "386",				/*  0..3  */
+        "68K", "88K", "486", "860",				/*  4..7  */  
+        "MIPS", "S370", "MIPS_RS3_LE", "RS6000",		/*  8..11  */
+        "unknown12", "unknown13", "unknown14", "PARISC",	/*  12..15  */
+        "NCUBE", "VPP500", "SPARC32PLUS", "960",		/*  16..19  */
+        "PPC", "PPC64", "unknown22", "unknown23",		/*  20..23  */
+        "unknown24", "unknown25", "unknown26", "unknown27",	/*  24..27  */
+        "unknown28", "unknown29", "unknown30", "unknown31",	/*  28..31  */
+        "unknown32", "unknown33", "unknown34", "unknown35",	/*  32..35  */
+        "V800", "FR20", "RH32", "RCE",				/*  36..39  */
+        "ARM", "ALPHA", "SH", "SPARCV9",			/*  40..43  */
+        "TRICORE", "ARC", "H8_300", "H8_300H",			/*  44..47  */
+        "H8S", "H8_500", "IA_64", "MIPS_X",			/*  48..51  */
+        "COLDFIRE", "68HC12", "unknown54", "unknown55",		/*  52..55  */
+        "unknown56", "unknown57", "unknown58", "unknown59",	/*  56..59  */
+        "unknown60", "unknown61", "AMD64", "unknown63",		/*  60..63  */
+        "unknown64", "unknown65", "unknown66", "unknown67",	/*  64..67  */
+        "unknown68", "unknown69", "unknown70", "unknown71",	/*  68..71  */
+        "unknown72", "unknown73", "unknown74", "unknown75",	/*  72..75  */
+        "unknown76", "unknown77", "unknown78", "unknown79",	/*  76..79  */
+        "unknown80", "unknown81", "unknown82", "AVR",		/*  80..83  */
+        "unknown84", "unknown85", "unknown86", "unknown87",	/*  84..87  */
+        "M32R"							/*  88      */
 };
 
 
@@ -244,13 +246,19 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		case EM_IA_64:
 			ok = 1;
 		}
-		break;  */
-	/*  case ARCH_M68K:
+		break;
+	case ARCH_M68K:
 		switch (emachine) {
 		case EM_68K:
 			ok = 1;
 		}
 		break;  */
+	case ARCH_M32R:
+		switch (emachine) {
+		case EM_M32R:
+			ok = 1;
+		}
+		break;
 	case ARCH_MIPS:
 		switch (emachine) {
 		case EM_MIPS:

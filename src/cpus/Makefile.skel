@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.39 2007-06-19 04:14:59 debug Exp $
+#  $Id: Makefile.skel,v 1.40 2007-07-20 09:03:33 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -113,6 +113,18 @@ tmp_arm_head.c: generate_head
 
 tmp_arm_tail.c: generate_tail
 	./generate_tail arm ARM > tmp_arm_tail.c
+
+
+###############################################################################
+
+cpu_m32r.o: cpu_m32r.c cpu_m32r_instr.c cpu_dyntrans.c memory_rw.c \
+	tmp_m32r_head.c tmp_m32r_tail.c
+
+tmp_m32r_head.c: generate_head
+	./generate_head m32r M32R > tmp_m32r_head.c
+
+tmp_m32r_tail.c: generate_tail
+	./generate_tail m32r M32R > tmp_m32r_tail.c
 
 
 ###############################################################################

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.38 2007-06-15 18:08:10 debug Exp $
+ *  $Id: machine_test.c,v 1.39 2007-07-20 09:03:33 debug Exp $
  *
  *  COMMENT: Various test machines
  *
@@ -240,6 +240,50 @@ MACHINE_REGISTER(testarm)
 	machine_entry_add_alias(me, "testarm");
 }
 
+
+
+MACHINE_SETUP(barem32r)
+{
+	machine->machine_name = "Generic \"bare\" M32R machine";
+}
+
+
+MACHINE_SETUP(testm32r)
+{
+	machine->machine_name = "M32R test machine";
+
+	default_test(machine, cpu);
+}
+
+
+MACHINE_DEFAULT_CPU(barem32r)
+{
+	machine->cpu_name = strdup("M32R");
+}
+
+
+MACHINE_DEFAULT_CPU(testm32r)
+{
+	machine->cpu_name = strdup("M32R");
+}
+
+
+MACHINE_REGISTER(barem32r)
+{
+	MR_DEFAULT(barem32r, "Generic \"bare\" M32R machine",
+	    ARCH_M32R, MACHINE_BAREM32R);
+
+	machine_entry_add_alias(me, "barem32r");
+}
+
+
+MACHINE_REGISTER(testm32r)
+{
+	MR_DEFAULT(testm32r, "Test-machine for M32R",
+	    ARCH_M32R, MACHINE_TESTM32R);
+
+	machine_entry_add_alias(me, "testm32r");
+}
 
 
 MACHINE_SETUP(barem88k)

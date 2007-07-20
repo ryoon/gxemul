@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1629 2007-06-29 02:49:16 debug Exp $
+$Id: HISTORY,v 1.1630 2007-07-20 09:03:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3656,3 +3656,4 @@ Changelog for GXemul:
 		emulations. (The single emulation allowed now still supports
 		multiple simultaneous machines, as before.)
 		Beginning on PCCTWO and M88K interrupts.
+20070723	Adding a dummy skeleton for emulation of M32R processors.

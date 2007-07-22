@@ -1,4 +1,4 @@
-$Id: TODO,v 1.554 2007-06-28 15:06:05 debug Exp $
+$Id: TODO,v 1.555 2007-07-22 22:35:46 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -468,6 +468,8 @@ File/disk/symbol handling:
 	    (Perhaps this needs a reasonably large re-write.)
 	o)  Remove some of the complexity in file format guessing, for
 		Ultrix kernels that are actually disk images?
+	o)  Remove temporary files (/tmp/gxemul.blahblah) if loading fails
+	    for some reason (unrecognized file, etc).
 	o)  Better handling of tape files	
 	o)  Read function argument count and types from binaries? (ELF?)
 	o)  Better demangling of C++ names. Note: GNU's C++ differs from e.g.

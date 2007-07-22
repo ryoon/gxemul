@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m32r.c,v 1.1 2007-07-20 09:03:33 debug Exp $
+ *  $Id: memory_m32r.c,v 1.2 2007-07-22 22:35:46 debug Exp $
  *
  *  Virtual to physical memory translation for M32R emulation.
  *
@@ -58,7 +58,7 @@ int m32r_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
 	 *  TODO
 	 */
 
-	*return_paddr = vaddr;
+	*return_paddr = vaddr & 0x7fffffff;
 	return 2;
 }
 

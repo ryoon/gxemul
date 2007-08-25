@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.11 2007-06-28 14:58:38 debug Exp $
+ *  $Id: net.c,v 1.12 2007-08-25 22:27:28 debug Exp $
  *
  *  Emulated network.
  *
@@ -669,7 +669,7 @@ void net_dumpinfo(struct net *net)
 	debug(" (max outgoing: TCP=%i, UDP=%i)\n",
 	    MAX_TCP_CONNECTIONS, MAX_UDP_CONNECTIONS);
 
-	debug("simulated gateway: ");
+	debug("simulated gateway+nameserver: ");
 	net_debugaddr(&net->gateway_ipv4_addr, NET_ADDR_IPV4);
 	debug(" (");
 	net_debugaddr(&net->gateway_ethernet_addr, NET_ADDR_ETHERNET);

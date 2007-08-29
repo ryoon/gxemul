@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.33 2007-06-15 19:57:33 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.34 2007-08-29 20:36:49 debug Exp $
  *  
  *  COMMENT: PlayStation 2 misc stuff (timer, DMA, interrupts, ...)
  *
@@ -409,9 +409,9 @@ DEVINIT(ps2)
 	/*
 	 *  Register interrupts:
 	 *
-	 *	16 normal IRQs	(emul[x].machine[x].cpu[x].ps2_intr.%i)
-	 *	16 DMA IRQs	(emul[x].machine[x].cpu[x].ps2_dmac.%i)
-	 *	 2 sbus IRQs	(emul[x].machine[x].cpu[x].ps2_sbus.%i)
+	 *	16 normal IRQs	(machine[x].cpu[x].ps2_intr.%i)
+	 *	16 DMA IRQs	(machine[x].cpu[x].ps2_dmac.%i)
+	 *	 2 sbus IRQs	(machine[x].cpu[x].ps2_sbus.%i)
 	 */
 	for (i=0; i<16; i++) {
 		snprintf(n, sizeof(n), "%s.ps2_intr.%i",

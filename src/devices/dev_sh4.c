@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.50 2007-06-15 19:57:34 debug Exp $
+ *  $Id: dev_sh4.c,v 1.51 2007-08-29 20:36:49 debug Exp $
  *  
  *  COMMENT: SH4-specific memory mapped registers (0xf0000000 - 0xffffffff)
  *
@@ -1724,19 +1724,19 @@ DEVINIT(sh4)
 	d->tcor[1] = 0xffffffff; d->tcnt[1] = 0xffffffff;
 	d->tcor[2] = 0xffffffff; d->tcnt[2] = 0xffffffff;
 
-	snprintf(tmp, sizeof(tmp), "emul[0].machine[0].cpu[0].irq[0x%x]",
+	snprintf(tmp, sizeof(tmp), "machine[0].cpu[0].irq[0x%x]",
 	    SH_INTEVT_TMU0_TUNI0);
 	if (!interrupt_handler_lookup(tmp, &d->timer_irq[0])) {
 		fatal("Could not find interrupt '%s'.\n", tmp);
 		exit(1);
 	}
-	snprintf(tmp, sizeof(tmp), "emul[0].machine[0].cpu[0].irq[0x%x]",
+	snprintf(tmp, sizeof(tmp), "machine[0].cpu[0].irq[0x%x]",
 	    SH_INTEVT_TMU1_TUNI1);
 	if (!interrupt_handler_lookup(tmp, &d->timer_irq[1])) {
 		fatal("Could not find interrupt '%s'.\n", tmp);
 		exit(1);
 	}
-	snprintf(tmp, sizeof(tmp), "emul[0].machine[0].cpu[0].irq[0x%x]",
+	snprintf(tmp, sizeof(tmp), "machine[0].cpu[0].irq[0x%x]",
 	    SH_INTEVT_TMU2_TUNI2);
 	if (!interrupt_handler_lookup(tmp, &d->timer_irq[2])) {
 		fatal("Could not find interrupt '%s'.\n", tmp);

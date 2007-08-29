@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.39 2007-07-20 09:03:33 debug Exp $
+ *  $Id: machine_test.c,v 1.40 2007-08-29 20:36:49 debug Exp $
  *
  *  COMMENT: Various test machines
  *
@@ -83,7 +83,7 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 	/*
 	 *  First add the interrupt controller. Most processor architectures
 	 *  in GXemul have only 1 interrupt pin on the CPU, and it is simply
-	 *  called "emul[x].machine[y].cpu[z]".
+	 *  called "machine[y].cpu[z]".
 	 *
 	 *  MIPS is an exception, dealt with in a separate setup function.
 	 *  ARM and SH are dealt with here.

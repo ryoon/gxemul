@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.4 2007-06-28 14:58:38 debug Exp $
+ *  $Id: machine.c,v 1.5 2007-08-29 20:36:49 debug Exp $
  */
 
 #include <stdio.h>
@@ -69,10 +69,9 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	if (name != NULL)
 		CHECK_ALLOCATION(m->name = strdup(name));
 
-	/*  Full path, e.g. "emul[0].machine[0]":  */
-	CHECK_ALLOCATION(m->path = malloc(strlen(emul->path) + 20));
-	snprintf(m->path, strlen(emul->path) + 20, "%s.machine[%i]",
-	    emul->path, id);
+	/*  Full path, e.g. "machine[0]":  */
+	CHECK_ALLOCATION(m->path = malloc(20));
+	snprintf(m->path, 20, "machine[%i]", id);
 
 	/*  Sane default values:  */
 	m->serial_nr = 1;

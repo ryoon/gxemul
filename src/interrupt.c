@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.12 2007-06-15 17:02:38 debug Exp $
+ *  $Id: interrupt.c,v 1.13 2007-08-29 20:36:49 debug Exp $
  *
  *  The interrupt subsystem.
  *
- *  Interrupts have a "path", e.g. "emul[0].machine[0].cpu.5". A device which
+ *  Interrupts have a "path", e.g. "machine[0].cpu.5". A device which
  *  wishes to cause this interrupt needs to connect to it.
  *
  *  The possible interrupt paths are registered by CPUs, interrupt controllers,
@@ -76,7 +76,7 @@ static void no_interrupt_deassert(struct interrupt *i) { }
  *  Add an interrupt handler to the interrupt subsystem. The 'template'
  *  needs to have all members set.
  *
- *  Name is of the form "emul[0].machine[0].cpu[0].irq[3].isa[14]" etc.
+ *  Name is of the form "machine[0].cpu[0].irq[3].isa[14]" etc.
  *
  *  If there already is a handler with this name, the emulator aborts.
  */

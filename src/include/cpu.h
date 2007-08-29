@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.142 2007-07-20 09:03:33 debug Exp $
+ *  $Id: cpu.h,v 1.143 2007-08-29 20:36:49 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -337,7 +337,7 @@ struct cpu {
 	/*  CPU-specific name, e.g. "R2000", "21164PC", etc.  */
 	char		*name;
 
-	/*  Full "path" to the CPU, e.g. "emul[0].machine[0].cpu[0]":  */
+	/*  Full "path" to the CPU, e.g. "machine[0].cpu[0]":  */
 	char		*path;
 
 	/*  Nr of instructions executed, etc.:  */

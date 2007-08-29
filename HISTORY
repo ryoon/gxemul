@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1630 2007-07-20 09:03:32 debug Exp $
+$Id: HISTORY,v 1.1631 2007-08-29 20:36:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3657,3 +3657,9 @@ Changelog for GXemul:
 		multiple simultaneous machines, as before.)
 		Beginning on PCCTWO and M88K interrupts.
 20070723	Adding a dummy skeleton for emulation of M32R processors.
+20070901	Fixing a warning found by "gcc version 4.3.0 20070817
+		(experimental)" on amd64.
+20070905	Removing some more traces of the old "multiple emulations"
+		code.
+		Also looking in /usr/local/include and /usr/local/lib for
+		X11 libs, when running configure.

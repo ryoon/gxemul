@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.301 2007-07-20 09:03:33 debug Exp $
+ *  $Id: emul.c,v 1.302 2007-08-29 20:36:49 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -149,8 +149,6 @@ struct emul *emul_new(char *name)
 	CHECK_ALLOCATION(e = malloc(sizeof(struct emul)));
 	memset(e, 0, sizeof(struct emul));
 
-	CHECK_ALLOCATION(e->path = strdup("emul"));
-
 	e->settings = settings_new();
 
 	settings_add(e->settings, "n_machines", 0,
@@ -197,8 +195,6 @@ void emul_destroy(struct emul *emul)
 	/*  Remove any remaining level-1 settings:  */
 	settings_remove_all(emul->settings);
 	settings_destroy(emul->settings);
-
-	free(emul->path);
 
 	free(emul);
 }

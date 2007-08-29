@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.181 2007-07-20 09:03:33 debug Exp $
+ *  $Id: machine.h,v 1.182 2007-08-29 20:36:49 debug Exp $
  */
 
 #include <sys/types.h>
@@ -107,7 +107,7 @@ struct machine {
 	/*  Name as choosen by the user:  */
 	char	*name;
 
-	/*  Full "path" to the machine, e.g. "emul[0].machine[0]":  */
+	/*  Full "path" to the machine, e.g. "machine[0]":  */
 	char	*path;
 
 	int	arch;			/*  ARCH_MIPS, ARCH_PPC, ..  */

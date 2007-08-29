@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.46 2007-06-15 19:57:34 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.47 2007-08-29 20:36:49 debug Exp $
  *  
  *  COMMENT: VR41xx (VR4122 and VR4131) misc functions
  *
@@ -669,7 +669,7 @@ ret:
 /*
  *  dev_vr41xx_init():
  *
- *  machine->path is something like "emul[0].machine[0]".
+ *  machine->path is something like "machine[0]".
  */
 struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	struct memory *mem, int cpumodel)

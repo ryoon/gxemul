@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.19 2007-06-15 18:44:18 debug Exp $
+ *  $Id: bus_isa.c,v 1.20 2007-08-29 20:36:49 debug Exp $
  *  
  *  COMMENT: Generic ISA bus framework
  *
@@ -170,8 +170,8 @@ void isa_interrupt_deassert(struct interrupt *interrupt)
  *       should have this flag set, so that the keyboard is always used.
  *
  *  The interrupt_base_path is the name of the bus, CPU, or controller onto
- *  which this ISA bus will be attached, e.g. "emul[0].machine[0].lca" or
- *  "emul[0].machine[0].cpu[0].pic1".
+ *  which this ISA bus will be attached, e.g. "machine[0].lca" or
+ *  "machine[0].cpu[0].pic1".
  */
 struct bus_isa_data *bus_isa_init(struct machine *machine,
 	char *interrupt_base_path, uint32_t bus_isa_flags,

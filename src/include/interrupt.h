@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.h,v 1.4 2007-02-03 16:18:56 debug Exp $
+ *  $Id: interrupt.h,v 1.5 2007-08-29 20:36:49 debug Exp $
  *
  *  Definitions related to the Interrupt subsystem.
  */
@@ -62,7 +62,7 @@ struct interrupt {
 
 	/*
 	 *  Actual name of the interrupt. This is a complete "path", e.g.
-	 *  "emul[0].machine[0].cpu[1].irq[3].isa[14]". It is used for
+	 *  "machine[0].cpu[1].irq[3].isa[14]". It is used for
 	 *  connecting/disconnecting, and debug output.
 	 */
 	char		*name;

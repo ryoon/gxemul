@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.29 2007-06-15 19:11:15 debug Exp $
+ *  $Id: dev_jazz.c,v 1.30 2007-08-29 20:36:49 debug Exp $
  *  
  *  COMMENT: Microsoft Jazz-related stuff (Acer PICA-61, etc)
  *
@@ -635,8 +635,8 @@ DEVINIT(jazz)
 	/*
 	 *  Register 16 native JAZZ irqs, and 16 ISA irqs:
 	 *
-	 *  emul[x].machine[y].cpu[z].jazz.%i		(native)
-	 *  emul[x].machine[y].cpu[z].jazz.isa.%i	(ISA)
+	 *  machine[y].cpu[z].jazz.%i		(native)
+	 *  machine[y].cpu[z].jazz.isa.%i	(ISA)
 	 */
 	for (i=0; i<16; i++) {
 		struct interrupt template;

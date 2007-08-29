@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.18 2007-06-23 17:38:53 debug Exp $
+ *  $Id: arcbios.c,v 1.19 2007-08-29 20:36:35 debug Exp $
  *
  *  COMMENT: ARCBIOS emulation
  */
@@ -1531,7 +1531,7 @@ int arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x64:  /*  Read(handle, void *buf, length, uint32_t *count)  */
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == ARCBIOS_STDIN) {
-			int i, nread = 0;
+			int i, nread = 0, a2;
 			/*
 			 *  Before going into the loop, make sure stdout
 			 *  is flushed.  If we're using an X11 VGA console,
@@ -1544,8 +1544,8 @@ int arcbios_emul(struct cpu *cpu)
 				machine->tick_functions.f[i](cpu,
 				    machine->tick_functions.extra[i]);
 
-			for (i=0; i<(int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2];
-			    i++) {
+			a2 = cpu->cd.mips.gpr[MIPS_GPR_A2];
+			for (i=0; i<a2; i++) {
 				int x;
 				unsigned char ch;
 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.229 2007-06-23 16:59:35 debug Exp $
+$Id: guestoses.html,v 1.230 2007-09-11 21:46:35 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -48,8 +48,8 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
-  <li><a href="#netbsdpmaxinstall">NetBSD/pmax 3.1 or 1.6.2</a>
-  <li><a href="#netbsdarcinstall">NetBSD/arc 1.6.2</a>
+  <li><a href="#netbsdpmaxinstall">NetBSD/pmax 4.0</a>
+  <li><a href="#netbsdarcinstall">NetBSD/arc 4.0</a>
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.1</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.1</a>
@@ -59,7 +59,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.1</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
-  <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.1</a>
+  <li><a href="#netbsdmacppcinstall">NetBSD/macppc 4.0</a>
   <li><a href="#netbsdpmppc">NetBSD/pmppc 3.1</a>
   <li><a href="dreamcast.html#netbsd_generic_md">NetBSD/dreamcast 3.1</a>
   <li><a href="dreamcast.html#linux_live_cd">Linux/dreamcast</a>
@@ -139,16 +139,6 @@ onto a disk image in GXemul. The device emulation of the DECstation
 5000/200 is reasonably complete; it should be enough to emulate a
 networked X-windows-capable workstation.
 
-<p>NetBSD/pmax 1.6.2 works perfectly with X out-of-the-box. Unfortunately, 
-newer NetBSD releases have changed slightly, and X does not work straight 
-away with NetBSD 2.x and 3.x. It seems that this has to do with NetBSD 
-switching console system to "WSCONS" somewhere between 1.6.2 and 2.0.
-
-<p>What this means is that if you want to use emulated X11, then you need 
-to run NetBSD 1.6.2. At the time of writing this, 4.0_BETA snapshots work 
-fine too, but 4.0 isn't released yet. If you feel that you only need 
-serial-console emulation, then choose 3.1.
-
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20050317-example.png"><img src="20050317-example_small.png"></a>
 
@@ -162,76 +152,30 @@ follow these instructions:
 
 </pre>
   <li>Download a NetBSD CD-ROM iso image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/pmaxcd.iso</a>
-	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/pmaxcd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/pmaxcd-3.1.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/pmaxcd-4.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/pmaxcd-4.0.iso</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -d b:pmaxcd-3.1.iso</b>
-	(or <b>pmaxcd.iso</b>)
+	<b>gxemul -X -e 3max -d nbsd_pmax.img -d b:pmaxcd-4.0.iso</b>
 </pre>
-	and proceed like you would do if you were installing NetBSD on a real
-	DECstation. Remember to choose <tt>vt100</tt> as your terminal
-	type, and not <tt>rcons</tt>.
 </ol>
 
-<p>If you prefer to do an ftp install (usually much slower), you can
-follow these instructions instead:
+<p>If you do not want to use the graphical framebuffer during the 
+install, you can skip the <b><tt>-X</tt></b> command line option.
+Remember to enter <tt>xterm</tt> instead of <tt>vt100</tt> when asked 
+about your terminal type, if you do this.
 
-<p>
-<ol>
-  <li>Create an empty harddisk image, which will be the root disk
-	that NetBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=3000000</b>
+<p>You can also add <b><tt>-Y 2</tt></b> to the command line options, if 
+you feel that the default framebuffer window is too large.
 
-</pre>
-  <li>Download a NetBSD pmax INSTALL kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
-	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
-
-</pre>
-  <li>Start the emulator like this:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -O netbsd-INSTALL.gz</b>
-</pre>
-	and proceed like you would do if you were installing NetBSD on a real
-	DECstation. Remember to choose <tt>vt100</tt> as your terminal
-	type, and not <tt>rcons</tt>. Suitable networking parameters are as
-	follows:<pre>
-	Which device shall I use? [le0]: <b>le0</b>
-	..
-	Your DNS domain: <b>mydomain.com</b>
-	Your host name: <b>foo</b>
-	Your IPv4 number: <b>10.0.0.1</b>
-	IPv4 Netmask [0xff000000]: <b>0xff000000</b>
-	IPv4 gateway: <b>10.0.0.254</b>
-	IPv4 name server: <b>10.0.0.254</b>
-</pre>
-	(If using 10.0.0.254 as the nameserver fails, then try entering the
-	IP number of a real-world nameserver instead.)
-	<p>
-	Note that NetBSD 1.6.2 is nowadays located at
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2</a>
-	(note <tt>NetBSD-archive</tt> part).
-</ol>
-
-<p>If you want to use a graphical framebuffer during the install, you can
-add <b><tt>-X -Y2</tt></b> to the command line, and choose <tt>rcons</tt>
-instead of <tt>vt100</tt> when prompted with which terminal type to use.
-(By just using <tt><b>-X</b></tt>, you will get a full-size framebuffer
-window.)
-
-<p>When the installation is finished, the following command should start
+<p>When the installation has finished, the following command should start
 NetBSD from the harddisk image:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img</b>
-</pre>
-
-<p>If you installed NetBSD/pmax 1.6.2, or 4.0_BETA, then try the 
-following to start with a framebuffer:<pre>
 	<b>gxemul -X -e 3max -d nbsd_pmax.img</b>
 </pre>
-and log in as <tt>root</tt> and type <tt>startx</tt> to start X windows.
+
+and log in as <tt>root</tt>. Type <tt>startx</tt> to start X windows.
+
+<p>(Remove <b><tt>-X</tt></b> if you only want a serial console.)
 
 
 
@@ -244,7 +188,7 @@ and log in as <tt>root</tt> and type <tt>startx</tt> to start X windows.
 <a name="netbsdarcinstall"></a>
 <h3>NetBSD/arc:</h3>
 
-It is possible to install and run an old version of <a
+It is possible to install and run <a
 href="http://www.netbsd.org/ports/arc/">NetBSD/arc</a>
 on an emulated Acer PICA-61 in the emulator.
 
@@ -253,30 +197,32 @@ on an emulated Acer PICA-61 in the emulator.
 <a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a>
 
 <p>
-To install NetBSD/arc 1.6.2 from a CDROM image onto an emulated
+To install NetBSD/arc from a CDROM image onto an emulated
 harddisk image, follow these instructions:
 
 <p>
 <ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=2000000</b>
+	<b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=1000000</b>
 
 </pre>
-  <li>Download a NetBSD/arc 1.6.2 CDROM image, and a generic NetBSD/arc
+  <li>Download a NetBSD/arc 4.0 CDROM image, and a generic NetBSD/arc
 	kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/arccd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/arccd-4.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/arccd-4.0.iso</a>
+	TODO:
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-RAMDISK.gz</a>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -e pica -x -d nbsd_arc.img -d b:arccd.iso -j arc/binary/kernel/netbsd.RAMDISK.gz</b>
+	<b>gxemul -e pica -x -d nbsd_arc.img -d b:arccd.iso netbsd-RAMDISK.gz</b>
 
 </pre>
 	(Try removing <tt>-x</tt> if you have problems with the xterm.)
     <p>
   <li>From now on, you have to use your imagination, as there is no
-	automatic installation program for NetBSD/arc 1.6.2. Here are
+	automatic installation program for NetBSD/arc 4.0. Here are
 	some tips and hints on how you can proceed with the install:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>mount /dev/cd0a /mnt2
@@ -1142,28 +1088,18 @@ emulated, but it is enough to for NetBSD to recognize it.
     <b>dd if=/dev/zero of=nbsd_macppc.img bs=1024 count=1 seek=3000000</b>
 
 </pre>
-  <li>Download the NetBSD/macppc 3.1 ISO image and a generic kernel:<pre>
-    <a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/macppccd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/macppccd-3.1.iso</a>
-    <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/macppc/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/macppc/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/macppc/binary/kernel/netbsd-GENERIC.MP.gz">netbsd-GENERIC.MP.gz</a>
+  <li>Download the NetBSD/macppc 4.0 ISO image and a generic kernel:<pre>
+    <a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/macppccd-4.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/macppccd-4.0.iso</a>
+    <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/macppc/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/macppc/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/macppc/binary/kernel/netbsd-GENERIC.MP.gz">netbsd-GENERIC.MP.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-    <b>gxemul -x -e g4 -d nbsd_macppc.img -d b:macppccd-3.1.iso -j macppc/binary/kernel/netbsd-INSTALL.gz</b>
+    <b>gxemul -x -e g4 -d nbsd_macppc.img -d b:macppccd-4.0.iso -j macppc/binary/kernel/netbsd-INSTALL</b>
 
 </pre>
 	and continue as you would do when installing NetBSD on a real
 	machine.
-  <p>
-  <li>Before turning the emulated machine off, quit the NetBSD installer
-	and execute the following commands:<pre>
-	<b>cd /; mount /dev/wd0a /mnt
-	echo 'console "/usr/libexec/getty std.38400" vt100 on secure' > /mnt/etc/ttys
-	echo 'rc_configured=YES' >> /mnt/etc/rc.conf
-	umount /mnt; sync
-	reboot</b>
-
-</pre>
 </ol>
 
 <p>If everything worked, NetBSD/macppc should now be installed on
@@ -2697,6 +2633,7 @@ image, using an emulated CATS machine:
   <li>Download the latest netbsd-4 (pre-release) snapshot, and make an iso image
 	of it: (replace 200704110002Z with whatever is the latest one)<pre>
 	<b>wget -np -l 0 -r <a href="ftp://ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/">ftp://ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/</a>200704110002Z/landisk
+	cp ftp.netbsd.org/pub/NetBSD-daily/*/*/landisk/binary/kernel/netbsd-GENERIC.gz .
 	mkisofs -U -o landisk.iso ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/*</b>
 </pre>
 

@@ -1,7 +1,41 @@
-$Id: TODO,v 1.555 2007-07-22 22:35:46 debug Exp $
+$Id: TODO,v 1.556 2007-09-11 21:46:35 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
+
+-------------------------------------------------------------------------------
+
+A first pass of installation regression testing of NetBSD 4.0 RC1 in GXemul:
+
+	X  pmax (including X Windows out-of-the-box)
+	X  arc  (1.6.2 -> 4.0! Yay!)
+	   hpcmips
+	   cobalt
+	   evbmips
+	   algor
+	   sgimips
+	   cats
+	   evbarm
+	   netwinder
+	   prep		nej, 2.0 är senaste som funkar :(
+	X  macppc
+	   pmppc
+	X  dreamcast
+	X  landisk
+
+X = done and worked fine
+
+-------------------------------------------------------------------------------
+
+Perform a second regression test pass, when the actual NetBSD 4.0 release
+has happened.
+
+	o)  Test all guest OSes.
+	o)  Update:
+		URLs
+		Versions
+
+	o)  Make a new GXemul release:  0.4.6.1
 
 -------------------------------------------------------------------------------
 

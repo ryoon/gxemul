@@ -8,10 +8,10 @@
 <font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.7 2007-06-30 13:38:02 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.8 2007-09-11 21:46:35 debug Exp $  -->
 
 
-<h2>Release notes for GXemul 0.4.7</h2>
+<h2>Release notes for GXemul 0.4.6.1</h2>
 
 <p><i>Copyright (C) 2003-2007  Anders Gavare</i>
 
@@ -35,11 +35,28 @@ systems are <a href="doc/guestoses.html#netbsdpmaxinstall">NetBSD/pmax</a>
 and <a href="doc/guestoses.html#netbsdcatsinstall">NetBSD/cats</a>.
 
 
-<p><br>The changes between release 0.4.6 and 0.4.7 include, among other things:
+<p><br>The changes between release 0.4.6 and 0.4.6.1 include:
 
 <ul>
 
-  <li>...
+  <li>NetBSD 4.0 has been released. The installation instructions
+	in GXemul's documentation have been updated to reflect this.
+
+	<p><ul>
+	  <li>In most cases this simply means that NetBSD 4.0 is now
+		supported instead of NetBSD 3.1.
+	</ul>
+
+	<p>Some specifics worth mentioning are:
+
+	<p><ul>
+	  <li>For NetBSD/pmax, the change from 3.1 to 4.0 means that
+		X Windows is now working again out-of-the-box. (Simply
+		run <tt>startx</tt> as root to start X.)
+	  <li>For NetBSD/arc, the supported version has jumped from
+		1.6.2 to 4.0.
+	  <li>NetBSD/prep is unfortunately still at 2.0.
+	</ul>
 
 </ul>
 
@@ -164,6 +181,8 @@ this is in order:<pre>
 <p>See individual files for license details, if you plan to redistribute 
 GXemul or reuse code.
 
+<p>GXemul's homepage is
+<a href="http://gavare.se/gxemul/">http://gavare.se/gxemul/</a>.
 
 <p>If you have found GXemul useful in some way, or feel like sending me 
 comments or feedback in general, then mail me at

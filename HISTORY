@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1631 2007-08-29 20:36:48 debug Exp $
+$Id: HISTORY,v 1.1632 2007-09-11 21:46:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3663,3 +3663,6 @@ Changelog for GXemul:
 		code.
 		Also looking in /usr/local/include and /usr/local/lib for
 		X11 libs, when running configure.
+20070909	Minor updates to the guest OS install instructions, in
+		preparation for the NetBSD 4.0 release.
+20070918	More testing of NetBSD 4.0 RC1.

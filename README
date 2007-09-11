@@ -1,8 +1,8 @@
 
 
-           ------------------------------------------------------
-             Gavare's eXperimental Emulator   --   GXemul 0.4.7
-           ------------------------------------------------------
+          --------------------------------------------------------
+            Gavare's eXperimental Emulator   --   GXemul 0.4.6.1
+          --------------------------------------------------------
 
 
 Copyright (C) 2003-2007  Anders Gavare
@@ -82,7 +82,7 @@ You might want to experiment with various CC and CFLAGS environment
 variable settings, to get optimum performance.
 
 If you are impatient, and want to try out running a guest operating system 
-inside GXemul, read this:  doc/guestoses.html#netbsdcatsinstall
+inside GXemul, read this:  doc/guestoses.html#netbsdpmaxinstall
 
 If you want to use GXemul for experimenting with code of your own, 
 then I suggest you compile a Hello World program according to the tips 

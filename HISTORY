@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1632 2007-09-11 21:46:35 debug Exp $
+$Id: HISTORY,v 1.1633 2007-09-13 19:24:06 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3666,3 +3666,6 @@ Changelog for GXemul:
 20070909	Minor updates to the guest OS install instructions, in
 		preparation for the NetBSD 4.0 release.
 20070918	More testing of NetBSD 4.0 RC1.
+20070920	Adding a section about HelenOS (for testarm and testmips) to
+		the guestoses.html page.
+

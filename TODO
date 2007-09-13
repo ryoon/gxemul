@@ -1,7 +1,21 @@
-$Id: TODO,v 1.556 2007-09-11 21:46:35 debug Exp $
+$Id: TODO,v 1.557 2007-09-13 19:23:52 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
+
+-------------------------------------------------------------------------------
+
+Lista HelenOS pa guest-OS-sidan, om det finns
+stabila URLer for nerladdning av helenos.
+
+-------------------------------------------------------------------------------
+
+Play around with the SGI O2 PROM image again, from the real O2.
+
+0.3.7: Ok, starts up with graphics (_IF_ the cache detection is skipped)
+0.3.8: Boots but switches to serial console ("could not open console") (also with
+       cache detection skipped manually)
+0.4.0: The cache detection breakpoint is not triggered :(
 
 -------------------------------------------------------------------------------
 

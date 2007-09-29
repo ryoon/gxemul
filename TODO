@@ -1,13 +1,24 @@
-$Id: TODO,v 1.558 2007-09-13 19:25:01 debug Exp $
+$Id: TODO,v 1.559 2007-09-29 12:27:31 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
 
 -------------------------------------------------------------------------------
 
+Update the Sprite URL / TUHS reference on guestoses.html.
+
+-------------------------------------------------------------------------------
+
 Play around with the SGI O2 PROM image again, from the real O2.
 
 0.3.7: Ok, starts up with graphics (_IF_ the cache detection is skipped)
+
+20051112: Ok with graphics
+20051127: Ok
+20051201: Ok			<-- Somewhere between 20051201 and 20051203
+20051203: Not work.		    I apparently lost the graphical boot
+20051211: Does NOT work.
+
 0.3.8: Boots but switches to serial console ("could not open console") (also with
        cache detection skipped manually)
 0.4.0: The cache detection breakpoint is not triggered :(
@@ -23,7 +34,7 @@ A first pass of installation regression testing of NetBSD 4.0 RC1 in GXemul:
 	   evbmips
 	   algor
 	   sgimips
-	   cats
+	X  cats		works, but feels... slower (?) than 3.1
 	   evbarm
 	   netwinder
 	   prep		nej, 2.0 är senaste som funkar :(

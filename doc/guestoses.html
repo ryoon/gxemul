@@ -1,16 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><title>Gavare's eXperimental Emulator:&nbsp;&nbsp;&nbsp;Installing and running "guest OSes"</title>
 <meta name="robots" content="noarchive,nofollow,noindex"></head>
 <body bgcolor="#f8f8f8" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
 <table border=0 width=100% bgcolor="#d0d0d0"><tr>
 <td width=100% align=center valign=center><table border=0 width=100%><tr>
 <td align="left" valign=center bgcolor="#d0efff"><font color="#6060e0" size="6">
-<b>GXemul:</b></font>&nbsp;&nbsp;
-<font color="#000000" size="6"><b>Installing and running "guest OSes"</b>
+<b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Installing and running "guest OSes"</b>
 </font></td></tr></table></td></tr></table><p>
 
 <!--
 
-$Id: guestoses.html,v 1.231 2007-09-13 19:24:07 debug Exp $
+$Id: guestoses.html,v 1.232 2007-10-17 23:44:35 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -1725,9 +1725,8 @@ that file as a disk image file in the emulator.
 <h3>Sprite for DECstation:</h3>
 
 Sprite was a research operating system at the University of Berkeley.
-The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
-has made available a copy of a Sprite harddisk image for a DECstation 5000/200.
-If you want to find out more about Sprite in general, read
+A copy of a Sprite harddisk image for a DECstation 5000/200 is still
+available. If you want to find out more about Sprite in general, read
 <a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">
 http://www.cs.berkeley.edu/projects/sprite/retrospective.html</a>.
 
@@ -1743,23 +1742,22 @@ The following instructions should let you run Sprite in the emulator:
 <p>
 <ol>
   <li>Download the Sprite harddisk image:<pre>
-	<a href="ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/ds5000.bt">ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/ds5000.bt</a>
+	<a href="ftp://ftp.es.embnet.org/pub/misc/os/cluster/Sprite/">ftp://ftp.es.embnet.org/pub/misc/os/cluster/Sprite</a>/<a href="ftp://ftp.es.embnet.org/pub/misc/os/cluster/Sprite/ds5000.bt">ds5000.bt</a>
 	83973120 bytes, MD5 = ec84eeeb20fe77b758370d5e312e4a5e
-
 </pre>
+  <p>(A big thank you to José R. Valverde for maintaining the OS archives
+  	at ftp.embnet.org.)
   <li>Start the emulator with the following command line:<pre>
 	<b>gxemul -X -e 3max -M128 -d ds5000.bt -j vmsprite -o ''</b>
 
 </pre>
 </ol>
 
-<p>
-The first time you boot up with the disk image, you will be asked a number 
+<p>The first time you boot up with the disk image, you will be asked a number 
 of questions regarding network settings. If you feel like entering correct 
 values, then you should use the following:
-<p>
 
-<pre>
+<p><pre>
     Your machine's Ethernet address:    10:20:30:00:00:10
     Your machine's IP:                  10.0.0.1
     Subnet mask:                        0xff000000

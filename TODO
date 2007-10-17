@@ -1,11 +1,7 @@
-$Id: TODO,v 1.559 2007-09-29 12:27:31 debug Exp $
+$Id: TODO,v 1.560 2007-10-17 23:45:08 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
-
--------------------------------------------------------------------------------
-
-Update the Sprite URL / TUHS reference on guestoses.html.
 
 -------------------------------------------------------------------------------
 
@@ -25,11 +21,13 @@ Play around with the SGI O2 PROM image again, from the real O2.
 
 -------------------------------------------------------------------------------
 
-A first pass of installation regression testing of NetBSD 4.0 RC1 in GXemul:
+A first pass of installation regression testing of NetBSD 4.0 RC1 and RC2
+in GXemul:
 
 	X  pmax (including X Windows out-of-the-box)
 	X  arc  (1.6.2 -> 4.0! Yay!)
-	   hpcmips
+	X  hpcmips	works? but clock is standing still? (install says
+				50 MB/second!)
 	   cobalt
 	   evbmips
 	   algor
@@ -44,18 +42,6 @@ A first pass of installation regression testing of NetBSD 4.0 RC1 in GXemul:
 	X  landisk
 
 X = done and worked fine
-
--------------------------------------------------------------------------------
-
-Perform a second regression test pass, when the actual NetBSD 4.0 release
-has happened.
-
-	o)  Test all guest OSes.
-	o)  Update:
-		URLs
-		Versions
-
-	o)  Make a new GXemul release:  0.4.6.1
 
 -------------------------------------------------------------------------------
 

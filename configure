@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.277 2007-08-29 20:36:05 debug Exp $
+#  $Id: configure,v 1.278 2007-10-17 23:44:03 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -213,7 +213,7 @@ fi
 if [ z"`uname`" = zHP-UX ]; then
 	HPUX=YES
 
-	if [ z$CC = z ]; then
+	if [ z"$CC" = z ]; then
 		if [ -f /usr/local/pa64/bin/gcc ]; then
 			CC=/usr/local/pa64/bin/gcc
 		fi
@@ -314,7 +314,7 @@ fi
 
 rm -f _testprog
 
-if [ z$CC = z ]; then
+if [ z"$CC" = z ]; then
 	printf "no working compiler detected\n"
 	printf "\nPlease set the CC environment variable to a working C "
 	printf "compiler before running\nthe configure script, and make"
@@ -343,7 +343,7 @@ if $CC $CFLAGS -v 2>&1 | grep gcc 1> /dev/null 2> /dev/null; then
 	CCTYPE="GNU CC"
 fi
 
-if [ z$CYGWIN = zYES ]; then
+if [ z"$CYGWIN" = zYES ]; then
 	CCTYPE="$CCTYPE (Cygwin)"
 fi
 

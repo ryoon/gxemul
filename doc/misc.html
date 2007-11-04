@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.73 2007-06-23 16:59:35 debug Exp $
+$Id: misc.html,v 1.74 2007-11-04 06:32:49 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -634,6 +634,10 @@ and then run <tt>experiments/sgiprom_to_bin</tt> on the captured file.
 <p>The photo on the left is from the real machine. The other two are
 screenshots of the PROM running experimentally in GXemul, using <tt>-Y2</tt>
 framebuffer scaledown.
+
+<p><font color="#ff0000">
+Note 2007-10-18: Running the O2 PROM image broke somewhere between release
+0.3.8 and 0.4.0. (Running with graphics broke between 0.3.7 and 0.3.8.)</font>
 
 <p>Normally during bootup, the IP32 PROM does a Power-On test which makes
 sure that the caches and other things are working properly. GXemul doesn't

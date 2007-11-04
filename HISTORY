@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1634 2007-10-17 23:43:34 debug Exp $
+$Id: HISTORY,v 1.1635 2007-11-04 06:32:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3671,4 +3671,5 @@ Changelog for GXemul:
 20071014	src/console/console.c now includes <sys/select.h> (thanks to
 		Juli Mallett for noticing that this was required on Cygwin).
 20071017	Updating Sprite URL in guestoses.html.
-
+20071102	Updating the OpenBSD/landisk install instructions in
+		guestoses.html from OpenBSD 4.1 to 4.2.

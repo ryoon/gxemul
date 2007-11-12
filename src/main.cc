@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.cc,v 1.1 2007-11-12 13:50:06 debug Exp $
+ *  $Id: main.cc,v 1.2 2007-11-12 14:21:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -206,12 +206,15 @@ static void usage(int longusage)
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 
-	printf("\nusage: %s [machine, other, and general options] [file "
-	    "[...]]\n", progname);
-	printf("   or  %s [general options] @configfile\n", progname);
-	printf("   or  %s [userland, other, and general options] file "
-	    "[args ...]\n", progname);
-
+	printf("\nusage: gxemul [machine, other, and general options] [file "
+	    "[...]]\n");
+	printf("   or  gxemul [general options] @configfile\n");
+	printf("   or  gxemul [userland, other, and general options] file "
+	    "[args ...]\n");
+#ifdef WITH_GUI
+	printf("\n   or  gxemul-gui\n"
+	       "   or  gxemul-gui [same options as for gxemul]\n");
+#endif
 	if (!longusage) {
 		printf("\nRun  %s -h  for help on command line options.\n",
 		    progname);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635.2.1 2007-11-12 13:45:39 debug Exp $
+$Id: HISTORY,v 1.1635.2.2 2007-11-12 13:56:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3675,3 +3675,4 @@ Changelog for GXemul:
 		guestoses.html from OpenBSD 4.1 to 4.2.
 20071112	Branching in CVS to a 0.4.6.1 version, separate from the main
 		development.
+		(This is the 0.4.6.1 branch.)

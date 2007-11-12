@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635 2007-11-04 06:32:48 debug Exp $
+$Id: HISTORY,v 1.1635.2.1 2007-11-12 13:45:39 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3673,3 +3673,5 @@ Changelog for GXemul:
 20071017	Updating Sprite URL in guestoses.html.
 20071102	Updating the OpenBSD/landisk install instructions in
 		guestoses.html from OpenBSD 4.1 to 4.2.
+20071112	Branching in CVS to a 0.4.6.1 version, separate from the main
+		development.

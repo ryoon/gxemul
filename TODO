@@ -1,7 +1,40 @@
-$Id: TODO,v 1.560 2007-10-17 23:45:08 debug Exp $
+$Id: TODO,v 1.561 2007-11-12 13:50:06 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
+
+-------------------------------------------------------------------------------
+
+C => C++ rewrite
+----------------
+
+	This is a HUGE undertaking; it is probably too much to list
+	everything here in the TODO file.
+
+	Components that make up an emulation:
+
+		Machines
+			Devices
+				Busses
+				Interrupt controllers
+				CPUS (a kind of device?)
+				Other devices
+
+		Networks
+
+		I/O devices: Consoles
+			Text
+			Framebuffers
+			other kinds of output devices
+
+	Busses and devices can be attached to other busses.
+
+	XML format describing an emulation setup.
+		* The GUI outputs such an XML setup.
+		* ALternatively, the built-in machines produce
+		  default XML chunks.
+		* The main emulator loop runs such XML emulations
+		  (with possible "save all state" functionality)
 
 -------------------------------------------------------------------------------
 

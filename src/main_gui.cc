@@ -1,8 +1,5 @@
-#ifndef	TIMER_H
-#define	TIMER_H
-
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,31 +25,35 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.h,v 1.8 2007-11-12 13:50:06 debug Exp $
+ *  $Id: main_gui.cc,v 1.1 2007-11-12 13:50:06 debug Exp $
  */
 
-struct timer;
+#include <stdio.h>
+#include "misc.h"
 
-#define	TIMER_BASE_FREQUENCY	65.0	/*  Hz  */
+#ifndef WITH_GUI
 
-#ifdef __cplusplus
-extern "C"
+void main_gui(int argc, char **argv)
 {
-#endif /* __cplusplus */
-
-struct timer *timer_add(double freq, void (*timer_tick)(struct timer *timer,
-	void *extra), void *extra);
-void timer_remove(struct timer *t);
-
-void timer_update_frequency(struct timer *t, double new_freq);
-
-void timer_start(void);
-void timer_stop(void);
-
-void timer_init(void);
-
-#ifdef __cplusplus
+	printf("Sorry, this version of GXemul was compiled without GUI"
+	    " support.\n");
 }
-#endif /* __cplusplus */
 
-#endif	/*  TIMER_H  */
+#else	/*  WITH_GUI  */
+
+#include <gtkmm/main.h>
+#include <gtkmm/window.h>
+
+
+void main_gui(int argc, char **argv)
+{
+	Gtk::Main main(&argc, &argv);
+
+	/*  TODO  */
+	Gtk::Window window;
+	printf("NOTE: The GUI in this version of GXemul is just a dummy.\n");
+
+	Gtk::Main::run(window);
+}
+
+#endif	/*  WITH_GUI  */

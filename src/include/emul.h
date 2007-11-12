@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.43 2007-08-29 20:36:49 debug Exp $
+ *  $Id: emul.h,v 1.44 2007-11-12 13:50:06 debug Exp $
  */
 
 #include "misc.h"
@@ -55,6 +55,12 @@ struct emul {
 };
 
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
+
 /*  emul.c:  */
 struct emul *emul_new(char *name);
 void emul_destroy(struct emul *emul);
@@ -70,6 +76,11 @@ void emul_run(struct emul *emul);
 
 /*  emul_parse.c:  */
 void emul_parse_config(struct emul *e, char *fname);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  EMUL_H  */

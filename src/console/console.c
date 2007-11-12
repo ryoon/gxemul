@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.3 2007-10-17 23:43:39 debug Exp $
+ *  $Id: console.c,v 1.4 2007-11-12 13:50:06 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -533,7 +533,7 @@ static void console_slave_sigcont(int x)
  *  This function is used when running with X11, and gxemul opens up
  *  separate xterms for each emulated terminal or serial port.
  */
-void console_slave(char *arg)
+void console_slave(const char *arg)
 {
 	int inputd;
 	int len;

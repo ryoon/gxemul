@@ -28,10 +28,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.182 2007-08-29 20:36:49 debug Exp $
+ *  $Id: machine.h,v 1.183 2007-11-12 13:50:06 debug Exp $
  */
 
 #include <sys/types.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
 
 #include "symbol.h"
 
@@ -413,6 +419,11 @@ void machine_entry_add_subtype(struct machine_entry *me, const char *name,
 	int oldstyle_subtype, ...);
 void machine_entry_register(struct machine_entry *me, int arch);
 void machine_init(void);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  MACHINE_H  */

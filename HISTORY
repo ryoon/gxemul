@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635 2007-11-04 06:32:48 debug Exp $
+$Id: HISTORY,v 1.1636 2007-11-12 13:50:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3673,3 +3673,18 @@ Changelog for GXemul:
 20071017	Updating Sprite URL in guestoses.html.
 20071102	Updating the OpenBSD/landisk install instructions in
 		guestoses.html from OpenBSD 4.1 to 4.2.
+20071112	Branching in CVS to a 0.4.6.1 version, separate from the main
+		development.
+		(This is the main development branch.)
+		EXPERIMENTALLY beginning to convert various source code
+		files to C++ (.c to .cc); it will of course be a major
+		undertaking to redesign the code so that it fits C++, but I
+		think it will be worth it. (main.c => main.cc only so far.)
+		Note: Release 0.4.6.1 will most likely be made from the code
+		base as it was yesterday, plus perhaps some documentation
+		updates.
+		Adding configure options "--with-gui" and "--without-gui";
+		autodetection of gtkmm-2.4 >= 2.12.1. A binary "gxemul-gui"
+		is hardlinked to "gxemul"; when started, it should (in the
+		future) bring up a GUI version of GXemul. For now, it just
+		displays a dummy GTK+ window.

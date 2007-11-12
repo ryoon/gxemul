@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.21 2007-06-05 07:49:42 debug Exp $
+ *  $Id: device.h,v 1.22 2007-11-12 13:50:06 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
@@ -71,6 +71,11 @@ struct pci_entry {
 
 #define	DEVINIT(name)		int devinit_ ## name (struct devinit *devinit)
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
 /*  autodev.c: (built automatically in the devices/ directory):  */
 void autodev_init(void);
 
@@ -88,5 +93,9 @@ int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
 	struct pci_device *));
 void (*pci_lookup_initf(const char *name))(struct machine *machine,
 	struct memory *mem, struct pci_device *pd);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif	/*  DEVICE_H  */

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.278 2007-10-17 23:44:03 debug Exp $
+#  $Id: configure,v 1.279 2007-11-12 13:50:06 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -45,7 +45,7 @@
 #  The main things that are detected by this script:
 #
 #    o)  special hacks for some OSes
-#    o)  which compiler to use  (overridden by setting CC)
+#    o)  which compiler(s) to use  (overridden by setting CC)
 #    o)  which compiler flags to use  (overridden by setting CFLAGS)
 #    o)  X11 flags and libraries  (TODO: should be possible to override
 #	 via command line options?)
@@ -81,14 +81,22 @@ if [ z"$*" != z ]; then
 				echo "  --debug             configure" \
 					"for a debug build"
 			fi
+			echo "  --with-gui          include support for gtkmm GUI"
+			echo "  --without-gui       exclude support for gtkmm GUI"
+			echo
+			echo "(default is to autodetect prescence of gtkmm)"
 			echo
 			exit
+		else if [ z$a = z--with-gui ]; then
+			WITH_GUI=YES
+		else if [ z$a = z--without-gui ]; then
+			WITHOUT_GUI=YES
 		else
 			echo "Invalid option: $a"
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi
+		fi; fi; fi; fi; fi
 	done
 fi
 
@@ -311,7 +319,6 @@ if [ z"$CC" = z ]; then
 	rm -f _test.sh
 fi
 
-
 rm -f _testprog
 
 if [ z"$CC" = z ]; then
@@ -324,7 +331,6 @@ if [ z"$CC" = z ]; then
 fi
 
 printf "$CC $CFLAGS"
-
 
 CCTYPE="generic"
 
@@ -348,6 +354,56 @@ if [ z"$CYGWIN" = zYES ]; then
 fi
 
 echo " ($CCTYPE)"
+
+
+#  Try to detect which C++ compiler to use, if CXX is not set:
+printf "checking which C++ compiler to use... "
+rm -f _testprog
+if [ z"$CXX" = z ]; then
+	#  Try g++ first:
+	printf "#!/bin/sh\ng++ $CFLAGS _testprog.c -o _testprog >" > _test.sh
+	printf " /dev/null 2> /dev/null\n" >> _test.sh
+	chmod 755 _test.sh
+	./_test.sh > /dev/null 2> /dev/null
+	if [ -x _testprog ]; then
+		if [ z`./_testprog` = z0,1 ]; then
+			CXX=g++
+		fi
+	fi
+	rm -f _testprog
+
+	#  If both g++ and c++ exist, then c++ might be a vendor specific
+	#  compiler which produces faster code than g++.
+	printf "#!/bin/sh\nc++ $CFLAGS _testprog.c -o _testprog >" > _test.sh
+	printf " /dev/null 2> /dev/null\n" >> _test.sh
+	chmod 755 _test.sh
+	./_test.sh > /dev/null 2> /dev/null
+	if [ -x _testprog ]; then
+		if [ z`./_testprog` = z0,1 ]; then
+			CXX=c++
+		else
+			printf "broken c++ detected\n"
+			printf "checking for other C++ compilers... "
+		fi
+	fi
+	rm -f _testprog
+
+	rm -f _test.sh
+fi
+
+rm -f _testprog
+
+if [ z"$CXX" = z ]; then
+	printf "no working C++ compiler detected\n"
+	printf "\nPlease set the CXX environment variable to a working C++ "
+	printf "compiler before running\nthe configure script, and make"
+	printf " sure that the CFLAGS environment variable is\nalso valid"
+	printf " for that compiler.\n"
+	exit
+fi
+
+printf "$CXX $CFLAGS"
+echo ""
 
 
 if [ z$NOX11 = z ]; then
@@ -1183,6 +1239,31 @@ rm -f _test_end*
 
 ###############################################################################
 
+GTKMM_VER="2.12.1"
+printf "checking for gtkmm-2.4 >= $GTKMM_VER... "
+
+if [ z$WITHOUT_GUI = zYES ]; then
+	echo skipping
+else
+	# Autodetect:
+	if pkg-config --atleast-version=$GTKMM_VER gtkmm-2.4; then
+		echo found
+		CFLAGS="$CFLAGS `pkg-config --cflags gtkmm-2.4`"
+		OTHERLIBS="$OTHERLIBS `pkg-config --libs gtkmm-2.4`"
+		printf "#define WITH_GUI\n" >> config.h
+	else
+		echo not found
+		if [ z$WITH_GUI = zYES ]; then
+			echo Sorry, gtkmm-2.4 version $GTKMM_VER or newer was not
+			echo found, and you specified --with-gui. Aborting.
+			exit
+		fi
+	fi
+fi
+
+
+###############################################################################
+
 INCLUDE=-Iinclude/
 DINCLUDE=-I../include/
 
@@ -1195,6 +1276,7 @@ echo "COPTIM=$CFLAGS" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header
 echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
+echo "CXX=$CXX" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "CPU_ARCHS=$CPU_ARCHS" >> _Makefile.header
 echo "CPU_TOOLS=$CPU_TOOLS" >> _Makefile.header

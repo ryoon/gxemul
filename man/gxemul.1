@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.101 2007-06-30 13:55:02 debug Exp $
+.\" $Id: gxemul.1,v 1.102 2007-11-12 13:50:06 debug Exp $
 .\"
 .\" Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
 .\"
@@ -45,6 +45,10 @@
 .Nm
 .Op userland, other, and general options
 .Ar file Op Ar args ...
+.Pp
+.Nm gxemul-gui
+.Nm gxemul-gui
+.Op same options as for gxemul
 .Sh DESCRIPTION
 .Nm
 is a framework for full-system computer architecture emulation.
@@ -72,6 +76,22 @@ should be given on the command line. (This mode is not really usable yet.)
 .Pp
 The easiest way to use the emulator is to supply settings directly on the 
 command line.
+.Pp
+When the emulator is started using the name
+.Nm gxemul
+the current terminal is used for I/O. (An exception to this is when
+the
+.Fl x
+or
+.Fl X
+command line options are used. See below for details.)
+.Pp
+Starting the emulator as
+.Nm gxemul-gui
+brings up a graphical UI instead. In this case, it is ok to
+not supply any other command line arguments.
+.Pp
+NOTE: As of 2007-11-12, there is really no UI, just a placeholder!
 .Pp
 The most important thing you need to supply is the
 file argument. This is the name of a binary file (an ELF, a.out, COFF/ECOFF,

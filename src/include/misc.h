@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.259 2007-06-23 21:04:17 debug Exp $
+ *  $Id: misc.h,v 1.260 2007-11-12 13:50:06 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -44,6 +44,12 @@
  */
 
 #include "../../config.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
 
 
 #ifdef NO_C99_PRINTF_DEFINES
@@ -234,13 +240,17 @@ void file_load(struct machine *machine, struct memory *mem,
 
 /*  main.c:  */
 void debug_indentation(int diff);
-void debug(char *fmt, ...);
-void fatal(char *fmt, ...);
+void debug(const char *fmt, ...);
+void fatal(const char *fmt, ...);
+
+
+/*  main_gui.c  */
+void main_gui(int argc, char **argv);
 
 
 /*  misc.c:  */
 unsigned long long mystrtoull(const char *s, char **endp, int base);
-int mymkstemp(char *template);
+int mymkstemp(char *templ);
 #ifdef USE_STRLCPY_REPLACEMENTS
 size_t mystrlcpy(char *dst, const char *src, size_t size);
 size_t mystrlcat(char *dst, const char *src, size_t size);
@@ -266,5 +276,9 @@ int sh_ipl_g_emul(struct cpu *);
 void yamon_machine_setup(struct machine *machine, uint64_t env);
 int yamon_emul(struct cpu *);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/*  MISC_H  */

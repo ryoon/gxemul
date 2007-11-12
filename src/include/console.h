@@ -28,12 +28,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.h,v 1.18 2006-12-30 13:31:00 debug Exp $
+ *  $Id: console.h,v 1.19 2007-11-12 13:50:06 debug Exp $
  *
  *  Console functions.  (See console.c for more info.)
  */
 
 #include "misc.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
 
 /*  Fixed default console handle for the main console:  */
 #define	MAIN_CONSOLE		0
@@ -50,7 +57,7 @@ void console_flush(void);
 void console_mouse_coordinates(int x, int y, int fb_nr);
 void console_mouse_button(int, int);
 void console_getmouse(int *x, int *y, int *buttons, int *fb_nr);
-void console_slave(char *arg);
+void console_slave(const char *arg);
 int console_are_slaves_allowed(void);
 int console_warn_if_slaves_are_needed(int init);
 int console_start_slave(struct machine *, char *consolename, int use_for_input);
@@ -63,6 +70,11 @@ void console_allow_slaves(int);
 
 void console_init(void);
 void console_deinit(void);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  CONSOLE_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.13 2007-08-29 20:36:49 debug Exp $
+ *  $Id: interrupt.c,v 1.14 2007-11-12 13:50:06 debug Exp $
  *
  *  The interrupt subsystem.
  *
@@ -53,7 +53,7 @@
 
 
 struct interrupt_handler {
-	struct interrupt	template;
+	struct interrupt	template_interrupt;
 	int			nr_of_exclusive_users;
 	int			nr_of_nonexclusive_users;
 };
@@ -80,23 +80,24 @@ static void no_interrupt_deassert(struct interrupt *i) { }
  *
  *  If there already is a handler with this name, the emulator aborts.
  */
-void interrupt_handler_register(struct interrupt *template)
+void interrupt_handler_register(struct interrupt *template_interrupt)
 {
 	int i;
 
 #ifdef INTERRUPT_DEBUG
-	printf("interrupt_handler_register(\"%s\")\n", template->name);
+	printf("interrupt_handler_register(\"%s\")\n",
+	    template_interrupt->name);
 #endif
 
 	/*  See if the name is already registered:  */
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
-		if (strcmp(template->name,
-		    interrupt_handlers[i].template.name) != 0)
+		if (strcmp(template_interrupt->name,
+		    interrupt_handlers[i].template_interrupt.name) != 0)
 			continue;
 
 		fatal("\ninterrupt_handler_register(): An interrupt handler"
 		    " using the name '%s' is already registered.\n",
-		    template->name);
+		    template_interrupt->name);
 		exit(1);
 	}
 
@@ -104,9 +105,11 @@ void interrupt_handler_register(struct interrupt *template)
 	CHECK_ALLOCATION(interrupt_handlers = realloc(interrupt_handlers,
 	    nr_of_interrupt_handlers * sizeof(struct interrupt_handler)));
 
-	interrupt_handlers[nr_of_interrupt_handlers-1].template = *template;
+	interrupt_handlers[nr_of_interrupt_handlers-1].
+	    template_interrupt = *template_interrupt;
+
 	CHECK_ALLOCATION(interrupt_handlers[nr_of_interrupt_handlers-1].
-	    template.name = strdup(template->name));
+	    template_interrupt.name = strdup(template_interrupt->name));
 }
 
 
@@ -126,7 +129,8 @@ void interrupt_handler_remove(char *name)
 #endif
 
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
-		if (strcmp(name, interrupt_handlers[i].template.name) != 0)
+		if (strcmp(name, interrupt_handlers[i].
+		    template_interrupt.name) != 0)
 			continue;
 
 		/*
@@ -164,7 +168,7 @@ void interrupt_handler_remove(char *name)
  *  name is found, the template is filled with valid data, and 1 is returned.
  *  If the name is not found, 0 is returned.
  */
-int interrupt_handler_lookup(char *name, struct interrupt *template)
+int interrupt_handler_lookup(char *name, struct interrupt *template_interrupt)
 {
 	int i;
 
@@ -174,16 +178,17 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 
 	if (name[0] == '\0') {
 		/*  No interrupt:  */
-		memset(template, 0, sizeof(struct interrupt));
-		template->interrupt_assert = no_interrupt_assert;
-		template->interrupt_deassert = no_interrupt_deassert;
+		memset(template_interrupt, 0, sizeof(struct interrupt));
+		template_interrupt->interrupt_assert = no_interrupt_assert;
+		template_interrupt->interrupt_deassert = no_interrupt_deassert;
 	}
 
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
-		if (strcmp(name, interrupt_handlers[i].template.name) != 0)
+		if (strcmp(name, interrupt_handlers[i].
+		    template_interrupt.name) != 0)
 			continue;
 
-		*template = interrupt_handlers[i].template;
+		*template_interrupt = interrupt_handlers[i].template_interrupt;
 		return 1;
 	}
 
@@ -215,7 +220,8 @@ void interrupt_connect(struct interrupt *in, int exclusive)
 		return;
 
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
-		if (strcmp(in->name, interrupt_handlers[i].template.name) != 0)
+		if (strcmp(in->name, interrupt_handlers[i].
+		    template_interrupt.name) != 0)
 			continue;
 
 		if (exclusive) {
@@ -252,7 +258,7 @@ void interrupt_disconnect(struct interrupt *in, int exclusive)
 		return;
 
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
-		if (strcmp(in->name, interrupt_handlers[i].template.name) != 0)
+		if (strcmp(in->name, interrupt_handlers[i].template_interrupt.name) != 0)
 			continue;
 
 		if (exclusive) {

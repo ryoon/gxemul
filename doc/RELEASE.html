@@ -8,17 +8,17 @@
 <b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.10 2007-11-12 08:32:10 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.1 2007-11-12 13:50:06 debug Exp $  -->
 
 
-<h2>Release notes for GXemul 0.4.6.1</h2>
+<h2>Release notes for GXemul 0.5.0</h2>
 
 <p><i>Copyright (C) 2003-2007  Anders Gavare</i>
 
 
 <p><br>GXemul is a framework for full-system computer architecture emulation. 
 Several processor architectures and machine types have been implemented. 
-It is working well enough to allow <a href="doc/guestoses.html">unmodified
+It is working well enough to allow <a href="guestoses.html">unmodified
 "guest" operating systems to run inside the emulator</a>,
 as if they were running on real hardware.
 
@@ -28,63 +28,28 @@ surrounding hardware components such as framebuffers, busses, interrupt
 controllers, ethernet controllers, disk controllers, and serial port 
 controllers.
 
-<p>The <a href="doc/index.html">documentation</a> lists the machines and
+<p>The <a href="index.html">documentation</a> lists the machines and
 guest operating systems that 
 can be regarded as "working" in GXemul. The best working guest operating 
-systems are <a href="doc/guestoses.html#netbsdpmaxinstall">NetBSD/pmax</a>
-and <a href="doc/guestoses.html#netbsdcatsinstall">NetBSD/cats</a>.
+systems are <a href="guestoses.html#netbsdpmaxinstall">NetBSD/pmax</a>
+and <a href="guestoses.html#netbsdcatsinstall">NetBSD/cats</a>.
 
 
-<p><br>The changes between release 0.4.6 and 0.4.6.1 are mostly
-focused on documentation updates, to reflect new releases of
-guest operating systems:
+<p><br>The changes between release 0.4.6.1 and 0.5.0 are:
 
 <ul>
 
-  <li>OpenBSD 4.2 has been released. OpenBSD/landisk 4.2
-	works in GXemul.
-
+  <li>I have begun to rewrite some parts of the framework in C++.
+  	(Many parts are still written in plain C.)
   <p>
-
-  <li>NetBSD 4.0 has been released. The installation instructions
-	in GXemul's documentation have been updated to reflect this.
-
-	<p><ul>
-	  <li>In most cases this simply means that NetBSD 4.0 is now
-		supported instead of NetBSD 3.1.
-	</ul>
-
-	<p>Some specifics worth mentioning are:
-
-	<p><ul>
-	  <li>For NetBSD/pmax, the change from 3.1 to 4.0 means that
-		X Windows is now working again out-of-the-box. (Simply
-		run <tt>startx</tt> as root to start X.)
-	  <li>For NetBSD/arc, the supported version has jumped from
-		1.6.2 to 4.0.
-	  <li>NetBSD/prep is unfortunately still at 2.0.
-	</ul>
-
+  <li>An [optional] X11 GUI is now built-in. If GXemul is started
+	using the command <tt><b>gxemul-gui</b></tt> instead of
+	<tt><b>gxemul</b></tt>, the GUI is used. The GUI is
+	very young and experimental, so please do not expect
+	too much from it.
 </ul>
 
-<p>Please read the <a href="HISTORY">HISTORY</a> file for more details.
-
-
-<p><br>Files included in this release are:<pre>
-    <a href="HISTORY">HISTORY</a>                       Detailed revision history / changelog.
-    <a href="LICENSE">LICENSE</a>                       Copyright message / license.
-    <a href="README">README</a>                        Quick start instructions, for the impatient.
-    RELEASE.html                  This file.
-    <a href="TODO">TODO</a>                          TODO notes.
-    configure, Makefile.skel      sh and make scripts for building GXemul.
-    <a href="demos/">demos/</a>                        Tutorial-like demos of testmachine functionality.
-    <a href="doc/">doc/</a>                          Documentation.
-    <a href="experiments/">experiments/</a>                  Experimental code. (Usually not needed.)
-    <a href="man/">man/</a>                          Man page.
-    <a href="src/">src/</a>                          Source code.
-</pre>
-
-<p>To build the emulator, run the <tt>configure</tt> script, and then run 
+<p><br>To build the emulator, run the <tt>configure</tt> script, and then run 
 <tt>make</tt>. This should work on most Unix-like systems, with few or no 
 modifications to the source code.
 

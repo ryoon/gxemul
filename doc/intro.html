@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.126 2007-11-09 02:47:48 debug Exp $
+$Id: intro.html,v 1.127 2007-11-12 13:50:06 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -85,8 +85,9 @@ port controllers.
 
 <p>GXemul, including the dynamic translation system, is implemented in
 portable
-<a href="http://en.wikipedia.org/wiki/C_(programming_language)">C</a>,
-which means that the emulator will run on practically any 64-bit or 32-bit
+<a href="http://en.wikipedia.org/wiki/C_(programming_language)">C</a> and
+<a href="http://en.wikipedia.org/wiki/C++">C++</a>,
+which means that the emulator will run on most 64-bit or 32-bit
 <a href="http://en.wikipedia.org/wiki/Unix-like">Unix-like</a> systems,
 with few or no modifications.
 
@@ -174,14 +175,21 @@ Uncompress the .tar.gz distribution file, and run
 	$ <b>make</b>
 </pre>
 
-<p>This should work on most Unix-like systems. GXemul does not require any 
-specific libraries to build, however, if you build on a system which does 
-not have X11 libraries installed, some functionality will be lost.
+<p>This should work on most Unix-like systems. GXemul uses the following
+libraries, if they are available:
+
+<ul>
+	<li>Generic X11 libraries (for raw framebuffer output)
+	<li>GTK+, via gtkmm (for the GUI)
+</ul>
+
+<p>These are <i>optional</i>, so you will still be able to build GXemul
+without them, but some functionality will be lost.
 
 <p>The emulator's performance is highly dependent on both runtime settings 
 and on compiler settings, so you might want to experiment with using 
-different <tt>CC</tt> and <tt>CFLAGS</tt> environment variable values when 
-running the <tt>configure</tt> script.
+different <tt>CC</tt>, <tt>CXX</tt>, and <tt>CFLAGS</tt> environment 
+variable values when running the <tt>configure</tt> script.
 
 <p>On some platforms, it is possible that building GXemul will fail 
 because of too high optimization. When using GCC (the GNU compiler), 
@@ -206,9 +214,16 @@ corresponding OSes.
 <h3>How to run the emulator:</h3>
 
 Once you have built GXemul, running it should be rather straight-forward.
-Running <tt><b>gxemul</b></tt> without arguments (or with the
-<b><tt>-h</tt></b> or <b><tt>-H</tt></b> command line options) will
-display a help message.
+
+<ol>
+	<li>Running <tt><b>gxemul</b></tt> without arguments (or with the
+	<b><tt>-h</tt></b> or <b><tt>-H</tt></b> command line options) will
+	display a help message. <tt><b>gxemul</b></tt> uses the current terminal
+	for input/output, and should work without X11.
+	<li><tt><b>gxemul-gui</b></tt> is an experimental GUI which has a
+	subset of GXemul's functionality. It can be started without additional
+	command line arguments.
+</ol>
 
 <p>To get some ideas about what is possible to run in the emulator, please 
 read the section about <a href="guestoses.html">installing "guest" 
@@ -221,7 +236,8 @@ NetBSD/pmax in a way very similar to how it is done on a real DECstation.
 own, then you should also read the section about <a 
 href="experiments.html#hello">Hello World</a>.
 
-<p>To exit the emulator, type CTRL-C to enter the 
+<p>To exit the emulator when starting it as <tt><b>gxemul</b></tt>,
+type CTRL-C to enter the 
 single-step debugger, and then type <tt><b>quit</b></tt>.
 
 <p>If you are starting an emulation by entering settings directly on the 

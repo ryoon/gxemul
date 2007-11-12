@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.h,v 1.9 2006-12-30 13:31:01 debug Exp $
+ *  $Id: settings.h,v 1.10 2007-11-12 13:50:06 debug Exp $
  */
 
 #include <inttypes.h>
@@ -66,6 +66,11 @@ struct settings;
  *  settings.c:
  */
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
 struct settings *settings_new(void);
 void settings_destroy(struct settings *settings);
 
@@ -79,6 +84,11 @@ void settings_remove_all(struct settings *settings);
 
 int settings_access(struct settings *settings, const char *fullname,
 	int writeflag, uint64_t *valuep);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 /*  Result codes from settings_access:  */
 #define	SETTINGS_OK			1

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.c,v 1.9 2007-06-15 17:02:38 debug Exp $
+ *  $Id: misc.c,v 1.10 2007-11-12 13:50:06 debug Exp $
  *
  *  This file contains things that don't fit anywhere else, and fake/dummy
  *  implementations of libc functions that are missing on some systems.
@@ -113,10 +113,10 @@ unsigned long long mystrtoull(const char *s, char **endp, int base)
  *  mkstemp() replacement for systems that lack that function. This is NOT
  *  really safe, but should at least allow the emulator to build and run.
  */
-int mymkstemp(char *template)
+int mymkstemp(char *templ)
 {
 	int h = 0;
-	char *p = template;
+	char *p = templ;
 
 	while (*p) {
 		if (*p == 'X')
@@ -124,7 +124,7 @@ int mymkstemp(char *template)
 		p++;
 	}
 
-	h = open(template, O_RDWR, 0600);
+	h = open(templ, O_RDWR, 0600);
 	return h;
 }
 

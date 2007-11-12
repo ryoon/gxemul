@@ -1,18 +1,21 @@
 #
-#  $Id: Makefile.skel,v 1.53 2007-06-28 13:36:45 debug Exp $
+#  $Id: Makefile.skel,v 1.54 2007-11-12 13:50:06 debug Exp $
 #
 #  Makefile for GXemul
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE)
 BIN=gxemul
+BINGUI=gxemul-gui
 LIBS=$(XLIB) $(OTHERLIBS)
 
 all: build
 
 build:
 	cd src; $(MAKE); cd ..
-	$(CC) $(COPTIM) src/*.o src/console/*.o src/cpus/*.o src/debugger/*.o src/devices/*.o src/disk/*.o src/file/*.o src/machines/*.o src/net/*.o src/promemul/*.o src/symbol/*.o src/useremul/*.o $(LIBS) -o $(BIN)
+	$(CXX) $(COPTIM) src/*.o src/console/*.o src/cpus/*.o src/debugger/*.o src/devices/*.o src/disk/*.o src/file/*.o src/machines/*.o src/net/*.o src/promemul/*.o src/symbol/*.o src/useremul/*.o $(LIBS) -o $(BIN)
+	rm -f $(BINGUI)
+	ln $(BIN) $(BINGUI)
 
 install: build
 	@echo
@@ -24,7 +27,7 @@ install: build
 	@echo
 
 clean:
-	rm -f $(BIN) *core core.* *.gmon _* *.exe ktrace.out
+	rm -f $(BIN) $(BINGUI) *core core.* *.gmon _* *.exe ktrace.out
 	cd src; $(MAKE) clean; cd ..
 
 #  experiments and demos are not cleaned on a normal clean, only on a clean_all.
@@ -32,12 +35,4 @@ clean:
 clean_all: clean
 	cd experiments; $(MAKE) clean_all; cd ..
 	cd demos; $(MAKE) clean; cd ..
-	rm -f config.h Makefile src/Makefile src/cpus/Makefile
-	rm -f src/debugger/Makefile src/devices/Makefile
-	rm -f src/devices/fonts/Makefile src/disk/Makefile
-	rm -f src/file/Makefile src/machines/Makefile
-	rm -f src/net/Makefile
-	rm -f src/promemul/Makefile src/include/Makefile
-	rm -f src/useremul/Makefile src/include/Makefile
-	rm -f src/console/Makefile src/symbol/Makefile
-
+	rm -f config.h Makefile src/Makefile src/*/Makefile src/*/*/Makefile

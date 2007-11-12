@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.143 2007-08-29 20:36:49 debug Exp $
+ *  $Id: cpu.h,v 1.144 2007-11-12 13:50:06 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -453,6 +453,11 @@ struct cpu {
 };
 
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
 /*  cpu.c:  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
@@ -477,7 +482,12 @@ void cpu_list_available_types(void);
 void cpu_show_cycles(struct machine *machine, int forced);
 
 struct cpu_family *cpu_family_ptr_by_number(int arch);
+
 void cpu_init(void);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #define	JUST_MARK_AS_NON_WRITABLE	1

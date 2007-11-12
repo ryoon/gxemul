@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.311 2007-06-28 14:58:38 debug Exp $
+ *  $Id: main.cc,v 1.1 2007-11-12 13:50:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,7 +47,6 @@
 #include "timer.h"
 #include "useremul.h"
 
-
 extern int single_step;
 extern int force_debugger_at_exit;
 
@@ -55,6 +54,8 @@ extern int optind;
 extern char *optarg;
 
 struct settings *global_settings;
+
+int gui = 0;
 
 int extra_argc;
 char **extra_argv;
@@ -84,7 +85,7 @@ static int debug_currently_at_start_of_line = 1;
  *
  *  Used internally by debug() and fatal().
  */
-static void va_debug(va_list argp, char *fmt)
+static void va_debug(va_list argp, const char *fmt)
 {
 	char buf[DEBUG_BUFSIZE + 1];
 	char *s;
@@ -110,6 +111,9 @@ static void va_debug(va_list argp, char *fmt)
 }
 
 
+extern "C"
+{
+
 /*
  *  debug_indentation():
  *
@@ -128,7 +132,7 @@ void debug_indentation(int diff)
  *
  *  Debug output (ignored if quiet_mode is set).
  */
-void debug(char *fmt, ...)
+void debug(const char *fmt, ...)
 {
 	va_list argp;
 
@@ -147,13 +151,15 @@ void debug(char *fmt, ...)
  *  Fatal works like debug(), but doesn't care about the quiet_mode
  *  setting.
  */
-void fatal(char *fmt, ...)
+void fatal(const char *fmt, ...)
 {
 	va_list argp;
 
 	va_start(argp, fmt);
 	va_debug(argp, fmt);
 	va_end(argp);
+}
+
 }
 
 
@@ -165,7 +171,7 @@ void fatal(char *fmt, ...)
  *
  *  For internal use by gxemul itself.
  */
-void internal_w(char *arg)
+static void internal_w(const char *arg)
 {
 	if (arg == NULL || strncmp(arg, "W@", 2) != 0) {
 		fprintf(stderr, "-W is for internal use by gxemul,"
@@ -350,7 +356,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, NULL);
 
-	char *opts =
+	const char *opts =
 	    "C:c:Dd:E:e:HhI:iJj:k:KM:Nn:Oo:p:QqRrSs:TtUu:VvW:"
 #ifdef WITH_X11
 	    "XxY:"
@@ -366,7 +372,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'c':
 			emul->n_debugger_cmds ++;
 			CHECK_ALLOCATION(emul->debugger_cmds =
-			    realloc(emul->debugger_cmds,
+			    (char**) realloc(emul->debugger_cmds,
 			    emul->n_debugger_cmds * sizeof(char *)));
 			CHECK_ALLOCATION(emul->debugger_cmds[emul->
 			    n_debugger_cmds-1] = strdup(optarg));
@@ -377,7 +383,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'd':
 			/*  diskimage_add() is called further down  */
 			(*n_diskimagesp) ++;
-			CHECK_ALLOCATION( (*diskimagesp) =
+			CHECK_ALLOCATION( (*diskimagesp) = (char**)
 			    realloc(*diskimagesp,
 			    sizeof(char *) * (*n_diskimagesp)) );
 			CHECK_ALLOCATION( (*diskimagesp)[(*n_diskimagesp) - 1] =
@@ -536,7 +542,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 'z':
 			m->x11_md.n_display_names ++;
-			CHECK_ALLOCATION(m->x11_md.display_names = realloc(
+			CHECK_ALLOCATION(m->x11_md.display_names =
+			    (char**) realloc(
 			    m->x11_md.display_names,
 			    m->x11_md.n_display_names * sizeof(char *)));
 			CHECK_ALLOCATION(m->x11_md.display_names[
@@ -552,9 +559,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	if (type != NULL || subtype != NULL) {
 		if (type == NULL)
-			type = "";
+			type = strdup("");
 		if (subtype == NULL)
-			subtype = "";
+			subtype = strdup("");
 		res = machine_name_to_type(type, subtype,
 		    &m->machine_type, &m->machine_subtype, &m->arch);
 		if (!res)
@@ -600,8 +607,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	 *  then try to boot from disk.
 	 */
 	if (extra_argc == 0) {
-		if (using_switch_d) {
-			/*  Booting directly from a disk image...  */
+		if (using_switch_d || gui) {
+			/*  Booting directly from a disk image, or
+			    bringing up an empty UI.  */
 		} else {
 			usage(0);
 			fprintf(stderr, "\nNo filename given. Aborting.\n");
@@ -667,6 +675,16 @@ int main(int argc, char *argv[])
 
 
 	progname = argv[0];
+
+	{
+		char *p = strrchr(progname, '/');
+		if (p == NULL)
+			p = progname;
+		else
+			p++;
+		if (strcmp(p, "gxemul-gui") == 0)
+			gui = 1;
+	}
 
 
 	/*
@@ -777,6 +795,11 @@ int main(int argc, char *argv[])
 
 			config_file = 1;
 		}
+	}
+
+	if (gui) {
+		main_gui(argc, argv);
+		exit(1);
 	}
 
 	if (emul->n_machines == 0) {

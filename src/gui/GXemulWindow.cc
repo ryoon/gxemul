@@ -25,18 +25,100 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemulWindow.cc,v 1.1 2007-11-12 14:51:45 debug Exp $
+ *  $Id: GXemulWindow.cc,v 1.2 2007-11-12 15:49:12 debug Exp $
  */
 
 #include "misc.h"
 #ifdef WITH_GUI
+
+#include <iostream>
 
 #include "GXemulWindow.h"
 
 GXemulWindow::GXemulWindow()
 {
 	set_title("GXemul");
-	set_default_size(800, 600);
+	set_default_size(900, 670);
+
+	add(m_Box);
+
+	m_refActionGroup = Gtk::ActionGroup::create();
+
+	// File menu:
+	m_refActionGroup->add(Gtk::Action::create("FileMenu", "_File"));
+	m_refActionGroup->add(Gtk::Action::create("FileNew", Gtk::Stock::NEW),
+	    sigc::mem_fun(*this, &GXemulWindow::on_menu_new));
+	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
+	    sigc::mem_fun(*this, &GXemulWindow::on_menu_quit));
+
+	// Help menu:
+	m_refActionGroup->add( Gtk::Action::create("HelpMenu", "_Help") );
+	m_refActionGroup->add( Gtk::Action::create("HelpAbout",
+	    Gtk::Stock::HELP), sigc::mem_fun(*this,
+	    &GXemulWindow::on_menu_about) );
+
+	m_refUIManager = Gtk::UIManager::create();
+	m_refUIManager->insert_action_group(m_refActionGroup);
+
+	add_accel_group(m_refUIManager->get_accel_group());
+
+	Glib::ustring ui_info = 
+	    "<ui>"
+	    "  <menubar name='MenuBar'>"
+	    "    <menu action='FileMenu'>"
+	    "      <menuitem action='FileNew'/>"
+	    "      <separator/>"
+	    "      <menuitem action='FileQuit'/>"
+	    "    </menu>"
+	    "    <menu action='HelpMenu'>"
+	    "      <menuitem action='HelpAbout'/>"
+	    "    </menu>"
+	    "  </menubar>"
+	    "</ui>";
+
+#ifdef GLIBMM_EXCEPTIONS_ENABLED
+	try {
+		m_refUIManager->add_ui_from_string(ui_info);
+	} catch(const Glib::Error& ex) {
+		std::cerr << "building menus failed: " <<  ex.what();
+	}
+#else
+	std::auto_ptr<Glib::Error> ex;
+	m_refUIManager->add_ui_from_string(ui_info, ex);
+	if(ex.get()) {
+		std::cerr << "building menus failed: " <<  ex->what();
+	}
+#endif //GLIBMM_EXCEPTIONS_ENABLED
+
+	Gtk::Widget* pMenubar = m_refUIManager->get_widget("/MenuBar");
+	if (pMenubar != NULL)
+		m_Box.pack_start(*pMenubar, Gtk::PACK_SHRINK);
+
+	show_all_children();
+}
+
+GXemulWindow::~GXemulWindow()
+{
+}
+
+void GXemulWindow::on_menu_about()
+{
+	Gtk::MessageDialog dialog(*this, "GXemul "VERSION,
+	    false, Gtk::MESSAGE_INFO, Gtk::BUTTONS_OK);
+	dialog.set_secondary_text("Copyright (C) 2003-2007  Anders Gavare\n"
+	    "\nIf you have questions or feedback, don't\n"
+	    "hesitate to mail me:  anders@gavare.se");
+	dialog.run();
+}
+
+void GXemulWindow::on_menu_new()
+{
+	// TODO
+}
+
+void GXemulWindow::on_menu_quit()
+{
+	hide();
 }
 
 #endif	/*  WITH_GUI  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1636 2007-11-12 13:50:05 debug Exp $
+$Id: HISTORY,v 1.1637 2007-11-12 15:49:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3688,3 +3688,4 @@ Changelog for GXemul:
 		is hardlinked to "gxemul"; when started, it should (in the
 		future) bring up a GUI version of GXemul. For now, it just
 		displays a dummy GTK+ window.
+20071113	The dummy GUI now includes a menu bar.

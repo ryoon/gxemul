@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.cc,v 1.2 2007-11-12 14:21:02 debug Exp $
+ *  $Id: main.cc,v 1.3 2007-11-12 15:49:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -742,9 +742,11 @@ int main(int argc, char *argv[])
 	}
 
 	/*  Print startup message:  */
-	debug("GXemul "VERSION"    Copyright (C) 2003-2007  Anders Gavare\n"
-	    "Read the source code and/or documentation for other Copyright "
-	    "messages.\n\n");
+	if (!gui) {
+		debug("GXemul "VERSION"    Copyright (C) 2003-2007  Anders"
+		    " Gavare\nRead the source code and/or documentation for"
+		    " other Copyright messages.\n\n");
+	}
 
 	/*  Simple initialization, from command line arguments:  */
 	if (emul->machines[0]->machine_type != MACHINE_NONE) {

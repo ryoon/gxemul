@@ -25,34 +25,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main_gui.cc,v 1.2 2007-11-12 14:51:45 debug Exp $
+ *  $Id: GXemulWindow.h,v 1.1 2007-11-12 14:51:45 debug Exp $
  */
 
-#include <stdio.h>
 #include "misc.h"
+#ifdef WITH_GUI
 
-#ifndef WITH_GUI
+#include <gtkmm.h>
 
-void main_gui(int argc, char **argv)
+class GXemulWindow : public Gtk::Window
 {
-	printf("Sorry, this version of GXemul was compiled without GUI"
-	    " support.\n");
-}
+public:
+	GXemulWindow();
 
-#else	/*  WITH_GUI  */
-
-#include <gtkmm/main.h>
-#include <gtkmm/window.h>
-
-#include "GXemulWindow.h"
-
-void main_gui(int argc, char **argv)
-{
-	Gtk::Main main(&argc, &argv);
-
-	GXemulWindow window;
-
-	Gtk::Main::run(window);
-}
+};
 
 #endif	/*  WITH_GUI  */

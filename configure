@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.279 2007-11-12 13:50:06 debug Exp $
+#  $Id: configure,v 1.280 2007-11-12 14:51:45 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1251,6 +1251,8 @@ else
 		CFLAGS="$CFLAGS `pkg-config --cflags gtkmm-2.4`"
 		OTHERLIBS="$OTHERLIBS `pkg-config --libs gtkmm-2.4`"
 		printf "#define WITH_GUI\n" >> config.h
+		CFLAGS="$CFLAGS -Igui"
+		WITH_GUI=YES
 	else
 		echo not found
 		if [ z$WITH_GUI = zYES ]; then
@@ -1285,7 +1287,7 @@ echo "" >> _Makefile.header
 
 #  Create the Makefiles:
 D=". src src/include src/console src/cpus src/debugger src/devices"
-D="$D src/devices/fonts src/disk src/file src/machines"
+D="$D src/devices/fonts src/disk src/file src/gui src/machines"
 D="$D src/net src/promemul src/symbol src/useremul"
 for a in $D; do
 	echo "creating $a/Makefile"

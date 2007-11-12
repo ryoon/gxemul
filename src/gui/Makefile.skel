@@ -1,0 +1,20 @@
+#
+#  $Id: Makefile.skel,v 1.1 2007-11-12 14:51:45 debug Exp $
+#
+#  Makefile for GXemul src/gui
+#
+
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
+
+OBJS=GXemulWindow.o
+
+all: $(OBJS)
+
+$(OBJS): Makefile
+
+clean:
+	rm -f $(OBJS) *core
+
+clean_all: clean
+	rm -f Makefile
+

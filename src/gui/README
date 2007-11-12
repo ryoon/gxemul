@@ -1,0 +1,5 @@
+$Id: README,v 1.1 2007-11-12 14:51:45 debug Exp $
+
+All GUI-related GXemul modules (i.e. anything that uses gtkmm) go into 
+this directory.
+

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1640 2007-11-14 12:00:57 debug Exp $
+$Id: HISTORY,v 1.1641 2007-11-14 12:14:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3691,5 +3691,6 @@ Changelog for GXemul:
 20071113	The dummy GUI now includes a menu bar.
 20071114	Minor manpage and Makefile updates.
 		Building and running GXemul now requires both X11 and gtkmm.
+		debug/fatal are moved from main.cc to misc.cc.
 		main.cc now just calls the main emulator, which is moved to
 		src/GXemul.cc.

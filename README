@@ -34,10 +34,6 @@ surrounding hardware components such as framebuffers, busses, interrupt
 controllers, ethernet controllers, disk controllers, and serial port 
 controllers.
 
-GXemul, including the dynamic translation system, is implemented in 
-portable C/C++, which means that the emulator will run on practically any
-host architecture.
-
 The documentation lists the machines and guest operating systems that can 
 be regarded as "working" in GXemul. The best working guest operating 
 systems are probably NetBSD/pmax and NetBSD/cats.

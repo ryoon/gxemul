@@ -25,12 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.c,v 1.10 2007-11-12 13:50:06 debug Exp $
+ *  $Id: misc.cc,v 1.1 2007-11-14 12:01:21 debug Exp $
  *
  *  This file contains things that don't fit anywhere else, and fake/dummy
  *  implementations of libc functions that are missing on some systems.
  */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +40,9 @@
 #include "cpu.h"
 #include "misc.h"
 
+
+extern "C"
+{
 
 /*
  *  mystrtoull():
@@ -170,4 +174,100 @@ void print_separator_line(void)
                 debug("-");
         debug("\n");
 }
+
+
+/*****************************************************************************
+ *
+ *  NOTE:  debug(), fatal(), and debug_indentation() are not re-entrant.
+ *         The global variable quiet_mode can be used to suppress the output
+ *         of debug(), but not the output of fatal().
+ *
+ *****************************************************************************/
+
+int verbose = 0;
+int quiet_mode = 0;
+
+static int debug_indent = 0;
+static int debug_currently_at_start_of_line = 1;
+
+
+/*
+ *  va_debug():
+ *
+ *  Used internally by debug() and fatal().
+ */
+static void va_debug(va_list argp, const char *fmt)
+{
+	char buf[DEBUG_BUFSIZE + 1];
+	char *s;
+	int i;
+
+	buf[0] = buf[DEBUG_BUFSIZE] = 0;
+	vsnprintf(buf, DEBUG_BUFSIZE, fmt, argp);
+
+	s = buf;
+	while (*s) {
+		if (debug_currently_at_start_of_line) {
+			for (i=0; i<debug_indent; i++)
+				printf(" ");
+		}
+
+		printf("%c", *s);
+
+		debug_currently_at_start_of_line = 0;
+		if (*s == '\n' || *s == '\r')
+			debug_currently_at_start_of_line = 1;
+		s++;
+	}
+}
+
+
+/*
+ *  debug_indentation():
+ *
+ *  Modify the debug indentation.
+ */
+void debug_indentation(int diff)
+{
+	debug_indent += diff;
+	if (debug_indent < 0)
+		fprintf(stderr, "WARNING: debug_indent less than 0!\n");
+}
+
+
+/*
+ *  debug():
+ *
+ *  Debug output (ignored if quiet_mode is set).
+ */
+void debug(const char *fmt, ...)
+{
+	va_list argp;
+
+	if (quiet_mode)
+		return;
+
+	va_start(argp, fmt);
+	va_debug(argp, fmt);
+	va_end(argp);
+}
+
+
+/*
+ *  fatal():
+ *
+ *  Fatal works like debug(), but doesn't care about the quiet_mode
+ *  setting.
+ */
+void fatal(const char *fmt, ...)
+{
+	va_list argp;
+
+	va_start(argp, fmt);
+	va_debug(argp, fmt);
+	va_end(argp);
+}
+
+
+}	// extern "C"
 

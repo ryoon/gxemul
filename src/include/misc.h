@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.260 2007-11-12 13:50:06 debug Exp $
+ *  $Id: misc.h,v 1.261 2007-11-14 12:00:58 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -238,16 +238,6 @@ void file_load(struct machine *machine, struct memory *mem,
 	int arch, uint64_t *gpp, int *byte_order, uint64_t *tocp);
 
 
-/*  main.c:  */
-void debug_indentation(int diff);
-void debug(const char *fmt, ...);
-void fatal(const char *fmt, ...);
-
-
-/*  main_gui.c  */
-void main_gui(int argc, char **argv);
-
-
 /*  misc.c:  */
 unsigned long long mystrtoull(const char *s, char **endp, int base);
 int mymkstemp(char *templ);
@@ -256,6 +246,9 @@ size_t mystrlcpy(char *dst, const char *src, size_t size);
 size_t mystrlcat(char *dst, const char *src, size_t size);
 #endif
 void print_separator_line(void);
+void debug_indentation(int diff);
+void debug(const char *fmt, ...);
+void fatal(const char *fmt, ...);
 
 
 /*  mvmeprom.c:  */

@@ -8,7 +8,7 @@
 <b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.1 2007-11-12 13:50:06 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.2 2007-11-14 11:12:19 debug Exp $  -->
 
 
 <h2>Release notes for GXemul 0.5.0</h2>
@@ -39,14 +39,14 @@ and <a href="guestoses.html#netbsdcatsinstall">NetBSD/cats</a>.
 
 <ul>
 
-  <li>I have begun to rewrite some parts of the framework in C++.
-  	(Many parts are still written in plain C.)
-  <p>
-  <li>An [optional] X11 GUI is now built-in. If GXemul is started
-	using the command <tt><b>gxemul-gui</b></tt> instead of
-	<tt><b>gxemul</b></tt>, the GUI is used. The GUI is
-	very young and experimental, so please do not expect
-	too much from it.
+  <li>I have begun to rewrite some parts of the framework in C++,
+	and also started on a GUI. What this means in practice:
+	<ul>
+		<li>The emulator requires gtkmm-2.4 >= 2.12.1 to build.
+		<li>Many things that worked in previous releases may
+			be broken.
+	</ul>
+
 </ul>
 
 <p><br>To build the emulator, run the <tt>configure</tt> script, and then run 

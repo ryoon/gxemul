@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.127 2007-11-12 13:50:06 debug Exp $
+$Id: intro.html,v 1.128 2007-11-14 11:12:19 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -175,16 +175,17 @@ Uncompress the .tar.gz distribution file, and run
 	$ <b>make</b>
 </pre>
 
-<p>This should work on most Unix-like systems. GXemul uses the following
-libraries, if they are available:
+<p>This should work on most Unix-like systems. GXemul requires the 
+following libraries:
 
 <ul>
-	<li>Generic X11 libraries (for raw framebuffer output)
-	<li>GTK+, via gtkmm (for the GUI)
+	<li>gtkmm-2.4 >= 2.12.1
+	<li>X11 libraries
 </ul>
 
-<p>These are <i>optional</i>, so you will still be able to build GXemul
-without them, but some functionality will be lost.
+<p>These are mandatory requirements in GXemul 0.5.0. If you 
+need to build and run GXemul on a system without these libraries,
+please try GXemul 0.4.6[.x].
 
 <p>The emulator's performance is highly dependent on both runtime settings 
 and on compiler settings, so you might want to experiment with using 

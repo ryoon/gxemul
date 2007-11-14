@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.280 2007-11-12 14:51:45 debug Exp $
+#  $Id: configure,v 1.281 2007-11-14 11:04:32 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -69,34 +69,21 @@ fi
 if [ z"$*" != z ]; then
 	#  Parse command line options:
 	for a in $*; do
-		if [ z$a = z--disable-x ]; then
-			NOX11=YES
-		else if [ z$a = z--debug ]; then
+		if [ z$a = z--debug ]; then
 			DEBUG=YES
 		else if [ z$a = z--help ]; then
 			printf "usage: $0 [options]\n\n"
-			echo "  --disable-x         don't include X11 support,"\
-			    "even if the host supports it"
 			if [ z"$UNSTABLE" = zYES ]; then
 				echo "  --debug             configure" \
 					"for a debug build"
 			fi
-			echo "  --with-gui          include support for gtkmm GUI"
-			echo "  --without-gui       exclude support for gtkmm GUI"
-			echo
-			echo "(default is to autodetect prescence of gtkmm)"
-			echo
 			exit
-		else if [ z$a = z--with-gui ]; then
-			WITH_GUI=YES
-		else if [ z$a = z--without-gui ]; then
-			WITHOUT_GUI=YES
 		else
 			echo "Invalid option: $a"
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi
+		fi; fi
 	done
 fi
 
@@ -406,102 +393,99 @@ printf "$CXX $CFLAGS"
 echo ""
 
 
-if [ z$NOX11 = z ]; then
-	printf "checking for X11 headers and libs\n"
+printf "checking for X11 headers and libs\n"
 
-	#  Try to compile a small X11 test program:
-	printf "#include <X11/Xlib.h>
-	#include <stdio.h>
-	Display *dis;
-	void f(void) {
-		dis = XOpenDisplay(NULL);
-	}
-	int main(int argc, char *argv[])
-	{ return 0; }
-	" > _test_x11.c
+#  Try to compile a small X11 test program:
+printf "#include <X11/Xlib.h>
+#include <stdio.h>
+Display *dis;
+void f(void) {
+	dis = XOpenDisplay(NULL);
+}
+int main(int argc, char *argv[])
+{ return 0; }
+" > _test_x11.c
 
-	XOK=0
+XOK=0
 
-	XINCLUDE=-I/usr/X11R6/include
-	$CC $CFLAGS _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
+XINCLUDE=-I/usr/X11R6/include
+$CC $CFLAGS _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
 
-	XLIB="-L/usr/X11R6/lib -lX11"
+XLIB="-L/usr/X11R6/lib -lX11"
+$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+
+if [ -x _test_x11 ]; then
+	XOK=1
+fi
+
+rm -f _test_x11 _test_x11.o
+
+if [ z$XOK = z0 ]; then
+	XINCLUDE=-I/usr/local/include
+	$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+	    $XINCLUDE 2> /dev/null
+
+	XLIB="-L/usr/local/lib -lX11"
 	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
 
 	if [ -x _test_x11 ]; then
 		XOK=1
 	fi
+fi
+rm -f _test_x11 _test_x11.o
 
-	rm -f _test_x11 _test_x11.o
+#  Special case for some 64-bit Linux/x86_64 systems:
+if [ z$XOK = z0 ]; then
+	$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+	    $XINCLUDE 2> /dev/null
+	XLIB="-L/usr/X11R6/lib64 -lX11"
+	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
 
-	if [ z$XOK = z0 ]; then
-		XINCLUDE=-I/usr/local/include
-		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
-		    $XINCLUDE 2> /dev/null
+	if [ -x _test_x11 ]; then
+		XOK=1
+	fi
+fi
+rm -f _test_x11 _test_x11.o
 
-		XLIB="-L/usr/local/lib -lX11"
-		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+if [ z$XOK = z0 ]; then
+	XINCLUDE=""
+	$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+	    $XINCLUDE 2> /dev/null
 
-		if [ -x _test_x11 ]; then
-			XOK=1
-		fi
+	#  -lsocket for Solaris
+	XLIB="-lX11 -lsocket"
+	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+	if [ -x _test_x11 ]; then
+		XOK=1
 	fi
 	rm -f _test_x11 _test_x11.o
+fi
 
-	#  Special case for some 64-bit Linux/x86_64 systems:
-	if [ z$XOK = z0 ]; then
-		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
-		    $XINCLUDE 2> /dev/null
+if [ z`uname` = zNetBSD ]; then
+	echo "Using NetBSD hack for X11 libs..."
+	XLIB="$XLIB -Wl,-rpath,/usr/X11R6/lib"
+fi
 
-		XLIB="-L/usr/X11R6/lib64 -lX11"
-		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
-
-		if [ -x _test_x11 ]; then
-			XOK=1
-		fi
-	fi
-	rm -f _test_x11 _test_x11.o
-
-	if [ z$XOK = z0 ]; then
-		XINCLUDE=""
-		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
-		    $XINCLUDE 2> /dev/null
-
-		#  -lsocket for Solaris
-		XLIB="-lX11 -lsocket"
-		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
-
-		if [ -x _test_x11 ]; then
-			XOK=1
-		fi
-		rm -f _test_x11 _test_x11.o
-	fi
-
-	if [ z`uname` = zNetBSD ]; then
-		echo "Using NetBSD hack for X11 libs..."
+if [ z`uname` = zOpenBSD ]; then
+	if [ z`uname -m` = zarc ]; then
+		echo "Using old OpenBSD/arc hack for X11 libs..."
 		XLIB="$XLIB -Wl,-rpath,/usr/X11R6/lib"
 	fi
-
-	if [ z`uname` = zOpenBSD ]; then
-		if [ z`uname -m` = zarc ]; then
-			echo "Using old OpenBSD/arc hack for X11 libs..."
-			XLIB="$XLIB -Wl,-rpath,/usr/X11R6/lib"
-		fi
-	fi
-
-	if [ z$XOK = z0 ]; then
-		echo "Failed to compile X11 test program." \
-		    "Configuring without X11."
-	else
-		printf "X11 headers: $XINCLUDE\n"
-		printf "X11 libraries: $XLIB\n"
-		echo "XINCLUDE=$XINCLUDE" >> _Makefile.header
-		echo "XLIB=$XLIB" >> _Makefile.header
-		printf "#define WITH_X11\n" >> config.h
-	fi
-
-	rm -f _test_x11.c
 fi
+
+if [ z$XOK = z0 ]; then
+	echo "Failed to compile X11 test program."
+	echo "This version of GXemul requires X11 to build and run."
+	exit
+fi
+
+printf "X11 headers: $XINCLUDE\n"
+printf "X11 libraries: $XLIB\n"
+echo "XINCLUDE=$XINCLUDE" >> _Makefile.header
+echo "XLIB=$XLIB" >> _Makefile.header
+printf "#define WITH_X11\n" >> config.h
+
+rm -f _test_x11.c
 
 
 if [ z$HPUX = zYES ]; then
@@ -1242,25 +1226,14 @@ rm -f _test_end*
 GTKMM_VER="2.12.1"
 printf "checking for gtkmm-2.4 >= $GTKMM_VER... "
 
-if [ z$WITHOUT_GUI = zYES ]; then
-	echo skipping
+if pkg-config --atleast-version=$GTKMM_VER gtkmm-2.4; then
+	echo found
+	CFLAGS="$CFLAGS `pkg-config --cflags gtkmm-2.4`"
+	OTHERLIBS="$OTHERLIBS `pkg-config --libs gtkmm-2.4`"
 else
-	# Autodetect:
-	if pkg-config --atleast-version=$GTKMM_VER gtkmm-2.4; then
-		echo found
-		CFLAGS="$CFLAGS `pkg-config --cflags gtkmm-2.4`"
-		OTHERLIBS="$OTHERLIBS `pkg-config --libs gtkmm-2.4`"
-		printf "#define WITH_GUI\n" >> config.h
-		CFLAGS="$CFLAGS -Igui"
-		WITH_GUI=YES
-	else
-		echo not found
-		if [ z$WITH_GUI = zYES ]; then
-			echo Sorry, gtkmm-2.4 version $GTKMM_VER or newer was not
-			echo found, and you specified --with-gui. Aborting.
-			exit
-		fi
-	fi
+	echo not found
+	echo Sorry, gtkmm-2.4 version $GTKMM_VER or newer is required. Aborting.
+	exit
 fi
 
 

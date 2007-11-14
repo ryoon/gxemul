@@ -1,3 +1,6 @@
+#ifndef TTYDEBUGCONSOLE_H
+#define TTYDEBUGCONSOLE_H
+
 /*
  *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
  *
@@ -24,35 +27,28 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
+ *  $Id: TTYDebugConsole.h,v 1.1 2007-11-14 11:04:32 debug Exp $
  *
- *  $Id: main_gui.cc,v 1.2 2007-11-12 14:51:45 debug Exp $
+ *  A TTYDebugConsole is a DebugConsole which writes output to stdout, and
+ *  reads input from stdin.
  */
 
-#include <stdio.h>
-#include "misc.h"
+#include "DebugConsole.h"
 
-#ifndef WITH_GUI
-
-void main_gui(int argc, char **argv)
+class TTYDebugConsole: public DebugConsole
 {
-	printf("Sorry, this version of GXemul was compiled without GUI"
-	    " support.\n");
-}
+public:
+	TTYDebugConsole()
+	    : DebugConsole()
+	{
+	}
 
-#else	/*  WITH_GUI  */
+	virtual ~TTYDebugConsole()
+	{
+	}
 
-#include <gtkmm/main.h>
-#include <gtkmm/window.h>
+	virtual void Print(const Glib::ustring& str);
+	virtual int GetChar();
+};
 
-#include "GXemulWindow.h"
-
-void main_gui(int argc, char **argv)
-{
-	Gtk::Main main(&argc, &argv);
-
-	GXemulWindow window;
-
-	Gtk::Main::run(window);
-}
-
-#endif	/*  WITH_GUI  */
+#endif	// TTYDEBUGCONSOLE

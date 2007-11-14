@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.cc,v 1.3 2007-11-12 15:49:12 debug Exp $
+ *  $Id: main.cc,v 1.4 2007-11-14 11:04:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -35,16 +35,20 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <gtkmm.h>
+
 #include "console.h"
 #include "cpu.h"
 #include "debugger.h"
 #include "device.h"
 #include "diskimage.h"
 #include "emul.h"
+#include "GXemulWindow.h"
 #include "machine.h"
 #include "misc.h"
 #include "settings.h"
 #include "timer.h"
+#include "TTYDebugConsole.h"
 #include "useremul.h"
 
 extern int single_step;
@@ -211,10 +215,9 @@ static void usage(int longusage)
 	printf("   or  gxemul [general options] @configfile\n");
 	printf("   or  gxemul [userland, other, and general options] file "
 	    "[args ...]\n");
-#ifdef WITH_GUI
 	printf("\n   or  gxemul-gui\n"
 	       "   or  gxemul-gui [same options as for gxemul]\n");
-#endif
+
 	if (!longusage) {
 		printf("\nRun  %s -h  for help on command line options.\n",
 		    progname);
@@ -663,6 +666,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
  */
 int main(int argc, char *argv[])
 {
+	Gtk::Main main(argc, argv);
+
 	/*  Setting constants:  */
 	const int constant_yes = 1;
 	const int constant_true = 1;
@@ -803,7 +808,8 @@ int main(int argc, char *argv[])
 	}
 
 	if (gui) {
-		main_gui(argc, argv);
+		GXemulWindow window;
+		Gtk::Main::run(window);
 		exit(1);
 	}
 

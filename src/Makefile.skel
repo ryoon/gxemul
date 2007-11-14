@@ -1,13 +1,14 @@
 #
-#  $Id: Makefile.skel,v 1.105 2007-11-12 14:51:45 debug Exp $
+#  $Id: Makefile.skel,v 1.106 2007-11-14 11:04:32 debug Exp $
 #
 #  Makefile for GXemul src
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
-OBJS=emul.o emul_parse.o float_emul.o interrupt.o main.o main_gui.o \
-	memory.o misc.o net.o settings.o timer.o useremul.o
+OBJS=emul.o emul_parse.o float_emul.o interrupt.o main.o \
+	memory.o misc.o net.o settings.o timer.o \
+	TTYDebugConsole.o useremul.o
 
 all: do_include
 	$(MAKE) do_src do_console do_cpus do_debugger do_devices do_disk \

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1638 2007-11-14 09:32:16 debug Exp $
+$Id: HISTORY,v 1.1639 2007-11-14 11:04:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3690,3 +3690,5 @@ Changelog for GXemul:
 		displays a dummy GTK+ window.
 20071113	The dummy GUI now includes a menu bar.
 20071114	Minor manpage and Makefile updates.
+		Building and running GXemul now requires both X11 and gtkmm.
+

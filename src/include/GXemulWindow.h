@@ -1,3 +1,6 @@
+#ifndef GXEMULWINDOW_H
+#define	GXEMULWINDOW_H
+
 /*
  *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
  *
@@ -25,11 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemulWindow.h,v 1.2 2007-11-12 15:49:12 debug Exp $
+ *  $Id: GXemulWindow.h,v 1.1 2007-11-14 11:04:32 debug Exp $
  */
 
 #include "misc.h"
-#ifdef WITH_GUI
 
 #include <gtkmm.h>
 
@@ -50,4 +52,4 @@ private:
 	Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
 };
 
-#endif	/*  WITH_GUI  */
+#endif	// GXEMULWINDOW_H

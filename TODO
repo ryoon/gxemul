@@ -1,4 +1,4 @@
-$Id: TODO,v 1.561 2007-11-12 13:50:06 debug Exp $
+$Id: TODO,v 1.562 2007-11-14 09:32:17 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -10,6 +10,9 @@ C => C++ rewrite
 
 	This is a HUGE undertaking; it is probably too much to list
 	everything here in the TODO file.
+
+	And there is definitely no concrete plan for how long it will
+	take, or in which order things will need to be done.
 
 	Components that make up an emulation:
 
@@ -28,6 +31,16 @@ C => C++ rewrite
 			other kinds of output devices
 
 	Busses and devices can be attached to other busses.
+
+	GUI!
+		Including "design" mode, where emulations can be
+		created by drag-n-drop of components.
+
+		Learn to use Cairo for drawing such designs.
+
+		Individual I/O devices (e.g. screens, lcd displays,
+		terminals) should show up in windows 
+		(dockable/undockable?).
 
 	XML format describing an emulation setup.
 		* The GUI outputs such an XML setup.

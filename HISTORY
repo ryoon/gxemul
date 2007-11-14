@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1637 2007-11-12 15:49:11 debug Exp $
+$Id: HISTORY,v 1.1638 2007-11-14 09:32:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3689,3 +3689,4 @@ Changelog for GXemul:
 		future) bring up a GUI version of GXemul. For now, it just
 		displays a dummy GTK+ window.
 20071113	The dummy GUI now includes a menu bar.
+20071114	Minor manpage and Makefile updates.

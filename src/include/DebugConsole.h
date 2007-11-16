@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: DebugConsole.h,v 1.2 2007-11-16 08:28:58 debug Exp $
+ *  $Id: DebugConsole.h,v 1.3 2007-11-16 08:40:52 debug Exp $
  *
  *  A DebugConsole is a place where debug message are outputted during
  *  runtime, and a means to input key presses when execution is paused
@@ -37,6 +37,8 @@
  *
  *	TTYDebugConsole
  */
+
+#include <string>
 
 class DebugConsole
 {

@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.cc,v 1.1 2007-11-16 08:55:16 debug Exp $
+ *  $Id: float_emul.cc,v 1.2 2007-11-16 09:15:16 debug Exp $
  *
  *  Floating point emulation routines.
  */
@@ -212,7 +212,7 @@ uint64_t ieee_store_float_value(double nf, int fmt, int nan)
 		 *  If nf < 0.0, then r2 will begin with a sequence of binary
 		 *  1's, which is ok.
 		 */
-		r3 = nf;
+		r3 = (int64_t) nf;
 		r2 = r3;
 		r |= r2;
 

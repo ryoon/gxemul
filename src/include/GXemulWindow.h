@@ -28,12 +28,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemulWindow.h,v 1.2 2007-11-16 10:22:32 debug Exp $
+ *  $Id: GXemulWindow.h,v 1.3 2007-11-16 23:45:08 debug Exp $
  */
 
 #include "misc.h"
 
 #include <gtkmm.h>
+
+#include "DebugConsoleWidget.h"
+#include "EmulationDesignArea.h"
 
 class GXemulWindow : public Gtk::Window
 {
@@ -48,6 +51,9 @@ private:
 
 	Gtk::VBox m_Box;
 	Gtk::VPaned m_VPaned;
+
+	EmulationDesignArea m_EmulationDesignArea;
+	DebugConsoleWidget m_DebugConsoleWidget;
 
 	Glib::RefPtr<Gtk::UIManager> m_refUIManager;
 	Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;

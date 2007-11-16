@@ -25,27 +25,23 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: TTYDebugConsole.cc,v 1.2 2007-11-16 23:45:08 debug Exp $
+ *  $Id: DebugConsoleWidget.cc,v 1.1 2007-11-16 23:45:08 debug Exp $
  */
 
-#include <iostream>
+#include "misc.h"
 
-#include "TTYDebugConsole.h"
+#ifdef WITH_GUI
 
+#include "DebugConsoleWidget.h"
 
-void TTYDebugConsole::Print(const string& str)
+DebugConsoleWidget::DebugConsoleWidget()
 {
-	if (!GetQuiet())
-	{
-		for (int i=0; i<GetIndentation(); ++i)
-			std::cout << "  ";
-			
-		std::cout << str;
-	}
+	add(m_TextView);
+	add(m_Entry);
 }
 
-int TTYDebugConsole::GetChar()
+DebugConsoleWidget::~DebugConsoleWidget()
 {
-	return -1;
 }
 
+#endif	// WITH_GUI

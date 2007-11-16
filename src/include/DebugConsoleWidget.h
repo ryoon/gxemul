@@ -1,3 +1,6 @@
+#ifndef DEBUGCONSOLEWIDGET_H
+#define DEBUGCONSOLEWIDGET_H
+
 /*
  *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
  *
@@ -24,28 +27,23 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *
- *  $Id: TTYDebugConsole.cc,v 1.2 2007-11-16 23:45:08 debug Exp $
+ *  $Id: DebugConsoleWidget.h,v 1.1 2007-11-16 23:45:08 debug Exp $
  */
 
-#include <iostream>
+#include "misc.h"
 
-#include "TTYDebugConsole.h"
+#include <gtkmm.h>
 
-
-void TTYDebugConsole::Print(const string& str)
+class DebugConsoleWidget : public Gtk::VBox
 {
-	if (!GetQuiet())
-	{
-		for (int i=0; i<GetIndentation(); ++i)
-			std::cout << "  ";
-			
-		std::cout << str;
-	}
-}
+public:
+	DebugConsoleWidget();
+	virtual ~DebugConsoleWidget();
 
-int TTYDebugConsole::GetChar()
-{
-	return -1;
-}
+protected:
+	Gtk::TextView	m_TextView;
+	Gtk::Entry	m_Entry;
+};
+
+#endif	// DEBUGCONSOLEWIDGET_H
 

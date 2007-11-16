@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemulWindow.cc,v 1.5 2007-11-16 10:22:32 debug Exp $
+ *  $Id: GXemulWindow.cc,v 1.6 2007-11-16 23:45:08 debug Exp $
  */
 
 #include "misc.h"
@@ -40,7 +40,6 @@
 GXemulWindow::GXemulWindow()
 {
 	set_title("GXemul");
-	set_default_size(900, 670);
 
 	add(m_Box);
 
@@ -98,10 +97,8 @@ GXemulWindow::GXemulWindow()
 
 	m_Box.add(m_VPaned);
 
-	// TODO:
-	//
-	//m_VPaned.add1(main pane);
-	//m_VPaned.add2(immediate debug i/o window);
+	m_VPaned.pack1(m_EmulationDesignArea);
+	m_VPaned.pack2(m_DebugConsoleWidget);
 
 	show_all_children();
 }

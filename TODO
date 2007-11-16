@@ -1,4 +1,4 @@
-$Id: TODO,v 1.566 2007-11-16 11:59:47 debug Exp $
+$Id: TODO,v 1.567 2007-11-16 23:45:08 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -8,85 +8,34 @@ Some things, in no specific order, that I'd like to fix:
 C => C++ rewrite
 ----------------
 
-	This is a HUGE undertaking; it is probably too much to list
+    o)	This is a HUGE undertaking; it is probably too much to list
 	everything here in the TODO file.
 
 	And there is definitely no concrete plan for how long it will
 	take, or in which order things will need to be done.
 
-	Components that make up an emulation:
+	x)  GUI:
+		+)  "Workspace", where emulations can be created
+		    by drag-n-drop of components from a palette, and/or
+		    from other emulations.
 
-		Machines
-			Devices
-				Busses
-				Interrupt controllers
-				CPUS (a kind of device?)
-				Other devices
+		    The design mode should use cairo for drawing.
 
-		Networks
+		    Dockable/undockable windows for machines/devices/
+		    I/O-units?
 
-		I/O devices: Consoles
-			Text
-			Framebuffers
-			other kinds of output devices
+		+)  Debug console:
+		    A text area with a text entry field. Simply a way
+		    to get the same kind of interaction that will be
+		    available via the console-mode debugger.
 
-	Busses and devices can be attached to other busses.
+	x)  New debugger.
 
-	GUI!
-		Including "design" mode, where emulations can be
-		created by drag-n-drop of components.
+	x)  There can now be links directly into the documentation,
+	    assuming it is installed. ($PREFIX/share/doc/gxemul/*.html)
 
-		Learn to use Cairo for drawing such designs.
-
-		Individual I/O devices (e.g. screens, lcd displays,
-		terminals) should show up in windows 
-		(dockable/undockable?).
-
-	There can now be links directly into the documentation,
-	assuming it is installed. ($PREFIX/share/doc/gxemul/*.html)
-
-	XML format describing an emulation setup.
-		* The GUI outputs such an XML setup.
-		* ALternatively, the built-in machines produce
-		  default XML chunks.
-		* The main emulator loop runs such XML emulations
-		  (with possible "save all state" functionality)
-
-<gxemul>
-	<setup>
-		<name>Experimental setup of a PC and an embedded system</name>
-	</setup>
-
-	<components>
-		<component x1="0.24" y1="uib" x2="oubiub" y2="uibiub"
-			name="Embedded system" type="machine">
-
-mainbus
-	\--- cpu
-	\--- ram
-	\--- rom: Loaded from file? (or software emulation?)
-	\--- pcibus
-	     \-- 3c509
-
-			<component x1="asdfasdf" y1="uib" x2="oubiub" y2="uibiub"
-				name="3C509 Ethernet NIC" type="3c509">
-			</component>
-
-		</component>
-
-		...
-
-		<component id="3" x1="asdfas"....
-			name="Internet Gateway" type="gateway">
-		</component>
-
-		<network>
-			<connection>18</connection>
-			<connection>42</connection>
-			<connection>3</connection>
-		</network>
-	</components>
-</gxemul>
+	x)  XML format describing an emulation setup: basically a collection
+	    of "components".
 
 -------------------------------------------------------------------------------
 
@@ -460,7 +409,6 @@ Documentation:
 		fail on real hardware).  Sandbox = contain from the
 		host OS. But the emulated programs will run "less
 		securely".
-	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
 	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos

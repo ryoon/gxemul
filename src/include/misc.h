@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.261 2007-11-14 12:00:58 debug Exp $
+ *  $Id: misc.h,v 1.262 2007-11-16 23:45:08 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -44,6 +44,18 @@
  */
 
 #include "../../config.h"
+
+
+// Use Glib::ustring if available, otherwise std::string:
+#ifdef __cplusplus
+#ifdef WITH_GUI
+#include <glibmm/ustring.h>
+typedef Glib::ustring string;
+#else	// !WITH_GUI
+#include <string>
+typedef std::string string;
+#endif
+#endif
 
 
 #ifdef __cplusplus

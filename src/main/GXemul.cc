@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemul.cc,v 1.1 2007-11-16 09:23:33 debug Exp $
+ *  $Id: GXemul.cc,v 1.2 2007-11-16 23:45:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -741,7 +741,7 @@ int GXemul::Run()
 		    " For example:\n\n    %s -e 3max -d disk.img\n\n"
 		    "to boot an emulated DECstation 5000/200 with a disk "
 		    "image.\n", progname);
-		exit(1);
+		return 1;
 	}
 
 	device_set_exit_on_error(0);

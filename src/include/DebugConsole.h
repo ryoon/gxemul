@@ -27,18 +27,11 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: DebugConsole.h,v 1.3 2007-11-16 08:40:52 debug Exp $
  *
- *  A DebugConsole is a place where debug message are outputted during
- *  runtime, and a means to input key presses when execution is paused
- *  (to enter commands in the interactive debugger).
- *
- *  Currently implemented subclasses:
- *
- *	TTYDebugConsole
+ *  $Id: DebugConsole.h,v 1.4 2007-11-16 23:45:08 debug Exp $
  */
 
-#include <string>
+#include <misc.h>
 
 class DebugConsole
 {
@@ -53,7 +46,7 @@ public:
 	{
 	}
 
-	virtual void Print(const std::string& str) = 0;
+	virtual void Print(const string& str) = 0;
 	virtual int GetChar() = 0;
 
 	bool GetQuiet() const
@@ -105,4 +98,3 @@ private:
 };
 
 #endif	// DEBUGCONSOLE_H
-

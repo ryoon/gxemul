@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemul.cc,v 1.4 2007-11-16 08:50:12 debug Exp $
+ *  $Id: GXemul.cc,v 1.1 2007-11-16 09:23:33 debug Exp $
  */
 
 #include <stdio.h>

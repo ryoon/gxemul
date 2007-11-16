@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1644 2007-11-16 08:50:12 debug Exp $
+$Id: HISTORY,v 1.1645 2007-11-16 09:23:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3700,3 +3700,4 @@ Changelog for GXemul:
 		Moving the rest of main.cc (the main function) into GXemul.cc.
 		Removing the old config file parser (src/emul_parse.c),
 		and doc/configfiles.html.
+		Moving remaining src/*.c{,c} into a new src/main/ directory.

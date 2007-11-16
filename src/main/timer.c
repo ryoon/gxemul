@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.11 2007-06-18 04:23:19 debug Exp $
+ *  $Id: timer.c,v 1.1 2007-11-16 09:23:33 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */

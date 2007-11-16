@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.cc,v 1.1 2007-11-14 12:01:21 debug Exp $
+ *  $Id: misc.cc,v 1.1 2007-11-16 09:23:33 debug Exp $
  *
  *  This file contains things that don't fit anywhere else, and fake/dummy
  *  implementations of libc functions that are missing on some systems.

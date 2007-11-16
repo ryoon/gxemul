@@ -1,18 +1,14 @@
 #
-#  $Id: Makefile.skel,v 1.109 2007-11-16 08:50:12 debug Exp $
+#  $Id: Makefile.skel,v 1.110 2007-11-16 09:23:33 debug Exp $
 #
 #  Makefile for GXemul src
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
-OBJS=emul.o float_emul.o GXemul.o interrupt.o \
-	memory.o misc.o net.o settings.o timer.o \
-	TTYDebugConsole.o useremul.o
-
 all: do_include
 	$(MAKE) do_src do_console do_cpus do_debugger do_devices do_disk \
-	    do_file do_gui do_machines do_net do_promemul do_symbol do_useremul
+	    do_file do_gui do_machines do_main do_net do_promemul do_symbol do_useremul
 
 do_include:
 	cd include; $(MAKE); cd ..
@@ -41,6 +37,9 @@ do_gui:
 do_machines:
 	cd machines; $(MAKE); cd ..
 
+do_main:
+	cd main; $(MAKE); cd ..
+
 do_net:
 	cd net; $(MAKE); cd ..
 
@@ -68,6 +67,7 @@ clean:
 	cd file; $(MAKE) clean; cd ..
 	cd gui; $(MAKE) clean; cd ..
 	cd machines; $(MAKE) clean; cd ..
+	cd main; $(MAKE) clean; cd ..
 	cd net; $(MAKE) clean; cd ..
 	cd promemul; $(MAKE) clean; cd ..
 	cd symbol; $(MAKE) clean; cd ..
@@ -83,6 +83,7 @@ clean_all: clean
 	cd file; $(MAKE) clean_all; cd ..
 	cd gui; $(MAKE) clean_all; cd ..
 	cd machines; $(MAKE) clean_all; cd ..
+	cd main; $(MAKE) clean_all; cd ..
 	cd net; $(MAKE) clean_all; cd ..
 	cd promemul; $(MAKE) clean_all; cd ..
 	cd symbol; $(MAKE) clean_all; cd ..

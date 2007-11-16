@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: TTYDebugConsole.cc,v 1.2 2007-11-16 08:28:58 debug Exp $
+ *  $Id: TTYDebugConsole.cc,v 1.1 2007-11-16 09:23:33 debug Exp $
  */
 
 #include <iostream>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.206 2007-06-19 04:04:02 debug Exp $
+ *  $Id: memory.c,v 1.1 2007-11-16 09:23:33 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -488,7 +488,7 @@ void memory_device_remove(struct memory *mem, int i)
 
 #define MEMORY_RW	userland_memory_rw
 #define MEM_USERLAND
-#include "cpus/memory_rw.c"
+#include "../cpus/memory_rw.c"
 #undef MEM_USERLAND
 #undef MEMORY_RW
 

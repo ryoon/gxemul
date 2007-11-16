@@ -1,4 +1,4 @@
-$Id: TODO,v 1.564 2007-11-16 08:40:16 debug Exp $
+$Id: TODO,v 1.565 2007-11-16 09:23:33 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -67,30 +67,6 @@ Play around with the SGI O2 PROM image again, from the real O2.
 0.3.8: Boots but switches to serial console ("could not open console") (also with
        cache detection skipped manually)
 0.4.0: The cache detection breakpoint is not triggered :(
-
--------------------------------------------------------------------------------
-
-A first pass of installation regression testing of NetBSD 4.0 RC1 and RC2
-in GXemul:
-
-	X  pmax (including X Windows out-of-the-box)
-	X  arc  (1.6.2 -> 4.0! Yay!)
-	X  hpcmips	works? but clock is standing still? (install says
-				50 MB/second!)
-	   cobalt
-	   evbmips
-	   algor
-	   sgimips
-	X  cats		works, but feels... slower (?) than 3.1
-	   evbarm
-	   netwinder
-	   prep		nej, 2.0 är senaste som funkar :(
-	X  macppc
-	   pmppc
-	X  dreamcast
-	X  landisk
-
-X = done and worked fine
 
 -------------------------------------------------------------------------------
 
@@ -360,7 +336,6 @@ Dyntrans:
 		Per machine? What about SMP? All data to the same file?
 		A debugger command should be possible to use to enable/
 		disable statistics gathering.
-		Configuration file option!
 	x)  Breakpoints:
 		o) Physical vs virtual addresses!
 		o) 32-bit vs 64-bit sign extension for MIPS, and others?
@@ -493,14 +468,6 @@ Clocks and timers:
 	    NetBSD sources; it doesn't seem to be initialized _AT ALL_?!
 	x)  Cobalt TOD is incorrect!
 	x)  Go through all other machines, one by one, and fix them.
-
-Config file parser:
-	o)  Rewrite it from scratch!
-	o)  Usage of any expression available through the debugger
-	o)  Allow interrupt controllers to be added! and interrupts
-	    to be used in more ways than before
-	o)  Support for running debugger commands (like the -c
-	    command line option)
 
 Floating point layer:
 	o)  make it common enough to be used by _all_ emulation modes

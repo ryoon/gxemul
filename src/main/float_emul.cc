@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.cc,v 1.2 2007-11-16 09:15:16 debug Exp $
+ *  $Id: float_emul.cc,v 1.1 2007-11-16 09:23:33 debug Exp $
  *
  *  Floating point emulation routines.
  */

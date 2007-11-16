@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.h,v 1.4 2006-12-30 13:31:01 debug Exp $
+ *  $Id: float_emul.h,v 1.5 2007-11-16 08:55:16 debug Exp $
  *
  *  Floating point emulation. See src/float_emul.c for the details.
  */
@@ -35,6 +35,11 @@
 #include <math.h>
 
 #include "misc.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
 
 struct ieee_float_value {
 	double		f;
@@ -49,5 +54,9 @@ struct ieee_float_value {
 void ieee_interpret_float_value(uint64_t x, struct ieee_float_value *fvp,
 	int fmt);
 uint64_t ieee_store_float_value(double nf, int fmt, int nan);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif	/*  FLOAT_EMUL_H  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1642 2007-11-16 08:28:57 debug Exp $
+$Id: HISTORY,v 1.1643 2007-11-16 08:40:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3697,3 +3697,4 @@ Changelog for GXemul:
 20071116	Reverting the stuff I did two days ago: gtkmm/X11 are now
 		optional again.
 		Finally adding "install" and "uninstall" Makefile targets. :)
+		Moving the rest of main.cc (the main function) into GXemul.cc.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemul.cc,v 1.2 2007-11-16 08:28:58 debug Exp $
+ *  $Id: GXemul.cc,v 1.3 2007-11-16 08:40:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -53,8 +53,6 @@
 #include "timer.h"
 #include "useremul.h"
 
-extern char *progname;		// main.cc
-
 extern int single_step;
 extern int force_debugger_at_exit;
 extern int verbose;
@@ -63,6 +61,8 @@ extern int optind;
 extern char *optarg;
 
 struct settings *global_settings;
+
+char *progname;
 
 int extra_argc;
 char **extra_argv;
@@ -756,5 +756,25 @@ int GXemul::Run()
 	settings_destroy(global_settings);
 
 	return 0;
+}
+
+
+/*****************************************************************************/
+
+/*
+ *  main():
+ *
+ *  Program entry point.
+ */
+int main(int argc, char *argv[])
+{
+	progname = argv[0];
+
+#ifdef WITH_GUI
+	Gtk::Main main(argc, argv);
+#endif
+
+	GXemul gxemul(argc, argv);
+	return gxemul.Run();
 }
 

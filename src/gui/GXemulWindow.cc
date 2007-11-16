@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemulWindow.cc,v 1.4 2007-11-16 08:28:58 debug Exp $
+ *  $Id: GXemulWindow.cc,v 1.5 2007-11-16 10:22:32 debug Exp $
  */
 
 #include "misc.h"
@@ -95,6 +95,13 @@ GXemulWindow::GXemulWindow()
 	Gtk::Widget* pMenubar = m_refUIManager->get_widget("/MenuBar");
 	if (pMenubar != NULL)
 		m_Box.pack_start(*pMenubar, Gtk::PACK_SHRINK);
+
+	m_Box.add(m_VPaned);
+
+	// TODO:
+	//
+	//m_VPaned.add1(main pane);
+	//m_VPaned.add2(immediate debug i/o window);
 
 	show_all_children();
 }

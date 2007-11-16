@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemulWindow.h,v 1.1 2007-11-14 11:04:32 debug Exp $
+ *  $Id: GXemulWindow.h,v 1.2 2007-11-16 10:22:32 debug Exp $
  */
 
 #include "misc.h"
@@ -47,6 +47,7 @@ private:
 	virtual void on_menu_quit();
 
 	Gtk::VBox m_Box;
+	Gtk::VPaned m_VPaned;
 
 	Glib::RefPtr<Gtk::UIManager> m_refUIManager;
 	Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;

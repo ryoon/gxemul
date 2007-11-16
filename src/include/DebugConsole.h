@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: DebugConsole.h,v 1.1 2007-11-14 11:04:32 debug Exp $
+ *  $Id: DebugConsole.h,v 1.2 2007-11-16 08:28:58 debug Exp $
  *
  *  A DebugConsole is a place where debug message are outputted during
  *  runtime, and a means to input key presses when execution is paused
@@ -37,8 +37,6 @@
  *
  *	TTYDebugConsole
  */
-
-#include "glibmm.h"
 
 class DebugConsole
 {
@@ -53,7 +51,7 @@ public:
 	{
 	}
 
-	virtual void Print(const Glib::ustring& str) = 0;
+	virtual void Print(const std::string& str) = 0;
 	virtual int GetChar() = 0;
 
 	bool GetQuiet() const

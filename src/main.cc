@@ -25,13 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.cc,v 1.5 2007-11-14 12:00:58 debug Exp $
+ *  $Id: main.cc,v 1.6 2007-11-16 08:28:58 debug Exp $
  */
-
-#include <gtkmm.h>
 
 #include "misc.h"
 #include "GXemul.h"
+
+#ifdef WITH_GUI
+#include <gtkmm.h>
+#endif
 
 char *progname;
 
@@ -40,7 +42,9 @@ int main(int argc, char *argv[])
 {
 	progname = argv[0];
 
+#ifdef WITH_GUI
 	Gtk::Main main(argc, argv);
+#endif
 
 	GXemul gxemul(argc, argv);
 	return gxemul.Run();

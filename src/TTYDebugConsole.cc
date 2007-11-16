@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: TTYDebugConsole.cc,v 1.1 2007-11-14 11:04:32 debug Exp $
+ *  $Id: TTYDebugConsole.cc,v 1.2 2007-11-16 08:28:58 debug Exp $
  */
 
 #include <iostream>
@@ -33,22 +33,14 @@
 #include "TTYDebugConsole.h"
 
 
-void TTYDebugConsole::Print(const Glib::ustring& str)
+void TTYDebugConsole::Print(const std::string& str)
 {
 	if (!GetQuiet())
 	{
 		for (int i=0; i<GetIndentation(); ++i)
 			std::cout << "  ";
 			
-		try
-		{
-			std::cout << str;
-		}
-		catch (Glib::ConvertError& ex)
-		{
-			std::cout << "Glib::ConvertError thrown. "
-			    "Perhaps you are not using an UTF-8 locale?\n";
-		}
+		std::cout << str;
 	}
 }
 

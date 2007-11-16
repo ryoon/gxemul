@@ -1,9 +1,25 @@
-$Id: TODO,v 1.562 2007-11-14 09:32:17 debug Exp $
+$Id: TODO,v 1.563 2007-11-16 08:28:57 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
 
 -------------------------------------------------------------------------------
+
+Ta bort gamla configformatet!
+	parsern
+	documentationen
+Lagg till libxml*-dependencies!
+Borja pa "dokumentmodell"
+Borja pa XML-komponentsprak, och visa upp detta i UI:t.
+
+IDE!
+	UI:t kan ha lankar (http) direkt in i documentationen,
+	for guest-OS-installation per maskin. Sa om man t ex satter
+	upp en Dreamcast-maskin, sa kan man lasa om de guest OS
+	som ar kanda att funka med den setuppen.
+	Documentationen bor da hellre vara uppdelad Per Maskin,
+	och inte allt pa en sida.
+
 
 C => C++ rewrite
 ----------------

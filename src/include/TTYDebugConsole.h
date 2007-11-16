@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: TTYDebugConsole.h,v 1.1 2007-11-14 11:04:32 debug Exp $
+ *  $Id: TTYDebugConsole.h,v 1.2 2007-11-16 08:28:58 debug Exp $
  *
  *  A TTYDebugConsole is a DebugConsole which writes output to stdout, and
  *  reads input from stdin.
@@ -47,7 +47,7 @@ public:
 	{
 	}
 
-	virtual void Print(const Glib::ustring& str);
+	virtual void Print(const std::string& str);
 	virtual int GetChar();
 };
 

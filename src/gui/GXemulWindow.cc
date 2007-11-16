@@ -25,8 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemulWindow.cc,v 1.3 2007-11-14 11:04:32 debug Exp $
+ *  $Id: GXemulWindow.cc,v 1.4 2007-11-16 08:28:58 debug Exp $
  */
+
+#include "misc.h"
+
+#ifdef WITH_GUI
 
 #include <iostream>
 
@@ -119,3 +123,4 @@ void GXemulWindow::on_menu_quit()
 	hide();
 }
 
+#endif	// WITH_GUI

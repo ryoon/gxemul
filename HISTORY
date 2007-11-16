@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1641 2007-11-14 12:14:22 debug Exp $
+$Id: HISTORY,v 1.1642 2007-11-16 08:28:57 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3694,3 +3694,6 @@ Changelog for GXemul:
 		debug/fatal are moved from main.cc to misc.cc.
 		main.cc now just calls the main emulator, which is moved to
 		src/GXemul.cc.
+20071116	Reverting the stuff I did two days ago: gtkmm/X11 are now
+		optional again.
+		Finally adding "install" and "uninstall" Makefile targets. :)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemul.cc,v 1.1 2007-11-14 12:00:58 debug Exp $
+ *  $Id: GXemul.cc,v 1.2 2007-11-16 08:28:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -34,7 +34,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "misc.h"
+
+#ifdef WITH_GUI
 #include <gtkmm.h>
+#include "GXemulWindow.h"
+#endif
 
 #include "console.h"
 #include "cpu.h"
@@ -43,9 +48,7 @@
 #include "diskimage.h"
 #include "emul.h"
 #include "GXemul.h"
-#include "GXemulWindow.h"
 #include "machine.h"
-#include "misc.h"
 #include "settings.h"
 #include "timer.h"
 #include "useremul.h"
@@ -718,8 +721,13 @@ GXemul::~GXemul()
 int GXemul::Run()
 {
 	if (WithGui(progname)) {
+#ifdef WITH_GUI
 		GXemulWindow window;
 		Gtk::Main::run(window);
+#else
+		fprintf(stderr, "Sorry, this installation of GXemul was "
+		    "compiled without GUI support.\n");
+#endif
 		return 0;
 	}
 

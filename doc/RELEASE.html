@@ -8,7 +8,7 @@
 <b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.2 2007-11-14 11:12:19 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.3 2007-11-16 08:28:58 debug Exp $  -->
 
 
 <h2>Release notes for GXemul 0.5.0</h2>
@@ -42,11 +42,15 @@ and <a href="guestoses.html#netbsdcatsinstall">NetBSD/cats</a>.
   <li>I have begun to rewrite some parts of the framework in C++,
 	and also started on a GUI. What this means in practice:
 	<ul>
-		<li>The emulator requires gtkmm-2.4 >= 2.12.1 to build.
+		<li>The emulator now depends on gtkmm-2.4 >= 2.12.1, if
+			the GUI is to be included. (It is optional, though.)
 		<li>Many things that worked in previous releases may
 			be broken.
 	</ul>
 
+  <p>
+  <li>There are now finally <tt>install</tt> and <tt>uninstall</tt>
+	makefile targets, which should simplify installation.
 </ul>
 
 <p><br>To build the emulator, run the <tt>configure</tt> script, and then run 

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.282 2007-11-14 12:00:58 debug Exp $
+#  $Id: configure,v 1.283 2007-11-16 08:28:57 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -56,6 +56,9 @@
 #
 ###############################################################################
 
+# Default prefix for "make install"
+DEFAULTPREFIX=/usr/local
+
 #  Figure out if this is a stable version (0.x.x).
 X=`basename \`pwd\`|cut -d \- -f 2-|cut -c1-2`
 if [ z"$X" = z0. ]; then
@@ -71,12 +74,30 @@ if [ z"$*" != z ]; then
 	for a in $*; do
 		if [ z$a = z--debug ]; then
 			DEBUG=YES
+		else if [ z$a = z--with-gui ]; then
+			WITHGUI=YES
+		else if [ z$a = z--without-gui ]; then
+			WITHOUTGUI=YES
+		else if [ z$a = z--with-x11 ]; then
+			WITHX11=YES
+		else if [ z$a = z--without-x11 ]; then
+			WITHOUTX11=YES
 		else if [ z$a = z--help ]; then
 			printf "usage: $0 [options]\n\n"
 			if [ z"$UNSTABLE" = zYES ]; then
 				echo "  --debug             configure" \
 					"for a debug build"
 			fi
+			echo "  --with-gui          build with the gtkmm GUI"
+			echo "  --without-gui       build without the gtkmm GUI"
+			echo "  --with-x11          build with X11 framebuffer support"
+			echo "  --without-x11       build without X11 framebuffer support"
+			echo
+			echo "(default is to detect gtkmm and X11 automatically)"
+			echo
+			echo "If the PREFIX environment variable is set," \
+			    "it will override the default"
+			echo "value, which is: $DEFAULTPREFIX"
 			echo
 			exit
 		else
@@ -84,7 +105,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi
+		fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -476,15 +497,24 @@ fi
 
 if [ z$XOK = z0 ]; then
 	echo "Failed to compile X11 test program."
-	echo "This version of GXemul requires X11 to build and run."
-	exit
+	if [ z$WITHX11 = zYES ]; then
+		echo "X11 framebuffer support was requested (--with-x11)."
+		echo "Aborting."
+		exit
+	fi
+	echo "GXemul will be compiled without X11 framebuffer support."
+else
+	if [ z$WITHOUTX11 = zYES ]; then
+		echo "X11 libraries and headers detected, but --without-x11"
+		echo "was specified..."
+	else
+		printf "X11 headers: $XINCLUDE\n"
+		printf "X11 libraries: $XLIB\n"
+		echo "XINCLUDE=$XINCLUDE" >> _Makefile.header
+		echo "XLIB=$XLIB" >> _Makefile.header
+		printf "#define WITH_X11\n" >> config.h
+	fi
 fi
-
-printf "X11 headers: $XINCLUDE\n"
-printf "X11 libraries: $XLIB\n"
-echo "XINCLUDE=$XINCLUDE" >> _Makefile.header
-echo "XLIB=$XLIB" >> _Makefile.header
-printf "#define WITH_X11\n" >> config.h
 
 rm -f _test_x11.c
 
@@ -1227,15 +1257,31 @@ rm -f _test_end*
 GTKMM_VER="2.12.1"
 printf "checking for gtkmm-2.4 >= $GTKMM_VER... "
 
-if pkg-config --atleast-version=$GTKMM_VER gtkmm-2.4; then
-	echo found
-	CFLAGS="$CFLAGS `pkg-config --cflags gtkmm-2.4`"
-	OTHERLIBS="$OTHERLIBS `pkg-config --libs gtkmm-2.4`"
+if [ z$WITHOUTGUI = zYES ]; then
+	echo skipping
 else
-	echo not found
-	echo Sorry, gtkmm-2.4 version $GTKMM_VER or newer is required. Aborting.
-	exit
+	if pkg-config --atleast-version=$GTKMM_VER gtkmm-2.4; then
+		echo found
+		CFLAGS="$CFLAGS `pkg-config --cflags gtkmm-2.4`"
+		OTHERLIBS="$OTHERLIBS `pkg-config --libs gtkmm-2.4`"
+		printf "#define WITH_GUI\n" >> config.h
+	else
+		echo not found
+		if [ z$WITHGUI = zYES ]; then
+			echo "Sorry, gtkmm-2.4 version $GTKMM_VER or newer" \
+			    "was not found. Aborting."
+			exit
+		fi
+	fi
 fi
+
+
+###############################################################################
+
+if [ "z$PREFIX" = z ]; then
+	PREFIX="$DEFAULTPREFIX"
+fi	
+echo "checking for 'make install' prefix: $PREFIX"
 
 
 ###############################################################################
@@ -1245,12 +1291,14 @@ DINCLUDE=-I../include/
 
 rm -f _testprog.c
 
-echo C compiler flags: $CFLAGS $CWARNINGS
-echo Linker flags: $OTHERLIBS
+#echo C compiler flags: $CFLAGS $CWARNINGS
+#echo Linker flags: $OTHERLIBS
+
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header
 echo "COPTIM=$CFLAGS" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header
 echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
+echo "PREFIX=$PREFIX" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "CXX=$CXX" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
@@ -1275,6 +1323,7 @@ printf "\n#endif  /*  CONFIG_H  */\n" >> config.h
 
 #  Remove temporary Makefile header:
 rm -f _Makefile.header
+
 
 echo Configured. You may now run make to build gxemul.
 

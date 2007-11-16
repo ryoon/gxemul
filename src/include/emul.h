@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.44 2007-11-12 13:50:06 debug Exp $
+ *  $Id: emul.h,v 1.45 2007-11-16 08:50:12 debug Exp $
  */
 
 #include "misc.h"
@@ -70,12 +70,7 @@ void emul_machine_setup(struct machine *machine, int n_load, char **load_names,
 	int n_devices, char **device_names);
 void emul_dumpinfo(struct emul *e);
 void emul_simple_init(struct emul *emul);
-struct emul *emul_create_from_configfile(char *fname);
 void emul_run(struct emul *emul);
-
-
-/*  emul_parse.c:  */
-void emul_parse_config(struct emul *e, char *fname);
 
 
 #ifdef __cplusplus

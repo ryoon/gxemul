@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: GXemul.cc,v 1.3 2007-11-16 08:40:30 debug Exp $
+ *  $Id: GXemul.cc,v 1.4 2007-11-16 08:50:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -690,7 +690,11 @@ GXemul::GXemul(int argc, char *argv[])
 				emul = NULL;
 			}
 
-			emul = emul_create_from_configfile(s);
+			// TODO
+			// emul = emul_create_from_configfile(s);
+			fprintf(stderr, "TODO: create from .gxemul XML"
+			    " config file!\n");
+			exit(1);
 
 			settings_add(global_settings, "emul", 1,
 			    SETTINGS_TYPE_SUBSETTINGS, 0, emul->settings);

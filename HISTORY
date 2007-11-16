@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1643 2007-11-16 08:40:29 debug Exp $
+$Id: HISTORY,v 1.1644 2007-11-16 08:50:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3698,3 +3698,5 @@ Changelog for GXemul:
 		optional again.
 		Finally adding "install" and "uninstall" Makefile targets. :)
 		Moving the rest of main.cc (the main function) into GXemul.cc.
+		Removing the old config file parser (src/emul_parse.c),
+		and doc/configfiles.html.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.302 2007-08-29 20:36:49 debug Exp $
+ *  $Id: emul.c,v 1.303 2007-11-16 08:50:12 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -818,26 +818,6 @@ void emul_simple_init(struct emul *emul)
 	emul_machine_setup(m, extra_argc, extra_argv, 0, NULL);
 
 	debug_indentation(-iadd);
-}
-
-
-/*
- *  emul_create_from_configfile():
- *
- *  Create an emul struct by reading settings from a configuration file.
- */
-struct emul *emul_create_from_configfile(char *fname)
-{
-	int iadd = DEBUG_INDENTATION;
-	struct emul *e = emul_new(fname);
-
-	debug("Creating emulation from configfile \"%s\":\n", fname);
-	debug_indentation(iadd);
-
-	emul_parse_config(e, fname);
-
-	debug_indentation(-iadd);
-	return e;
 }
 
 

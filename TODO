@@ -1,4 +1,4 @@
-$Id: TODO,v 1.565 2007-11-16 09:23:33 debug Exp $
+$Id: TODO,v 1.566 2007-11-16 11:59:47 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -51,6 +51,42 @@ C => C++ rewrite
 		  default XML chunks.
 		* The main emulator loop runs such XML emulations
 		  (with possible "save all state" functionality)
+
+<gxemul>
+	<setup>
+		<name>Experimental setup of a PC and an embedded system</name>
+	</setup>
+
+	<components>
+		<component x1="0.24" y1="uib" x2="oubiub" y2="uibiub"
+			name="Embedded system" type="machine">
+
+mainbus
+	\--- cpu
+	\--- ram
+	\--- rom: Loaded from file? (or software emulation?)
+	\--- pcibus
+	     \-- 3c509
+
+			<component x1="asdfasdf" y1="uib" x2="oubiub" y2="uibiub"
+				name="3C509 Ethernet NIC" type="3c509">
+			</component>
+
+		</component>
+
+		...
+
+		<component id="3" x1="asdfas"....
+			name="Internet Gateway" type="gateway">
+		</component>
+
+		<network>
+			<connection>18</connection>
+			<connection>42</connection>
+			<connection>3</connection>
+		</network>
+	</components>
+</gxemul>
 
 -------------------------------------------------------------------------------
 

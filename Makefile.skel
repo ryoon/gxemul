@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.56 2007-11-14 09:32:17 debug Exp $
+#  $Id: Makefile.skel,v 1.57 2007-11-16 08:28:27 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -18,27 +18,27 @@ build:
 	ln $(BIN) $(BINGUI)
 
 install: build
-	@echo ""
-	@echo "There is no automatic 'make install'. You need to manually copy the binaries"
-	@echo "and any other files you need to where you want them to reside. Usually, that"
-	@echo "includes the following:"
-	@echo ""
-	@echo "    gxemul               the main binary"
-	@echo "    gxemul-gui           GUI binary (may be soft- or hard-linked to gxemul)"
-	@echo "    man/gxemul[-gui].1   the man pages"
-	@echo "    doc/                 documentation"
-	@echo ""
-	@echo "Note that apart from the binary (or binaries), no other files are really"
-	@echo "necessary for gxemul to work. The man page and documentation are optional."
-	@echo ""
-	@echo "E.g. on FreeBSD, recommended locations for the files are:"
-	@echo ""
-	@echo "    /usr/local/bin/gxemul[-gui]"
-	@echo "    /usr/local/man/man1/gxemul[-gui].1"
-	@echo "    /usr/local/share/doc/gxemul/"
-	@echo ""
-	@echo "However, this may vary from one operating system to another."
-	@echo ""
+	@echo Installing binaries...
+	mkdir -p $(PREFIX)/bin
+	cp -f $(BIN) $(PREFIX)/bin/
+	ln $(PREFIX)/bin/$(BIN) $(PREFIX)/bin/$(BINGUI)
+	@echo Installing man pages...
+	mkdir -p $(PREFIX)/man/man1
+	cp -f man/gxemul.1 $(PREFIX)/man/man1/
+	ln $(PREFIX)/man/man1/gxemul.1 $(PREFIX)/man/man1/gxemul-gui.1
+	@echo Installing documentation...
+	mkdir -p $(PREFIX)/share/doc/gxemul
+	cp -R doc/* $(PREFIX)/share/doc/gxemul/
+	@echo "Done!"
+
+uninstall:
+	@echo Removing binaries, man pages, and documentation...
+	rm -f $(PREFIX)/bin/gxemul
+	rm -f $(PREFIX)/bin/gxemul-gui
+	rm -f $(PREFIX)/man/man1/gxemul.1
+	rm -f $(PREFIX)/man/man1/gxemul-gui.1
+	rm -rf $(PREFIX)/share/doc/gxemul
+	@echo "Done!"
 
 clean:
 	rm -f $(BIN) $(BINGUI) *core core.* *.gmon _* *.exe ktrace.out

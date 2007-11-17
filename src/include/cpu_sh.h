@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.51 2007-11-17 08:57:38 debug Exp $
+ *  $Id: cpu_sh.h,v 1.52 2007-11-17 11:15:33 debug Exp $
  *
  *  Note 1: Many things here are SH4-specific, so it probably doesn't work
  *          for SH3 emulation.
@@ -54,7 +54,7 @@ struct cpu_family;
 
 /*  SH CPU types:  */
 struct sh_cpu_type_def {
-	char		*name;
+	const char	*name;
 	int		bits;
 	int		arch;
 	uint32_t	pvr;

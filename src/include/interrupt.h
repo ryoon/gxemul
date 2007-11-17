@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.h,v 1.6 2007-11-12 13:50:06 debug Exp $
+ *  $Id: interrupt.h,v 1.7 2007-11-17 11:15:33 debug Exp $
  *
  *  Definitions related to the Interrupt subsystem.
  */
@@ -87,6 +87,12 @@ struct interrupt {
 	}
 
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
+
 /*
  *  Registration of interrupt handlers:
  *
@@ -110,6 +116,11 @@ int interrupt_handler_lookup(char *name, struct interrupt *templ);
 
 void interrupt_connect(struct interrupt *i, int exclusive);
 void interrupt_disconnect(struct interrupt *i, int exclusive);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  INTERRUPT_H  */

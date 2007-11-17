@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.76 2007-11-17 08:57:38 debug Exp $
+ *  $Id: cpu_arm.h,v 1.77 2007-11-17 11:15:33 debug Exp $
  */
 
 #include "misc.h"
@@ -45,7 +45,7 @@ struct cpu_family;
 
 /*  ARM CPU types:  */
 struct arm_cpu_type_def {
-	char		*name;
+	const char	*name;
 	uint32_t	cpu_id;
 	int		flags;
 	int		icache_shift;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.188 2007-11-17 08:33:28 debug Exp $
+ *  $Id: cpu_dyntrans.cc,v 1.1 2007-11-17 11:15:31 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -871,12 +871,15 @@ have_it:
 #ifdef DYNTRANS_INIT_TABLES
 
 /*  forward declaration of to_be_translated and end_of_page:  */
+extern "C"
+{
 static void instr(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #ifdef DYNTRANS_DUALMODE_32
 static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #endif
+}
 
 #ifdef DYNTRANS_DUALMODE_32
 #define TO_BE_TRANSLATED    ( cpu->is_32bit? instr32(to_be_translated) : \
@@ -885,12 +888,15 @@ static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #define TO_BE_TRANSLATED    ( instr(to_be_translated) )
 #endif
 
+extern "C"
+{
 #ifdef DYNTRANS_DELAYSLOT
 static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
 #ifdef DYNTRANS_DUALMODE_32
 static void instr32(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
 #endif
 #endif
+}
 
 /*
  *  XXX_init_tables():

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.29 2007-06-28 13:36:47 debug Exp $
+ *  $Id: cpu_sparc_instr.cc,v 1.1 2007-11-17 11:15:32 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -1016,7 +1016,7 @@ X(subcc_imm)
 }
 
 
-#include "tmp_sparc_loadstore.c"
+#include "tmp_sparc_loadstore.cc"
 
 
 /*
@@ -1221,7 +1221,7 @@ X(to_be_translated)
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
-#include "cpu_dyntrans.c"
+#include "cpu_dyntrans.cc"
 #undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
 
 
@@ -1674,7 +1674,7 @@ X(to_be_translated)
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
-#include "cpu_dyntrans.c" 
+#include "cpu_dyntrans.cc" 
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

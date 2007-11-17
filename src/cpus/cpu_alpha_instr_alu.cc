@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.4 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.cc,v 1.1 2007-11-17 11:15:30 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *

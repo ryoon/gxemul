@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_loadstore.c,v 1.9 2007-06-04 06:59:01 debug Exp $
+ *  $Id: generate_arm_loadstore.c,v 1.10 2007-11-17 11:15:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 			if (u)	printf("#define A__U\n");
 			if (p)	printf("#define A__P\n");
 			if (reg)printf("#define A__REG\n");
-			printf("#include \"cpu_arm_instr_loadstore.c\"\n");
+			printf("#include \"cpu_arm_instr_loadstore.cc\"\n");
 			if (l)	printf("#undef A__L\n");
 			if (w)	printf("#undef A__W\n");
 			if (b)	printf("#undef A__B\n");
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 			if (u)	printf("#define A__U\n");
 			if (p)	printf("#define A__P\n");
 			if (reg)printf("#define A__REG\n");
-			printf("#include \"cpu_arm_instr_loadstore.c\"\n");
+			printf("#include \"cpu_arm_instr_loadstore.cc\"\n");
 			if (s)	printf("#undef A__SIGNED\n");
 			if (l)	printf("#undef A__L\n");
 			if (w)	printf("#undef A__W\n");

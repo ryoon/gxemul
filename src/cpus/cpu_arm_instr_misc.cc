@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_misc.c,v 1.6 2006-12-30 13:30:53 debug Exp $
+ *  $Id: cpu_arm_instr_misc.cc,v 1.1 2007-11-17 11:15:31 debug Exp $
  *
  *  Misc ARM instructions. Included from cpu_arm_instr.c.
  */

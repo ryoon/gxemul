@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.73 2007-11-17 08:57:37 debug Exp $
+ *  $Id: cpu_ppc.cc,v 1.1 2007-11-17 11:15:32 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -53,14 +53,22 @@
 
 
 #define	DYNTRANS_DUALMODE_32
-#include "tmp_ppc_head.c"
+#include "tmp_ppc_head.cc"
 
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
 void ppc_pc_to_pointers(struct cpu *);
 void ppc32_pc_to_pointers(struct cpu *);
 
 void ppc_irq_interrupt_assert(struct interrupt *interrupt);
 void ppc_irq_interrupt_deassert(struct interrupt *interrupt);
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 
 /*
@@ -94,7 +102,7 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->memory_rw = ppc_memory_rw;
 
 	cpu->cd.ppc.cpu_type = cpu_type_defs[found];
-	cpu->name            = cpu->cd.ppc.cpu_type.name;
+	cpu->name            = strdup(cpu->cd.ppc.cpu_type.name);
 	cpu->byte_order      = EMUL_BIG_ENDIAN;
 	cpu->cd.ppc.mode     = MODE_PPC;	/*  TODO  */
 
@@ -223,16 +231,16 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Register the CPU as an interrupt handler:  */
 	{
-		struct interrupt template;
+		struct interrupt templ;
 		char name[150];
 		snprintf(name, sizeof(name), "%s", cpu->path);
-		memset(&template, 0, sizeof(template));
-		template.line = 0;
-		template.name = name;
-		template.extra = cpu;
-		template.interrupt_assert = ppc_irq_interrupt_assert;
-		template.interrupt_deassert = ppc_irq_interrupt_deassert;
-		interrupt_handler_register(&template);
+		memset(&templ, 0, sizeof(templ));
+		templ.line = 0;
+		templ.name = name;
+		templ.extra = cpu;
+		templ.interrupt_assert = ppc_irq_interrupt_assert;
+		templ.interrupt_deassert = ppc_irq_interrupt_deassert;
+		interrupt_handler_register(&templ);
 	}
 
 	return 1;
@@ -641,7 +649,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int bfa, to, load, wlen, no_rb = 0;
 	uint64_t offset, addr;
 	uint32_t iword;
-	char *symbol, *mnem = "ERROR";
+	char *symbol;
+	const char *mnem = "ERROR";
 	int power = cpu->cd.ppc.mode == MODE_POWER;
 
 	if (running)
@@ -1864,6 +1873,6 @@ void update_cr0(struct cpu *cpu, uint64_t value)
 #include "memory_ppc.cc"
 
 
-#include "tmp_ppc_tail.c"
+#include "tmp_ppc_tail.cc"
 
 

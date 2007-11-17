@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: make_ppc_spr_strings.c,v 1.4 2006-12-30 13:31:01 debug Exp $
+ *  $Id: make_ppc_spr_strings.c,v 1.5 2007-11-17 11:15:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	}
 
 	printf("/*\n *  AUTOMATICALLY GENERATED from ppc_spr.h! Do "
-	    "not edit.\n */\n\nstatic char *ppc_spr_names[1024] = {\n");
+	    "not edit.\n */\n\nstatic const char *ppc_spr_names[1024] = {\n");
 
 	for (i=0; i<1024; i++)
 		printf(" \"%s\"%s%s", names[i]? names[i] : "(unknown)",

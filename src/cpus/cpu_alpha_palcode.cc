@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.18 2007-06-15 00:41:21 debug Exp $
+ *  $Id: cpu_alpha_palcode.cc,v 1.1 2007-11-17 11:15:30 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  *
@@ -94,7 +94,7 @@ void alpha_prom_call(struct cpu *cpu)
 	uint64_t addr, a1 = cpu->cd.alpha.r[ALPHA_A1];
 	uint64_t a2 = cpu->cd.alpha.r[ALPHA_A2], a3 = cpu->cd.alpha.r[ALPHA_A3];
 	uint64_t len;
-	char *s = "";
+	const char *s = "";
 
 	switch (cpu->cd.alpha.r[ALPHA_A0]) {
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.2 2007-06-19 04:14:59 debug Exp $
+ *  $Id: device.c,v 1.3 2007-11-17 11:15:32 debug Exp $
  *
  *  COMMENT: Device registry framework
  */
@@ -250,11 +250,11 @@ int device_unregister(char *name)
  *  TODO: This function is quite ugly, and should be cleaned up.
  *  name_and_params should be const.
  */
-void *device_add(struct machine *machine, char *name_and_params)
+void *device_add(struct machine *machine, const char *name_and_params)
 {
 	struct device_entry *p;
 	struct devinit devinit;
-	char *s2, *s3;
+	const char *s2, *s3;
 	size_t len, interrupt_path_len = strlen(machine->path) + 100;
 	int quoted;
 
@@ -340,7 +340,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 		} else if (strncmp(s2, "in_use=", 7) == 0) {
 			devinit.in_use = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "name2=", 6) == 0) {
-			char *h = s2 + 6;
+			const char *h = s2 + 6;
 			size_t len = 0;
 			quoted = 0;
 			while (*h) {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.58 2007-11-17 08:33:29 debug Exp $
+ *  $Id: memory.h,v 1.59 2007-11-17 11:15:33 debug Exp $
  *
  *  Memory related functions.
  */
@@ -185,7 +185,7 @@ void store_16bit_word_in_host(struct cpu *cpu, unsigned char *data,
 uint64_t load_64bit_word(struct cpu *cpu, uint64_t addr);
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr);
-void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
+void store_buf(struct cpu *cpu, uint64_t addr, const char *s, size_t len);
 void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr);
 void add_environment_string_dual(struct cpu *cpu,
         uint64_t *ptrp, uint64_t *addrp, char *s1, char *s2);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.62 2007-11-17 08:33:29 debug Exp $
+ *  $Id: cpu_mips.h,v 1.63 2007-11-17 11:15:33 debug Exp $
  */
 
 #include "interrupt.h"
@@ -51,7 +51,7 @@ struct timer;
  */
 
 struct mips_cpu_type_def {
-	char		*name;
+	const char	*name;
 	int		rev;
 	int		sub;
 	char		flags;

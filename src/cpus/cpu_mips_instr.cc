@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.143 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_mips_instr.cc,v 1.1 2007-11-17 11:15:31 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1865,7 +1865,7 @@ X(mtc0)
 
 	/*
 	 *  Interrupts enabled, and any interrupt pending? (Note/TODO: This
-	 *  code is duplicated in cpu_dyntrans.c. Fix this?)
+	 *  code is duplicated in cpu_dyntrans.cc. Fix this?)
 	 */
 	if (rd == COP0_STATUS && !cpu->delay_slot) {
 		uint32_t status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
@@ -2255,7 +2255,7 @@ X(rdhwr_cpunum)
 }
 
 
-#include "tmp_mips_loadstore.c"
+#include "tmp_mips_loadstore.cc"
 
 
 /*
@@ -2657,7 +2657,7 @@ X(sw_loop)
 
 #ifdef MODE32
 /*  multi_{l,s}w_2, _3, etc.  */
-#include "tmp_mips_loadstore_multi.c"
+#include "tmp_mips_loadstore_multi.cc"
 #endif
 
 
@@ -3504,7 +3504,7 @@ X(to_be_translated)
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
-#include "cpu_dyntrans.c"
+#include "cpu_dyntrans.cc"
 #undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
 
 
@@ -4758,7 +4758,7 @@ X(to_be_translated)
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
-#include "cpu_dyntrans.c" 
+#include "cpu_dyntrans.cc" 
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

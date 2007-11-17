@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.77 2007-06-28 13:36:47 debug Exp $
+ *  $Id: cpu_ppc_instr.cc,v 1.1 2007-11-17 11:15:32 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2310,7 +2310,7 @@ X(ori)  { reg(ic->arg[2]) = reg(ic->arg[0]) | (uint32_t)ic->arg[1]; }
 X(xori) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1]; }
 
 
-#include "tmp_ppc_loadstore.c"
+#include "tmp_ppc_loadstore.cc"
 
 
 /*
@@ -2402,7 +2402,7 @@ X(lfdx)
 }
 X(stfs)
 {
-	uint64_t *old_arg0 = (void *)ic->arg[0];
+	uint64_t *old_arg0 = (uint64_t *)ic->arg[0];
 	struct ieee_float_value val;
 	uint64_t tmp_val;
 
@@ -2425,7 +2425,7 @@ X(stfs)
 }
 X(stfsx)
 {
-	uint64_t *old_arg0 = (void *)ic->arg[0];
+	uint64_t *old_arg0 = (uint64_t *)ic->arg[0];
 	struct ieee_float_value val;
 	uint64_t tmp_val;
 
@@ -2746,7 +2746,7 @@ X(to_be_translated)
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
-#include "cpu_dyntrans.c"
+#include "cpu_dyntrans.cc"
 #undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
 
 
@@ -3897,7 +3897,7 @@ X(to_be_translated)
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
-#include "cpu_dyntrans.c" 
+#include "cpu_dyntrans.cc" 
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.30 2007-11-17 08:57:37 debug Exp $
+ *  $Id: cpu_alpha.cc,v 1.1 2007-11-17 11:15:30 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -50,11 +50,11 @@
 
 #define	DYNTRANS_8K
 #define	DYNTRANS_PAGESIZE	8192
-#include "tmp_alpha_head.c"
+#include "tmp_alpha_head.cc"
 
 
 /*  Alpha symbolic register names:  */
-static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES; 
+static const char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES; 
 
 void alpha_irq_interrupt_assert(struct interrupt *interrupt);
 void alpha_irq_interrupt_deassert(struct interrupt *interrupt);
@@ -119,15 +119,15 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	/*  Register the CPU interrupt pin:  */
 	{
-		struct interrupt template;
+		struct interrupt templ;
 
-		memset(&template, 0, sizeof(template));
-		template.line = 0;
-		template.name = cpu->path;
-		template.extra = cpu;
-		template.interrupt_assert = alpha_irq_interrupt_assert; 
-		template.interrupt_deassert = alpha_irq_interrupt_deassert; 
-		interrupt_handler_register(&template);
+		memset(&templ, 0, sizeof(templ));
+		templ.line = 0;
+		templ.name = cpu->path;
+		templ.extra = cpu;
+		templ.interrupt_assert = alpha_irq_interrupt_assert; 
+		templ.interrupt_deassert = alpha_irq_interrupt_deassert; 
+		interrupt_handler_register(&templ);
 	}
 
 	return 1;
@@ -268,7 +268,8 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	uint32_t iw;
 	uint64_t offset, tmp;
 	int opcode, ra, rb, func, rc, imm, floating, rbrc = 0, indir = 0;
-	char *symbol, *mnem = NULL;
+	char *symbol;
+	const char *mnem = NULL;
 	char palcode_name[30];
 
 	if (running)
@@ -678,5 +679,5 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #undef MEMORY_RW
 
 
-#include "tmp_alpha_tail.c"
+#include "tmp_alpha_tail.cc"
 

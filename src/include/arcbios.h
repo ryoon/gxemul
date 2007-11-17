@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.14 2006-12-30 13:31:00 debug Exp $
+ *  $Id: arcbios.h,v 1.15 2007-11-17 11:15:32 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -38,6 +38,13 @@
 
 #include "misc.h"
 #include "sgi_arcbios.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
 
 struct cpu;
 
@@ -50,7 +57,7 @@ uint64_t arcbios_get_scsicontroller(struct machine *machine);
 void arcbios_add_memory_descriptor(struct cpu *cpu,
 	uint64_t base, uint64_t len, int arctype);
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
-	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
+	uint64_t classs, uint64_t type, uint64_t flags, uint64_t version,
 	uint64_t revision, uint64_t key, uint64_t affinitymask,
 	char *identifier, uint64_t parent, void *config_data,
 	size_t config_len);
@@ -103,6 +110,11 @@ struct emul_arc_child64 {
 #define FIRST_ARC_COMPONENT     0xffffffffbfca8000ULL
 #define ARC_PRIVATE_VECTORS     0xffffffffbfcb0000ULL
 #define ARC_PRIVATE_ENTRIES     0xffffffffbfcb8000ULL
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  ARCBIOS_H  */

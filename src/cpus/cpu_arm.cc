@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.72 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_arm.cc,v 1.1 2007-11-17 11:15:30 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -53,22 +53,29 @@
 #include "useremul.h"
 
 #define DYNTRANS_32
-#include "tmp_arm_head.c"
+#include "tmp_arm_head.cc"
 
 
 /*  ARM symbolic register names and condition strings:  */
-static char *arm_regname[N_ARM_REGS] = ARM_REG_NAMES;
-static char *arm_condition_string[16] = ARM_CONDITION_STRINGS;
+static const char *arm_regname[N_ARM_REGS] = ARM_REG_NAMES;
+static const char *arm_condition_string[16] = ARM_CONDITION_STRINGS;
 
 /*  Data Processing Instructions:  */
-static char *arm_dpiname[16] = ARM_DPI_NAMES;
+static const char *arm_dpiname[16] = ARM_DPI_NAMES;
 static int arm_dpi_uses_d[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1 };
 static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
 
 static int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
 
 /*  For quick_pc_to_pointers():  */
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
 void arm_pc_to_pointers(struct cpu *cpu);
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #include "quick_pc_to_pointers.h"
 
 void arm_irq_interrupt_assert(struct interrupt *interrupt);
@@ -108,7 +115,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->translate_v2p = arm_translate_v2p;
 
 	cpu->cd.arm.cpu_type = cpu_type_defs[found];
-	cpu->name            = cpu->cd.arm.cpu_type.name;
+	cpu->name            = strdup(cpu->cd.arm.cpu_type.name);
 	cpu->is_32bit        = 1;
 	cpu->byte_order      = EMUL_LITTLE_ENDIAN;
 
@@ -177,17 +184,17 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	/*  Register the CPU's "IRQ" and "FIQ" interrupts:  */
 	{
-		struct interrupt template;
+		struct interrupt templ;
 		char name[50];
 		snprintf(name, sizeof(name), "%s.irq", cpu->path);
 
-                memset(&template, 0, sizeof(template));
-                template.line = 0;
-                template.name = name;
-                template.extra = cpu;
-                template.interrupt_assert = arm_irq_interrupt_assert;
-                template.interrupt_deassert = arm_irq_interrupt_deassert;
-                interrupt_handler_register(&template);
+                memset(&templ, 0, sizeof(templ));
+                templ.line = 0;
+                templ.name = name;
+                templ.extra = cpu;
+                templ.interrupt_assert = arm_irq_interrupt_assert;
+                templ.interrupt_deassert = arm_irq_interrupt_deassert;
+                interrupt_handler_register(&templ);
 
 		/*  FIQ: TODO  */
         }
@@ -761,7 +768,8 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	uint32_t iw, tmp;
 	int main_opcode, secondary_opcode, s_bit, r16, r12, r8;
 	int i, n, p_bit, u_bit, b_bit, w_bit, l_bit;
-	char *symbol, *condition;
+	char *symbol;
+	const char *condition;
 	uint64_t offset;
 
 	if (running)
@@ -963,7 +971,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx000P U1WLnnnn ddddHHHH 1SH1LLLL load/store rd,imm(rn)
 		 */
 		if ((iw & 0x0e000090) == 0x00000090) {
-			char *op = "st";
+			const char *op = "st";
 			int imm = ((iw >> 4) & 0xf0) | (iw & 0xf);
 			int regform = !(iw & 0x00400000);
 			p_bit = main_opcode & 1;
@@ -1374,5 +1382,5 @@ void arm_cdp(struct cpu *cpu, uint32_t iword)
 /*****************************************************************************/
 
 
-#include "tmp_arm_tail.c"
+#include "tmp_arm_tail.cc"
 

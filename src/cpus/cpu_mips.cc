@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.85 2007-11-17 08:57:37 debug Exp $
+ *  $Id: cpu_mips.cc,v 1.1 2007-11-17 11:15:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -54,30 +54,34 @@
 #include "symbol.h"
 
 
-static char *exception_names[] = EXCEPTION_NAMES;
+static const char *exception_names[] = EXCEPTION_NAMES;
 
-static char *hi6_names[] = HI6_NAMES;
-static char *regimm_names[] = REGIMM_NAMES;
-static char *special_names[] = SPECIAL_NAMES;
-static char *special_rot_names[] = SPECIAL_ROT_NAMES;
-static char *special2_names[] = SPECIAL2_NAMES;
-static char *mmi_names[] = MMI_NAMES;
-static char *mmi0_names[] = MMI0_NAMES;
-static char *mmi1_names[] = MMI1_NAMES;
-static char *mmi2_names[] = MMI2_NAMES;
-static char *mmi3_names[] = MMI3_NAMES;
-static char *special3_names[] = SPECIAL3_NAMES;
+static const char *hi6_names[] = HI6_NAMES;
+static const char *regimm_names[] = REGIMM_NAMES;
+static const char *special_names[] = SPECIAL_NAMES;
+static const char *special_rot_names[] = SPECIAL_ROT_NAMES;
+static const char *special2_names[] = SPECIAL2_NAMES;
+static const char *mmi_names[] = MMI_NAMES;
+static const char *mmi0_names[] = MMI0_NAMES;
+static const char *mmi1_names[] = MMI1_NAMES;
+static const char *mmi2_names[] = MMI2_NAMES;
+static const char *mmi3_names[] = MMI3_NAMES;
+static const char *special3_names[] = SPECIAL3_NAMES;
 
-static char *regnames[] = MIPS_REGISTER_NAMES;
-static char *cop0_names[] = COP0_NAMES;
+static const char *regnames[] = MIPS_REGISTER_NAMES;
+static const char *cop0_names[] = COP0_NAMES;
 
 
 #define DYNTRANS_DUALMODE_32
 #define DYNTRANS_DELAYSLOT
-#include "tmp_mips_head.c"
+#include "tmp_mips_head.cc"
 
+
+extern "C"
+{
 void mips_pc_to_pointers(struct cpu *);
 void mips32_pc_to_pointers(struct cpu *);
+}
 
 
 /*
@@ -112,7 +116,7 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->memory_rw                = mips_memory_rw;
 	cpu->cd.mips.cpu_type         = cpu_type_defs[found];
-	cpu->name                     = cpu->cd.mips.cpu_type.name;
+	cpu->name                     = strdup(cpu->cd.mips.cpu_type.name);
 	cpu->byte_order               = EMUL_LITTLE_ENDIAN;
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = INITIAL_STACK_POINTER;
 
@@ -218,14 +222,13 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		cpu->cd.mips.cache_mask[i] = cpu->cd.mips.cache_size[i] - 1;
 
 		CHECK_ALLOCATION(cpu->cd.mips.cache[i] =
-		    malloc(cpu->cd.mips.cache_size[i]));
+		    (unsigned char *) malloc(cpu->cd.mips.cache_size[i]));
 
 		n_cache_lines = cpu->cd.mips.cache_size[i] /
 		    cpu->cd.mips.cache_linesize[i];
 		tags_size = n_cache_lines * size_per_cache_line;
 
-		CHECK_ALLOCATION(cpu->cd.mips.cache_tags[i] =
-		    malloc(tags_size));
+		CHECK_ALLOCATION(cpu->cd.mips.cache_tags[i] = malloc(tags_size));
 
 		/*  Initialize the cache tags:  */
 		switch (cpu->cd.mips.cpu_type.rev) {
@@ -275,16 +278,16 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Register the CPU's interrupts:  */
 	for (i=2; i<8; i++) {
-		struct interrupt template;
+		struct interrupt templ;
 		char name[50];
 		snprintf(name, sizeof(name), "%s.%i", cpu->path, i);
-		memset(&template, 0, sizeof(template));
-		template.line = 1 << (STATUS_IM_SHIFT + i);
-		template.name = name;
-		template.extra = cpu;
-		template.interrupt_assert = mips_cpu_interrupt_assert;
-		template.interrupt_deassert = mips_cpu_interrupt_deassert;
-		interrupt_handler_register(&template);
+		memset(&templ, 0, sizeof(templ));
+		templ.line = 1 << (STATUS_IM_SHIFT + i);
+		templ.name = name;
+		templ.extra = cpu;
+		templ.interrupt_assert = mips_cpu_interrupt_assert;
+		templ.interrupt_deassert = mips_cpu_interrupt_deassert;
+		interrupt_handler_register(&templ);
 
 		if (i == 7)
 			INTERRUPT_CONNECT(name, cpu->cd.mips.irq_compare);
@@ -1679,12 +1682,12 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void mips_cpu_interrupt_assert(struct interrupt *interrupt)
 {
-	struct cpu *cpu = interrupt->extra;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
 	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] |= interrupt->line;
 }
 void mips_cpu_interrupt_deassert(struct interrupt *interrupt)
 {
-	struct cpu *cpu = interrupt->extra;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
 	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &= ~interrupt->line;
 }
 
@@ -1966,5 +1969,5 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 #include "memory_mips.cc"
 
 
-#include "tmp_mips_tail.c"
+#include "tmp_mips_tail.cc"
 

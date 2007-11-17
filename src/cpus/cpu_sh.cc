@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.76 2007-06-28 13:36:47 debug Exp $
+ *  $Id: cpu_sh.cc,v 1.1 2007-11-17 11:15:32 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -57,7 +57,7 @@
 
 #define DYNTRANS_32
 #define DYNTRANS_DELAYSLOT
-#include "tmp_sh_head.c"
+#include "tmp_sh_head.cc"
 
 
 extern int quiet_mode;
@@ -177,32 +177,33 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*  Register the CPU's interrupts:  */
 	if (cpu->cd.sh.cpu_type.arch == 4) {
 		for (i=SH_INTEVT_NMI; i<0x1000; i+=0x20) {
-			struct interrupt template;
+			struct interrupt templ;
 			char name[100];
 			snprintf(name, sizeof(name), "%s.irq[0x%x]",
 			    cpu->path, i);
-			memset(&template, 0, sizeof(template));
-			template.line = i;
-			template.name = name;
-			template.extra = cpu;
-			template.interrupt_assert = sh_cpu_interrupt_assert;
-			template.interrupt_deassert = sh_cpu_interrupt_deassert;
-			interrupt_handler_register(&template);
+			memset(&templ, 0, sizeof(templ));
+			templ.line = i;
+			templ.name = name;
+			templ.extra = cpu;
+			templ.interrupt_assert = sh_cpu_interrupt_assert;
+			templ.interrupt_deassert = sh_cpu_interrupt_deassert;
+			interrupt_handler_register(&templ);
 		}
 	} else {
-		struct interrupt template;
-		memset(&template, 0, sizeof(template));
-		template.line = i;
-		template.name = cpu->path;
-		template.extra = cpu;
-		template.interrupt_assert = sh3_cpu_interrupt_assert;
-		template.interrupt_deassert = sh3_cpu_interrupt_deassert;
-		interrupt_handler_register(&template);
+		struct interrupt templ;
+		memset(&templ, 0, sizeof(templ));
+		templ.line = i;
+		templ.name = cpu->path;
+		templ.extra = cpu;
+		templ.interrupt_assert = sh3_cpu_interrupt_assert;
+		templ.interrupt_deassert = sh3_cpu_interrupt_deassert;
+		interrupt_handler_register(&templ);
 	}
 
 	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
 	if (cpu->cd.sh.cpu_type.arch == 4) {
-		cpu->cd.sh.pcic_pcibus = device_add(machine, "sh4");
+		cpu->cd.sh.pcic_pcibus = (struct pci_data *)
+		    device_add(machine, "sh4");
 
 		/*
 		 *  Interrupt Controller initial values, according to the
@@ -303,7 +304,7 @@ void sh3_cpu_interrupt_deassert(struct interrupt *interrupt)
  */
 void sh_cpu_interrupt_assert(struct interrupt *interrupt)
 {
-	struct cpu *cpu = interrupt->extra;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
 	unsigned int irq_nr = interrupt->line;
 	unsigned int index = irq_nr / 0x20;
 	unsigned int prio;
@@ -330,7 +331,7 @@ void sh_cpu_interrupt_assert(struct interrupt *interrupt)
  */
 void sh_cpu_interrupt_deassert(struct interrupt *interrupt)
 {
-	struct cpu *cpu = interrupt->extra;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
 	int irq_nr = interrupt->line;
 	int index = irq_nr / 0x20;
 
@@ -1295,49 +1296,49 @@ int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo4 == 0x6) {
-			char *n = "fr";
+			const char *n = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n = (r8 & 1)? "xd" : "dr";
 				r8 &= ~1;
 			}
 			debug("fmov\t@(r0,r%i),%s%i\n", r4, n, r8);
 		} else if (lo4 == 0x7) {
-			char *n = "fr";
+			const char *n = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n = (r4 & 1)? "xd" : "dr";
 				r4 &= ~1;
 			}
 			debug("fmov\t%s%i,@(r0,r%i)\n", n, r4, r8);
 		} else if (lo4 == 0x8) {
-			char *n = "fr";
+			const char *n = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n = (r8 & 1)? "xd" : "dr";
 				r8 &= ~1;
 			}
 			debug("fmov\t@r%i,%s%i\n", r4, n, r8);
 		} else if (lo4 == 0x9) {
-			char *n = "fr";
+			const char *n = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n = (r8 & 1)? "xd" : "dr";
 				r8 &= ~1;
 			}
 			debug("fmov\t@r%i+,%s%i\n", r4, n, r8);
 		} else if (lo4 == 0xa) {
-			char *n = "fr";
+			const char *n = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n = (r4 & 1)? "xd" : "dr";
 				r4 &= ~1;
 			}
 			debug("fmov\t%s%i,@r%i\n", n, r4, r8);
 		} else if (lo4 == 0xb) {
-			char *n = "fr";
+			const char *n = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n = (r4 & 1)? "xd" : "dr";
 				r4 &= ~1;
 			}
 			debug("fmov\t%s%i,@-r%i\n", n, r4, r8);
 		} else if (lo4 == 0xc) {
-			char *n1 = "fr", *n2 = "fr";
+			const char *n1 = "fr", *n2 = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n1 = (r4 & 1)? "xd" : "dr";
 				n2 = (r8 & 1)? "xd" : "dr";
@@ -1391,5 +1392,5 @@ int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 }
 
 
-#include "tmp_sh_tail.c"
+#include "tmp_sh_tail.cc"
 

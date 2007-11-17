@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_m88k_loadstore.c,v 1.1 2007-05-11 09:28:35 debug Exp $
+ *  $Id: generate_m88k_loadstore.c,v 1.2 2007-11-17 11:15:32 debug Exp $
  *
  *  Automatic generation of M88K loads and stores:
  *
@@ -142,7 +142,7 @@ void loadstore(int size, int store, int signedness,
 	if (registeroffset)
 		printf("#define LS_REGOFS\n");
 
-	printf("#include \"cpu_m88k_instr_loadstore.c\"\n");
+	printf("#include \"cpu_m88k_instr_loadstore.cc\"\n");
 	generated_functions ++;
 
 	if (registeroffset)

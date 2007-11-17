@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.10 2006-12-30 13:30:55 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.cc,v 1.1 2007-11-17 11:15:32 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *

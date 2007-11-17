@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_sparc_loadstore.c,v 1.2 2006-12-30 13:30:56 debug Exp $
+ *  $Id: generate_sparc_loadstore.c,v 1.3 2007-11-17 11:15:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -76,7 +76,7 @@ void loadstore(int mode32, int use_imm, int store, int size, int signedness)
 	if (signedness && !store)
 		printf("#define LS_SIGNED\n");
 
-	printf("#include \"cpu_sparc_instr_loadstore.c\"\n");
+	printf("#include \"cpu_sparc_instr_loadstore.cc\"\n");
 
 	if (signedness && !store)
 		printf("#undef LS_SIGNED\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.19 2007-08-29 20:36:35 debug Exp $
+ *  $Id: arcbios.c,v 1.20 2007-11-17 11:15:33 debug Exp $
  *
  *  COMMENT: ARCBIOS emulation
  */
@@ -828,7 +828,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
  *  Return value is the virtual (emulated) address of the added component.
  */
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
-	uint64_t class, uint64_t type, uint64_t flags,
+	uint64_t classs, uint64_t type, uint64_t flags,
 	uint64_t version, uint64_t revision, uint64_t key,
 	uint64_t affinitymask, char *identifier, uint64_t parent,
 	void *config_data, size_t config_len)
@@ -878,7 +878,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	}
 
 	if (!cpu->machine->md.arc->arc_64bit) {
-		component.Class                 = class;
+		component.Class                 = classs;
 		component.Type                  = type;
 		component.Flags                 = flags;
 		component.Version               = version;
@@ -893,7 +893,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		}
 		return arcbios_addchild(cpu, &component, identifier, parent);
 	} else {
-		component64.Class                 = class;
+		component64.Class                 = classs;
 		component64.Type                  = type;
 		component64.Flags                 = flags;
 		component64.Version               = version;

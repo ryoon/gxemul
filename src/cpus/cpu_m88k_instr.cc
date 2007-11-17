@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.42 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_m88k_instr.cc,v 1.1 2007-11-17 11:15:31 debug Exp $
  *
  *  M88K instructions.
  *
@@ -272,11 +272,11 @@ X(ff1)
 
 
 /*  Include all automatically generated bcnd and bcnd.n instructions:  */
-#include "tmp_m88k_bcnd.c"
+#include "tmp_m88k_bcnd.cc"
 
 
 /*  Include all automatically generated load/store instructions:  */
-#include "tmp_m88k_loadstore.c"
+#include "tmp_m88k_loadstore.cc"
 #define M88K_LOADSTORE_STORE            4
 #define M88K_LOADSTORE_SIGNEDNESS       8
 #define M88K_LOADSTORE_ENDIANNESS       16
@@ -1105,7 +1105,7 @@ X(to_be_translated)
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
-#include "cpu_dyntrans.c"
+#include "cpu_dyntrans.cc"
 #undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
 
 
@@ -1672,7 +1672,7 @@ X(to_be_translated)
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
-#include "cpu_dyntrans.c" 
+#include "cpu_dyntrans.cc" 
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

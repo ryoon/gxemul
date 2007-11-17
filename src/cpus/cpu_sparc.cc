@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.cc,v 1.1 2007-11-17 08:33:28 debug Exp $
+ *  $Id: cpu_sparc.cc,v 1.2 2007-11-17 11:15:32 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -45,7 +45,7 @@
 
 #define	DYNTRANS_DUALMODE_32
 #define	DYNTRANS_DELAYSLOT
-#include "tmp_sparc_head.c"
+#include "tmp_sparc_head.cc"
 
 
 static const char *sparc_regnames[N_SPARC_REG] = SPARC_REG_NAMES;
@@ -751,5 +751,5 @@ static void sparc_update_pstate(struct cpu *cpu, uint64_t new_pstate)
 }
 
 
-#include "tmp_sparc_tail.c"
+#include "tmp_sparc_tail.cc"
 

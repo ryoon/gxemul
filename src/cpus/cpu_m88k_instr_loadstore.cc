@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.8 2007-05-27 03:01:28 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.cc,v 1.1 2007-11-17 11:15:31 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  

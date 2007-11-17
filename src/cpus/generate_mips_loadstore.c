@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_mips_loadstore.c,v 1.5 2006-12-30 13:30:56 debug Exp $
+ *  $Id: generate_mips_loadstore.c,v 1.6 2007-11-17 11:15:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -91,7 +91,7 @@ void loadstore(int mode32, int store, int size, int signedness, int endianness)
 	if (endianness == 0)
 		printf("#define LS_INCLUDE_GENERIC\n");
 
-	printf("#include \"cpu_mips_instr_loadstore.c\"\n");
+	printf("#include \"cpu_mips_instr_loadstore.cc\"\n");
 
 	if (endianness == 0)
 		printf("#undef LS_INCLUDE_GENERIC\n");

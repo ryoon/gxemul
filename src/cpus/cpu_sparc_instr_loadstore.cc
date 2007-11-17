@@ -25,59 +25,48 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.14 2007-05-02 08:26:12 debug Exp $
+ *  $Id: cpu_sparc_instr_loadstore.cc,v 1.1 2007-11-17 11:15:32 debug Exp $
  *
- *  MIPS load/store instructions; the following args are used:
+ *  SPARC load/store instructions; the following args are used:
  *  
  *  arg[0] = pointer to the register to load to or store from
  *  arg[1] = pointer to the base register
- *  arg[2] = offset (as an int32_t)
- *
- *  The GENERIC function always checks for alignment, and supports both big
- *  and little endian byte order.
- *
- *  The quick function is included twice (big/little endian) for each
- *  GENERIC function.
+ *  arg[2] = if LS_USE_IMM is defined:  an int32_t immediate offset
+ *           otherwise:                 pointer to the offset register
  */
 
 
-#ifdef LS_INCLUDE_GENERIC
-void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
+void LS_GENERIC_N(struct cpu *cpu, struct sparc_instr_call *ic)
 {
-	MODE_int_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	MODE_int_t addr = reg(ic->arg[1]) +
+#ifdef LS_USE_IMM
+	    (int32_t)ic->arg[2];
+#else
+	    reg(ic->arg[2]);
+#endif
 	uint8_t data[LS_SIZE];
 #ifdef LS_LOAD
 	uint64_t x;
 #endif
 
 	/*  Synchronize the PC:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
 
 #ifndef LS_1
 	/*  Check alignment:  */
 	if (addr & (LS_SIZE - 1)) {
-#if 1
-		/*  Cause an address alignment exception:  */
-		mips_cpu_exception(cpu,
-#ifdef LS_LOAD
-		    EXCEPTION_ADEL,
-#else
-		    EXCEPTION_ADES,
-#endif
-		    0, addr, 0, 0, 0, 0);
-#else
-		fatal("{ mips dyntrans alignment exception, size = %i,"
-		    " addr = %016"PRIx64", pc = %016"PRIx64" }\n", LS_SIZE,
+		fatal("TODO: sparc dyntrans alignment exception, size = %i,"
+		    " addr = %016"PRIx64", pc = %016"PRIx64"\n", LS_SIZE,
 		    (uint64_t) addr, cpu->pc);
 
 		/*  TODO: Generalize this into a abort_call, or similar:  */
 		cpu->running = 0;
 		debugger_n_steps_left_before_interaction = 0;
-		cpu->cd.mips.next_ic = &nothing_call;
-#endif
+		cpu->cd.sparc.next_ic = &nothing_call;
 		return;
 	}
 #endif
@@ -110,18 +99,22 @@ void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
 	}
 #endif
 }
-#endif	/*  LS_INCLUDE_GENERIC  */
 
 
-void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
+void LS_N(struct cpu *cpu, struct sparc_instr_call *ic)
 {
-	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	MODE_uint_t addr = reg(ic->arg[1]) +
+#ifdef LS_USE_IMM
+	    (int32_t)ic->arg[2];
+#else
+	    reg(ic->arg[2]);
+#endif
 	unsigned char *p;
 #ifdef MODE32
 #ifdef LS_LOAD
-	p = cpu->cd.mips.host_load[addr >> 12];
+	p = cpu->cd.sparc.host_load[addr >> 12];
 #else
-	p = cpu->cd.mips.host_store[addr >> 12];
+	p = cpu->cd.sparc.host_store[addr >> 12];
 #endif
 #else	/*  !MODE32  */
 	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
@@ -175,18 +168,10 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 #ifdef LS_SIGNED
 	    (int16_t)
 #endif
-#ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
 	    ( *(uint16_t *)(p + addr) );
 #else
 	    ((p[addr]<<8) + p[addr+1]);
-#endif
-#else
-#ifdef HOST_LITTLE_ENDIAN
-	    ( *(uint16_t *)(p + addr) );
-#else
-	    (p[addr] + (p[addr+1]<<8));
-#endif
 #endif
 #endif	/*  LS_2  */
 
@@ -197,24 +182,15 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 #else
 	    (uint32_t)
 #endif
-#ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
 	    ( *(uint32_t *)(p + addr) );
 #else
 	    ((p[addr]<<24) + (p[addr+1]<<16) + (p[addr+2]<<8) + p[addr+3]);
 #endif
-#else
-#ifdef HOST_LITTLE_ENDIAN
-	    ( *(uint32_t *)(p + addr) );
-#else
-	    (p[addr] + (p[addr+1]<<8) + (p[addr+2]<<16) + (p[addr+3]<<24));
-#endif
-#endif
 #endif	/*  LS_4  */
 
 #ifdef LS_8
 	*((uint64_t *)ic->arg[0]) =
-#ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
 	    ( *(uint64_t *)(p + addr) );
 #else
@@ -222,16 +198,6 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 	    ((uint64_t)p[addr+2] << 40) + ((uint64_t)p[addr+3] << 32) +
 	    ((uint64_t)p[addr+4] << 24) +
 	    (p[addr+5] << 16) + (p[addr+6] << 8) + p[addr+7];
-#endif
-#else
-#ifdef HOST_LITTLE_ENDIAN
-	    ( *(uint64_t *)(p + addr) );
-#else
-	    p[addr+0] + (p[addr+1] << 8) + (p[addr+2] << 16) +
-	    ((uint64_t)p[addr+3] << 24) + ((uint64_t)p[addr+4] << 32) +
-	    ((uint64_t)p[addr+5] << 40) + ((uint64_t)p[addr+6] << 48) +
-	    ((uint64_t)p[addr+7] << 56);
-#endif
 #endif
 #endif	/*  LS_8  */
 
@@ -243,56 +209,29 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 #endif
 #ifdef LS_2
 	{ uint32_t x = reg(ic->arg[0]);
-#ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
 	*((uint16_t *)(p+addr)) = x; }
 #else
 	p[addr] = x >> 8; p[addr+1] = x; }
 #endif
-#else
-#ifdef HOST_LITTLE_ENDIAN
-	*((uint16_t *)(p+addr)) = x; }
-#else
-	p[addr] = x; p[addr+1] = x >> 8; }
-#endif
-#endif
 #endif  /*  LS_2  */
 #ifdef LS_4
 	{ uint32_t x = reg(ic->arg[0]);
-#ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
 	*((uint32_t *)(p+addr)) = x; }
 #else
 	p[addr] = x >> 24; p[addr+1] = x >> 16; 
 	p[addr+2] = x >> 8; p[addr+3] = x; }
 #endif
-#else
-#ifdef HOST_LITTLE_ENDIAN
-	*((uint32_t *)(p+addr)) = x; }
-#else
-	p[addr] = x; p[addr+1] = x >> 8; 
-	p[addr+2] = x >> 16; p[addr+3] = x >> 24; }
-#endif
-#endif
 #endif  /*  LS_4  */
 #ifdef LS_8
 	{ uint64_t x = *(uint64_t *)(ic->arg[0]);
-#ifdef LS_BE
 #ifdef HOST_BIG_ENDIAN
 	*((uint64_t *)(p+addr)) = x; }
 #else
 	p[addr]   = x >> 56; p[addr+1] = x >> 48; p[addr+2] = x >> 40;
 	p[addr+3] = x >> 32; p[addr+4] = x >> 24; p[addr+5] = x >> 16;
 	p[addr+6] = x >> 8;  p[addr+7] = x; }
-#endif
-#else
-#ifdef HOST_LITTLE_ENDIAN
-	*((uint64_t *)(p+addr)) = x; }
-#else
-	p[addr]   = x;       p[addr+1] = x >>  8; p[addr+2] = x >> 16;
-	p[addr+3] = x >> 24; p[addr+4] = x >> 32; p[addr+5] = x >> 40;
-	p[addr+6] = x >> 48; p[addr+7] = x >> 56; }
-#endif
 #endif
 #endif	/*  LS_8  */
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.50 2007-11-17 08:57:38 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.51 2007-11-17 11:15:32 debug Exp $
  */
 
 #include "misc.h"
@@ -44,7 +44,7 @@ extern "C"
 
 /*  ALPHA CPU types:  */
 struct alpha_cpu_type_def { 
-	char		*name;
+	const char	*name;
 	uint64_t	pcs_type;	/*  See alpha_rpb.h  */
 	int		features;
 	int		implver;

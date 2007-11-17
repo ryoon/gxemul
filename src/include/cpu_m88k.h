@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.23 2007-11-17 08:57:38 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.24 2007-11-17 11:15:33 debug Exp $
  */
 
 #include "misc.h"
@@ -47,7 +47,7 @@ struct cpu_family;
 
 /*  M88K CPU types:  */
 struct m88k_cpu_type_def {
-	char		*name;
+	const char	*name;
 	int		type;
 	uint32_t	pid;
 };

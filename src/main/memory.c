@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.2 2007-11-17 08:57:38 debug Exp $
+ *  $Id: memory.c,v 1.3 2007-11-17 11:15:33 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -834,7 +834,7 @@ int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
  *
  *  memcpy()-like helper function, from host RAM to emulated RAM.
  */
-void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
+void store_buf(struct cpu *cpu, uint64_t addr, const char *s, size_t len)
 {
 	size_t psize = 1024;	/*  1024 256 64 16 4 1  */
 

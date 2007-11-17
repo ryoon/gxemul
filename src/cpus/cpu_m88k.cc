@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.c,v 1.39 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_m88k.cc,v 1.1 2007-11-17 11:15:31 debug Exp $
  *
  *  Motorola M881x0 CPU emulation.
  */
@@ -49,23 +49,23 @@
 
 #define DYNTRANS_32
 #define DYNTRANS_DELAYSLOT
-#include "tmp_m88k_head.c"
+#include "tmp_m88k_head.cc"
 
 
 void m88k_pc_to_pointers(struct cpu *);
 
-static char *memop[4] = { ".d", "", ".h", ".b" };
+static const char *memop[4] = { ".d", "", ".h", ".b" };
 
 void m88k_irq_interrupt_assert(struct interrupt *interrupt);
 void m88k_irq_interrupt_deassert(struct interrupt *interrupt);
 
 
-static char *m88k_cr_names[] = M88K_CR_NAMES;
-static char *m88k_cr_197_names[] = M88K_CR_NAMES_197;
+static const char *m88k_cr_names[] = M88K_CR_NAMES;
+static const char *m88k_cr_197_names[] = M88K_CR_NAMES_197;
 
-static char *m88k_cr_name(struct cpu *cpu, int i)
+static const char *m88k_cr_name(struct cpu *cpu, int i)
 {
-	char **cr_names = m88k_cr_names;
+	const char **cr_names = m88k_cr_names;
 
 	/*  Hm. Is this really MVME197 specific? TODO  */
 	if (cpu->machine->machine_subtype == MACHINE_MVME88K_197)
@@ -74,7 +74,7 @@ static char *m88k_cr_name(struct cpu *cpu, int i)
 	return cr_names[i];
 }
 
-static char *m88k_fcr_name(struct cpu *cpu, int fi)
+static const char *m88k_fcr_name(struct cpu *cpu, int fi)
 {
 	/*  TODO  */
 	static char fcr_name[10];
@@ -117,7 +117,7 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->translate_v2p = m88k_translate_v2p;
 
 	cpu->cd.m88k.cpu_type = cpu_type_defs[found];
-	cpu->name            = cpu->cd.m88k.cpu_type.name;
+	cpu->name            = strdup(cpu->cd.m88k.cpu_type.name);
 	cpu->is_32bit        = 1;
 	cpu->byte_order      = EMUL_BIG_ENDIAN;
 
@@ -156,17 +156,17 @@ int m88k_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	/*  Register the CPU interrupt pin:  */
 	{
-		struct interrupt template;
+		struct interrupt templ;
 		char name[50];
 		snprintf(name, sizeof(name), "%s", cpu->path);
 
-		memset(&template, 0, sizeof(template));
-		template.line = 0;
-		template.name = name;
-		template.extra = cpu;
-		template.interrupt_assert = m88k_irq_interrupt_assert;
-		template.interrupt_deassert = m88k_irq_interrupt_deassert;
-		interrupt_handler_register(&template);
+		memset(&templ, 0, sizeof(templ));
+		templ.line = 0;
+		templ.name = name;
+		templ.extra = cpu;
+		templ.interrupt_assert = m88k_irq_interrupt_assert;
+		templ.interrupt_deassert = m88k_irq_interrupt_deassert;
+		interrupt_handler_register(&templ);
 	}
 
 	/*  Set the Processor ID:  */
@@ -785,7 +785,8 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 {
 	int supervisor = cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE;
 	uint32_t iw;
-	char *symbol, *mnem = NULL;
+	char *symbol;
+	const char *mnem = NULL;
 	uint64_t offset;
 	uint32_t op26, op10, op11, d, s1, s2, w5, cr6, imm16;
 	int32_t d16, d26, simm16;
@@ -1356,6 +1357,6 @@ int m88k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 }
 
 
-#include "tmp_m88k_tail.c"
+#include "tmp_m88k_tail.cc"
 
 

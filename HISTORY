@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1648 2007-11-17 08:57:37 debug Exp $
+$Id: HISTORY,v 1.1649 2007-11-17 11:15:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3707,3 +3707,4 @@ Changelog for GXemul:
 		Converting some .c files to .cc (without redesigning the code,
 		just to make it use the C++ compiler): cpu_sparc.c,
 		cpu_mips_coproc.c, memory_*.c.
+		Converting most of src/cpus/.

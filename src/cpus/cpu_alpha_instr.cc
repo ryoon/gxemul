@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.cc,v 1.1 2007-11-17 11:15:30 debug Exp $
+ *  $Id: cpu_alpha_instr.cc,v 1.2 2007-11-17 11:28:40 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -466,7 +466,7 @@ X(cvttq_c)
 {
 	struct ieee_float_value fb;
 	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
-	reg(ic->arg[0]) = fb.nan? 0 : fb.f;
+	reg(ic->arg[0]) = (int64_t) ( fb.nan? 0 : fb.f );
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.cc,v 1.1 2007-11-17 11:15:32 debug Exp $
+ *  $Id: cpu_ppc_instr.cc,v 1.2 2007-11-17 11:28:40 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -998,7 +998,7 @@ X(fctiwz)
 		else if (frb.f <= -2147483648.0)
 			res = 0x80000000;
 		else
-			res = frb.f;
+			res = (int32_t) frb.f;
 	}
 	*(uint64_t *)ic->arg[1] = (uint32_t)res;
 }

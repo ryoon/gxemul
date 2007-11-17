@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.14 2007-06-17 23:32:20 debug Exp $
+ *  $Id: dec_prom.cc,v 1.1 2007-11-17 12:13:53 debug Exp $
  *
  *  COMMENT: DECstation PROM emulation
  *
@@ -138,7 +138,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 			int res;
 			unsigned char *tmp_buf;
 
-			CHECK_ALLOCATION(tmp_buf =
+			CHECK_ALLOCATION(tmp_buf = (unsigned char *)
 			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			res = diskimage_access(cpu->machine, disk_id,
@@ -472,7 +472,7 @@ int decstation_prom_emul(struct cpu *cpu)
 			int res;
 			unsigned char *tmp_buf;
 
-			CHECK_ALLOCATION(tmp_buf =
+			CHECK_ALLOCATION(tmp_buf = (unsigned char *)
 			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			res = diskimage_access(cpu->machine, disk_id,

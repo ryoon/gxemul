@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.1 2007-06-20 14:25:14 debug Exp $
+ *  $Id: symbol.c,v 1.2 2007-11-17 12:13:54 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -62,7 +62,8 @@ int symbol_nsymbols(struct symbol_context *sc)
  *
  *  NOTE:  This is O(n).
  */
-int get_symbol_addr(struct symbol_context *sc, char *symbol, uint64_t *addr)
+int get_symbol_addr(struct symbol_context *sc, const char *symbol,
+	uint64_t *addr)
 {
 	struct symbol *s;
 
@@ -198,8 +199,8 @@ char *get_symbol_name(struct symbol_context *sc, uint64_t addr, uint64_t *offs)
  *
  *  Add a symbol to the symbol list.
  */
-void add_symbol_name(struct symbol_context *sc,
-	uint64_t addr, uint64_t len, char *name, int type, int n_args)
+void add_symbol_name(struct symbol_context *sc, uint64_t addr,
+	uint64_t len, const char *name, int type, int n_args)
 {
 	struct symbol *s;
 

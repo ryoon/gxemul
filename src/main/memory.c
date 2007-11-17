@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.3 2007-11-17 11:15:33 debug Exp $
+ *  $Id: memory.c,v 1.4 2007-11-17 12:13:53 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -703,7 +703,7 @@ void store_byte(struct cpu *cpu, uint64_t addr, uint8_t data)
  *  character) is found. The zero byte is also copied.
  *  (strcpy()-like helper function, host-RAM-to-emulated-RAM.)
  */
-void store_string(struct cpu *cpu, uint64_t addr, char *s)
+void store_string(struct cpu *cpu, uint64_t addr, const char *s)
 {
 	do {
 		store_byte(cpu, addr++, *s);
@@ -718,7 +718,7 @@ void store_string(struct cpu *cpu, uint64_t addr, char *s)
  *  obvious use is to place a number of strings (such as environment variable
  *  strings) after one-another in emulated memory.
  */
-void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr)
+void add_environment_string(struct cpu *cpu, const char *s, uint64_t *addr)
 {
 	store_string(cpu, *addr, s);
 	(*addr) += strlen(s) + 1;
@@ -732,7 +732,7 @@ void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr)
  *  value, and update pointers afterwards.
  */
 void add_environment_string_dual(struct cpu *cpu,
-	uint64_t *ptrp, uint64_t *addrp, char *s1, char *s2)
+	uint64_t *ptrp, uint64_t *addrp, const char *s1, const char *s2)
 {
 	uint64_t ptr = *ptrp, addr = *addrp;
 

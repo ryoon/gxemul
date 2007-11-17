@@ -28,10 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.17 2006-12-30 13:31:01 debug Exp $
+ *  $Id: net.h,v 1.18 2007-11-17 12:13:53 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
+
+#include "misc.h"
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -40,6 +42,12 @@
 struct emul;
 struct ethernet_packet_link;
 struct remote_net;
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
 
 
 /*  Default emulated "simple" IPv4 network, if nothing else is specified:  */
@@ -220,5 +228,11 @@ struct remote_net {
 #define	NET_ADDR_IPV4		1
 #define	NET_ADDR_IPV6		2
 #define	NET_ADDR_ETHERNET	3
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 #endif	/*  NET_H  */

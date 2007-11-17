@@ -25,9 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.25 2007-06-17 23:32:20 debug Exp $
+ *  $Id: of.cc,v 1.1 2007-11-17 12:13:54 debug Exp $
  *
  *  COMMENT: OpenFirmware emulation
+ *
+ *
+ *  NOTE:  Hahaha, this module is really really ugly, and should be
+ *         rewritten from scratch!
+ *
  *
  *  NOTE: OpenFirmware is used on quite a variety of different hardware archs,
  *        at least POWER/PowerPC, ARM, and SPARC, so the code in this module
@@ -107,7 +112,7 @@ static void of_store_32bit_in_host(unsigned char *d, uint32_t x)
  *
  *  name may consist of multiple names, separaed with slashes.
  */
-static int find_device_handle(struct of_data *ofd, char *name)
+static int find_device_handle(struct of_data *ofd, const char *name)
 {
 	int handle = 1, cur_parent = 1;
 
@@ -470,15 +475,16 @@ static int of_get_unused_device_handle(struct of_data *of_data)
  *
  *  Adds a device.
  */
-static struct of_device *of_add_device(struct of_data *of_data, char *name,
-	char *parentname)
+static struct of_device *of_add_device(struct of_data *of_data,
+	const char *name, const char *parentname)
 {
 	struct of_device *od;
 
-	CHECK_ALLOCATION(od = malloc(sizeof(struct of_device)));
+	CHECK_ALLOCATION(od = (struct of_device *)
+	    malloc(sizeof(struct of_device)));
 	memset(od, 0, sizeof(struct of_device));
 
-	CHECK_ALLOCATION(od->name = strdup(name));
+	CHECK_ALLOCATION(od->name = (char *) strdup(name));
 
 	od->handle = of_get_unused_device_handle(of_data);
 	od->parent = find_device_handle(of_data, parentname);
@@ -500,14 +506,15 @@ static struct of_device *of_add_device(struct of_data *of_data, char *name,
  *
  *  Adds a property to a device.
  */
-static void of_add_prop(struct of_data *of_data, char *devname,
-	char *propname, unsigned char *data, uint32_t len, int flags)
+static void of_add_prop(struct of_data *of_data, const char *devname,
+	const char *propname, unsigned char *data, uint32_t len, int flags)
 {
 	struct of_device_property *pr;
 	struct of_device *od = of_data->of_devices;
 	int h = find_device_handle(of_data, devname);
 
-	CHECK_ALLOCATION(pr = malloc(sizeof(struct of_device_property)));
+	CHECK_ALLOCATION(pr = (struct of_device_property *)
+	    malloc(sizeof(struct of_device_property)));
 	memset(pr, 0, sizeof(struct of_device_property));
 
 	OF_FIND(od, od->handle == h);
@@ -531,12 +538,13 @@ static void of_add_prop(struct of_data *of_data, char *devname,
  *
  *  Adds a service.
  */
-static void of_add_service(struct of_data *of_data, char *name,
+static void of_add_service(struct of_data *of_data, const char *name,
 	int (*f)(OF_SERVICE_ARGS), int n_args, int n_ret_args)
 {
 	struct of_service *os;
 
-	CHECK_ALLOCATION(os = malloc(sizeof(struct of_service)));
+	CHECK_ALLOCATION(os = (struct of_service *)
+	    malloc(sizeof(struct of_service)));
 	memset(os, 0, sizeof(struct of_service));
 
 	CHECK_ALLOCATION(os->name = strdup(name));
@@ -631,11 +639,11 @@ static void of_dump_all(struct of_data *ofd)
  *  Helper function.
  */
 static void of_add_prop_int32(struct of_data *ofd,
-	char *devname, char *propname, uint32_t x)
+	const char *devname, const char *propname, uint32_t x)
 {
 	unsigned char *p;
 
-	CHECK_ALLOCATION(p = malloc(sizeof(int32_t)));
+	CHECK_ALLOCATION(p = (unsigned char *) malloc(sizeof(int32_t)));
 
 	of_store_32bit_in_host(p, x);
 	of_add_prop(ofd, devname, propname, p, sizeof(int32_t),
@@ -649,7 +657,7 @@ static void of_add_prop_int32(struct of_data *ofd,
  *  Helper function.
  */
 static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
-	char *devname, char *propname, char *data)
+	const char *devname, const char *propname, const char *data)
 {
 	char *p;
 
@@ -670,7 +678,7 @@ void of_emul_init_isa(struct machine *machine)
 
 	of_add_device(ofd, "isa", "/");
 
-	CHECK_ALLOCATION(isa_ranges = malloc(32));
+	CHECK_ALLOCATION(isa_ranges = (unsigned char *) malloc(32));
 	memset(isa_ranges, 0, 32);
 
 	/*  2 *: isa_phys_hi, isa_phys_lo, parent_phys_start, size  */
@@ -693,8 +701,8 @@ void of_emul_init_adb(struct machine *machine)
 	struct of_data *ofd = machine->md.of_data;
 	unsigned char *adb_interrupts, *adb_reg;
 
-	CHECK_ALLOCATION(adb_interrupts = malloc(4 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(adb_reg = malloc(8 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(adb_interrupts = (unsigned char *) malloc(4 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(adb_reg = (unsigned char *) malloc(8 * sizeof(uint32_t)));
 
 	of_add_device(ofd, "adb", "/bandit/gc");
 	of_add_prop_str(machine, ofd, "/bandit/gc/adb", "name", "via-cuda");
@@ -725,7 +733,7 @@ void of_emul_init_zs(struct machine *machine)
 	struct of_data *ofd = machine->md.of_data;
 	unsigned char *zs_interrupts, *zs_reg;
 
-	CHECK_ALLOCATION(zs_reg = malloc(6 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(zs_reg = (unsigned char *) malloc(6 * sizeof(uint32_t)));
 
 	/*  The controller:  */
 	of_add_device(ofd, "zs", "/bandit/gc");
@@ -740,8 +748,8 @@ void of_emul_init_zs(struct machine *machine)
 	of_add_prop(ofd, "/bandit/gc/zs", "reg", zs_reg, 6*sizeof(uint32_t), 0);
 
 	/*  Port 1:  */
-	CHECK_ALLOCATION(zs_interrupts = malloc(3 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(zs_reg = malloc(6 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(zs_interrupts = (unsigned char *) malloc(3 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(zs_reg = (unsigned char *) malloc(6 * sizeof(uint32_t)));
 
 	of_add_device(ofd, "zstty1", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty1", "name", "ch-a");
@@ -760,8 +768,8 @@ void of_emul_init_zs(struct machine *machine)
 	    "reg", zs_reg, 6*sizeof(uint32_t), 0);
 
 	/*  Port 0:  */
-	CHECK_ALLOCATION(zs_interrupts = malloc(3 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(zs_reg = malloc(6 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(zs_interrupts = (unsigned char *) malloc(3 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(zs_reg = (unsigned char *) malloc(6 * sizeof(uint32_t)));
 
 	of_add_device(ofd, "zstty0", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty0", "name", "ch-b");
@@ -790,20 +798,20 @@ void of_emul_init_uninorth(struct machine *machine)
 	unsigned char *uninorth_reg, *uninorth_bus_range, *uninorth_ranges;
 	unsigned char *macio_aa, *ata_interrupts, *ata_reg;
 	struct of_device *ic;
-	char *n = "pci@e2000000";
-	char *macio = "mac-io";
+	const char *n = "pci@e2000000";
+	const char *macio = "mac-io";
 
 	of_add_device(ofd, n, "/");
 	of_add_prop_str(machine, ofd, n, "name", "pci");
 	of_add_prop_str(machine, ofd, n, "device_type", "pci");
 	of_add_prop_str(machine, ofd, n, "compatible", "uni-north");
 
-	CHECK_ALLOCATION(uninorth_reg = malloc(2 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(uninorth_bus_range = malloc(2 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(uninorth_ranges = malloc(12 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(macio_aa = malloc(5 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(ata_interrupts = malloc(6 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(ata_reg = malloc(8 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(uninorth_reg = (unsigned char *) malloc(2 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(uninorth_bus_range = (unsigned char *) malloc(2 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(uninorth_ranges = (unsigned char *) malloc(12 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(macio_aa = (unsigned char *) malloc(5 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(ata_interrupts = (unsigned char *) malloc(6 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(ata_reg = (unsigned char *) malloc(8 * sizeof(uint32_t)));
 
 	of_store_32bit_in_host(uninorth_reg + 0, 0xe2000000);
 	of_store_32bit_in_host(uninorth_reg + 4, 0);	/*  not used?  */
@@ -894,7 +902,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	struct of_data *ofd;
 	int i;
 
-	CHECK_ALLOCATION(ofd = malloc(sizeof(struct of_data)));
+	CHECK_ALLOCATION(ofd = (struct of_data *) malloc(sizeof(struct of_data)));
 	memset(ofd, 0, sizeof(struct of_data));
 
 	ofd->vfb_data = vfb_data;
@@ -923,7 +931,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		of_add_prop_int32(ofd, "/io/stdout", "depth", 8);
 		of_add_prop_int32(ofd, "/io/stdout", "address", fb_addr);
 	} else {
-		CHECK_ALLOCATION(zs_assigned_addresses = malloc(12));
+		CHECK_ALLOCATION(zs_assigned_addresses = (unsigned char *) malloc(12));
 		memset(zs_assigned_addresses, 0, 12);
 
 		of_add_prop_str(machine, ofd, "/io/stdin", "name", "ch-b");
@@ -962,8 +970,8 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_add_prop_int32(ofd, "/chosen", "stdout", devstdout->handle);
 
 	of_add_device(ofd, "memory", "/");
-	CHECK_ALLOCATION(memory_reg = malloc(2 * sizeof(uint32_t)));
-	CHECK_ALLOCATION(memory_av = malloc(2 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(memory_reg = (unsigned char *) malloc(2 * sizeof(uint32_t)));
+	CHECK_ALLOCATION(memory_av = (unsigned char *) malloc(2 * sizeof(uint32_t)));
 
 	of_store_32bit_in_host(memory_reg + 0, 0);
 	of_store_32bit_in_host(memory_reg + 4, machine->physical_ram_in_mb<<20);
@@ -1063,7 +1071,7 @@ int of_emul(struct cpu *cpu)
 
 		ptr = load_32bit_word(cpu, base + ofs);
 
-		CHECK_ALLOCATION(arg[i] = malloc(OF_ARG_MAX_LEN + 1));
+		CHECK_ALLOCATION(arg[i] = (char *) malloc(OF_ARG_MAX_LEN + 1));
 		memset(arg[i], 0, OF_ARG_MAX_LEN + 1);
 
 		x = ptr;

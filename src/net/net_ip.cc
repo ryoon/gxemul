@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net_ip.c,v 1.6 2007-06-15 17:02:40 debug Exp $
+ *  $Id: net_ip.cc,v 1.1 2007-11-17 12:13:53 debug Exp $
  *
  *  Internet Protocol related networking stuff.
  */
@@ -1103,7 +1103,7 @@ packet = lp->data;
 void net_ip_broadcast(struct net *net, void *extra,
 	unsigned char *packet, int len)
 {
-	unsigned char *p = (void *) &net->netmask_ipv4;
+	unsigned char *p = (unsigned char *) &net->netmask_ipv4;
 	uint32_t x, y;
 	int i, xl, warning = 0, match = 0;
 
@@ -1377,7 +1377,8 @@ void net_tcp_rx_avail(struct net *net, void *extra)
 
 		if (net->tcp_connections[con_id].incoming_buf == NULL)
 			CHECK_ALLOCATION(net->tcp_connections[con_id].
-			    incoming_buf = malloc(TCP_INCOMING_BUF_LEN));
+			    incoming_buf = (unsigned char *)
+			    malloc(TCP_INCOMING_BUF_LEN));
 
 		if (net->tcp_connections[con_id].state >=
 		    TCP_OUTSIDE_DISCONNECTED)

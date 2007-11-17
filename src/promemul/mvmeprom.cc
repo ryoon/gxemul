@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mvmeprom.c,v 1.4 2007-06-17 23:32:20 debug Exp $
+ *  $Id: mvmeprom.cc,v 1.1 2007-11-17 12:13:53 debug Exp $
  *
  *  COMMENT: MVME PROM emulation
  *

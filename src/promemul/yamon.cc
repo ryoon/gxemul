@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.14 2007-06-17 23:32:21 debug Exp $
+ *  $Id: yamon.cc,v 1.1 2007-11-17 12:13:54 debug Exp $
  *
  *  COMMENT: YAMON emulation
  *
@@ -214,7 +214,7 @@ int yamon_emul(struct cpu *cpu)
 					freq = BE32_TO_HOST(freq);
 
 				cpu->memory_rw(cpu, cpu->mem, (int32_t)paddr,
-				    (void *) &freq, sizeof(freq), MEM_WRITE,
+				    (unsigned char *) &freq, sizeof(freq), MEM_WRITE,
 				    CACHE_DATA | NO_EXCEPTIONS);
 
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;

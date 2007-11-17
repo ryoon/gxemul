@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.12 2007-08-25 22:27:28 debug Exp $
+ *  $Id: net.cc,v 1.1 2007-11-17 12:13:53 debug Exp $
  *
  *  Emulated network.
  *
@@ -51,8 +51,8 @@
 #include <fcntl.h>
 #include <signal.h>
 
-#include "machine.h"
 #include "misc.h"
+#include "machine.h"
 #include "net.h"
 
 
@@ -76,11 +76,12 @@ struct ethernet_packet_link *net_allocate_ethernet_packet_link(
 {
 	struct ethernet_packet_link *lp;
 
-	CHECK_ALLOCATION(lp = malloc(sizeof(struct ethernet_packet_link)));
+	CHECK_ALLOCATION(lp = (struct ethernet_packet_link *)
+	    malloc(sizeof(struct ethernet_packet_link)));
 
 	lp->len = len;
 	lp->extra = extra;
-	CHECK_ALLOCATION(lp->data = malloc(len));
+	CHECK_ALLOCATION(lp->data = (unsigned char *) malloc(len));
 
 	lp->next = NULL;
 
@@ -607,8 +608,8 @@ void net_add_nic(struct net *net, void *extra, unsigned char *macaddr)
 	}
 
 	net->n_nics ++;
-	CHECK_ALLOCATION(net->nic_extra = realloc(net->nic_extra, sizeof(void *)
-	    * net->n_nics));
+	CHECK_ALLOCATION(net->nic_extra = (void **)
+	    realloc(net->nic_extra, sizeof(void *) * net->n_nics));
 
 	net->nic_extra[net->n_nics - 1] = extra;
 }
@@ -623,7 +624,7 @@ void net_add_nic(struct net *net, void *extra, unsigned char *macaddr)
  */
 static void net_gateway_init(struct net *net)
 {
-	unsigned char *p = (void *) &net->netmask_ipv4;
+	unsigned char *p = (unsigned char *) &net->netmask_ipv4;
 	uint32_t x;
 	int xl;
 
@@ -726,7 +727,7 @@ struct net *net_init(struct emul *emul, int init_flags,
 	struct net *net;
 	int res;
 
-	CHECK_ALLOCATION(net = malloc(sizeof(struct net)));
+	CHECK_ALLOCATION(net = (struct net*) malloc(sizeof(struct net)));
 	memset(net, 0, sizeof(struct net));
 
 	/*  Set the back pointer:  */
@@ -755,7 +756,7 @@ struct net *net_init(struct emul *emul, int init_flags,
 	net->netmask_ipv4_len = netipv4len;
 
 	net->nameserver_known = 0;
-	net->domain_name = "";
+	net->domain_name = strdup("");
 	parse_resolvconf(net);
 
 	/*  Distributed network? Then add remote hosts:  */
@@ -789,7 +790,7 @@ struct net *net_init(struct emul *emul, int init_flags,
 			struct hostent *hp;
 
 			/*  debug("adding '%s'\n", remote[n_remote]);  */
-			CHECK_ALLOCATION(rnp =
+			CHECK_ALLOCATION(rnp = (struct remote_net *)
 			    malloc(sizeof(struct remote_net)));
 			memset(rnp, 0, sizeof(struct remote_net));
 

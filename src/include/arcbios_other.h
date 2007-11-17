@@ -1,4 +1,4 @@
-/*  gxemul: $Id: arcbios_other.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
+/*  gxemul: $Id: arcbios_other.h,v 1.4 2007-11-17 12:13:53 debug Exp $  */
 /*	$NetBSD: arcbios.h,v 1.2 2000/01/23 21:01:50 soda Exp $	*/
 /*	$OpenBSD: arcbios.h,v 1.4 1997/05/01 15:13:30 pefo Exp $	*/
 
@@ -108,7 +108,7 @@ typedef struct arc_sid
 /* Wonder how this is aligned... */
 typedef struct arc_config
 {
-	u_int32_t		class;
+	u_int32_t		class_;
 	u_int32_t		type;
 	u_int32_t		flags;
 	u_int16_t		version;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.17 2007-06-17 23:32:20 debug Exp $
+ *  $Id: dreamcast.cc,v 1.1 2007-11-17 12:13:53 debug Exp $
  *
  *  COMMENT: Dreamcast PROM emulation
  *

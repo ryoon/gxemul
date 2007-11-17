@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.20 2007-11-17 11:15:33 debug Exp $
+ *  $Id: arcbios.cc,v 1.1 2007-11-17 12:13:53 debug Exp $
  *
  *  COMMENT: ARCBIOS emulation
  */
@@ -399,7 +399,7 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 /*
  *  arcbios_putstring():
  */
-static void arcbios_putstring(struct cpu *cpu, char *s)
+static void arcbios_putstring(struct cpu *cpu, const char *s)
 {
 	while (*s) {
 		if (*s == '\n')
@@ -514,7 +514,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
  */
 static uint64_t arcbios_addchild(struct cpu *cpu,
 	struct arcbios_component *host_tmp_component,
-	char *identifier, uint32_t parent)
+	const char *identifier, uint32_t parent)
 {
 	struct machine *machine = cpu->machine;
 	uint64_t a = machine->md.arc->next_component_address;
@@ -664,7 +664,7 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
  */
 static uint64_t arcbios_addchild64(struct cpu *cpu,
 	struct arcbios_component64 *host_tmp_component,
-	char *identifier, uint64_t parent)
+	const char *identifier, uint64_t parent)
 {
 	struct machine *machine = cpu->machine;
 	uint64_t a = machine->md.arc->next_component_address;
@@ -830,7 +830,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	uint64_t classs, uint64_t type, uint64_t flags,
 	uint64_t version, uint64_t revision, uint64_t key,
-	uint64_t affinitymask, char *identifier, uint64_t parent,
+	uint64_t affinitymask, const char *identifier, uint64_t parent,
 	void *config_data, size_t config_len)
 {
 	struct machine *machine = cpu->machine;
@@ -839,7 +839,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	struct arcbios_component64 component64;
 
 	if (config_data != NULL) {
-		unsigned char *p = config_data;
+		unsigned char *p = (unsigned char *) config_data;
 		size_t i;
 
 		if (machine->md.arc->n_configuration_data >= MAX_CONFIG_DATA) {
@@ -1484,7 +1484,8 @@ int arcbios_emul(struct cpu *cpu)
 			 *  program to load stuff from the boot partition.
 			 */
 			unsigned char *buf;
-			CHECK_ALLOCATION(buf = malloc(MAX_OPEN_STRINGLEN));
+			CHECK_ALLOCATION(buf = (unsigned char *)
+			    malloc(MAX_OPEN_STRINGLEN));
 			memset(buf, 0, MAX_OPEN_STRINGLEN);
 			for (i=0; i<MAX_OPEN_STRINGLEN; i++) {
 				cpu->memory_rw(cpu, cpu->mem,
@@ -1603,7 +1604,7 @@ int arcbios_emul(struct cpu *cpu)
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2],
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A3]);
 
-			CHECK_ALLOCATION(tmp_buf =
+			CHECK_ALLOCATION(tmp_buf = (unsigned char *)
 			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			res = diskimage_access(machine, disk_id, disk_type,
@@ -1670,7 +1671,7 @@ int arcbios_emul(struct cpu *cpu)
 			    (int) cpu->cd.mips.gpr[MIPS_GPR_A2],
 			    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A3]);
 
-			CHECK_ALLOCATION(tmp_buf =
+			CHECK_ALLOCATION(tmp_buf = (unsigned char *)
 			    malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]));
 
 			for (i=0; i<(int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2]; i++)
@@ -2148,6 +2149,7 @@ void arcbios_console_init(struct machine *machine,
 {
 	if (machine->md.arc == NULL) {
 		CHECK_ALLOCATION(machine->md.arc =
+		    (struct machine_arcbios *)
 		    malloc(sizeof(struct machine_arcbios)));
 		memset(machine->md.arc, 0, sizeof(struct machine_arcbios));
 	}
@@ -2182,7 +2184,7 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 	 *  TODO: How about floppies? multi()disk()fdisk()
 	 *        Is tftp() good for netbooting?
 	 */
-	CHECK_ALLOCATION(init_bootpath = malloc(bootpath_len));
+	CHECK_ALLOCATION(init_bootpath = (char*) malloc(bootpath_len));
 	init_bootpath[0] = '\0';
 
 	if (machine->bootdev_id < 0 || machine->force_netboot) {
@@ -2213,7 +2215,8 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 	if (machine->machine_type == MACHINE_ARC)
 		strlcat(init_bootpath, "\\", bootpath_len);
 
-	CHECK_ALLOCATION(machine->bootstr = malloc(ARC_BOOTSTR_BUFLEN));
+	CHECK_ALLOCATION(machine->bootstr =
+	    (char *) malloc(ARC_BOOTSTR_BUFLEN));
 
 	strlcpy(machine->bootstr, init_bootpath, ARC_BOOTSTR_BUFLEN);
 	if (strlcat(machine->bootstr, machine->boot_kernel_filename,
@@ -2364,7 +2367,7 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		char *tmp;
 		size_t mlen = strlen(machine->bootarg) +
 		    strlen("OSLOADOPTIONS=") + 2;
-		CHECK_ALLOCATION(tmp = malloc(mlen));
+		CHECK_ALLOCATION(tmp = (char *) malloc(mlen));
 		snprintf(tmp, mlen, "OSLOADOPTIONS=%s", machine->bootarg);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, tmp, &addr);
@@ -2410,7 +2413,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 	struct arcbios_spb_64 arcbios_spb_64;
 
 	if (machine->md.arc == NULL) {
-		CHECK_ALLOCATION(machine->md.arc =
+		CHECK_ALLOCATION(machine->md.arc = (struct machine_arcbios *)
 		    malloc(sizeof(struct machine_arcbios)));
 		memset(machine->md.arc, 0, sizeof(struct machine_arcbios));
 	}
@@ -2430,7 +2433,9 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 	for (i=0; i<ARC_MAX_HANDLES; i++) {
 		machine->md.arc->file_handle_in_use[i] = i<3? 1 : 0;
 		machine->md.arc->file_handle_string[i] = i>=3? NULL :
-		    (i==0? "(stdin)" : (i==1? "(stdout)" : "(stderr)"));
+		    (i==0? strdup("(stdin)") :
+		    (i==1? strdup("(stdout)") :
+		    strdup("(stderr)")));
 		machine->md.arc->current_seek_offset[i] = 0;
 	}
 
@@ -2571,7 +2576,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 	/*  Add the root node:  */
 	switch (machine->machine_type) {
 	case MACHINE_SGI:
-		CHECK_ALLOCATION(name = malloc(alloclen));
+		CHECK_ALLOCATION(name = (char *) malloc(alloclen));
 		snprintf(name, alloclen, "SGI-IP%i",
 		    machine->machine_subtype);
 
@@ -2584,10 +2589,10 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		/*  ARC:  */
 		switch (machine->machine_subtype) {
 		case MACHINE_ARC_JAZZ_PICA:
-			name = "PICA-61";
+			name = strdup("PICA-61");
 			break;
 		case MACHINE_ARC_JAZZ_MAGNUM:
-			name = "Microsoft-Jazz";
+			name = strdup("Microsoft-Jazz");
 			break;
 		default:
 			fatal("Unimplemented ARC machine type %i\n",

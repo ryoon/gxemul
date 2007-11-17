@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net_misc.c,v 1.5 2006-12-30 13:31:02 debug Exp $
+ *  $Id: net_misc.cc,v 1.1 2007-11-17 12:13:53 debug Exp $
  *
  *  Misc. helper functions.
  */
@@ -39,8 +39,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "machine.h"
 #include "misc.h"
+#include "machine.h"
 #include "net.h"
 
 
@@ -52,7 +52,7 @@
 void net_debugaddr(void *addr, int type)
 {
 	int i;
-	unsigned char *p = addr;
+	unsigned char *p = (unsigned char *) addr;
 
 	switch (type) {
 

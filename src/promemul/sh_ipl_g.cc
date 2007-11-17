@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: sh_ipl_g.c,v 1.5 2007-06-17 23:32:20 debug Exp $
+ *  $Id: sh_ipl_g.cc,v 1.1 2007-11-17 12:13:54 debug Exp $
  *
  *  COMMENT: SH-IPL+G emulation
  *

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.72 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.73 2007-11-17 08:57:37 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1861,7 +1861,7 @@ void update_cr0(struct cpu *cpu, uint64_t value)
 }
 
 
-#include "memory_ppc.c"
+#include "memory_ppc.cc"
 
 
 #include "tmp_ppc_tail.c"

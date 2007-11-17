@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.50 2007-07-20 09:03:33 debug Exp $
+ *  $Id: cpu_sh.h,v 1.51 2007-11-17 08:57:38 debug Exp $
  *
  *  Note 1: Many things here are SH4-specific, so it probably doesn't work
  *          for SH3 emulation.
@@ -41,6 +41,12 @@
 #include "interrupt.h"
 #include "misc.h"
 #include "sh4_cpu.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{ 
+#endif /* __cplusplus */
 
 
 struct cpu_family;
@@ -240,6 +246,11 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr);
 /*  memory_sh.c:  */
 int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  CPU_SH_H  */

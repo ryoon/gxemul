@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.29 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.30 2007-11-17 08:57:37 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -672,7 +672,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #define MEMORY_RW       alpha_userland_memory_rw
 #define MEM_ALPHA
 #define MEM_USERLAND
-#include "memory_rw.c"
+#include "memory_rw.cc"
 #undef MEM_USERLAND
 #undef MEM_ALPHA
 #undef MEMORY_RW

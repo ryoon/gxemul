@@ -28,12 +28,18 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.49 2007-07-20 09:03:33 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.50 2007-11-17 08:57:38 debug Exp $
  */
 
 #include "misc.h"
 
 #include "alpha_cpu.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{ 
+#endif /* __cplusplus */
 
 
 /*  ALPHA CPU types:  */
@@ -176,6 +182,11 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode);
 /*  memory_alpha.c:  */
 int alpha_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  CPU_ALPHA_H  */

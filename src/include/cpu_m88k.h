@@ -28,13 +28,20 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.22 2007-07-20 09:03:33 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.23 2007-11-17 08:57:38 debug Exp $
  */
 
 #include "misc.h"
 #include "interrupt.h"
 
 #include "m88k_psl.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{ 
+#endif /* __cplusplus */
+
 
 struct cpu_family;
 
@@ -282,6 +289,11 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap);
 /*  memory_m88k.c:  */
 int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  CPU_M88K_H  */

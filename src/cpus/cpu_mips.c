@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.84 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_mips.c,v 1.85 2007-11-17 08:57:37 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1963,7 +1963,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 }
 
 
-#include "memory_mips.c"
+#include "memory_mips.cc"
 
 
 #include "tmp_mips_tail.c"

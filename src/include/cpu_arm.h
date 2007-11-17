@@ -28,11 +28,18 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.75 2007-07-20 09:03:33 debug Exp $
+ *  $Id: cpu_arm.h,v 1.76 2007-11-17 08:57:38 debug Exp $
  */
 
 #include "misc.h"
 #include "interrupt.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{ 
+#endif /* __cplusplus */
+
 
 struct cpu_family;
 
@@ -312,5 +319,11 @@ int arm_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 int arm_translate_v2p_mmu(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 #endif	/*  CPU_ARM_H  */

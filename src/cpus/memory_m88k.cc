@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_m88k.c,v 1.8 2007-05-25 11:51:36 debug Exp $
+ *  $Id: memory_m88k.cc,v 1.1 2007-11-17 08:57:37 debug Exp $
  *
  *  Virtual to physical memory translation for M88K emulation.
  *

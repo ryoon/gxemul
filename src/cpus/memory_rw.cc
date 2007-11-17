@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.1 2007-06-19 02:11:46 debug Exp $
+ *  $Id: memory_rw.cc,v 1.1 2007-11-17 08:57:37 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
- *  Example for inclusion from memory_mips.c:
+ *  Example for inclusion from memory_mips.cc:
  *
  *	MEMORY_RW should be mips_memory_rw
  *	MEM_MIPS should be defined

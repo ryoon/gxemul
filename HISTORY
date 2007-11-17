@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1647 2007-11-17 08:33:28 debug Exp $
+$Id: HISTORY,v 1.1648 2007-11-17 08:57:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3706,4 +3706,4 @@ Changelog for GXemul:
 20071117	Removing the dummy M32R skeleton again.
 		Converting some .c files to .cc (without redesigning the code,
 		just to make it use the C++ compiler): cpu_sparc.c,
-		cpu_mips_coproc.c.
+		cpu_mips_coproc.c, memory_*.c.

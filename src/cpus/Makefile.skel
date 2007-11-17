@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.41 2007-11-17 08:33:28 debug Exp $
+#  $Id: Makefile.skel,v 1.42 2007-11-17 08:57:37 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -23,7 +23,7 @@ $(OBJS): Makefile
 
 ###############################################################################
 
-cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_dyntrans.c memory_rw.c \
+cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_dyntrans.c memory_rw.cc \
 	tmp_alpha_head.c tmp_alpha_tail.c
 
 cpu_alpha_instr.c: cpu_alpha_instr_alu.c tmp_alpha_misc.c
@@ -40,7 +40,7 @@ tmp_alpha_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c memory_rw.c \
+cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c memory_rw.cc \
 	tmp_arm_head.c tmp_arm_tail.c
 
 cpu_arm_instr.c: cpu_arm_instr_misc.c
@@ -117,7 +117,7 @@ tmp_arm_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_m88k.o: cpu_m88k.c cpu_m88k_instr.c cpu_dyntrans.c memory_rw.c \
+cpu_m88k.o: cpu_m88k.c cpu_m88k_instr.c cpu_dyntrans.c memory_rw.cc \
 	tmp_m88k_loadstore.c tmp_m88k_head.c tmp_m88k_tail.c tmp_m88k_bcnd.c
 
 tmp_m88k_bcnd.c: generate_m88k_bcnd
@@ -135,11 +135,11 @@ tmp_m88k_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_mips.o: cpu_mips.c cpu_dyntrans.c memory_mips.c \
+cpu_mips.o: cpu_mips.c cpu_dyntrans.c memory_mips.cc \
 	cpu_mips_instr.c tmp_mips_loadstore.c tmp_mips_loadstore_multi.c \
 	tmp_mips_head.c tmp_mips_tail.c
 
-memory_mips.c: memory_rw.c memory_mips_v2p.c
+memory_mips.cc: memory_rw.cc memory_mips_v2p.cc
 
 tmp_mips_loadstore.c: cpu_mips_instr_loadstore.c generate_mips_loadstore
 	./generate_mips_loadstore > tmp_mips_loadstore.c
@@ -156,8 +156,8 @@ tmp_mips_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_ppc.c \
-	memory_rw.c tmp_ppc_head.c tmp_ppc_tail.c tmp_ppc_loadstore.c
+cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_ppc.cc \
+	memory_rw.cc tmp_ppc_head.c tmp_ppc_tail.c tmp_ppc_loadstore.c
 
 tmp_ppc_loadstore.c: cpu_ppc_instr_loadstore.c generate_ppc_loadstore
 	./generate_ppc_loadstore > tmp_ppc_loadstore.c
@@ -171,7 +171,7 @@ tmp_ppc_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_sh.o: cpu_sh.c cpu_sh_instr.c cpu_dyntrans.c memory_rw.c \
+cpu_sh.o: cpu_sh.c cpu_sh_instr.c cpu_dyntrans.c memory_rw.cc \
 	tmp_sh_head.c tmp_sh_tail.c
 
 tmp_sh_head.c: generate_head
@@ -183,7 +183,7 @@ tmp_sh_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_sparc.o: cpu_sparc.cc cpu_sparc_instr.c cpu_dyntrans.c memory_rw.c \
+cpu_sparc.o: cpu_sparc.cc cpu_sparc_instr.c cpu_dyntrans.c memory_rw.cc \
 	tmp_sparc_head.c tmp_sparc_tail.c tmp_sparc_loadstore.c
 
 tmp_sparc_loadstore.c: cpu_sparc_instr_loadstore.c generate_sparc_loadstore

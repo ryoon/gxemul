@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.284 2007-11-16 09:23:33 debug Exp $
+#  $Id: configure,v 1.285 2007-11-17 08:33:28 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -177,10 +177,6 @@ CPU_ARCHS="$CPU_ARCHS tmp_arm_rc.o tmp_arm_rd.o"
 CPU_ARCHS="$CPU_ARCHS tmp_arm_re.o tmp_arm_rf.o tmp_arm_multi.o"
 CPU_TOOLS="$CPU_TOOLS generate_arm_dpi generate_arm_r"
 CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_multi"
-
-#  M32R
-printf " add_cpu_family(m32r_cpu_family_init, ARCH_M32R);" >> config.h
-CPU_ARCHS="$CPU_ARCHS cpu_m32r.o memory_m32r.o"
 
 #  M88K
 printf " add_cpu_family(m88k_cpu_family_init, ARCH_M88K);" >> config.h

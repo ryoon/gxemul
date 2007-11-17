@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.40 2007-07-20 09:03:33 debug Exp $
+#  $Id: Makefile.skel,v 1.41 2007-11-17 08:33:28 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -117,18 +117,6 @@ tmp_arm_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_m32r.o: cpu_m32r.c cpu_m32r_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_m32r_head.c tmp_m32r_tail.c
-
-tmp_m32r_head.c: generate_head
-	./generate_head m32r M32R > tmp_m32r_head.c
-
-tmp_m32r_tail.c: generate_tail
-	./generate_tail m32r M32R > tmp_m32r_tail.c
-
-
-###############################################################################
-
 cpu_m88k.o: cpu_m88k.c cpu_m88k_instr.c cpu_dyntrans.c memory_rw.c \
 	tmp_m88k_loadstore.c tmp_m88k_head.c tmp_m88k_tail.c tmp_m88k_bcnd.c
 
@@ -195,7 +183,7 @@ tmp_sh_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_sparc.o: cpu_sparc.c cpu_sparc_instr.c cpu_dyntrans.c memory_rw.c \
+cpu_sparc.o: cpu_sparc.cc cpu_sparc_instr.c cpu_dyntrans.c memory_rw.c \
 	tmp_sparc_head.c tmp_sparc_tail.c tmp_sparc_loadstore.c
 
 tmp_sparc_loadstore.c: cpu_sparc_instr_loadstore.c generate_sparc_loadstore

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.187 2007-09-13 19:23:45 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.188 2007-11-17 08:33:28 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -73,7 +73,8 @@ static void gather_statistics(struct cpu *cpu)
 			break;
 		case 'p':
 			/*  Physical program counter address:  */
-			cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+			cpu->cd.DYNTRANS_ARCH.cur_physpage =
+			    (struct DYNTRANS_TC_PHYSPAGE *)
 			    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 			a = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
 			a &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
@@ -252,7 +253,7 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 
 	cpu->n_translated_instrs = 0;
 
-	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+	cpu->cd.DYNTRANS_ARCH.cur_physpage = (struct DYNTRANS_TC_PHYSPAGE *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 
 	if (single_step || cpu->machine->instruction_trace
@@ -907,7 +908,8 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 	int i;
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
-	CHECK_ALLOCATION(ppp = malloc(sizeof(struct DYNTRANS_TC_PHYSPAGE)));
+	CHECK_ALLOCATION(ppp = (struct DYNTRANS_TC_PHYSPAGE *)
+	    malloc(sizeof(struct DYNTRANS_TC_PHYSPAGE)));
 
 	ppp->next_ofs = 0;
 	ppp->translations_bitmap = 0;
@@ -941,8 +943,10 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 	if (cpu->is_32bit)
 		return;
 
-	dummy_l2 = zeroed_alloc(sizeof(struct DYNTRANS_L2_64_TABLE));
-	dummy_l3 = zeroed_alloc(sizeof(struct DYNTRANS_L3_64_TABLE));
+	dummy_l2 = (struct DYNTRANS_L2_64_TABLE *)
+	    zeroed_alloc(sizeof(struct DYNTRANS_L2_64_TABLE));
+	dummy_l3 = (struct DYNTRANS_L3_64_TABLE *)
+	    zeroed_alloc(sizeof(struct DYNTRANS_L3_64_TABLE));
 
 	cpu->cd.DYNTRANS_ARCH.l2_64_dummy = dummy_l2;
 	cpu->cd.DYNTRANS_ARCH.l3_64_dummy = dummy_l3;
@@ -1493,7 +1497,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			} else {
 				int i;
 				CHECK_ALLOCATION(l2 =
-				    cpu->cd.DYNTRANS_ARCH.l1_64[x1] = malloc(
+				    cpu->cd.DYNTRANS_ARCH.l1_64[x1] =
+				    (struct DYNTRANS_L2_64_TABLE *) malloc(
 				    sizeof(struct DYNTRANS_L2_64_TABLE)));
 				l2->refcount = 0;
 				for (i=0; i<(1 << DYNTRANS_L2N); i++)
@@ -1516,7 +1521,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 				    cpu->cd.DYNTRANS_ARCH.next_free_l3;
 				cpu->cd.DYNTRANS_ARCH.next_free_l3 = l3->next;
 			} else {
-				l3 = l2->l3[x2] = zeroed_alloc(sizeof(
+				l3 = l2->l3[x2] = (struct DYNTRANS_L3_64_TABLE*)
+				    zeroed_alloc(sizeof(
 				    struct DYNTRANS_L3_64_TABLE));
 			}
 			if (l3->refcount != 0) {
@@ -1697,7 +1703,7 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 	 */
 
 	/*  Make sure cur_physpage is in synch:  */
-	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+	cpu->cd.DYNTRANS_ARCH.cur_physpage = (struct DYNTRANS_TC_PHYSPAGE *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 
 	{

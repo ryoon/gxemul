@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1646 2007-11-16 23:45:08 debug Exp $
+$Id: HISTORY,v 1.1647 2007-11-17 08:33:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3703,4 +3703,7 @@ Changelog for GXemul:
 		Moving remaining src/*.c{,c} into a new src/main/ directory.
 		Beginning on separating the main GUI window into a "workspace"
 		and a "debug console" area.
-20071117
+20071117	Removing the dummy M32R skeleton again.
+		Converting some .c files to .cc (without redesigning the code,
+		just to make it use the C++ compiler): cpu_sparc.c,
+		cpu_mips_coproc.c.

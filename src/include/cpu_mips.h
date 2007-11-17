@@ -28,11 +28,18 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.61 2007-07-20 09:03:33 debug Exp $
+ *  $Id: cpu_mips.h,v 1.62 2007-11-17 08:33:29 debug Exp $
  */
 
 #include "interrupt.h"
 #include "misc.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{ 
+#endif /* __cplusplus */
+
 
 struct cpu_family;
 struct emul;
@@ -352,6 +359,11 @@ void mips32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void mips32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  CPU_MIPS_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.69 2007-06-15 18:07:08 debug Exp $
+ *  $Id: cpu_mips_coproc.cc,v 1.1 2007-11-17 08:33:28 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -50,8 +50,8 @@
 
 extern volatile int single_step;
 
-static char *cop0_names[] = COP0_NAMES;
-static char *regnames[] = MIPS_REGISTER_NAMES;
+static const char *cop0_names[] = COP0_NAMES;
+static const char *regnames[] = MIPS_REGISTER_NAMES;
 
 
 /*
@@ -359,14 +359,16 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 {
 	struct mips_coproc *c;
 
-	CHECK_ALLOCATION(c = malloc(sizeof(struct mips_coproc)));
+	CHECK_ALLOCATION(c = (struct mips_coproc *)
+	    malloc(sizeof(struct mips_coproc)));
 	memset(c, 0, sizeof(struct mips_coproc));
 
 	c->coproc_nr = coproc_nr;
 
 	if (coproc_nr == 0) {
 		c->nr_of_tlbs = cpu->cd.mips.cpu_type.nr_of_tlb_entries;
-		c->tlbs = zeroed_alloc(c->nr_of_tlbs * sizeof(struct mips_tlb));
+		c->tlbs = (struct mips_tlb *)
+		    zeroed_alloc(c->nr_of_tlbs * sizeof(struct mips_tlb));
 
 		/*
 		 *  Start with nothing in the status register. This makes sure
@@ -990,13 +992,13 @@ static int mips_fmt_to_ieee_fmt[32] = {
 	IEEE_FMT_W, IEEE_FMT_L, /* PS (Paired Single) */ 0, 0,
 	0, 0, 0, 0,  0, 0, 0, 0  };
 
-static char *fmtname[32] = {
+static const char *fmtname[32] = {
 	 "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
 	 "8",  "9", "10", "11", "12", "13", "14", "15",
 	 "s",  "d", "18", "19",  "w",  "l", "ps", "23",
 	"24", "25", "26", "27", "28", "29", "30", "31" 	};
 
-static char *ccname[16] = {
+static const char *ccname[16] = {
 	"f",  "un",   "eq",  "ueq", "olt", "ult", "ole", "ule",
 	"sf", "ngle", "seq", "ngl", "lt",  "nge", "le",  "ngt"  };
 
@@ -1246,7 +1248,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  bc1f, bc1t, bc1fl, bc1tl:  */
 	if ((function & 0x03e00000) == 0x01000000) {
 		int nd, tf, imm;
-		char *instr_mnem;
+		const char *instr_mnem;
 
 		/*  cc are bits 20..18:  */
 		cc = (function >> 18) & 7;

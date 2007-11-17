@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.1 2007-11-16 09:23:33 debug Exp $
+ *  $Id: emul.c,v 1.2 2007-11-17 08:33:29 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -605,14 +605,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		case ARCH_ARM:
 			if (cpu->pc & 3) {
 				fatal("ARM: lowest bits of pc set: TODO\n");
-				exit(1);
-			}
-			cpu->pc &= 0xfffffffc;
-			break;
-
-		case ARCH_M32R:
-			if (cpu->pc & 3) {
-				fatal("M32R: lowest bits of pc set: TODO\n");
 				exit(1);
 			}
 			cpu->pc &= 0xfffffffc;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.57 2007-06-14 16:13:30 debug Exp $
+ *  $Id: memory.h,v 1.58 2007-11-17 08:33:29 debug Exp $
  *
  *  Memory related functions.
  */
@@ -93,6 +93,12 @@ struct memory {
 #define	BITS_PER_PAGETABLE	20
 #define	BITS_PER_MEMBLOCK	20
 #define	MAX_BITS		40
+
+
+#ifdef __cplusplus
+extern "C"
+{ 
+#endif /* __cplusplus */
 
 
 /*  memory.c:  */
@@ -188,6 +194,11 @@ void store_pointer_and_advance(struct cpu *cpu, uint64_t *addrp,
 
 void memory_warn_about_unimplemented_addr(struct cpu *cpu, struct memory *mem,
 	int writeflag, uint64_t paddr, uint8_t *data, size_t len);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 #endif	/*  MEMORY_H  */

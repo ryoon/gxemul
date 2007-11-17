@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.285 2007-11-17 08:33:28 debug Exp $
+#  $Id: configure,v 1.286 2007-11-17 08:52:11 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -140,10 +140,6 @@ if [ z"$UNSTABLE" = zYES ]; then
 else
 	CFLAGS="-DNDEBUG $CFLAGS"
 fi
-
-
-ZZ=`echo compiled on \`uname\`/\`uname -m\`, \`date\``
-printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
 
 
 #  Include support for all CPU types:

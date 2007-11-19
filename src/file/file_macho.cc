@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_macho.c,v 1.3 2007-06-17 23:32:20 debug Exp $
+ *  $Id: file_macho.cc,v 1.1 2007-11-19 11:12:44 debug Exp $
  *
  *  COMMENT: Mach-O file support
  */
@@ -218,11 +218,11 @@ static void file_load_macho(struct machine *m, struct memory *mem,
 			debug("symtable: %i symbols @ 0x%x (strings at "
 			    "0x%x)\n", nsyms, symoff, stroff);
 
-			CHECK_ALLOCATION(symbols = malloc(12 * nsyms));
+			CHECK_ALLOCATION(symbols = (char *) malloc(12 * nsyms));
 			fseek(f, symoff, SEEK_SET);
 			fread(symbols, 1, 12 * nsyms, f);
 
-			CHECK_ALLOCATION(strings = malloc(strsize));
+			CHECK_ALLOCATION(strings = (char *)malloc(strsize));
 			fseek(f, stroff, SEEK_SET);
 			fread(strings, 1, strsize, f);
 

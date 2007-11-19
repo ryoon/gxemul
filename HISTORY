@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1650 2007-11-17 12:13:53 debug Exp $
+$Id: HISTORY,v 1.1651 2007-11-19 11:12:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3709,3 +3709,4 @@ Changelog for GXemul:
 		cpu_mips_coproc.c, memory_*.c.
 		Converting most of src/cpus/.
 		Converting src/net/*.c and src/promemul/*.c to *.cc.
+20071119	Converting src/file/*.c to *.cc.

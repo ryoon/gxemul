@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.5 2007-06-23 23:59:14 debug Exp $
+ *  $Id: file.cc,v 1.1 2007-11-19 11:12:43 debug Exp $
  *
  *  This module contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -88,12 +88,12 @@ static int n_executables_loaded = 0;
 	}
 
 
-#include "file_aout.c"
-#include "file_ecoff.c"
-#include "file_elf.c"
-#include "file_macho.c"
-#include "file_raw.c"
-#include "file_srec.c"
+#include "file_aout.cc"
+#include "file_ecoff.cc"
+#include "file_elf.cc"
+#include "file_macho.cc"
+#include "file_raw.cc"
+#include "file_srec.cc"
 
 
 /*
@@ -123,7 +123,7 @@ void file_load(struct machine *machine, struct memory *mem,
 {
 	int iadd = DEBUG_INDENTATION, old_quiet_mode;
 	FILE *f;
-	char *tmpdir = getenv("TMPDIR") == NULL?
+	const char *tmpdir = getenv("TMPDIR") == NULL?
 	    DEFAULT_TMP_DIR : getenv("TMPDIR");
 	unsigned char buf[12];
 	unsigned char buf2[2];
@@ -304,7 +304,7 @@ void file_load(struct machine *machine, struct memory *mem,
 	snprintf(tmpname, sizeof(tmpname), "%s/gxemul.", tmpdir);
 	if (machine->machine_type == MACHINE_DREAMCAST &&
 	    strncmp(filename, tmpname, strlen(tmpname)) == 0) {
-		char *tmp_filename = malloc(strlen(filename) + 100);
+		char *tmp_filename = (char *) malloc(strlen(filename) + 100);
 		snprintf(tmp_filename, strlen(filename) + 100,
 		    "%s.descrambled", filename);
 		debug("descrambling into %s\n", tmp_filename);

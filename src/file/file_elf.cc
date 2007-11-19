@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_elf.c,v 1.8 2007-11-17 08:33:29 debug Exp $
+ *  $Id: file_elf.cc,v 1.1 2007-11-19 11:12:44 debug Exp $
  *
  *  COMMENT: ELF file support
  */
@@ -37,7 +37,7 @@
 
 /*  ELF machine types as strings: (same as exec_elf.h)  */
 #define N_ELF_MACHINE_TYPES     89
-static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
+static const char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
         "NONE", "M32", "SPARC", "386",				/*  0..3  */
         "68K", "88K", "486", "860",				/*  4..7  */  
         "MIPS", "S370", "MIPS_RS3_LE", "RS6000",		/*  8..11  */
@@ -96,7 +96,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	int ofs;
 	int chunk_len = 1024, align_len;
 	char *symbol_strings = NULL; size_t symbol_length = 0;
-	char *s;
+	const char *s;
 	Elf32_Sym *symbols_sym32 = NULL;  int n_symbols = 0;
 	Elf64_Sym *symbols_sym64 = NULL;
 
@@ -433,7 +433,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 				unsigned char *ch;
 				int i = 0;
 
-				CHECK_ALLOCATION(ch = malloc(chunk_len));
+				CHECK_ALLOCATION(ch = (unsigned char *)
+				    malloc(chunk_len));
 
 				/*  Switch to larger size, if possible:  */
 				if (align_len < 0x10000 &&
@@ -441,13 +442,15 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					align_len = 0x10000;
 					len = chunk_len = align_len;
 					free(ch);
-					CHECK_ALLOCATION(ch=malloc(chunk_len));
+					CHECK_ALLOCATION(ch =
+					    (unsigned char *)malloc(chunk_len));
 				} else if (align_len < 0x1000 &&
 				    ((p_vaddr + ofs) & 0xfff)==0) {
 					align_len = 0x1000;
 					len = chunk_len = align_len;
 					free(ch);
-					CHECK_ALLOCATION(ch=malloc(chunk_len));
+					CHECK_ALLOCATION(ch = (unsigned char *)
+					    malloc(chunk_len));
 				}
 
 				len = fread(&ch[0], 1, chunk_len, f);
@@ -543,7 +546,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					free(symbols_sym64);
 
 				CHECK_ALLOCATION(symbols_sym64 =
-				    malloc(sh_size));
+				    (Elf64_Sym*) malloc(sh_size));
 
 				len = fread(symbols_sym64, 1, sh_entsize *
 				    n_entries, f);
@@ -552,7 +555,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					free(symbols_sym32);
 
 				CHECK_ALLOCATION(symbols_sym32 =
-				    malloc(sh_size));
+				    (Elf32_Sym*) malloc(sh_size));
 
 				len = fread(symbols_sym32, 1,
 				    sh_entsize * n_entries, f);
@@ -584,7 +587,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			if (symbol_strings != NULL)
 				free(symbol_strings);
 
-			CHECK_ALLOCATION(symbol_strings = malloc(sh_size + 1));
+			CHECK_ALLOCATION(symbol_strings = (char *)
+			    malloc(sh_size + 1));
 
 			fseek(f, sh_offset, SEEK_SET);
 			len = fread(symbol_strings, 1, sh_size, f);

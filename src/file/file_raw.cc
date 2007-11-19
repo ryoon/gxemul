@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_raw.c,v 1.2 2007-06-17 23:32:20 debug Exp $
+ *  $Id: file_raw.cc,v 1.1 2007-11-19 11:12:44 debug Exp $
  *
  *  COMMENT: Raw file support
  *

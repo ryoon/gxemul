@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_aout.c,v 1.4 2007-06-17 23:32:20 debug Exp $
+ *  $Id: file_aout.cc,v 1.1 2007-11-19 11:12:43 debug Exp $
  *
  *  COMMENT: a.out executable file support
  */
@@ -58,7 +58,7 @@ struct aout_symbol {
  *         formats, where text/data are aligned differently.
  */
 static void file_load_aout(struct machine *m, struct memory *mem,
-	char *filename, int flags,
+	const char *filename, int flags,
 	uint64_t *entrypointp, int arch, int *byte_orderp)
 {
 	struct exec aout_header;
@@ -173,7 +173,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		off_t oldpos;
 
 		debug("symbols: %i bytes @ 0x%x\n", symbsize, (int)ftello(f));
-		CHECK_ALLOCATION(syms = malloc(symbsize));
+		CHECK_ALLOCATION(syms = (unsigned char *) malloc(symbsize));
 		len = fread(syms, 1, symbsize, f);
 		if (len != symbsize) {
 			fprintf(stderr, "error reading symbols from %s\n",
@@ -186,7 +186,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		strings_len = ftello(f) - oldpos;
 		fseek(f, oldpos, SEEK_SET);
 		debug("strings: %i bytes @ 0x%x\n", strings_len,(int)ftello(f));
-		CHECK_ALLOCATION(string_symbols = malloc(strings_len));
+		CHECK_ALLOCATION(string_symbols = (char *) malloc(strings_len));
 		fread(string_symbols, 1, strings_len, f);
 
 		aout_symbol_ptr = (struct aout_symbol *) syms;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file_ecoff.c,v 1.3 2007-06-17 23:32:20 debug Exp $
+ *  $Id: file_ecoff.cc,v 1.1 2007-11-19 11:12:43 debug Exp $
  *
  *  COMMENT: ECOFF file support
  */
@@ -93,35 +93,35 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 	switch (f_magic) {
 	case ((ECOFF_MAGIC_MIPSEB & 0xff) << 8) +
 	    ((ECOFF_MAGIC_MIPSEB >> 8) & 0xff):
-		format_name = "MIPS1 BE";
+		format_name = strdup("MIPS1 BE");
 		encoding = ELFDATA2MSB;
 		break;
 	case ECOFF_MAGIC_MIPSEB:
 		/*  NOTE: Big-endian header, little-endian code!  */
-		format_name = "MIPS1 BE-LE";
+		format_name = strdup("MIPS1 BE-LE");
 		encoding = ELFDATA2MSB;
 		program_byte_order = ELFDATA2LSB;
 		break;
 	case ECOFF_MAGIC_MIPSEL:
-		format_name = "MIPS1 LE";
+		format_name = strdup("MIPS1 LE");
 		encoding = ELFDATA2LSB;
 		break;
 	case ((ECOFF_MAGIC_MIPSEB2 & 0xff) << 8) +
 	    ((ECOFF_MAGIC_MIPSEB2 >> 8) & 0xff):
-		format_name = "MIPS2 BE";
+		format_name = strdup("MIPS2 BE");
 		encoding = ELFDATA2MSB;
 		break;
 	case ECOFF_MAGIC_MIPSEL2:
-		format_name = "MIPS2 LE";
+		format_name = strdup("MIPS2 LE");
 		encoding = ELFDATA2LSB;
 		break;
 	case ((ECOFF_MAGIC_MIPSEB3 & 0xff) << 8) +
 	    ((ECOFF_MAGIC_MIPSEB3 >> 8) & 0xff):
-		format_name = "MIPS3 BE";
+		format_name = strdup("MIPS3 BE");
 		encoding = ELFDATA2MSB;
 		break;
 	case ECOFF_MAGIC_MIPSEL3:
-		format_name = "MIPS3 LE";
+		format_name = strdup("MIPS3 LE");
 		encoding = ELFDATA2LSB;
 		break;
 	default:
@@ -307,7 +307,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 			 *    mat%20Specification.txt
 			 *  for more details.
 			 */
-			CHECK_ALLOCATION(ms_sym_buf =
+			CHECK_ALLOCATION(ms_sym_buf = (unsigned char *)
 			    malloc(sizeof(struct ms_sym) * f_nsyms));
 			fseek(f, f_symptr, SEEK_SET);
 			len = fread(ms_sym_buf, 1,
@@ -377,14 +377,15 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		debug("%i symbols @ 0x%08x (strings @ 0x%08x)\n",
 		    iextMax, cbExtOffset, cbSsExtOffset);
 
-		CHECK_ALLOCATION(symbol_data = malloc(issExtMax + 2));
+		CHECK_ALLOCATION(symbol_data = (char *)
+		    malloc(issExtMax + 2));
 		memset(symbol_data, 0, issExtMax + 2);
 		fseek(f, cbSsExtOffset, SEEK_SET);
 		fread(symbol_data, 1, issExtMax + 1, f);
 
 		nsymbols = iextMax;
 
-		CHECK_ALLOCATION(extsyms =
+		CHECK_ALLOCATION(extsyms = (struct ecoff_extsym *)
 		    malloc(iextMax * sizeof(struct ecoff_extsym)));
 		memset(extsyms, 0, iextMax * sizeof(struct ecoff_extsym));
 		fseek(f, cbExtOffset, SEEK_SET);

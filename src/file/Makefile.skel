@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.4 2007-06-19 02:11:46 debug Exp $
+#  $Id: Makefile.skel,v 1.5 2007-11-19 11:12:43 debug Exp $
 #
 #  Makefile for GXemul src/file
 #
@@ -13,8 +13,8 @@ all: $(OBJS)
 
 $(OBJS): Makefile
 
-file.o: file.c file_aout.c file_ecoff.c file_elf.c file_macho.c \
-	file_raw.c file_srec.c
+file.o: file.cc file_aout.cc file_ecoff.cc file_elf.cc file_macho.cc \
+	file_raw.cc file_srec.cc
 
 
 clean:

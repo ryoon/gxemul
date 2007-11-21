@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol_demangle.c,v 1.2 2007-11-17 12:13:54 debug Exp $
+ *  $Id: symbol_demangle.cc,v 1.1 2007-11-21 12:33:27 debug Exp $
  *
  *  C++ symbol name demangling.
  *
@@ -69,7 +69,7 @@ static char *symbol_demangle_cplusplus_nested(const char *name)
 	size_t result_len = 0, len;
 	int first = 1, type_added = 0, pointercounter, reference;
 
-	CHECK_ALLOCATION(result = malloc(MAXLEN + 1));
+	CHECK_ALLOCATION(result = (char *) malloc(MAXLEN + 1));
 	result[0] = '\0';
 
 	while (name[0] && name[0] != 'E' && result_len < MAXLEN) {

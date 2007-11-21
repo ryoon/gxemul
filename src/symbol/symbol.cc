@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.2 2007-11-17 12:13:54 debug Exp $
+ *  $Id: symbol.cc,v 1.1 2007-11-21 12:33:27 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -254,7 +254,8 @@ void add_symbol_name(struct symbol_context *sc, uint64_t addr,
 	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
 		addr |= 0xffffffff00000000ULL;
 
-	CHECK_ALLOCATION(s = malloc(sizeof(struct symbol)));
+	CHECK_ALLOCATION(s = (struct symbol *)
+	    malloc(sizeof(struct symbol)));
 	memset(s, 0, sizeof(struct symbol));
 
 	s->name = symbol_demangle_cplusplus(name);
@@ -366,8 +367,8 @@ void symbol_recalc_sizes(struct symbol_context *sc)
 	struct symbol *tmp_ptr;
 	int i;
 
-	CHECK_ALLOCATION(tmp_array = malloc(sizeof (struct symbol) *
-	    sc->n_symbols));
+	CHECK_ALLOCATION(tmp_array = (struct symbol *)
+	    malloc(sizeof (struct symbol) * sc->n_symbols));
 
 	/*  Copy first_symbol --> tmp_array, and remove the old
 		first_symbol at the same time:  */

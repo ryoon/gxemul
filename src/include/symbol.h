@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.h,v 1.10 2007-11-17 12:13:53 debug Exp $
+ *  $Id: symbol.h,v 1.11 2007-11-21 12:33:27 debug Exp $
  *
  *  Symbol handling routines.
  */
@@ -55,6 +55,13 @@ struct symbol_context {
 
 };
 
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
+
 /*  symbol.c:  */
 int symbol_nsymbols(struct symbol_context *);
 int get_symbol_addr(struct symbol_context *, const char *symbol, uint64_t *addr);
@@ -69,5 +76,11 @@ void symbol_init(struct symbol_context *);
 
 /*  symbol_demangle.c:  */
 char *symbol_demangle_cplusplus(const char *name);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 #endif	/*  SYMBOL_H  */

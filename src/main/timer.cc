@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.cc,v 1.1 2007-11-21 12:54:12 debug Exp $
+ *  $Id: timer.cc,v 1.2 2007-11-21 13:00:24 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -58,7 +58,7 @@ struct timer {
 static struct timer *first_timer = NULL;
 struct timeval timer_start_tv;
 static double timer_freq;
-static int timer_countdown_to_next_gettimeofday;
+static long timer_countdown_to_next_gettimeofday;
 static double timer_current_time;
 static double timer_current_time_step;
 
@@ -181,8 +181,8 @@ static void timer_tick(int signal_nr)
 		timer_current_time = ( (tv.tv_usec * 0.000001 + tv.tv_sec) +
 		    timer_current_time ) / 2;
 
-		timer_countdown_to_next_gettimeofday = timer_freq *
-		    SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH;
+		timer_countdown_to_next_gettimeofday = (long) (timer_freq *
+		    SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH);
 	}
 
 	while (timer != NULL) {
@@ -225,9 +225,9 @@ void timer_start(void)
 		timer = timer->next;
 	}
 	val.it_interval.tv_sec = 0;
-	val.it_interval.tv_usec = 1000000.0 / timer_freq;
+	val.it_interval.tv_usec = (long) (1000000.0 / timer_freq);
 	val.it_value.tv_sec = 0;
-	val.it_value.tv_usec = 1000000.0 / timer_freq;
+	val.it_value.tv_usec = (long) (1000000.0 / timer_freq);
 
 	memset(&saction, 0, sizeof(saction));
 	saction.sa_handler = timer_tick;

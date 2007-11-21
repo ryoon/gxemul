@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1653 2007-11-21 12:33:27 debug Exp $
+$Id: HISTORY,v 1.1654 2007-11-21 12:54:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3712,4 +3712,6 @@ Changelog for GXemul:
 20071119	Converting src/file/*.c to *.cc.
 20071120	Removing remaining references to the old config file stuff in
 		the documentaion.
-20071121	Converting src/useremul/*.c and src/symbol/*.c to *.cc.
+20071121	Converting src/useremul/*.c, src/symbol/*.c, and some
+		remaining files in src/main/ to *.cc. (Still no redesign,
+		simply converting to use the C++ compiler.)

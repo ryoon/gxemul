@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.2 2007-11-17 08:33:29 debug Exp $
+ *  $Id: emul.cc,v 1.1 2007-11-21 12:54:12 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -146,7 +146,7 @@ struct emul *emul_new(char *name)
 {
 	struct emul *e;
 
-	CHECK_ALLOCATION(e = malloc(sizeof(struct emul)));
+	CHECK_ALLOCATION(e = (struct emul *) malloc(sizeof(struct emul)));
 	memset(e, 0, sizeof(struct emul));
 
 	e->settings = settings_new();
@@ -219,8 +219,8 @@ struct machine *emul_add_machine(struct emul *e, char *name)
 
 	i = e->n_machines ++;
 
-	CHECK_ALLOCATION(e->machines = realloc(e->machines,
-	    sizeof(struct machine *) * e->n_machines));
+	CHECK_ALLOCATION(e->machines = (struct machine **)
+	    realloc(e->machines, sizeof(struct machine *) * e->n_machines));
 
 	e->machines[i] = m;
 
@@ -278,7 +278,7 @@ static void add_arc_components(struct machine *m)
 		if (d->type == DISKIMAGE_SCSI) {
 			int a, b, flags = COMPONENT_FLAG_Input;
 			char component_string[100];
-			char *name = "DEC     RZ58     (C) DEC2000";
+			const char *name = "DEC     RZ58     (C) DEC2000";
 
 			/*  Read-write, or read-only?  */
 			if (d->writable)
@@ -423,7 +423,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			m->ncpus = 1;
 	}
 
-	CHECK_ALLOCATION(m->cpus = malloc(sizeof(struct cpu *) * m->ncpus));
+	CHECK_ALLOCATION(m->cpus = (struct cpu **)
+	    malloc(sizeof(struct cpu *) * m->ncpus));
 	memset(m->cpus, 0, sizeof(struct cpu *) * m->ncpus);
 
 	debug("cpu0");
@@ -534,7 +535,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				size_t zzlen = strlen(name_to_load)*2 + 100;
 				char *zz;
 
-				CHECK_ALLOCATION(zz = malloc(zzlen));
+				CHECK_ALLOCATION(zz = (char *) malloc(zzlen));
 				debug("gunziping %s\n", name_to_load);
 
 				/*
@@ -554,13 +555,13 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 					/*  gunzip into new temp file:  */
 					int tmpfile_handle;
 					char *new_temp_name;
-					char *tmpdir = getenv("TMPDIR");
+					const char *tmpdir = getenv("TMPDIR");
 
 					if (tmpdir == NULL)
 						tmpdir = DEFAULT_TMP_DIR;
 
 					CHECK_ALLOCATION(new_temp_name =
-					    malloc(300));
+					    (char *) malloc(300));
 					snprintf(new_temp_name, 300,
 					    "%s/gxemul.XXXXXXXXXXXX", tmpdir);
 

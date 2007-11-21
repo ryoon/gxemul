@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.1 2007-11-16 09:23:33 debug Exp $
+ *  $Id: interrupt.cc,v 1.1 2007-11-21 12:54:12 debug Exp $
  *
  *  The interrupt subsystem.
  *
@@ -102,7 +102,8 @@ void interrupt_handler_register(struct interrupt *template_interrupt)
 	}
 
 	nr_of_interrupt_handlers ++;
-	CHECK_ALLOCATION(interrupt_handlers = realloc(interrupt_handlers,
+	CHECK_ALLOCATION(interrupt_handlers = (struct interrupt_handler *)
+	    realloc(interrupt_handlers,
 	    nr_of_interrupt_handlers * sizeof(struct interrupt_handler)));
 
 	interrupt_handlers[nr_of_interrupt_handlers-1].

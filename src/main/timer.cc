@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.1 2007-11-16 09:23:33 debug Exp $
+ *  $Id: timer.cc,v 1.1 2007-11-21 12:54:12 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -79,7 +79,7 @@ struct timer *timer_add(double freq, void (*timer_tick)(struct timer *timer,
 {
 	struct timer *newtimer;
 
-	CHECK_ALLOCATION(newtimer = malloc(sizeof(struct timer)));
+	CHECK_ALLOCATION(newtimer = (struct timer *) malloc(sizeof(struct timer)));
 
 	if (freq <= 0.00000001)
 		freq = 0.00000001;

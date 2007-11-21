@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.1 2007-11-16 09:23:33 debug Exp $
+ *  $Id: settings.cc,v 1.1 2007-11-21 12:54:12 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -91,7 +91,8 @@ struct settings *settings_new(void)
 {
 	struct settings *settings;
 
-	CHECK_ALLOCATION(settings = malloc(sizeof(struct settings)));
+	CHECK_ALLOCATION(settings = (struct settings *)
+	    malloc(sizeof(struct settings)));
 	memset(settings, 0, sizeof(struct settings));
 
 	return settings;
@@ -271,7 +272,7 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 	int i;
 	uint64_t value = 0;
 
-	CHECK_ALLOCATION(name = malloc(name_buflen));
+	CHECK_ALLOCATION(name = (char *) malloc(name_buflen));
 
 	for (i=0; i<settings->n_settings; i++) {
 		snprintf(name, name_buflen, "%s.%s", prefix, settings->name[i]);
@@ -279,7 +280,7 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 		if (settings->storage_type[i] == SETTINGS_TYPE_SUBSETTINGS) {
 			/*  Subsettings:  */
 			if (recurse)
-				settings_debugdump(settings->ptr[i], name, 1);
+				settings_debugdump((struct settings *)settings->ptr[i], name, 1);
 		} else {
 			/*  Normal value:  */
 			printf("%s = ", name);
@@ -351,15 +352,15 @@ void settings_add(struct settings *settings, const char *name, int writable,
 
 	settings->n_settings ++;
 
-	CHECK_ALLOCATION(settings->name = realloc(settings->name, 
+	CHECK_ALLOCATION(settings->name = (char **) realloc(settings->name, 
 	    settings->n_settings * sizeof(char *)));
-	CHECK_ALLOCATION(settings->writable = realloc(settings->writable,
+	CHECK_ALLOCATION(settings->writable = (int *) realloc(settings->writable,
 	    settings->n_settings * sizeof(int)));
-	CHECK_ALLOCATION(settings->storage_type = realloc(
+	CHECK_ALLOCATION(settings->storage_type = (int *) realloc(
 	    settings->storage_type, settings->n_settings * sizeof(int)));
-	CHECK_ALLOCATION(settings->presentation_format = realloc(settings->
+	CHECK_ALLOCATION(settings->presentation_format = (int *) realloc(settings->
 	    presentation_format, settings->n_settings * sizeof(int)));
-	CHECK_ALLOCATION(settings->ptr = realloc(settings->ptr,
+	CHECK_ALLOCATION(settings->ptr = (void **) realloc(settings->ptr,
 	    settings->n_settings * sizeof(void *)));
 
 	CHECK_ALLOCATION(settings->name[settings->n_settings - 1] =
@@ -402,7 +403,7 @@ void settings_remove(struct settings *settings, const char *name)
 	/*  Check subsettings specifically:  */
 	if (settings->storage_type[i] == SETTINGS_TYPE_SUBSETTINGS &&
 	    settings->ptr[i] != NULL) {
-		struct settings *subsettings = settings->ptr[i];
+		struct settings *subsettings = (struct settings *) settings->ptr[i];
 		if (subsettings->n_settings != 0) {
 			fprintf(stderr, "settings_remove(): attempting to "
 			    "remove non-emtpy setting '%s'\n", name);

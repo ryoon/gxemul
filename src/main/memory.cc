@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.4 2007-11-17 12:13:53 debug Exp $
+ *  $Id: memory.cc,v 1.1 2007-11-21 12:54:12 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -154,7 +154,7 @@ struct memory *memory_new(uint64_t physical_max, int arch)
 	int max_bits = MAX_BITS;
 	size_t s;
 
-	CHECK_ALLOCATION(mem = malloc(sizeof(struct memory)));
+	CHECK_ALLOCATION(mem = (struct memory *) malloc(sizeof(struct memory)));
 	memset(mem, 0, sizeof(struct memory));
 
 	/*  Check bits_per_pagetable and bits_per_memblock for sanity:  */
@@ -413,7 +413,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 
 	mem->n_mmapped_devices++;
 
-	CHECK_ALLOCATION(mem->devices = realloc(mem->devices,
+	CHECK_ALLOCATION(mem->devices = (struct memory_device *) realloc(mem->devices,
 	    sizeof(struct memory_device) * mem->n_mmapped_devices));
 
 	/*  Make space for the new entry:  */
@@ -512,7 +512,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	const int shrcount = MAX_BITS - BITS_PER_PAGETABLE;
 	unsigned char *hostptr;
 
-	table = mem->pagetable;
+	table = (void **) mem->pagetable;
 	entry = (paddr >> shrcount) & mask;
 
 	/*  printf("memory_paddr_to_hostaddr(): p=%16"PRIx64
@@ -580,7 +580,7 @@ uint64_t memory_checksum(struct memory *mem)
 	size_t entry, i;
 
 	for (entry=0; entry<=n_entries; entry++) {
-		uint64_t **table = mem->pagetable;
+		uint64_t **table = (uint64_t **) mem->pagetable;
 		uint64_t *memblock = table[entry];
 
 		if (memblock == NULL) {

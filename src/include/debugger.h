@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.h,v 1.10 2007-06-28 14:58:38 debug Exp $
+ *  $Id: debugger.h,v 1.11 2007-11-21 12:54:12 debug Exp $
  *
  *  See src/debugger/debugger.c.
  */
@@ -37,6 +37,12 @@
 
 struct emul;
 struct machine;
+
+#ifdef __cplusplus
+extern "C"
+{ 
+#endif /* __cplusplus */
+
 
 /*  debugger.c:  */
 void debugger_activate(int x);
@@ -59,5 +65,10 @@ void debugger_init(struct emul *emul);
 
 int debugger_parse_expression(struct machine *m, char *expr, int writeflag,
 	uint64_t *valuep);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 #endif	/*  DEBUGGER_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.6 2007-06-17 23:32:20 debug Exp $
+ *  $Id: useremul.cc,v 1.1 2007-11-21 12:22:29 debug Exp $
  *
  *  COMMENT: Userland (syscall) emulation framework
  */
@@ -41,9 +41,9 @@
 
 
 struct syscall_emul {
-	char		*name;
+	const char	*name;
 	int		arch;
-	char		*cpu_name;
+	const char	*cpu_name;
 	void		(*f)(struct cpu *, uint32_t);
 	void		(*setup)(struct cpu *, int, char **);
 
@@ -154,13 +154,14 @@ void useremul_name_to_useremul(struct cpu *cpu, char *name, int *arch,
  *
  *  For internal use, from useremul_init() only. Adds an emulation mode.
  */
-static void add_useremul(char *name, int arch, char *cpu_name,
+static void add_useremul(const char *name, int arch, const char *cpu_name,
 	void (*f)(struct cpu *, uint32_t),
 	void (*setup)(struct cpu *, int, char **))
 {
 	struct syscall_emul *sep;
 
-	CHECK_ALLOCATION(sep = malloc(sizeof(struct syscall_emul)));
+	CHECK_ALLOCATION(sep = (struct syscall_emul *)
+	    malloc(sizeof(struct syscall_emul)));
 	memset(sep, 0, sizeof(sep));
 
 	sep->name     = name;

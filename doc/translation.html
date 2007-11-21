@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: translation.html,v 1.4 2007-06-28 13:36:45 debug Exp $
+$Id: translation.html,v 1.5 2007-11-21 12:22:29 debug Exp $
 
 Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
 
@@ -167,12 +167,13 @@ translations are invalidated, and replaced by normal instruction calls
 <a name="native"></a>
 <h3>Native Code Generation Back-ends:</h3>
 
-<p>In theory, it will be possible to implement native code generation,
+<p>In theory, it is possible to implement native code generation,
 similar to what is used in high-performance emulators such as <a
 href="http://www.qemu.com/">QEMU</a>, as long as that generated code
 abides to the C ABI on the host.
 
-<p>However, since I wanted to make sure that GXemul works without such 
+<p>I have tried this before, as a proof-of-concept, and it has worked.
+However, since I wanted to make sure that GXemul works without such
 native code back-ends, there are no implemented backends in this release.
 
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.567 2007-11-16 23:45:08 debug Exp $
+$Id: TODO,v 1.568 2007-11-21 12:22:29 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -15,6 +15,39 @@ C => C++ rewrite
 	take, or in which order things will need to be done.
 
 	x)  GUI:
+		+)  Menu bar:
+			File
+				New ->
+					Emulation
+					Emulation from template
+					-----------------------
+					GXemul instance
+				Open
+				Save
+				Save as...
+				-----------
+				Quit
+			View
+				[ ]  Show toolbar
+				[ ]  Show workspace
+				[ ]  Show debug console
+			Emulation
+				Start
+				Pause/unpause
+				Reset
+				-------------
+				Edit annotation
+			Help
+				About
+
+		+)  Toolbar button area:
+			Play (start emulation)
+			Pause (pause emulation, button kept down until
+					unpaused)
+			Reset (with a dialog asking for confirmation)
+		    (Optional plug-in-ability/extensibility. Buttons should
+		    be bound to debugger commands.)
+
 		+)  "Workspace", where emulations can be created
 		    by drag-n-drop of components from a palette, and/or
 		    from other emulations.
@@ -28,14 +61,60 @@ C => C++ rewrite
 		    A text area with a text entry field. Simply a way
 		    to get the same kind of interaction that will be
 		    available via the console-mode debugger.
+		    Click e.g. the "play" button would automatically
+		    execute the command "continue" in the debugger.
 
 	x)  New debugger.
+		x)  Extremely few commands "built-in":
+			help
+			focus		(*1)
+			print		(more or less a "nop" (*))
+			quit
+			version
+		    The rest added during runtime from various modules.
+		    (*1) e.g. setting focus to "machine0.pci1" means
+		    that other commands will try to be based on that
+		    path first.
+		x)  Assignment etc are "arguments" to objects, so that
+			cpu0.pc = 0x1234
+		    actually sends the = argument to the pc object.
+		    If it cannot handle the = argument/operator, then
+		    it should throw an exception.
+		    (This will allow more kinds of operators, such as
+		    +=.)
+		    The default operator for most objects is to print
+		    its value. This makes the command "print" rather
+		    meaningless, since it just calls the arguments
+		    following it.
+		x)  "Object oriented" hierarchy, so that e.g.
+			print machine.pci0.dc0.register_this_and_that
+		    would work.
+		x)  Tab completion, for all commands, including the
+		    object oriented extensions / variable names / etc.
+		    INCLUDING tab completion inside sub components.
+		    This might feel odd, but that would allow one to
+		    type pci<TAB> to expand to machine.pci0  (if there
+		    only is one pci bus), or if there are, say, three
+		    machines with pci busses, that would give a
+		    tab completion list, similar to this:
+			machine0.pci0
+			machine1.pci0
+			machine1.pci1
+			machine2.pci0
+		x)  The debugger MUST work the same way from the command
+		    line as from within the GUI.
+		x)  Strings should be supported, both for e.g. variable
+		    assignment, and for e.g. placing strings in memory.
 
 	x)  There can now be links directly into the documentation,
 	    assuming it is installed. ($PREFIX/share/doc/gxemul/*.html)
 
 	x)  XML format describing an emulation setup: basically a collection
 	    of "components".
+	    NOTE: Emulations should have an entire directory (!) for
+	    all their files. A control file (in e.g. XML) is just one part.
+	    Other things are: state files for devices, disk image files,
+	    disk image overlays (!), ...
 
 -------------------------------------------------------------------------------
 

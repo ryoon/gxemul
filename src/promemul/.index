@@ -1,1 +1,9 @@
 dreamcast_scramble.c  Dreamcast emulation (helper module)
+arcbios.cc  ARCBIOS emulation
+dec_prom.cc  DECstation PROM emulation
+dreamcast.cc  Dreamcast PROM emulation
+mvmeprom.cc  MVME PROM emulation
+of.cc  OpenFirmware emulation
+ps2_bios.cc  Playstation 2 SIFBIOS emulation
+sh_ipl_g.cc  SH-IPL+G emulation
+yamon.cc  YAMON emulation

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.4 2007-06-19 02:11:46 debug Exp $
+#  $Id: Makefile.skel,v 1.5 2007-11-21 12:22:29 debug Exp $
 #
 #  Makefile for GXemul src/useremul
 #
@@ -14,8 +14,6 @@ all: $(OBJS)
 	../../experiments/make_index.sh
 
 $(OBJS): Makefile
-
-useremul.o: useremul.c
 
 clean:
 	rm -f $(OBJS) *core

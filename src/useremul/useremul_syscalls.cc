@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul_syscalls.c,v 1.4 2007-06-17 23:32:20 debug Exp $
+ *  $Id: useremul_syscalls.cc,v 1.1 2007-11-21 12:22:30 debug Exp $
  *
  *  COMMENT: Common syscall code for all userland emulation modes
  */

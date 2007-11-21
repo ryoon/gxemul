@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.129 2007-11-16 08:28:58 debug Exp $
+$Id: intro.html,v 1.130 2007-11-21 12:22:29 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -196,9 +196,15 @@ might trigger internal bugs in GCC itself. If this happens, try setting
 <tt>CFLAGS</tt> to <tt>-O2</tt> before running <tt>./configure</tt>, and 
 try again,
 
-<p>Note that there is no <tt>make install</tt> functionality; package
-maintainers for individual operating systems solve this for their 
-corresponding OSes.
+<p>Once the emulator has been built, you may run
+<pre>
+	$ <b>make install</b>
+</pre>
+
+to install the binaries, man pages, and documentation under
+<tt>/usr/local</tt> (or wherever your <tt>PREFIX</tt> environment variable
+specifies). There is also a <tt>make uninstall</tt>, which removes
+the files installed by <tt>make install</tt>.
 
 
 
@@ -246,10 +252,9 @@ reasonable compromise to allow the emulator to be usable even on systems
 without X Windows.)
 
 <p>There is no way to send an actual CTRL-B to the emulated program, when 
-typing in the main controlling terminal window. The solution is to either 
-use <a href="configfiles.html">configuration files</a>, or use 
-<tt><b>-x</b></tt>. Both these solutions cause new xterms to be opened for 
-each emulated serial port that is written to. CTRL-B and CTRL-C both have 
+typing in the main controlling terminal window. The solution is to use
+<tt><b>-x</b></tt> or <tt><b>-X</b></tt>. These options cause new xterms to be opened 
+for each emulated serial port that is written to. CTRL-B and CTRL-C both have 
 their original meaning in those xterm windows.
 
 
@@ -286,7 +291,7 @@ architectures.)
 <h3>Which host architectures/platforms are supported?</h3>
 
 GXemul should compile and run on any modern host architecture (64-bit or 
-32-bit word-length). I generally test it on
+32-bit word-length), which has C and C++ compilers installed. I generally test it on
 <a href="http://www.freebsd.org/platforms/amd64.html">FreeBSD/amd64</a> 6.x, 
 <a href="http://www.freebsd.org/platforms/alpha.html">FreeBSD/alpha</a> 4.x,
 sometimes also on Linux (various platforms), and every

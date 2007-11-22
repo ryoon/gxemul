@@ -27,20 +27,20 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautomachine.sh,v 1.5 2007-06-15 18:08:10 debug Exp $
+#  $Id: makeautomachine.sh,v 1.6 2007-11-22 16:53:10 debug Exp $
 
 
-printf "Generating automachine.c... "
+printf "Generating automachine.cc... "
 
-rm -f automachine.c
+rm -f automachine.cc
 
-printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> automachine.c
+printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> automachine.cc
 
-cat automachine_head.c >> automachine.c
+cat automachine_head.cc >> automachine.cc
 
 printf "3"
 rm -f .index
-for a in *.c; do
+for a in *.c *.cc; do
 	B=`grep COMMENT $a`
 	if [ z"$B" != z ]; then
 		printf "$a " >> .index
@@ -49,29 +49,41 @@ for a in *.c; do
 done
 
 printf "2"
+
+printf "extern \"C\" {\n" >> automachine.cc
 for a in machine_*.c; do
 	B=`grep MACHINE_REGISTER $a`
 	if [ z"$B" != z ]; then
 		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
 		for B in $C; do
-			printf "void machine_register_$B(void);\n" >> automachine.c
+			printf "void machine_register_$B(void);\n" >> automachine.cc
+		done
+	fi
+done
+printf "}\n" >> automachine.cc
+for a in machine_*.cc; do
+	B=`grep MACHINE_REGISTER $a`
+	if [ z"$B" != z ]; then
+		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
+		for B in $C; do
+			printf "void machine_register_$B(void);\n" >> automachine.cc
 		done
 	fi
 done
 
-cat automachine_middle.c >> automachine.c
+cat automachine_middle.cc >> automachine.cc
 
 printf "1"
-for a in machine_*.c; do
+for a in machine_*.c machine_*.cc; do
 	B=`grep MACHINE_REGISTER $a`
 	if [ z"$B" != z ]; then
 		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
 		for B in $C; do
-			printf "\tmachine_register_$B();\n" >> automachine.c
+			printf "\tmachine_register_$B();\n" >> automachine.cc
 		done
 	fi
 done
 
-cat automachine_tail.c >> automachine.c
+cat automachine_tail.cc >> automachine.cc
 
 printf " done\n"

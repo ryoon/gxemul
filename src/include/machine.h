@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.184 2007-11-17 08:33:29 debug Exp $
+ *  $Id: machine.h,v 1.185 2007-11-22 16:53:10 debug Exp $
  */
 
 #include <sys/types.h>
@@ -388,7 +388,6 @@ struct machine_entry {
 	me->setup = machine_setup_ ## x;				\
 	me->set_default_cpu = machine_default_cpu_ ## x;		\
 	machine_entry_register(me, arch);
-void automachine_init(void);
 
 
 /*  machine.c:  */
@@ -419,6 +418,9 @@ void machine_init(void);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
+
+
+void automachine_init(void);
 
 
 #endif	/*  MACHINE_H  */

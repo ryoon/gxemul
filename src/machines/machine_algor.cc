@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.20 2007-06-15 18:08:10 debug Exp $
+ *  $Id: machine_algor.cc,v 1.1 2007-11-22 16:53:10 debug Exp $
  *
  *  COMMENT: Algorithmic P4032 and P5064 evaluation boards
  */
@@ -53,10 +53,10 @@ MACHINE_SETUP(algor)
 
 	switch (machine->machine_subtype) {
 	case MACHINE_ALGOR_P4032:
-		machine->machine_name = "Algor P4032";
+		machine->machine_name = strdup("Algor P4032");
 		break;
 	case MACHINE_ALGOR_P5064:
-		machine->machine_name = "Algor P5064";
+		machine->machine_name = strdup("Algor P5064");
 		break;
 	default:fatal("Unimplemented Algor machine.\n");
 		exit(1);
@@ -71,7 +71,7 @@ MACHINE_SETUP(algor)
 	 *  2 = ISA
 	 */
 
-	pci_bus = device_add(machine, "v3");
+	pci_bus = (struct pci_data*) device_add(machine, "v3");
 
 	device_add(machine, "algor addr=0x1ff00000");
 

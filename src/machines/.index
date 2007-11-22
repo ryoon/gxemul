@@ -1,4 +1,3 @@
-machine_algor.c  Algorithmic P4032 and P5064 evaluation boards
 machine_alpha.c  DEC Alpha machines
 machine_arc.c  ARC (Advanced RISC Computing) machines
 machine_bebox.c  BeBox
@@ -23,3 +22,4 @@ machine_qemu.c  Machine mimicing QEMU's default MIPS emulation mode
 machine_sgi.c  Silicon Graphics' MIPS-based machines
 machine_sparc.c  SUN SPARC machines
 machine_test.c  Various test machines
+machine_algor.cc  Algorithmic P4032 and P5064 evaluation boards

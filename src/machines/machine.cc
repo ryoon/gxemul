@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.5 2007-08-29 20:36:49 debug Exp $
+ *  $Id: machine.cc,v 1.1 2007-11-22 16:53:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -60,7 +60,7 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 {
 	struct machine *m;
 
-	CHECK_ALLOCATION(m = malloc(sizeof(struct machine)));
+	CHECK_ALLOCATION(m = (struct machine *) malloc(sizeof(struct machine)));
 	memset(m, 0, sizeof(struct machine));
 
 	/*  Pointer back to the emul object that this machine belongs to:  */
@@ -70,7 +70,7 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 		CHECK_ALLOCATION(m->name = strdup(name));
 
 	/*  Full path, e.g. "machine[0]":  */
-	CHECK_ALLOCATION(m->path = malloc(20));
+	CHECK_ALLOCATION(m->path = (char *) malloc(20));
 	snprintf(m->path, 20, "machine[%i]", id);
 
 	/*  Sane default values:  */
@@ -82,7 +82,7 @@ struct machine *machine_new(char *name, struct emul *emul, int id)
 	m->prom_emulation = 1;
 	m->allow_instruction_combinations = 1;
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
-	m->boot_kernel_filename = "";
+	m->boot_kernel_filename = strdup("");
 	m->boot_string_argument = NULL;
 	m->x11_md.scaledown = 1;
 	m->x11_md.scaleup = 1;
@@ -252,9 +252,9 @@ void machine_add_breakpoint_string(struct machine *machine, char *str)
 {
 	int n = machine->breakpoints.n + 1;
 
-	CHECK_ALLOCATION(machine->breakpoints.string =
+	CHECK_ALLOCATION(machine->breakpoints.string = (char **)
 	    realloc(machine->breakpoints.string, n * sizeof(char *)));
-	CHECK_ALLOCATION(machine->breakpoints.addr =
+	CHECK_ALLOCATION(machine->breakpoints.addr = (uint64_t *)
 	    realloc(machine->breakpoints.addr, n * sizeof(uint64_t)));
 	CHECK_ALLOCATION(machine->breakpoints.string[machine->breakpoints.n] =
 	    strdup(optarg));
@@ -281,13 +281,16 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 {
 	int n = machine->tick_functions.n_entries;
 
-	CHECK_ALLOCATION(machine->tick_functions.ticks_till_next = realloc(
+	CHECK_ALLOCATION(machine->tick_functions.ticks_till_next =
+	    (int *) realloc(
 	    machine->tick_functions.ticks_till_next, (n+1) * sizeof(int)));
-	CHECK_ALLOCATION(machine->tick_functions.ticks_reset_value = realloc(
+	CHECK_ALLOCATION(machine->tick_functions.ticks_reset_value =
+	    (int *) realloc(
 	    machine->tick_functions.ticks_reset_value, (n+1) * sizeof(int)));
-	CHECK_ALLOCATION(machine->tick_functions.f = realloc(
+	CHECK_ALLOCATION(machine->tick_functions.f =
+	    (void (**)(cpu*, void*)) realloc(
 	    machine->tick_functions.f, (n+1) * sizeof(void *)));
-	CHECK_ALLOCATION(machine->tick_functions.extra = realloc(
+	CHECK_ALLOCATION(machine->tick_functions.extra = (void **) realloc(
 	    machine->tick_functions.extra, (n+1) * sizeof(void *)));
 
 	/*
@@ -323,7 +326,7 @@ void machine_statistics_init(struct machine *machine, char *fname)
 {
 	int n_fields = 0;
 	char *pcolon = fname;
-	char *mode = "a";	/*  Append by default  */
+	const char *mode = "a";	/*  Append by default  */
 
 	machine->allow_instruction_combinations = 0;
 
@@ -333,7 +336,7 @@ void machine_statistics_init(struct machine *machine, char *fname)
 	}
 
 	machine->statistics.enabled = 1;
-	CHECK_ALLOCATION(machine->statistics.fields = malloc(1));
+	CHECK_ALLOCATION(machine->statistics.fields = (char*)malloc(1));
 	machine->statistics.fields[0] = '\0';
 
 	while (*pcolon && *pcolon != ':')
@@ -353,8 +356,8 @@ void machine_statistics_init(struct machine *machine, char *fname)
 		case 'v':
 		case 'i':
 		case 'p':
-			CHECK_ALLOCATION(machine->statistics.fields = realloc(
-			    machine->statistics.fields, strlen(
+			CHECK_ALLOCATION(machine->statistics.fields = (char*)
+			    realloc(machine->statistics.fields, strlen(
 			    machine->statistics.fields) + 2));
 			machine->statistics.fields[n_fields ++] = *fname;
 			machine->statistics.fields[n_fields] = '\0';
@@ -463,18 +466,18 @@ void machine_setup(struct machine *machine)
 	if (machine->boot_string_argument == NULL) {
 		switch (machine->machine_type) {
 		case MACHINE_ARC:
-			machine->boot_string_argument = "-aN";
+			machine->boot_string_argument = strdup("-aN");
 			break;
 		case MACHINE_CATS:
-			machine->boot_string_argument = "-A";
+			machine->boot_string_argument = strdup("-A");
 			break;
 		case MACHINE_PMAX:
-			machine->boot_string_argument = "-a";
+			machine->boot_string_argument = strdup("-a");
 			break;
 		default:
 			/*  Important, because boot_string_argument should
 			    not be set to NULL:  */
-			machine->boot_string_argument = "";
+			machine->boot_string_argument = strdup("");
 		}
 	}
 
@@ -673,7 +676,8 @@ struct machine_entry *machine_entry_new(const char *name, int arch,
 {
 	struct machine_entry *me;
 
-	CHECK_ALLOCATION(me = malloc(sizeof(struct machine_entry)));
+	CHECK_ALLOCATION(me = (struct machine_entry *)
+	    malloc(sizeof(struct machine_entry)));
 	memset(me, 0, sizeof(struct machine_entry));
 
 	me->name = name;
@@ -697,7 +701,7 @@ void machine_entry_add_alias(struct machine_entry *me, const char *name)
 {
 	me->n_aliases ++;
 
-	CHECK_ALLOCATION(me->aliases = realloc(me->aliases,
+	CHECK_ALLOCATION(me->aliases = (char **) realloc(me->aliases,
 	    sizeof(char *) * me->n_aliases));
 
 	me->aliases[me->n_aliases - 1] = (char *) name;
@@ -720,11 +724,13 @@ void machine_entry_add_subtype(struct machine_entry *me, const char *name,
 	struct machine_entry_subtype *mes;
 
 	/*  Allocate a new subtype struct:  */
-	CHECK_ALLOCATION(mes = malloc(sizeof(struct machine_entry_subtype)));
+	CHECK_ALLOCATION(mes = (struct machine_entry_subtype *)
+	    malloc(sizeof(struct machine_entry_subtype)));
 
 	/*  Add the subtype to the machine entry:  */
 	me->n_subtypes ++;
-	CHECK_ALLOCATION(me->subtype = realloc(me->subtype, sizeof(struct
+	CHECK_ALLOCATION(me->subtype = (struct machine_entry_subtype **)
+	    realloc(me->subtype, sizeof(struct
 	    machine_entry_subtype *) * me->n_subtypes));
 	me->subtype[me->n_subtypes - 1] = mes;
 
@@ -745,7 +751,7 @@ void machine_entry_add_subtype(struct machine_entry *me, const char *name,
 			break;
 
 		mes->n_aliases ++;
-		CHECK_ALLOCATION(mes->aliases =
+		CHECK_ALLOCATION(mes->aliases = (char **)
 		    realloc(mes->aliases, sizeof(char *) * mes->n_aliases));
 
 		mes->aliases[mes->n_aliases - 1] = s;

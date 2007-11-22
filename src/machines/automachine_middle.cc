@@ -1,5 +1,5 @@
 
-/*  $Id: automachine_middle.c,v 1.1 2005-12-20 21:19:17 debug Exp $  */
+/*  $Id: automachine_middle.cc,v 1.1 2007-11-22 16:53:10 debug Exp $  */
 
 /*
  *  automachine_init():

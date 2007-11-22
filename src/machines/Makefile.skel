@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.43 2007-06-19 02:11:46 debug Exp $
+#  $Id: Makefile.skel,v 1.44 2007-11-22 16:53:10 debug Exp $
 #
 #  Makefile for GXemul machines
 #
@@ -18,7 +18,8 @@ all:
 	$(MAKE) objs
 	$(MAKE) automachine.o
 
-automachine.c: $(OBJS) automachine_head.c automachine_middle.c automachine_tail.c makeautomachine.sh
+automachine.cc: $(OBJS) automachine_head.cc automachine_middle.cc \
+			automachine_tail.cc makeautomachine.sh
 	./makeautomachine.sh
 
 objs: $(OBJS)
@@ -28,7 +29,7 @@ $(OBJS): Makefile
 
 clean:
 	rm -f $(OBJS) *core
-	rm -f automachine.[co]
+	rm -f automachine.cc automachine.o
 
 clean_all: clean
 	rm -f Makefile

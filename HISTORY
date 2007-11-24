@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1655 2007-11-22 16:53:10 debug Exp $
+$Id: HISTORY,v 1.1656 2007-11-24 02:00:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3716,3 +3716,7 @@ Changelog for GXemul:
 		remaining files in src/main/ to *.cc. (Still no redesign,
 		simply converting to use the C++ compiler.)
 20071123	Beginning to converting src/machines/*.c to *.cc.
+20071124	Planning a new configuration file format; beginning on
+		ConfigNode.{cc,h}. Adding doc/fileformat.html.
+		Adding a "test" makefile target, for unit testing. "make
+		install" runs the test target.

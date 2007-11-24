@@ -1,4 +1,4 @@
-$Id: TODO,v 1.568 2007-11-21 12:22:29 debug Exp $
+$Id: TODO,v 1.569 2007-11-24 02:00:04 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -14,7 +14,7 @@ C => C++ rewrite
 	And there is definitely no concrete plan for how long it will
 	take, or in which order things will need to be done.
 
-	x)  GUI:
+	x)  GTKMM GUI:
 		+)  Menu bar:
 			File
 				New ->
@@ -109,12 +109,6 @@ C => C++ rewrite
 	x)  There can now be links directly into the documentation,
 	    assuming it is installed. ($PREFIX/share/doc/gxemul/*.html)
 
-	x)  XML format describing an emulation setup: basically a collection
-	    of "components".
-	    NOTE: Emulations should have an entire directory (!) for
-	    all their files. A control file (in e.g. XML) is just one part.
-	    Other things are: state files for devices, disk image files,
-	    disk image overlays (!), ...
 
 -------------------------------------------------------------------------------
 

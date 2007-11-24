@@ -1,21 +1,27 @@
 #
-#  $Id: Makefile.skel,v 1.1 2007-11-16 09:23:33 debug Exp $
+#  $Id: Makefile.skel,v 1.2 2007-11-24 02:00:05 debug Exp $
 #
 #  Makefile for GXemul src/main
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
+LIBS=$(XLIB) $(OTHERLIBS)
 
-OBJS=GXemul.o TTYDebugConsole.o emul.o float_emul.o \
+OBJS=ConfigNode.o \
+	GXemul.o TTYDebugConsole.o emul.o float_emul.o \
 	interrupt.o memory.o misc.o settings.o timer.o
 
 all: $(OBJS)
 
 $(OBJS): Makefile
 
+test:
+	$(CXX) $(CFLAGS) $(LIBS) -DTEST ConfigNode.cc -o _test
+	@./_test
+	@rm -f _test
 
 clean:
-	rm -f $(OBJS) *core
+	rm -f $(OBJS) *core _test
 
 clean_all: clean
 	rm -f Makefile

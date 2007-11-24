@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.110 2007-11-16 09:23:33 debug Exp $
+#  $Id: Makefile.skel,v 1.111 2007-11-24 02:00:05 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -9,6 +9,11 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 all: do_include
 	$(MAKE) do_src do_console do_cpus do_debugger do_devices do_disk \
 	    do_file do_gui do_machines do_main do_net do_promemul do_symbol do_useremul
+
+
+test: do_include
+	cd main; $(MAKE) test; cd ..
+
 
 do_include:
 	cd include; $(MAKE); cd ..

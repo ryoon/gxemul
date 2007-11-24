@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.58 2007-11-16 09:23:33 debug Exp $
+#  $Id: Makefile.skel,v 1.59 2007-11-24 02:00:04 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -17,8 +17,15 @@ build:
 	rm -f $(BINGUI)
 	ln $(BIN) $(BINGUI)
 
-install: build
+test:
+	cd src; $(MAKE) test; cd ..
+	@echo
+	@echo All tests passed.
+
+install: build test
+	@echo
 	@echo Installing binaries...
+	@echo
 	mkdir -p $(PREFIX)/bin
 	cp -f $(BIN) $(PREFIX)/bin/
 	ln $(PREFIX)/bin/$(BIN) $(PREFIX)/bin/$(BINGUI)

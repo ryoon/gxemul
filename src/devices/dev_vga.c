@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.104 2007-06-15 19:57:34 debug Exp $
+ *  $Id: dev_vga.c,v 1.104.2.1 2007-12-19 17:50:24 debug Exp $
  *
  *  COMMENT: VGA framebuffer device (charcell and graphics modes)
  *
@@ -1205,7 +1205,8 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->cur_mode       = MODE_CHARCELL;
 	d->crtc_reg[0xff] = 0x03;
 	d->charcells_size = 0x8000;
-	d->gfx_mem_size   = 1;	/*  Nothing, as we start in text mode  */
+	d->gfx_mem_size   = 64;	/*  Nothing, as we start in text mode,
+			but size large enough to make gfx_mem aligned.  */
 	d->pixel_repx = d->pixel_repy = machine->x11_md.scaleup;
 
 	/*  Allocate in full pages, to make it possible to use dyntrans:  */

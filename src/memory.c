@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.206 2007-06-19 04:04:02 debug Exp $
+ *  $Id: memory.c,v 1.206.2.1 2007-12-19 18:21:32 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -440,7 +440,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		fprintf(stderr, "memory_device_register():"
 		    " dyntrans_data not aligned correctly (%p)\n",
 		    dyntrans_data);
-		exit(1);
+		abort();
 	}
 
 	mem->devices[newi].dyntrans_write_low = (uint64_t)-1;

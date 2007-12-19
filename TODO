@@ -1,7 +1,33 @@
-$Id: TODO,v 1.560 2007-10-17 23:45:08 debug Exp $
+$Id: TODO,v 1.560.2.1 2007-12-19 18:22:36 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
+
+-------------------------------------------------------------------------------
+
+NetBSD 4.0 regression testing:
+
+OK:
+	X  pmax 	including X Windows out-of-the-box! :)
+	X  arc  	1.6.2 -> 4.0! Yay!
+	X  hpcmips	works? but clock is standing still? (install says
+				50 MB/second!)
+	X  landisk	works fine :)
+	X  dreamcast	works fine
+	X  cats		ok, but with EXTREMELY LONG delays during boot
+	X  evbmips	works, but clock is going too fast.
+	X  macppc	ok
+
+Failed / Not tested:
+	   cobalt	cobaltcd-4.0.iso is missing from ftp.netbsd.org?
+
+Not tested: (lack of time)
+	   algor
+	   sgimips
+	   evbarm
+	   netwinder
+	   prep
+	   pmppc
 
 -------------------------------------------------------------------------------
 
@@ -18,30 +44,6 @@ Play around with the SGI O2 PROM image again, from the real O2.
 0.3.8: Boots but switches to serial console ("could not open console") (also with
        cache detection skipped manually)
 0.4.0: The cache detection breakpoint is not triggered :(
-
--------------------------------------------------------------------------------
-
-A first pass of installation regression testing of NetBSD 4.0 RC1 and RC2
-in GXemul:
-
-	X  pmax (including X Windows out-of-the-box)
-	X  arc  (1.6.2 -> 4.0! Yay!)
-	X  hpcmips	works? but clock is standing still? (install says
-				50 MB/second!)
-	   cobalt
-	   evbmips
-	   algor
-	   sgimips
-	X  cats		works, but feels... slower (?) than 3.1
-	   evbarm
-	   netwinder
-	   prep		nej, 2.0 är senaste som funkar :(
-	X  macppc
-	   pmppc
-	X  dreamcast
-	X  landisk
-
-X = done and worked fine
 
 -------------------------------------------------------------------------------
 

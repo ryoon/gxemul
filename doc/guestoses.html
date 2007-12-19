@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.234 2007-11-09 02:47:47 debug Exp $
+$Id: guestoses.html,v 1.234.2.1 2007-12-19 18:22:37 debug Exp $
 
 Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
 
@@ -50,18 +50,19 @@ SUCH DAMAGE.
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
   <li><a href="#netbsdpmaxinstall">NetBSD/pmax 4.0</a>
   <li><a href="#netbsdarcinstall">NetBSD/arc 4.0</a>
-  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.1</a>
+  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 4.0</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.1</a>
-  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.1</a>
+  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 4.0</a>
   <li><a href="#netbsdalgorinstall">NetBSD/algor 3.1</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.1</a>
-  <li><a href="#netbsdcatsinstall">NetBSD/cats 3.1</a>
+  <li><a href="#netbsdcatsinstall">NetBSD/cats 4.0</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.1</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 4.0</a>
   <li><a href="#netbsdpmppc">NetBSD/pmppc 3.1</a>
-  <li><a href="dreamcast.html#netbsd_generic_md">NetBSD/dreamcast 3.1</a>
+  <li><a href="#netbsdlandiskinstall">NetBSD/landisk 4.0</a>
+  <li><a href="dreamcast.html#netbsd_generic_md">NetBSD/dreamcast 4.0</a>
   <li><a href="dreamcast.html#linux_live_cd">Linux/dreamcast</a>
   <li><a href="#openbsdpmaxinstall">OpenBSD/pmax 2.8-BETA</a>
   <li><a href="#openbsdcatsinstall">OpenBSD/cats 4.0</a>
@@ -109,7 +110,6 @@ you might find the following information interesting:
   <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="#netbsdbeboxinstall">NetBSD/bebox 19981119</a>
-  <li><a href="#netbsdlandiskinstall">NetBSD/landisk</a>
 </ul>
 
 <p><b><font color="#ff0000">NOTE:</b>
@@ -208,16 +208,15 @@ harddisk image, follow these instructions:
 	<b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=1000000</b>
 
 </pre>
-  <li>Download a NetBSD/arc 4.0 CDROM image, and a generic NetBSD/arc
-	kernel:<pre>
+  <li>Download a NetBSD/arc 4.0 CDROM image, and the generic + ramdisk
+	NetBSD/arc kernels:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/arccd-4.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/arccd-4.0.iso</a>
-	TODO:
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-RAMDISK.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/arc/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/arc/binary/kernel/netbsd-RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/arc/binary/kernel/netbsd-RAMDISK.gz</a>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -e pica -x -d nbsd_arc.img -d b:arccd.iso netbsd-RAMDISK.gz</b>
+	<b>gxemul -e pica -x -d nbsd_arc.img -d b:arccd-4.0.iso netbsd-RAMDISK.gz</b>
 
 </pre>
 	(Try removing <tt>-x</tt> if you have problems with the xterm.)
@@ -285,14 +284,16 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 	<b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=3000000</b>
 
 </pre>
-  <li>Download the NetBSD/hpcmips 3.1 ISO image, and a generic kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/hpcmipscd-3.1.iso">hpcmipscd-3.1.iso</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+  <li>Download the NetBSD/hpcmips 4.0 ISO image, a generic kernel,
+	and the installer kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/">ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/hpcmipscd-4.0.iso">hpcmipscd-4.0.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/hpcmips/installation/netbsd.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/hpcmips/installation/netbsd.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img -d b:hpcmipscd-3.1.iso -j hpcmips/installation/netbsd.gz</b>
+	<b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img -d b:hpcmipscd-4.0.iso netbsd.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -414,7 +415,7 @@ image, from an emulated DECstation 3MAX machine:
 <p>
 <ol>
   <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 </pre>
   <p>
   <li>Create an empty harddisk image, which will be the disk image
@@ -422,17 +423,17 @@ image, from an emulated DECstation 3MAX machine:
 	<b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=700000</b>
 
 </pre>
-  <li>Download the Malta kernel and the 3.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/evbmips-mipselcd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/evbmips-mipselcd-3.1.iso</a>
+  <li>Download the Malta kernel and the 4.0 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/evbmips/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/evbmips/binary/kernel/netbsd-MALTA.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/iso/evbmips-mipselcd-4.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/iso/evbmips-mipselcd-4.0.iso</a>
 
 </pre>
   <p>
   <li>Start the emulated DECstation machine like this:<pre>
-	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd-3.1.iso netbsd-INSTALL.gz</b>
+	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd-4.0.iso netbsd-INSTALL.gz</b>
 
 </pre>
-  <li>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
+  <li>At the <tt>Terminal type? [vt100]</tt> prompt, type <b>CTRL-B</b>
 to simulate a CTRL-C sent to NetBSD/pmax. Then execute the following commands:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>newfs /dev/sd0c
@@ -454,7 +455,7 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 
 <p>NOTE: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
 (MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
-3.1, however, there will be little or no difference in functionality, as
+4.0, however, there will be little or no difference in functionality, as
 NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs. There are two things
 that differ:<ol>
   <li>The dynamic translation core runs faster when emulating 32-bit
@@ -770,15 +771,15 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=3000000</b>
 
 </pre>
-  <li>Download the NetBSD/cats 3.1 ISO image and the generic and install kernels:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/catscd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/catscd-3.1.iso</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
+  <li>Download the NetBSD/cats 4.0 ISO image and the generic and install kernels:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/catscd-4.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/4.0/catscd-4.0.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -XEcats -d nbsd_cats.img -d catscd-3.1.iso netbsd.aout-INSTALL.gz</b>
+	<b>gxemul -XEcats -d nbsd_cats.img -d catscd-4.0.iso netbsd.aout-INSTALL.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -786,7 +787,7 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 </ol>
 
 <p>Alternatively, to install from FTP, you can skip downloading the ISO,
-and start the install without <tt>-d catscd-3.1.iso</tt>. Suitable network 
+and start the install without <tt>-d catscd-4.0.iso</tt>. Suitable network 
 settings are IP 10.0.0.1, gateway/default route 10.0.0.254, netmask 
 255.0.0.0, nameserver 10.0.0.254.
 
@@ -1258,6 +1259,83 @@ the following values:<pre>
 	..
 	init path (default /sbin/init):		<b>(leave blank)</b>
 </pre>
+
+
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdlandiskinstall"></a>
+<h3>NetBSD/landisk:</h3>
+
+<a href="http://www.netbsd.org/ports/landisk/">NetBSD/landisk</a> can
+run in GXemul.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20070224-netbsd-landisk.png"><img src="20070224-netbsd-landisk_small.png"></a>
+
+<p>The NetBSD/landisk distribution does not include any INSTALL kernel, 
+so it must be installed using another (emulated) machine.
+
+<p>The following instructions will let you install NetBSD/landisk onto a disk 
+image, using an emulated CATS machine:
+
+<p>
+<ol>
+  <li>Download a NetBSD/cats install kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
+</pre>
+  <p>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD/landisk onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_landisk.img bs=1024 count=1 seek=900000</b>
+
+</pre>
+  <p>
+  <li>Download NetBSD/landisk and make an iso image of it:<pre>
+	<b>wget -np -l 0 -r <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/landisk">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/landisk</a>
+	cp ftp.netbsd.org/pub/NetBSD/NetBSD-4.0/landisk/binary/kernel/netbsd-GENERIC.gz .
+	mkisofs -U -o landisk.iso ftp.netbsd.org/pub/NetBSD/NetBSD-4.0</b>
+</pre>
+
+  <p>
+  <li>Start the emulated CATS machine like this:<pre>
+	<b>gxemul -XEcats -d nbsd_landisk.img -d landisk.iso netbsd.aout-INSTALL.gz</b>
+
+</pre>
+  <li>Exit the installer, then execute the following commands:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>disklabel -i -I wd0</b>    (for example 'a', '4.2BSD', '1c',
+    '700M', 'b', 'swap', '701M', '$', 'P', 'W', 'y', and 'Q')
+<b>newfs /dev/wd0a
+mount /dev/cd0c /mnt
+mkdir /mnt2; mount /dev/wd0a /mnt2
+cd /mnt2; sh
+ls -R /mnt
+for a in /mnt/*/binary/sets/[bcekmt]*.tgz; do ls -R /mnt > /dev/null; echo $a; tar zxfp $a; done
+exit
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES >> rc.conf
+echo "/dev/wd0a / ffs rw 1 1" > fstab
+echo "/dev/wd0b none swap sw 0 0" >> fstab
+cd /; umount /mnt; umount /mnt2; halt</b>
+</pre></td></tr></table>
+</ol>
+
+<p>NOTE: For some reason, reading the iso image created by mkisofs does
+not work as expected. The "ls -R /mnt" commands included above seem
+to make it work. (Yes, this is a serious bug, but I am not sure how
+to diagnose it.)
+
+<p>You should now be able to boot NetBSD/landisk using this command:<pre>
+	<b>gxemul -x -E landisk -d nbsd_landisk.img netbsd-GENERIC.gz</b>
+</pre>
+
+
 
 
 
@@ -2627,82 +2705,6 @@ trying to run /sbin/init.
 
 
 
-
-
-
-
-
-
-<p><br>
-<a name="netbsdlandiskinstall"></a>
-<h3>NetBSD/landisk:</h3>
-
-<a href="http://www.netbsd.org/ports/landisk/">NetBSD/landisk</a> can
-run in GXemul.
-
-<p><font color="#ff0000">NOTE: This is still too
-unstable to be considered really working! Snapshots from April 2007
-or so will probably not work, unless an #if 0 is changed to
-#if 1 in the implementation of the 'LDC Rm,SR' instruction
-(in src/cpus/cpu_sh_instr.c).</font>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20070224-netbsd-landisk.png"><img src="20070224-netbsd-landisk_small.png"></a>
-
-<p>At the time of writing this, there are not yet any formal releases
-of NetBSD/landisk, only daily snapshot builds.
-
-<p>The NetBSD/landisk distribution does not include any INSTALL kernel, 
-so it must be installed using another (emulated) machine.
-
-<p>The following instructions will let you install NetBSD/landisk onto a disk 
-image, using an emulated CATS machine:
-
-<p>
-<ol>
-  <li>Download a NetBSD/cats install kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
-</pre>
-  <p>
-  <li>Create an empty harddisk image, which will be the disk image
-	that you will install NetBSD/landisk onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_landisk.img bs=1024 count=1 seek=900000</b>
-
-</pre>
-  <p>
-  <li>Download the latest netbsd-4 (pre-release) snapshot, and make an iso image
-	of it: (replace 200704110002Z with whatever is the latest one)<pre>
-	<b>wget -np -l 0 -r <a href="ftp://ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/">ftp://ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/</a>200704110002Z/landisk
-	cp ftp.netbsd.org/pub/NetBSD-daily/*/*/landisk/binary/kernel/netbsd-GENERIC.gz .
-	mkisofs -U -o landisk.iso ftp.netbsd.org/pub/NetBSD-daily/netbsd-4/*</b>
-</pre>
-
-  <p>
-  <li>Start the emulated CATS machine like this:<pre>
-	<b>gxemul -XEcats -d nbsd_landisk.img -d landisk.iso netbsd.aout-INSTALL.gz</b>
-
-</pre>
-  <li>Exit the installer, then execute the following commands:
-<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>disklabel -i -I wd0</b>    (for example 'a', '4.2BSD', '1c',
-    '700M', 'b', 'swap', '701M', '$', 'P', 'W', 'y', and 'Q')
-<b>newfs /dev/wd0a
-mount /dev/cd0c /mnt
-mkdir /mnt2; mount /dev/wd0a /mnt2
-cd /mnt2; sh
-for a in /mnt/*/binary/sets/[bcekmt]*.tgz; do echo $a; tar zxfp $a; done
-exit
-cd dev; sh ./MAKEDEV all; cd ../etc
-echo rc_configured=YES >> rc.conf
-echo "/dev/wd0a / ffs rw 1 1" > fstab
-echo "/dev/wd0b none swap sw 0 0" >> fstab
-cd /; umount /mnt; umount /mnt2; halt</b>
-</pre></td></tr></table>
-</ol>
-
-<p>You should now be able to boot NetBSD/landisk using this command:<pre>
-	<b>gxemul -x -E landisk -d nbsd_landisk.img netbsd-GENERIC.gz</b>
-</pre>
 
 
 

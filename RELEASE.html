@@ -8,7 +8,7 @@
 <b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.10 2007-11-12 08:32:10 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.10.2.1 2007-12-19 18:22:36 debug Exp $  -->
 
 
 <h2>Release notes for GXemul 0.4.6.1</h2>
@@ -50,8 +50,8 @@ guest operating systems:
 	in GXemul's documentation have been updated to reflect this.
 
 	<p><ul>
-	  <li>In most cases this simply means that NetBSD 4.0 is now
-		supported instead of NetBSD 3.1.
+	  <li>In most cases this simply means that NetBSD 4.0
+		should work, in addition to NetBSD 3.1.
 	</ul>
 
 	<p>Some specifics worth mentioning are:
@@ -62,12 +62,25 @@ guest operating systems:
 		run <tt>startx</tt> as root to start X.)
 	  <li>For NetBSD/arc, the supported version has jumped from
 		1.6.2 to 4.0.
-	  <li>NetBSD/prep is unfortunately still at 2.0.
+	  <li>NetBSD/landisk has been released, and works in GXemul.
+	  <li>NetBSD/prep is unfortunately still at NetBSD 2.1.
+	  <li>In some emulation modes, such as evbmips, hpcmips, and perhaps
+		some more, NetBSD 4.0 uses
+		the clock in a way which is not yet implemented in the
+		emulator. (NetBSD 4.0 works, but NetBSD 3.1 worked better.)
+	  <li>(I have not tried some of the "heavier" emulation setups,
+		such as NetBSD/sgimips.)
 	</ul>
 
 </ul>
 
 <p>Please read the <a href="HISTORY">HISTORY</a> file for more details.
+
+<p>(Note that I am no longer actively developing the 0.4.x series
+of GXemul. I have begun a complete rewrite in C++, which will
+become 0.5.0 some day. If you have feedback or bugfixes for the
+0.4.x series, then let me know; perhaps there will be a 0.4.6.2
+release if there are enough important fixes before 0.5.0 is ready.)
 
 
 <p><br>Files included in this release are:<pre>

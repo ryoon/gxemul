@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635.2.2 2007-11-12 13:56:00 debug Exp $
+$Id: HISTORY,v 1.1635.2.3 2007-12-19 18:22:36 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3676,3 +3676,6 @@ Changelog for GXemul:
 20071112	Branching in CVS to a 0.4.6.1 version, separate from the main
 		development.
 		(This is the 0.4.6.1 branch.)
+20071219	NetBSD 4.0 has been released. Doing regression testing of
+		all systems listed on guestoses.html.
+		Fixing an alignment bug in dev_vga, when allocating 1 byte.

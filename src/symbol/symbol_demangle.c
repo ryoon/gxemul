@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol_demangle.c,v 1.1 2007-06-20 14:25:14 debug Exp $
+ *  $Id: symbol_demangle.c,v 1.1.2.1 2008-01-18 19:12:34 debug Exp $
  *
  *  C++ symbol name demangling.
  *

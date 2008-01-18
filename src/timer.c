@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.11 2007-06-18 04:23:19 debug Exp $
+ *  $Id: timer.c,v 1.11.2.1 2008-01-18 19:12:24 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */

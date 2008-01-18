@@ -8,12 +8,12 @@
 <b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.10.2.1 2007-12-19 18:22:36 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.10.2.2 2008-01-18 19:12:22 debug Exp $  -->
 
 
-<h2>Release notes for GXemul 0.4.6.1</h2>
+<h2>Release notes for GXemul 0.4.6.2</h2>
 
-<p><i>Copyright (C) 2003-2007  Anders Gavare</i>
+<p><i>Copyright (C) 2003-2008  Anders Gavare</i>
 
 
 <p><br>GXemul is a framework for full-system computer architecture emulation. 
@@ -74,13 +74,23 @@ guest operating systems:
 
 </ul>
 
+<p>The changes between release 0.4.6.1 and 0.4.6.2 are:
+
+<ul>
+
+  <li>Applying a patch from Oleksandr Tymoshenko for the wdc device, fixing
+	the order of 16-bit words within 32-bit words in the identify struct,
+  	and the error register is not cleared on reads any more.
+
+</ul>
+
 <p>Please read the <a href="HISTORY">HISTORY</a> file for more details.
 
 <p>(Note that I am no longer actively developing the 0.4.x series
 of GXemul. I have begun a complete rewrite in C++, which will
 become 0.5.0 some day. If you have feedback or bugfixes for the
-0.4.x series, then let me know; perhaps there will be a 0.4.6.2
-release if there are enough important fixes before 0.5.0 is ready.)
+0.4.x series, then let me know; perhaps there will be more 0.4.x
+releases if there are enough important fixes before 0.5.0 is ready.)
 
 
 <p><br>Files included in this release are:<pre>

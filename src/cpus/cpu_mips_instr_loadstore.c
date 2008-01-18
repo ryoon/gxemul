@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.14 2007-05-02 08:26:12 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.14.2.1 2008-01-18 19:12:26 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  

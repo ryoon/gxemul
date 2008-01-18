@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.85 2007-06-16 14:39:18 debug Exp $
+ *  $Id: bus_pci.c,v 1.85.2.1 2008-01-18 19:12:27 debug Exp $
  *  
  *  COMMENT: Generic PCI bus framework
  *
@@ -839,7 +839,7 @@ PCIINIT(piix4_ide)
 
 	/*  Possibly not correct:  */
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
-	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x01);
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x80) + 0x01);
 
 	/*  PIIX_IDETIM (see NetBSD's pciide_piix_reg.h)  */
 	/*  channel 0 and 1 enabled as IDE  */

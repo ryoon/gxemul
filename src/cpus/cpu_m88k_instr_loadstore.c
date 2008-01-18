@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr_loadstore.c,v 1.8 2007-05-27 03:01:28 debug Exp $
+ *  $Id: cpu_m88k_instr_loadstore.c,v 1.8.2.1 2008-01-18 19:12:25 debug Exp $
  *
  *  M88K load/store instructions; the following args are used:
  *  

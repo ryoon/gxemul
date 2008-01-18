@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.76 2007-06-15 19:57:34 debug Exp $
+ *  $Id: dev_wdc.c,v 1.76.2.1 2008-01-18 19:12:30 debug Exp $
  *
  *  COMMENT: Standard "wdc" IDE controller
  */
@@ -238,16 +238,16 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	d->identify_struct[2 * 53 + 1] = 0x02;
 
 	/*  57-58: current capacity in sectors  */
-	d->identify_struct[2 * 57 + 0] = ((total_size / 512) >> 24) % 255;
-	d->identify_struct[2 * 57 + 1] = ((total_size / 512) >> 16) % 255;
-	d->identify_struct[2 * 58 + 0] = ((total_size / 512) >> 8) % 255;
-	d->identify_struct[2 * 58 + 1] = (total_size / 512) & 255;
+	d->identify_struct[2 * 58 + 0] = ((total_size / 512) >> 24) % 255;
+	d->identify_struct[2 * 58 + 1] = ((total_size / 512) >> 16) % 255;
+	d->identify_struct[2 * 57 + 0] = ((total_size / 512) >> 8) % 255;
+	d->identify_struct[2 * 57 + 1] = (total_size / 512) & 255;
 
 	/*  60-61: total nr of addressable sectors  */
-	d->identify_struct[2 * 60 + 0] = ((total_size / 512) >> 24) % 255;
-	d->identify_struct[2 * 60 + 1] = ((total_size / 512) >> 16) % 255;
-	d->identify_struct[2 * 61 + 0] = ((total_size / 512) >> 8) % 255;
-	d->identify_struct[2 * 61 + 1] = (total_size / 512) & 255;
+	d->identify_struct[2 * 61 + 0] = ((total_size / 512) >> 24) % 255;
+	d->identify_struct[2 * 61 + 1] = ((total_size / 512) >> 16) % 255;
+	d->identify_struct[2 * 60 + 0] = ((total_size / 512) >> 8) % 255;
+	d->identify_struct[2 * 60 + 1] = (total_size / 512) & 255;
 
 	/*  64: Advanced PIO mode support. 0x02 = mode4, 0x01 = mode3  */
 	d->identify_struct[2 * 64 + 0] = 0x00;
@@ -779,8 +779,6 @@ DEVICE_ACCESS(wdc)
 		if (writeflag == MEM_READ) {
 			odata = d->error;
 			debug("[ wdc: read from ERROR: 0x%02x ]\n", (int)odata);
-			/*  TODO:  is the error value cleared on read?  */
-			d->error = 0;
 		} else {
 			d->precomp = idata;
 			debug("[ wdc: write to PRECOMP: 0x%02x ]\n",(int)idata);
@@ -919,6 +917,7 @@ DEVINIT(wdc)
 	d->addr_mult  = devinit->addr_mult;
 	d->data_debug = 1;
 	d->io_enabled = 1;
+	d->error      = 1;
 
 	d->inbuf = zeroed_alloc(WDC_INBUF_SIZE);
 

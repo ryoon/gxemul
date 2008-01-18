@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_m88k_loadstore.c,v 1.1 2007-05-11 09:28:35 debug Exp $
+ *  $Id: generate_m88k_loadstore.c,v 1.1.2.1 2008-01-18 19:12:27 debug Exp $
  *
  *  Automatic generation of M88K loads and stores:
  *

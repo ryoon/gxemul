@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635.2.3 2007-12-19 18:22:36 debug Exp $
+$Id: HISTORY,v 1.1635.2.4 2008-01-18 19:12:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3677,5 +3677,15 @@ Changelog for GXemul:
 		development.
 		(This is the 0.4.6.1 branch.)
 20071219	NetBSD 4.0 has been released. Doing regression testing of
-		all systems listed on guestoses.html.
+		some systems listed on guestoses.html.
 		Fixing an alignment bug in dev_vga, when allocating 1 byte.
+
+==============  RELEASE 0.4.6.1  ==============
+
+20080118	Applying a WDC patch from Oleksandr Tymoshenko (dev_wdc.c and
+		bus_pci.c), fixing the order of 16-bit words within 32-bit
+		words in the identify struct, and not clearing the error on
+		reads from the error register anymore.
+
+==============  RELEASE 0.4.6.2  ==============
+

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.187 2007-09-13 19:23:45 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.187.2.1 2008-01-18 19:12:25 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *

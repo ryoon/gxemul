@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.69 2007-06-15 18:07:08 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.69.2.1 2008-01-18 19:12:25 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */

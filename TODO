@@ -1,4 +1,14 @@
-$Id: TODO,v 1.560.2.1 2007-12-19 18:22:36 debug Exp $
+
+NOTE!
+
+I have begun working on GXemul 0.5.0, which is a total rewrite of GXemul
+from scratch. This is the _OLD_ todo file.
+
+===============================================================================
+
+
+
+$Id: TODO,v 1.560.2.2 2008-01-18 19:12:22 debug Exp $
 
 Some things, in no specific order, that I'd like to fix:
 (Some items in this list are perhaps already fixed.)
@@ -19,13 +29,13 @@ OK:
 	X  macppc	ok
 
 Failed / Not tested:
-	   cobalt	cobaltcd-4.0.iso is missing from ftp.netbsd.org?
+	   algor	iso is missing from ftp.netbsd.org
+	   cobalt	iso is missing from ftp.netbsd.org
+	   netwinder	iso is missing from ftp.netbsd.org
 
-Not tested: (lack of time)
-	   algor
+Not tested: (lack of time, or no ISO image available?)
 	   sgimips
 	   evbarm
-	   netwinder
 	   prep
 	   pmppc
 

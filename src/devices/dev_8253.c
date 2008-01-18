@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.20 2007-06-15 18:13:04 debug Exp $
+ *  $Id: dev_8253.c,v 1.20.2.1 2008-01-18 19:12:27 debug Exp $
  *
  *  COMMENT: Intel 8253/8254 Programmable Interval Timer
  *

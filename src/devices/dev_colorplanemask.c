@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_colorplanemask.c,v 1.14 2007-06-15 18:44:19 debug Exp $
+ *  $Id: dev_colorplanemask.c,v 1.14.2.1 2008-01-18 19:12:28 debug Exp $
  *  
  *  COMMENT: Color plane mask, used in the DECstation 3100 machine
  *

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k_instr.c,v 1.42 2007-06-28 13:36:46 debug Exp $
+ *  $Id: cpu_m88k_instr.c,v 1.42.2.1 2008-01-18 19:12:25 debug Exp $
  *
  *  M88K instructions.
  *

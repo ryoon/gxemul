@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.25 2007-06-17 23:32:20 debug Exp $
+ *  $Id: of.c,v 1.25.2.1 2008-01-18 19:12:34 debug Exp $
  *
  *  COMMENT: OpenFirmware emulation
  *

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.17 2007-06-15 19:11:15 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.17.2.1 2008-01-18 19:12:28 debug Exp $
  *  
  *  COMMENT: Dreamcast Maple bus controller
  *

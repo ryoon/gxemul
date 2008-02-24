@@ -25,9 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.25.2.1 2008-01-18 19:12:34 debug Exp $
+ *  $Id: of.c,v 1.25.2.2 2008-02-24 05:43:17 debug Exp $
  *
  *  COMMENT: OpenFirmware emulation
+ *
+ *  NOTE: This module is/was a quick hack, with the purpose of getting
+ *        NetBSD/macppc to boot. If anything else boots using this hackish
+ *        implementation of OpenFirmware, then that is a bonus.
+ *
+ ******************************************************************************
  *
  *  NOTE: OpenFirmware is used on quite a variety of different hardware archs,
  *        at least POWER/PowerPC, ARM, and SPARC, so the code in this module
@@ -207,6 +213,20 @@ OF_SERVICE(child)
 }
 
 
+OF_SERVICE(claim)
+{
+	// Arguments:  virtualaddr, size, alignment
+	// Returns:    pointer to claimed memory
+
+	// TODO: This is just a dummy.
+	fatal("[ of: claim(0x%x,0x%x,0x%x): TODO ]\n",
+	    OF_GET_ARG(0), OF_GET_ARG(1), OF_GET_ARG(2));
+
+	store_32bit_word(cpu, base + retofs, OF_GET_ARG(0));
+	return 0;
+}
+
+
 OF_SERVICE(exit)
 {
 	cpu->running = 0;
@@ -242,7 +262,6 @@ OF_SERVICE(getprop)
 	if (pr == NULL) {
 		fatal("[ of: WARNING: getprop: no property '%s' at handle"
 		    " %i (device '%s') ]\n", arg[1], handle, od->name);
-		/*  exit(1);  */
 		return -1;
 	}
 
@@ -277,18 +296,17 @@ OF_SERVICE(getproplen)
 
 	OF_FIND(od, od->handle == handle);
 	if (od == NULL) {
-		fatal("[ of: WARNING: getproplen handle=%i; no such handle ]\n",
+		fatal("[ of: TODO: getproplen handle=%i; no such handle ]\n",
 		    handle);
-		exit(1);
-		/*  return -1;  */
+		return -1;
 	}
 
 	pr = od->properties;
 	OF_FIND(pr, strcmp(pr->name, arg[1]) == 0);
 	if (pr == NULL) {
-		fatal("[ of: WARNING: getproplen: no property '%s' at handle"
+		fatal("[ of: TODO: getproplen: no property '%s' at handle"
 		    " %i (device '%s') ]\n", arg[1], handle, od->name);
-		exit(1);
+		return -1;
 	}
 
 	store_32bit_word(cpu, base + retofs, pr->len);
@@ -369,7 +387,7 @@ OF_SERVICE(peer)
 
 	OF_FIND(od, od->handle == handle);
 	if (od == NULL) {
-		fatal("[ of: peer(): can't find handle %i ]\n", handle);
+		fatal("[ of: TODO: peer(): can't find handle %i ]\n", handle);
 		exit(1);
 	}
 	parent = od->parent;
@@ -408,7 +426,7 @@ OF_SERVICE(read)
 	ch = c;
 	if (!cpu->memory_rw(cpu, cpu->mem, ptr, &ch, 1, MEM_WRITE,
 	    CACHE_DATA | NO_EXCEPTIONS)) {
-		fatal("[ of: read: memory_rw() error ]\n");
+		fatal("[ of: TODO: read: memory_rw() error ]\n");
 		exit(1);
 	}
 
@@ -429,7 +447,7 @@ OF_SERVICE(write)
 		unsigned char ch;
 		if (!cpu->memory_rw(cpu, cpu->mem, ptr + i, &ch,
 		    1, MEM_READ, CACHE_DATA | NO_EXCEPTIONS)) {
-			fatal("[ of: write: memory_rw() error ]\n");
+			fatal("[ of: TODO: write: memory_rw() error ]\n");
 			exit(1);
 		}
 		if (ch != 7)
@@ -890,7 +908,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 {
 	unsigned char *memory_reg, *memory_av;
 	unsigned char *zs_assigned_addresses;
-	struct of_device *mmu, *devstdout, *devstdin;
+	struct of_device *memory_dev, *mmu, *devstdout, *devstdin;
 	struct of_data *ofd;
 	int i;
 
@@ -961,7 +979,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_add_prop_int32(ofd, "/chosen", "stdin", devstdin->handle);
 	of_add_prop_int32(ofd, "/chosen", "stdout", devstdout->handle);
 
-	of_add_device(ofd, "memory", "/");
+	memory_dev = of_add_device(ofd, "memory", "/");
 	CHECK_ALLOCATION(memory_reg = malloc(2 * sizeof(uint32_t)));
 	CHECK_ALLOCATION(memory_av = malloc(2 * sizeof(uint32_t)));
 
@@ -974,6 +992,8 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_add_prop(ofd, "/memory", "available",memory_av,2*sizeof(uint32_t),0);
 	of_add_prop_str(machine, ofd, "/memory","device_type","memory"/*?*/);
 
+	of_add_prop_int32(ofd, "/chosen", "memory", memory_dev->handle);
+
 	/*  Services:  */
 	of_add_service(ofd, "call-method", of__call_method_2_2, 2, 2);
 	of_add_service(ofd, "call-method", of__call_method_3_4, 3, 4);
@@ -981,6 +1001,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_add_service(ofd, "call-method", of__call_method_6_1, 6, 1);
 	of_add_service(ofd, "call-method", of__call_method_6_2, 6, 2);
 	of_add_service(ofd, "child", of__child, 1, 1);
+	of_add_service(ofd, "claim", of__claim, 3, 1);
 	of_add_service(ofd, "exit", of__exit, 0, 0);
 	of_add_service(ofd, "finddevice", of__finddevice, 1, 1);
 	of_add_service(ofd, "getprop", of__getprop, 4, 1);

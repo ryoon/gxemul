@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.112.2.1 2008-01-18 19:12:23 debug Exp $
+$Id: experiments.html,v 1.112.2.2 2008-02-24 05:43:17 debug Exp $
 
 Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
 
@@ -321,6 +321,11 @@ following experimental devices:
 		of the disk image. This offset will be used for the next read/write operation.</td>
 	  </tr>
 	  <tr>
+	    <td align="left" valign="top"><tt>0x0008</tt></td>
+	    <td align="left" valign="top">Write: Set the high 32 
+		bits of the offset (in bytes). (*)</td>
+	  </tr>
+	  <tr>
 	    <td align="left" valign="top"><tt>0x0010</tt></td>
 	    <td align="left" valign="top">Write: Select the IDE ID to be used in the next
 		read/write operation.</td>
@@ -477,6 +482,13 @@ following experimental devices:
   </tr>
 
 </table></center>
+
+<p>(*)  Note:  If the emulated architecture has the capability to write 64-bit
+words atomically, then writing to offset 0x0000 of the
+<tt>disk</tt> device should be enough to set the offset. For 32-bit
+architectures, the lowest 32 bits of the disk offset should first be 
+written to the register at offset 0x0000, and the top 32 bits should
+then be written to the register at offset 0x0008.
 
 <p>The include files for the test machine devices are found in
 <a href="../src/include/testmachine/"><tt>src/include/testmachine/</tt></a>.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.33.2.1 2008-01-18 19:12:33 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.33.2.2 2008-02-24 05:43:17 debug Exp $
  *
  *  COMMENT: SEGA Dreamcast
  */
@@ -85,8 +85,8 @@ MACHINE_SETUP(dreamcast)
 	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)
 	 *  0x01000000 - ...		Parallel port registers
 	 *  0x02000000 - ...		CD-ROM port registers
-	 *  0x04000000 - 0x047fffff	Video RAM (*)
-	 *  0x05000000 - 0x057fffff	Video RAM (8 MB)
+	 *  0x04000000 - 0x047fffff	Video RAM (*)     (64-bit)
+	 *  0x05000000 - 0x057fffff	Video RAM (8 MB)  (32-bit)
 	 *  0x0c000000 - 0x0cffffff	RAM (16 MB)
 	 *  0x0e000000 - 0x0effffff	Copy of RAM? (*2)
 	 *  0x10000000 - ...		Tile accelerator command area

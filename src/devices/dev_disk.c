@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.15.2.1 2008-01-18 19:12:28 debug Exp $
+ *  $Id: dev_disk.c,v 1.15.2.2 2008-02-24 05:43:17 debug Exp $
  *
  *  COMMENT: A simple disk controller device, for the test machines
  *
@@ -49,7 +49,7 @@
 
 
 struct disk_data {
-	int64_t		offset;
+	uint64_t	offset;
 	int		disk_id;
 	int		command;
 	int		status;
@@ -85,6 +85,14 @@ DEVICE_ACCESS(disk)
 			odata = d->offset;
 		} else {
 			d->offset = idata;
+		}
+		break;
+
+	case DEV_DISK_OFFSET_HIGH32:
+		if (writeflag == MEM_READ) {
+			odata = d->offset >> 32;
+		} else {
+			d->offset = (uint32_t)d->offset | (idata << 32);
 		}
 		break;
 

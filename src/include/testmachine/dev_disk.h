@@ -4,13 +4,14 @@
 /*
  *  Definitions used by the "disk" device in GXemul.
  *
- *  $Id: dev_disk.h,v 1.2 2006-07-05 05:38:36 debug Exp $
+ *  $Id: dev_disk.h,v 1.2.2.1 2008-02-24 05:43:17 debug Exp $
  *  This file is in the public domain.
  */
 
 
 #define	DEV_DISK_ADDRESS		0x13000000
 #define	    DEV_DISK_OFFSET		    0x0000
+#define	    DEV_DISK_OFFSET_HIGH32	    0x0008
 #define	    DEV_DISK_ID			    0x0010
 #define	    DEV_DISK_START_OPERATION	    0x0020
 #define	    DEV_DISK_STATUS		    0x0030

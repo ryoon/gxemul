@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635.2.5 2008-02-24 05:43:17 debug Exp $
+$Id: HISTORY,v 1.1635.2.6 2008-02-24 05:54:33 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3696,3 +3696,6 @@ Changelog for GXemul:
 20080222	Adding a DEV_DISK_OFFSET_HIGH32 register, for reading/writing
 		the top 32 bits of the offset register (useful for emulated
 		32-bit archs), as suggested by Julian Elischer.
+
+==============  RELEASE 0.4.6.3  ==============
+

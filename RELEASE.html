@@ -8,10 +8,10 @@
 <b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.10.2.2 2008-01-18 19:12:22 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.10.2.3 2008-02-24 05:54:33 debug Exp $  -->
 
 
-<h2>Release notes for GXemul 0.4.6.2</h2>
+<h2>Release notes for GXemul 0.4.6.3</h2>
 
 <p><i>Copyright (C) 2003-2008  Anders Gavare</i>
 
@@ -74,13 +74,16 @@ guest operating systems:
 
 </ul>
 
-<p>The changes between release 0.4.6.1 and 0.4.6.2 are:
+<p>The changes between release 0.4.6.1 and 0.4.6.3 are:
 
 <ul>
 
   <li>Applying a patch from Oleksandr Tymoshenko for the wdc device, fixing
 	the order of 16-bit words within 32-bit words in the identify struct,
   	and the error register is not cleared on reads any more.
+  <li>The disk device used in the test machines can now access disk images
+	larger than 4 GBs when emulating 32-bit architectures (as suggested
+	by Julian Elischer).
 
 </ul>
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635.2.7 2008-06-09 14:25:56 debug Exp $
+$Id: HISTORY,v 1.1635.2.8 2008-06-09 14:35:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3704,3 +3704,6 @@ Changelog for GXemul:
 		stuff inside emulated NetBSD/cats.)
 20080610	Applying a patch from Jiri Svoboda, which implements the
 		ARM "bkpt" instruction.
+
+==============  RELEASE 0.4.6.4  ==============
+

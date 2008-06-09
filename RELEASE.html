@@ -8,10 +8,10 @@
 <b>GXemul:</b></font>&nbsp;&nbsp;<font color="#000000" size="6"><b>Release notes</b>
 </font></td></tr></table></td></tr></table><p>
 
-<!--  $Id: RELEASE.html,v 1.10.2.3 2008-02-24 05:54:33 debug Exp $  -->
+<!--  $Id: RELEASE.html,v 1.10.2.4 2008-06-09 14:35:42 debug Exp $  -->
 
 
-<h2>Release notes for GXemul 0.4.6.3</h2>
+<h2>Release notes for GXemul 0.4.6.4</h2>
 
 <p><i>Copyright (C) 2003-2008  Anders Gavare</i>
 
@@ -77,14 +77,21 @@ guest operating systems:
 <p>The changes between release 0.4.6.1 and 0.4.6.3 are:
 
 <ul>
-
   <li>Applying a patch from Oleksandr Tymoshenko for the wdc device, fixing
 	the order of 16-bit words within 32-bit words in the identify struct,
   	and the error register is not cleared on reads any more.
   <li>The disk device used in the test machines can now access disk images
 	larger than 4 GBs when emulating 32-bit architectures (as suggested
 	by Julian Elischer).
+</ul>
 
+<p>The changes between release 0.4.6.3 and 0.4.6.4 are:
+<ul>
+  <li>For ARM emulation, a special case for PC-relative load which wasn't
+	implemented before has now been implemented. (The problem could be
+	triggered by attempting large builds using NetBSD's pkgsrc inside
+	e.g. NetBSD/cats.)
+  <li>The ARM 'bkpt' instruction has been implemented (patch from Jiri Svoboda).
 </ul>
 
 <p>Please read the <a href="HISTORY">HISTORY</a> file for more details.

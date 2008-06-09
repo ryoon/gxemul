@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.7.2.1 2008-01-18 19:12:31 debug Exp $
+ *  $Id: diskimage.c,v 1.7.2.2 2008-06-09 14:23:43 debug Exp $
  *
  *  Disk image support.
  *
@@ -890,7 +890,11 @@ int diskimage_add(struct machine *machine, char *fname)
 
 	d->f = fopen(fname, d->writable? "r+" : "r");
 	if (d->f == NULL) {
-		perror(fname);
+		char *errmsg = malloc(200 + strlen(fname));
+		snprintf(errmsg, 200+strlen(fname),
+		    "could not fopen %s for reading%s", fname,
+		    d->writable? " and writing" : "");
+		perror(errmsg);
 		exit(1);
 	}
 

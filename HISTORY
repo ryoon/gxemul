@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635.2.6 2008-02-24 05:54:33 debug Exp $
+$Id: HISTORY,v 1.1635.2.7 2008-06-09 14:25:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3699,3 +3699,8 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.6.3  ==============
 
+20080605	Fixing a corner case in ARM pc-relative loads, which was
+		unimplemented before. (Triggered by doing builds of pkgsrc
+		stuff inside emulated NetBSD/cats.)
+20080610	Applying a patch from Jiri Svoboda, which implements the
+		ARM "bkpt" instruction.

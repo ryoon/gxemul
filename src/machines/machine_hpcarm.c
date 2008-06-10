@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcarm.c,v 1.6.2.1 2008-01-18 19:12:33 debug Exp $
+ *  $Id: machine_hpcarm.c,v 1.6.2.2 2008-06-10 00:17:49 debug Exp $
  *
  *  COMMENT: Handheld ARM-based machines
  */
@@ -87,8 +87,11 @@ MACHINE_SETUP(hpcarm)
 		break;
 
 	case MACHINE_HPCARM_JORNADA720:
+	case MACHINE_HPCARM_JORNADA728:
 		/*  SA-1110 206MHz  */
-		machine->machine_name = "Jornada 720";
+		machine->machine_name = (machine->machine_subtype ==
+		    MACHINE_HPCARM_JORNADA720) ?
+		    "Jornada 720" : "Jornada 728";
 		hpc_fb_addr = 0x48200000;
 		hpc_fb_xsize = 640;
 		hpc_fb_ysize = 240;
@@ -185,11 +188,9 @@ MACHINE_SETUP(hpcarm)
 	store_buf(cpu, machine->physical_ram_in_mb * 1048576 - 256,
 	    (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
-	/*
-	 *  TODO: ugly hack, only works with small NetBSD
-	 *        kernels!
-	 */
-	cpu->cd.arm.r[ARM_SP] = 0xc02c0000;
+	/*  TODO: What is a good default stack pointer?  */
+	/*  I.e. what does hpcboot.exe for NetBSD/hpcarm usually use?  */
+	cpu->cd.arm.r[ARM_SP] = 0xc02dfff0;
 }
 
 
@@ -201,8 +202,15 @@ MACHINE_DEFAULT_CPU(hpcarm)
 
 MACHINE_DEFAULT_RAM(hpcarm)
 {
-	/*  Most have 32 MB by default.  */
-	machine->physical_ram_in_mb = 32;
+	switch (machine->machine_subtype) {
+	case MACHINE_HPCARM_JORNADA728:
+		/*  720 has 32 MB, 728 has 64 MB.  */
+		machine->physical_ram_in_mb = 64;
+		break;
+	default:
+		/*  Most have 32 MB by default.  */
+		machine->physical_ram_in_mb = 32;
+	}
 }
 
 
@@ -217,6 +225,9 @@ MACHINE_REGISTER(hpcarm)
 
 	machine_entry_add_subtype(me, "Jornada 720", MACHINE_HPCARM_JORNADA720,
 	    "jornada720", NULL);
+
+	machine_entry_add_subtype(me, "Jornada 728", MACHINE_HPCARM_JORNADA728,
+	    "jornada728", NULL);
 
 	me->set_default_ram = machine_default_ram_hpcarm;
 }

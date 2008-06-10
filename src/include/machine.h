@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.182.2.1 2008-01-18 19:12:32 debug Exp $
+ *  $Id: machine.h,v 1.182.2.2 2008-06-10 00:18:05 debug Exp $
  */
 
 #include <sys/types.h>
@@ -305,6 +305,7 @@ struct machine {
 /*  HPCarm:  */
 #define	MACHINE_HPCARM_IPAQ			1
 #define	MACHINE_HPCARM_JORNADA720		2
+#define	MACHINE_HPCARM_JORNADA728		3
 
 /*  HPCsh:  */
 #define	MACHINE_HPCSH_JORNADA680		1

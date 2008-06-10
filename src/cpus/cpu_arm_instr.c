@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.77.2.2 2008-06-09 14:25:57 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.77.2.3 2008-06-10 00:18:04 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2929,7 +2929,7 @@ X(to_be_translated)
 			goto bad;
 		}
 		/*  Special case: pc-relative load within the same page:  */
-		if (rn == ARM_PC && rd != ARM_PC && main_opcode < 6) {
+		if (rn == ARM_PC && rd != ARM_PC && main_opcode < 6 && l_bit) {
 			int ofs = (addr & 0xfff) + 8, max = 0xffc;
 			int b_bit = iword & 0x00400000;
 			if (b_bit)
@@ -2952,7 +2952,7 @@ X(to_be_translated)
 				if (p != NULL) {
 					memcpy(c, p + (a & 0xfff), len);
 				} else {
-					if (!cpu->memory_rw(cpu, cpu->mem, addr, &c[0],
+					if (!cpu->memory_rw(cpu, cpu->mem, a, &c[0],
 					    sizeof(c), MEM_READ, CACHE_DATA)) {
 						fatal("Hm? Internal error in "
 						    "cpu_arm_instr.c!\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.187.2.1 2008-01-18 19:12:25 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.187.2.2 2008-06-10 00:18:05 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -473,6 +473,7 @@ void DYNTRANS_FUNCTION_TRACE_DEF(struct cpu *cpu, uint64_t f, int n_args)
 	if (!(cpu->cd.m88k.cr[M88K_CR_PSR] & M88K_PSR_MODE))
 		show_symbolic_function_name = 0;
 #endif
+
 
 	/*
 	 *  TODO: The type of each argument should be taken from the symbol
@@ -1299,6 +1300,19 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 			uint32_t x = ppp->translations_bitmap;	/*  TODO:
 				urk Should be same type as the bitmap */
 			int i, j, n, m;
+
+#ifdef DYNTRANS_ARM
+			/*
+			 *  Note: On ARM, PC-relative load instructions are
+			 *  implemented as immediate mov instructions. When
+			 *  setting parts of the page to "to be translated",
+			 *  we cannot keep track of which of the immediate
+			 *  movs that were affected, so we need to clear
+			 *  the entire page. (ARM only; not for the general
+			 *  case.)
+			 */
+			x = 0xffffffff;
+#endif
 			n = 8 * sizeof(x);
 			m = DYNTRANS_IC_ENTRIES_PER_PAGE / n;
 

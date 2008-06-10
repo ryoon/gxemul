@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1635.2.8 2008-06-09 14:35:41 debug Exp $
+$Id: HISTORY,v 1.1635.2.9 2008-06-10 00:18:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3706,4 +3706,14 @@ Changelog for GXemul:
 		ARM "bkpt" instruction.
 
 ==============  RELEASE 0.4.6.4  ==============
+
+20080611	Correcting the ARM pc-relative load fix; the wrong address
+		variable was used. Also, the pc-relative _load_ code was
+		used for stores as well, which was completely incorrect.
+		On ARM, since pc-relative loads are converted into immediate
+		movs, on writes to pages that contain such translations, the
+		ENTIRE page must be invalidated, not just the 1/32th that
+		was code. This has now been implemented.
+
+==============  RELEASE 0.4.6.5  ==============
 

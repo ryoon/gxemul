@@ -2,7 +2,7 @@
 #define	OF_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: of.h,v 1.9 2007-11-17 11:15:33 debug Exp $
+ *  $Id: of.h,v 1.8.2.1 2008-01-18 19:12:32 debug Exp $
  *
  *  OpenFirmware emulation. (See src/promemul/of.c for details.)
  */
@@ -96,12 +96,6 @@ struct of_data {
 #endif	/*  OF_C  */
 
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
-
 struct of_data *of_emul_init(struct machine *machine, struct vfb_data *,
 	uint64_t fb_addr, int fb_xsize, int fb_ysize);
 
@@ -111,11 +105,6 @@ void of_emul_init_adb(struct machine *);
 void of_emul_init_zs(struct machine *);
 
 int of_emul(struct cpu *cpu);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  OF_H  */

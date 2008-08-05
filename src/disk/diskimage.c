@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.7 2007-06-15 17:02:39 debug Exp $
+ *  $Id: diskimage.c,v 1.7.2.2 2008-06-09 14:23:43 debug Exp $
  *
  *  Disk image support.
  *
@@ -890,7 +890,11 @@ int diskimage_add(struct machine *machine, char *fname)
 
 	d->f = fopen(fname, d->writable? "r+" : "r");
 	if (d->f == NULL) {
-		perror(fname);
+		char *errmsg = malloc(200 + strlen(fname));
+		snprintf(errmsg, 200+strlen(fname),
+		    "could not fopen %s for reading%s", fname,
+		    d->writable? " and writing" : "");
+		perror(errmsg);
 		exit(1);
 	}
 

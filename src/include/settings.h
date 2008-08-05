@@ -2,7 +2,7 @@
 #define	SETTINGS_H
 
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.h,v 1.10 2007-11-12 13:50:06 debug Exp $
+ *  $Id: settings.h,v 1.9.2.1 2008-01-18 19:12:32 debug Exp $
  */
 
 #include <inttypes.h>
@@ -66,11 +66,6 @@ struct settings;
  *  settings.c:
  */
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
 struct settings *settings_new(void);
 void settings_destroy(struct settings *settings);
 
@@ -84,11 +79,6 @@ void settings_remove_all(struct settings *settings);
 
 int settings_access(struct settings *settings, const char *fullname,
 	int writeflag, uint64_t *valuep);
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
 
 /*  Result codes from settings_access:  */
 #define	SETTINGS_OK			1

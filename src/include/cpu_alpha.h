@@ -2,7 +2,7 @@
 #define	CPU_ALPHA_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.51 2007-11-17 11:15:32 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.49.2.1 2008-01-18 19:12:31 debug Exp $
  */
 
 #include "misc.h"
@@ -36,15 +36,9 @@
 #include "alpha_cpu.h"
 
 
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
-
-
 /*  ALPHA CPU types:  */
 struct alpha_cpu_type_def { 
-	const char	*name;
+	char		*name;
 	uint64_t	pcs_type;	/*  See alpha_rpb.h  */
 	int		features;
 	int		implver;
@@ -182,11 +176,6 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode);
 /*  memory_alpha.c:  */
 int alpha_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  CPU_ALPHA_H  */

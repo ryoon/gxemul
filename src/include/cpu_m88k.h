@@ -2,7 +2,7 @@
 #define	CPU_M88K_H
 
 /*
- *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m88k.h,v 1.24 2007-11-17 11:15:33 debug Exp $
+ *  $Id: cpu_m88k.h,v 1.22.2.1 2008-01-18 19:12:31 debug Exp $
  */
 
 #include "misc.h"
@@ -36,18 +36,11 @@
 
 #include "m88k_psl.h"
 
-
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
-
-
 struct cpu_family;
 
 /*  M88K CPU types:  */
 struct m88k_cpu_type_def {
-	const char	*name;
+	char		*name;
 	int		type;
 	uint32_t	pid;
 };
@@ -289,11 +282,6 @@ void m88k_exception(struct cpu *cpu, int vector, int is_trap);
 /*  memory_m88k.c:  */
 int m88k_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  CPU_M88K_H  */

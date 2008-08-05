@@ -2,7 +2,7 @@
 #define	ARCBIOS_H
 
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.16 2007-11-17 12:13:53 debug Exp $
+ *  $Id: arcbios.h,v 1.14.2.1 2008-01-18 19:12:31 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -38,13 +38,6 @@
 
 #include "misc.h"
 #include "sgi_arcbios.h"
-
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
 
 struct cpu;
 
@@ -57,9 +50,9 @@ uint64_t arcbios_get_scsicontroller(struct machine *machine);
 void arcbios_add_memory_descriptor(struct cpu *cpu,
 	uint64_t base, uint64_t len, int arctype);
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
-	uint64_t classs, uint64_t type, uint64_t flags, uint64_t version,
+	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
 	uint64_t revision, uint64_t key, uint64_t affinitymask,
-	const char *identifier, uint64_t parent, void *config_data,
+	char *identifier, uint64_t parent, void *config_data,
 	size_t config_len);
 int arcbios_emul(struct cpu *cpu);
 void arcbios_set_default_exception_handler(struct cpu *cpu);
@@ -110,11 +103,6 @@ struct emul_arc_child64 {
 #define FIRST_ARC_COMPONENT     0xffffffffbfca8000ULL
 #define ARC_PRIVATE_VECTORS     0xffffffffbfcb0000ULL
 #define ARC_PRIVATE_ENTRIES     0xffffffffbfcb8000ULL
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  ARCBIOS_H  */

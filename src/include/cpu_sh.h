@@ -2,7 +2,7 @@
 #define	CPU_SH_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.52 2007-11-17 11:15:33 debug Exp $
+ *  $Id: cpu_sh.h,v 1.50.2.1 2008-01-18 19:12:31 debug Exp $
  *
  *  Note 1: Many things here are SH4-specific, so it probably doesn't work
  *          for SH3 emulation.
@@ -43,18 +43,12 @@
 #include "sh4_cpu.h"
 
 
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
-
-
 struct cpu_family;
 
 
 /*  SH CPU types:  */
 struct sh_cpu_type_def {
-	const char	*name;
+	char		*name;
 	int		bits;
 	int		arch;
 	uint32_t	pvr;
@@ -246,11 +240,6 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr);
 /*  memory_sh.c:  */
 int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  CPU_SH_H  */

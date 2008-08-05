@@ -2,7 +2,7 @@
 #define	DEBUGGER_H
 
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.h,v 1.11 2007-11-21 12:54:12 debug Exp $
+ *  $Id: debugger.h,v 1.10.2.1 2008-01-18 19:12:32 debug Exp $
  *
  *  See src/debugger/debugger.c.
  */
@@ -37,12 +37,6 @@
 
 struct emul;
 struct machine;
-
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
-
 
 /*  debugger.c:  */
 void debugger_activate(int x);
@@ -65,10 +59,5 @@ void debugger_init(struct emul *emul);
 
 int debugger_parse_expression(struct machine *m, char *expr, int writeflag,
 	uint64_t *valuep);
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
 
 #endif	/*  DEBUGGER_H  */

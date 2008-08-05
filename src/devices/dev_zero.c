@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zero.c,v 1.8 2007-06-15 20:11:27 debug Exp $
+ *  $Id: dev_zero.c,v 1.8.2.1 2008-01-18 19:12:31 debug Exp $
  *  
  *  COMMENT: A simple device which returns zero for reads, discards all writes
  */

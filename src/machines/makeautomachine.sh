@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+#  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -27,20 +27,20 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautomachine.sh,v 1.6 2007-11-22 16:53:10 debug Exp $
+#  $Id: makeautomachine.sh,v 1.5.2.1 2008-01-18 19:12:33 debug Exp $
 
 
-printf "Generating automachine.cc... "
+printf "Generating automachine.c... "
 
-rm -f automachine.cc
+rm -f automachine.c
 
-printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> automachine.cc
+printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> automachine.c
 
-cat automachine_head.cc >> automachine.cc
+cat automachine_head.c >> automachine.c
 
 printf "3"
 rm -f .index
-for a in *.c *.cc; do
+for a in *.c; do
 	B=`grep COMMENT $a`
 	if [ z"$B" != z ]; then
 		printf "$a " >> .index
@@ -49,41 +49,29 @@ for a in *.c *.cc; do
 done
 
 printf "2"
-
-printf "extern \"C\" {\n" >> automachine.cc
 for a in machine_*.c; do
 	B=`grep MACHINE_REGISTER $a`
 	if [ z"$B" != z ]; then
 		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
 		for B in $C; do
-			printf "void machine_register_$B(void);\n" >> automachine.cc
-		done
-	fi
-done
-printf "}\n" >> automachine.cc
-for a in machine_*.cc; do
-	B=`grep MACHINE_REGISTER $a`
-	if [ z"$B" != z ]; then
-		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
-		for B in $C; do
-			printf "void machine_register_$B(void);\n" >> automachine.cc
+			printf "void machine_register_$B(void);\n" >> automachine.c
 		done
 	fi
 done
 
-cat automachine_middle.cc >> automachine.cc
+cat automachine_middle.c >> automachine.c
 
 printf "1"
-for a in machine_*.c machine_*.cc; do
+for a in machine_*.c; do
 	B=`grep MACHINE_REGISTER $a`
 	if [ z"$B" != z ]; then
 		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
 		for B in $C; do
-			printf "\tmachine_register_$B();\n" >> automachine.cc
+			printf "\tmachine_register_$B();\n" >> automachine.c
 		done
 	fi
 done
 
-cat automachine_tail.cc >> automachine.cc
+cat automachine_tail.c >> automachine.c
 
 printf " done\n"

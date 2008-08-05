@@ -2,7 +2,7 @@
 #define	DISKIMAGE_H
 
 /*
- *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.37 2007-11-12 13:50:06 debug Exp $
+ *  $Id: diskimage.h,v 1.36.2.1 2008-01-18 19:12:32 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -120,12 +120,6 @@ struct scsi_transfer {
 struct machine;
 
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
-
 /*  diskimage_scsicmd.c:  */
 struct scsi_transfer *scsi_transfer_alloc(void);
 void scsi_transfer_free(struct scsi_transfer *);
@@ -154,11 +148,6 @@ int diskimage_getname(struct machine *machine, int id, int type,
 int diskimage_is_a_cdrom(struct machine *machine, int id, int type);
 int diskimage_is_a_tape(struct machine *machine, int id, int type);
 void diskimage_dump_info(struct machine *machine);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 /*

@@ -2,7 +2,7 @@
 #define	CPU_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.145 2007-11-17 08:33:29 debug Exp $
+ *  $Id: cpu.h,v 1.143.2.1 2008-01-18 19:12:31 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -233,6 +233,7 @@ struct physpage_ranges {
 /*  Include all CPUs' header files here:  */
 #include "cpu_alpha.h"
 #include "cpu_arm.h"
+#include "cpu_m32r.h"
 #include "cpu_m88k.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
@@ -442,6 +443,7 @@ struct cpu {
 	union {
 		struct alpha_cpu      alpha;
 		struct arm_cpu        arm;
+		struct m32r_cpu       m32r;
 		struct m88k_cpu       m88k;
 		struct mips_cpu       mips;
 		struct ppc_cpu        ppc;
@@ -450,11 +452,6 @@ struct cpu {
 	} cd;
 };
 
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
 
 /*  cpu.c:  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
@@ -480,12 +477,7 @@ void cpu_list_available_types(void);
 void cpu_show_cycles(struct machine *machine, int forced);
 
 struct cpu_family *cpu_family_ptr_by_number(int arch);
-
 void cpu_init(void);
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #define	JUST_MARK_AS_NON_WRITABLE	1
@@ -515,7 +507,7 @@ void cpu_init(void);
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\
 	struct cpu_family *fp) {					\
 	/*  Fill in the cpu_family struct with valid data for this arch.  */ \
-	fp->name = strdup(s);						\
+	fp->name = s;							\
 	fp->cpu_new = n ## _cpu_new;					\
 	fp->list_available_types = n ## _cpu_list_available_types;	\
 	fp->disassemble_instr = n ## _cpu_disassemble_instr;		\

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_sparc_loadstore.c,v 1.3 2007-11-17 11:15:32 debug Exp $
+ *  $Id: generate_sparc_loadstore.c,v 1.2.2.1 2008-01-18 19:12:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -76,7 +76,7 @@ void loadstore(int mode32, int use_imm, int store, int size, int signedness)
 	if (signedness && !store)
 		printf("#define LS_SIGNED\n");
 
-	printf("#include \"cpu_sparc_instr_loadstore.cc\"\n");
+	printf("#include \"cpu_sparc_instr_loadstore.c\"\n");
 
 	if (signedness && !store)
 		printf("#undef LS_SIGNED\n");

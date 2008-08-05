@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_ppc_loadstore.c,v 1.6 2007-11-17 11:15:32 debug Exp $
+ *  $Id: generate_ppc_loadstore.c,v 1.5.2.1 2008-01-18 19:12:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -102,7 +102,7 @@ void do_it(int mode)
 				printf("_0");
 			printf("\n");
 
-			printf("#include \"cpu_ppc_instr_loadstore.cc\"\n");
+			printf("#include \"cpu_ppc_instr_loadstore.c\"\n");
 
 			printf("#undef LS_N\n");
 			printf("#undef LS_GENERIC_N\n");
@@ -183,7 +183,7 @@ void do_it(int mode)
 			printf("x");
 			printf("\n");
 
-			printf("#include \"cpu_ppc_instr_loadstore.cc\"\n");
+			printf("#include \"cpu_ppc_instr_loadstore.c\"\n");
 
 			printf("#undef LS_N\n");
 			printf("#undef LS_GENERIC_N\n");
@@ -289,13 +289,13 @@ cont_x:
 	    "#define LS_GENERIC_N ppc%s_generic_lhbrx\n"
 	    "#define LS_N ppc%s_instr_lhbrx\n"
 	    "#define LS_LOAD\n"
-	    "#include \"cpu_ppc_instr_loadstore.cc\"\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
 	    "#undef LS_LOAD\n"
 	    "#undef LS_N\n"
 	    "#undef LS_GENERIC_N\n"
 	    "#define LS_GENERIC_N ppc%s_generic_sthbrx\n"
 	    "#define LS_N ppc%s_instr_sthbrx\n"
-	    "#include \"cpu_ppc_instr_loadstore.cc\"\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
 	    "#undef LS_N\n"
 	    "#undef LS_GENERIC_N\n"
 	    "#undef LS_H\n"
@@ -306,13 +306,13 @@ cont_x:
 	    "#define LS_GENERIC_N ppc%s_generic_lwbrx\n"
 	    "#define LS_N ppc%s_instr_lwbrx\n"
 	    "#define LS_LOAD\n"
-	    "#include \"cpu_ppc_instr_loadstore.cc\"\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
 	    "#undef LS_LOAD\n"
 	    "#undef LS_N\n"
 	    "#undef LS_GENERIC_N\n"
 	    "#define LS_GENERIC_N ppc%s_generic_stwbrx\n"
 	    "#define LS_N ppc%s_instr_stwbrx\n"
-	    "#include \"cpu_ppc_instr_loadstore.cc\"\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
 	    "#undef LS_N\n"
 	    "#undef LS_GENERIC_N\n"
 	    "#undef LS_W\n"

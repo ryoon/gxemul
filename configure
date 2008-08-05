@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+#  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.286 2007-11-17 08:52:11 debug Exp $
+#  $Id: configure,v 1.278.2.1 2008-01-18 19:12:22 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -45,7 +45,7 @@
 #  The main things that are detected by this script:
 #
 #    o)  special hacks for some OSes
-#    o)  which compiler(s) to use  (overridden by setting CC)
+#    o)  which compiler to use  (overridden by setting CC)
 #    o)  which compiler flags to use  (overridden by setting CFLAGS)
 #    o)  X11 flags and libraries  (TODO: should be possible to override
 #	 via command line options?)
@@ -55,9 +55,6 @@
 #  should be, instead of requiring a recompile.
 #
 ###############################################################################
-
-# Default prefix for "make install"
-DEFAULTPREFIX=/usr/local
 
 #  Figure out if this is a stable version (0.x.x).
 X=`basename \`pwd\`|cut -d \- -f 2-|cut -c1-2`
@@ -72,32 +69,18 @@ fi
 if [ z"$*" != z ]; then
 	#  Parse command line options:
 	for a in $*; do
-		if [ z$a = z--debug ]; then
+		if [ z$a = z--disable-x ]; then
+			NOX11=YES
+		else if [ z$a = z--debug ]; then
 			DEBUG=YES
-		else if [ z$a = z--with-gui ]; then
-			WITHGUI=YES
-		else if [ z$a = z--without-gui ]; then
-			WITHOUTGUI=YES
-		else if [ z$a = z--with-x11 ]; then
-			WITHX11=YES
-		else if [ z$a = z--without-x11 ]; then
-			WITHOUTX11=YES
 		else if [ z$a = z--help ]; then
 			printf "usage: $0 [options]\n\n"
+			echo "  --disable-x         don't include X11 support,"\
+			    "even if the host supports it"
 			if [ z"$UNSTABLE" = zYES ]; then
 				echo "  --debug             configure" \
 					"for a debug build"
 			fi
-			echo "  --with-gui          build with the gtkmm GUI"
-			echo "  --without-gui       build without the gtkmm GUI"
-			echo "  --with-x11          build with X11 framebuffer support"
-			echo "  --without-x11       build without X11 framebuffer support"
-			echo
-			echo "(default is to detect gtkmm and X11 automatically)"
-			echo
-			echo "If the PREFIX environment variable is set," \
-			    "it will override the default"
-			echo "value, which is: $DEFAULTPREFIX"
 			echo
 			exit
 		else
@@ -105,7 +88,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi
+		fi; fi; fi
 	done
 fi
 
@@ -142,6 +125,10 @@ else
 fi
 
 
+ZZ=`echo compiled on \`uname\`/\`uname -m\`, \`date\``
+printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
+
+
 #  Include support for all CPU types:
 printf "#define ADD_ALL_CPU_FAMILIES    " >> config.h
 
@@ -173,6 +160,10 @@ CPU_ARCHS="$CPU_ARCHS tmp_arm_rc.o tmp_arm_rd.o"
 CPU_ARCHS="$CPU_ARCHS tmp_arm_re.o tmp_arm_rf.o tmp_arm_multi.o"
 CPU_TOOLS="$CPU_TOOLS generate_arm_dpi generate_arm_r"
 CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_multi"
+
+#  M32R
+printf " add_cpu_family(m32r_cpu_family_init, ARCH_M32R);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_m32r.o memory_m32r.o"
 
 #  M88K
 printf " add_cpu_family(m88k_cpu_family_init, ARCH_M88K);" >> config.h
@@ -320,6 +311,7 @@ if [ z"$CC" = z ]; then
 	rm -f _test.sh
 fi
 
+
 rm -f _testprog
 
 if [ z"$CC" = z ]; then
@@ -332,6 +324,7 @@ if [ z"$CC" = z ]; then
 fi
 
 printf "$CC $CFLAGS"
+
 
 CCTYPE="generic"
 
@@ -357,148 +350,92 @@ fi
 echo " ($CCTYPE)"
 
 
-#  Try to detect which C++ compiler to use, if CXX is not set:
-printf "checking which C++ compiler to use... "
-rm -f _testprog
-if [ z"$CXX" = z ]; then
-	#  Try g++ first:
-	printf "#!/bin/sh\ng++ $CFLAGS _testprog.c -o _testprog >" > _test.sh
-	printf " /dev/null 2> /dev/null\n" >> _test.sh
-	chmod 755 _test.sh
-	./_test.sh > /dev/null 2> /dev/null
-	if [ -x _testprog ]; then
-		if [ z`./_testprog` = z0,1 ]; then
-			CXX=g++
+if [ z$NOX11 = z ]; then
+	printf "checking for X11 headers and libs\n"
+
+	#  Try to compile a small X11 test program:
+	printf "#include <X11/Xlib.h>
+	#include <stdio.h>
+	Display *dis;
+	void f(void) {
+		dis = XOpenDisplay(NULL);
+	}
+	int main(int argc, char *argv[])
+	{ return 0; }
+	" > _test_x11.c
+
+	XOK=0
+
+	XINCLUDE=-I/usr/X11R6/include
+	$CC $CFLAGS _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
+
+	XLIB="-L/usr/X11R6/lib -lX11"
+	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+
+	if [ -x _test_x11 ]; then
+		XOK=1
+	fi
+
+	rm -f _test_x11 _test_x11.o
+
+	if [ z$XOK = z0 ]; then
+		XINCLUDE=-I/usr/local/include
+		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+		    $XINCLUDE 2> /dev/null
+
+		XLIB="-L/usr/local/lib -lX11"
+		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+
+		if [ -x _test_x11 ]; then
+			XOK=1
 		fi
-	fi
-	rm -f _testprog
-
-	#  If both g++ and c++ exist, then c++ might be a vendor specific
-	#  compiler which produces faster code than g++.
-	printf "#!/bin/sh\nc++ $CFLAGS _testprog.c -o _testprog >" > _test.sh
-	printf " /dev/null 2> /dev/null\n" >> _test.sh
-	chmod 755 _test.sh
-	./_test.sh > /dev/null 2> /dev/null
-	if [ -x _testprog ]; then
-		if [ z`./_testprog` = z0,1 ]; then
-			CXX=c++
-		else
-			printf "broken c++ detected\n"
-			printf "checking for other C++ compilers... "
-		fi
-	fi
-	rm -f _testprog
-
-	rm -f _test.sh
-fi
-
-rm -f _testprog
-
-if [ z"$CXX" = z ]; then
-	printf "no working C++ compiler detected\n"
-	printf "\nPlease set the CXX environment variable to a working C++ "
-	printf "compiler before running\nthe configure script, and make"
-	printf " sure that the CFLAGS environment variable is\nalso valid"
-	printf " for that compiler.\n"
-	exit
-fi
-
-printf "$CXX $CFLAGS"
-echo ""
-
-
-printf "checking for X11 headers and libs\n"
-
-#  Try to compile a small X11 test program:
-printf "#include <X11/Xlib.h>
-#include <stdio.h>
-Display *dis;
-void f(void) {
-	dis = XOpenDisplay(NULL);
-}
-int main(int argc, char *argv[])
-{ return 0; }
-" > _test_x11.c
-
-XOK=0
-
-XINCLUDE=-I/usr/X11R6/include
-$CC $CFLAGS _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
-
-XLIB="-L/usr/X11R6/lib -lX11"
-$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
-
-if [ -x _test_x11 ]; then
-	XOK=1
-fi
-
-rm -f _test_x11 _test_x11.o
-
-if [ z$XOK = z0 ]; then
-	XINCLUDE=-I/usr/local/include
-	$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
-	    $XINCLUDE 2> /dev/null
-
-	XLIB="-L/usr/local/lib -lX11"
-	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
-
-	if [ -x _test_x11 ]; then
-		XOK=1
-	fi
-fi
-rm -f _test_x11 _test_x11.o
-
-#  Special case for some 64-bit Linux/x86_64 systems:
-if [ z$XOK = z0 ]; then
-	$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
-	    $XINCLUDE 2> /dev/null
-	XLIB="-L/usr/X11R6/lib64 -lX11"
-	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
-
-	if [ -x _test_x11 ]; then
-		XOK=1
-	fi
-fi
-rm -f _test_x11 _test_x11.o
-
-if [ z$XOK = z0 ]; then
-	XINCLUDE=""
-	$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
-	    $XINCLUDE 2> /dev/null
-
-	#  -lsocket for Solaris
-	XLIB="-lX11 -lsocket"
-	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
-	if [ -x _test_x11 ]; then
-		XOK=1
 	fi
 	rm -f _test_x11 _test_x11.o
-fi
 
-if [ z`uname` = zNetBSD ]; then
-	echo "Using NetBSD hack for X11 libs..."
-	XLIB="$XLIB -Wl,-rpath,/usr/X11R6/lib"
-fi
+	#  Special case for some 64-bit Linux/x86_64 systems:
+	if [ z$XOK = z0 ]; then
+		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+		    $XINCLUDE 2> /dev/null
 
-if [ z`uname` = zOpenBSD ]; then
-	if [ z`uname -m` = zarc ]; then
-		echo "Using old OpenBSD/arc hack for X11 libs..."
+		XLIB="-L/usr/X11R6/lib64 -lX11"
+		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+
+		if [ -x _test_x11 ]; then
+			XOK=1
+		fi
+	fi
+	rm -f _test_x11 _test_x11.o
+
+	if [ z$XOK = z0 ]; then
+		XINCLUDE=""
+		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+		    $XINCLUDE 2> /dev/null
+
+		#  -lsocket for Solaris
+		XLIB="-lX11 -lsocket"
+		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+
+		if [ -x _test_x11 ]; then
+			XOK=1
+		fi
+		rm -f _test_x11 _test_x11.o
+	fi
+
+	if [ z`uname` = zNetBSD ]; then
+		echo "Using NetBSD hack for X11 libs..."
 		XLIB="$XLIB -Wl,-rpath,/usr/X11R6/lib"
 	fi
-fi
 
-if [ z$XOK = z0 ]; then
-	echo "Failed to compile X11 test program."
-	if [ z$WITHX11 = zYES ]; then
-		echo "X11 framebuffer support was requested (--with-x11)."
-		echo "Aborting."
-		exit
+	if [ z`uname` = zOpenBSD ]; then
+		if [ z`uname -m` = zarc ]; then
+			echo "Using old OpenBSD/arc hack for X11 libs..."
+			XLIB="$XLIB -Wl,-rpath,/usr/X11R6/lib"
+		fi
 	fi
-	echo "GXemul will be compiled without X11 framebuffer support."
-else
-	if [ z$WITHOUTX11 = zYES ]; then
-		echo "X11 libraries and headers detected, but --without-x11"
-		echo "was specified..."
+
+	if [ z$XOK = z0 ]; then
+		echo "Failed to compile X11 test program." \
+		    "Configuring without X11."
 	else
 		printf "X11 headers: $XINCLUDE\n"
 		printf "X11 libraries: $XLIB\n"
@@ -506,9 +443,9 @@ else
 		echo "XLIB=$XLIB" >> _Makefile.header
 		printf "#define WITH_X11\n" >> config.h
 	fi
-fi
 
-rm -f _test_x11.c
+	rm -f _test_x11.c
+fi
 
 
 if [ z$HPUX = zYES ]; then
@@ -1246,53 +1183,18 @@ rm -f _test_end*
 
 ###############################################################################
 
-GTKMM_VER="2.12.1"
-printf "checking for gtkmm-2.4 >= $GTKMM_VER... "
-
-if [ z$WITHOUTGUI = zYES ]; then
-	echo skipping
-else
-	if pkg-config --atleast-version=$GTKMM_VER gtkmm-2.4; then
-		echo found
-		CFLAGS="$CFLAGS `pkg-config --cflags gtkmm-2.4`"
-		OTHERLIBS="$OTHERLIBS `pkg-config --libs gtkmm-2.4`"
-		printf "#define WITH_GUI\n" >> config.h
-	else
-		echo not found
-		if [ z$WITHGUI = zYES ]; then
-			echo "Sorry, gtkmm-2.4 version $GTKMM_VER or newer" \
-			    "was not found. Aborting."
-			exit
-		fi
-	fi
-fi
-
-
-###############################################################################
-
-if [ "z$PREFIX" = z ]; then
-	PREFIX="$DEFAULTPREFIX"
-fi	
-echo "checking for 'make install' prefix: $PREFIX"
-
-
-###############################################################################
-
 INCLUDE=-Iinclude/
 DINCLUDE=-I../include/
 
 rm -f _testprog.c
 
-#echo C compiler flags: $CFLAGS $CWARNINGS
-#echo Linker flags: $OTHERLIBS
-
+echo C compiler flags: $CFLAGS $CWARNINGS
+echo Linker flags: $OTHERLIBS
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header
 echo "COPTIM=$CFLAGS" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header
 echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
-echo "PREFIX=$PREFIX" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
-echo "CXX=$CXX" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "CPU_ARCHS=$CPU_ARCHS" >> _Makefile.header
 echo "CPU_TOOLS=$CPU_TOOLS" >> _Makefile.header
@@ -1301,8 +1203,8 @@ echo "" >> _Makefile.header
 
 #  Create the Makefiles:
 D=". src src/include src/console src/cpus src/debugger src/devices"
-D="$D src/devices/fonts src/disk src/file src/gui src/machines"
-D="$D src/main src/net src/promemul src/symbol src/useremul"
+D="$D src/devices/fonts src/disk src/file src/machines"
+D="$D src/net src/promemul src/symbol src/useremul"
 for a in $D; do
 	echo "creating $a/Makefile"
 	touch $a/Makefile
@@ -1315,7 +1217,6 @@ printf "\n#endif  /*  CONFIG_H  */\n" >> config.h
 
 #  Remove temporary Makefile header:
 rm -f _Makefile.header
-
 
 echo Configured. You may now run make to build gxemul.
 

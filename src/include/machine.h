@@ -2,7 +2,7 @@
 #define	MACHINE_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,16 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.185 2007-11-22 16:53:10 debug Exp $
+ *  $Id: machine.h,v 1.182.2.2 2008-06-10 00:18:05 debug Exp $
  */
 
 #include <sys/types.h>
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
 
 #include "symbol.h"
 
@@ -217,6 +211,7 @@ struct machine {
 #define	ARCH_ARM		5
 #define	ARCH_SH			6
 #define	ARCH_M88K		7
+#define	ARCH_M32R		8
 
 /*  MIPS:  */
 #define	MACHINE_BAREMIPS	1000
@@ -271,6 +266,10 @@ struct machine {
 #define	MACHINE_TESTM88K	7001
 #define	MACHINE_MVME88K		7002
 
+/*  M32R:  */
+#define	MACHINE_BAREM32R	8000
+#define	MACHINE_TESTM32R	8001
+
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0
 #define	MACHINE_USERLAND	100000
@@ -306,6 +305,7 @@ struct machine {
 /*  HPCarm:  */
 #define	MACHINE_HPCARM_IPAQ			1
 #define	MACHINE_HPCARM_JORNADA720		2
+#define	MACHINE_HPCARM_JORNADA728		3
 
 /*  HPCsh:  */
 #define	MACHINE_HPCSH_JORNADA680		1
@@ -388,6 +388,7 @@ struct machine_entry {
 	me->setup = machine_setup_ ## x;				\
 	me->set_default_cpu = machine_default_cpu_ ## x;		\
 	machine_entry_register(me, arch);
+void automachine_init(void);
 
 
 /*  machine.c:  */
@@ -413,14 +414,6 @@ void machine_entry_add_subtype(struct machine_entry *me, const char *name,
 	int oldstyle_subtype, ...);
 void machine_entry_register(struct machine_entry *me, int arch);
 void machine_init(void);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
-
-void automachine_init(void);
 
 
 #endif	/*  MACHINE_H  */

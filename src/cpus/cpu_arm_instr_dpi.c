@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.19 2007-11-17 11:15:31 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.18.2.1 2008-01-18 19:12:25 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -79,7 +79,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 
 #ifdef A__REG
 	uint32_t (*reg_func)(struct cpu *, struct arm_instr_call *)
-	    = (void *) (size_t)ic->arg[1];
+	    = (void *)(size_t)ic->arg[1];
 #endif
 
 #ifdef A__S

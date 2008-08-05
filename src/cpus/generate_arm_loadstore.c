@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_loadstore.c,v 1.10 2007-11-17 11:15:32 debug Exp $
+ *  $Id: generate_arm_loadstore.c,v 1.9.2.1 2008-01-18 19:12:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 			if (u)	printf("#define A__U\n");
 			if (p)	printf("#define A__P\n");
 			if (reg)printf("#define A__REG\n");
-			printf("#include \"cpu_arm_instr_loadstore.cc\"\n");
+			printf("#include \"cpu_arm_instr_loadstore.c\"\n");
 			if (l)	printf("#undef A__L\n");
 			if (w)	printf("#undef A__W\n");
 			if (b)	printf("#undef A__B\n");
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 			if (u)	printf("#define A__U\n");
 			if (p)	printf("#define A__P\n");
 			if (reg)printf("#define A__REG\n");
-			printf("#include \"cpu_arm_instr_loadstore.cc\"\n");
+			printf("#include \"cpu_arm_instr_loadstore.c\"\n");
 			if (s)	printf("#undef A__SIGNED\n");
 			if (l)	printf("#undef A__L\n");
 			if (w)	printf("#undef A__W\n");

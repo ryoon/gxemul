@@ -2,7 +2,7 @@
 #define	SYMBOL_H
 
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.h,v 1.11 2007-11-21 12:33:27 debug Exp $
+ *  $Id: symbol.h,v 1.9.2.1 2008-01-18 19:12:32 debug Exp $
  *
  *  Symbol handling routines.
  */
@@ -55,32 +55,19 @@ struct symbol_context {
 
 };
 
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
-
 /*  symbol.c:  */
 int symbol_nsymbols(struct symbol_context *);
-int get_symbol_addr(struct symbol_context *, const char *symbol, uint64_t *addr);
+int get_symbol_addr(struct symbol_context *, char *symbol, uint64_t *addr);
 char *get_symbol_name_and_n_args(struct symbol_context *, uint64_t addr,
 	uint64_t *offset, int *n_argsp);
 char *get_symbol_name(struct symbol_context *, uint64_t addr, uint64_t *offset);
 void add_symbol_name(struct symbol_context *, uint64_t addr,
-	uint64_t len, const char *name, int type, int n_args);
+	uint64_t len, char *name, int type, int n_args);
 void symbol_readfile(struct symbol_context *, char *fname);
 void symbol_recalc_sizes(struct symbol_context *);
 void symbol_init(struct symbol_context *);
 
 /*  symbol_demangle.c:  */
-char *symbol_demangle_cplusplus(const char *name);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
+char *symbol_demangle_cplusplus(char *name);
 
 #endif	/*  SYMBOL_H  */

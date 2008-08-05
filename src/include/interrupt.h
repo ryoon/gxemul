@@ -2,7 +2,7 @@
 #define	INTERRUPT_H
 
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.h,v 1.7 2007-11-17 11:15:33 debug Exp $
+ *  $Id: interrupt.h,v 1.5.2.1 2008-01-18 19:12:32 debug Exp $
  *
  *  Definitions related to the Interrupt subsystem.
  */
@@ -87,12 +87,6 @@ struct interrupt {
 	}
 
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
-
 /*
  *  Registration of interrupt handlers:
  *
@@ -100,9 +94,9 @@ extern "C"
  *  controllers) should call interrupt_handler_register() to register itself.
  */
 
-void interrupt_handler_register(struct interrupt *templ);
+void interrupt_handler_register(struct interrupt *template);
 void interrupt_handler_remove(char *name);
-int interrupt_handler_lookup(char *name, struct interrupt *templ);
+int interrupt_handler_lookup(char *name, struct interrupt *template);
 
 
 /*
@@ -116,11 +110,6 @@ int interrupt_handler_lookup(char *name, struct interrupt *templ);
 
 void interrupt_connect(struct interrupt *i, int exclusive);
 void interrupt_disconnect(struct interrupt *i, int exclusive);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  INTERRUPT_H  */

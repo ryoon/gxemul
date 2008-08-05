@@ -2,7 +2,7 @@
 #define	CPU_MIPS_H
 
 /*
- *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,18 +28,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.63 2007-11-17 11:15:33 debug Exp $
+ *  $Id: cpu_mips.h,v 1.61.2.1 2008-01-18 19:12:31 debug Exp $
  */
 
 #include "interrupt.h"
 #include "misc.h"
-
-
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
-
 
 struct cpu_family;
 struct emul;
@@ -51,7 +44,7 @@ struct timer;
  */
 
 struct mips_cpu_type_def {
-	const char	*name;
+	char		*name;
 	int		rev;
 	int		sub;
 	char		flags;
@@ -359,11 +352,6 @@ void mips32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void mips32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  CPU_MIPS_H  */

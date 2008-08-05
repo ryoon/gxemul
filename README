@@ -1,22 +1,11 @@
 
 
-
-NOTE!!!
-
-GXemul 0.5.0 will _NOT_ be ready for a long time.
-
-This README is preliminary and is very much subject to change.
+          --------------------------------------------------------
+            Gavare's eXperimental Emulator   --   GXemul 0.4.6.5
+          --------------------------------------------------------
 
 
-----------------------------------------------------
-
-
-
-            ------------------------------------------------------
-              Gavare's eXperimental Emulator   --   GXemul 0.5.0
-            ------------------------------------------------------
-
-                    Copyright (C) 2003-2007  Anders Gavare
+Copyright (C) 2003-2008  Anders Gavare
 
 
 
@@ -33,6 +22,10 @@ consist of ARM, MIPS, PowerPC, and SuperH processors, and various
 surrounding hardware components such as framebuffers, busses, interrupt 
 controllers, ethernet controllers, disk controllers, and serial port 
 controllers.
+
+GXemul, including the dynamic translation system, is implemented in 
+portable C, which means that the emulator will run on practically any host 
+architecture.
 
 The documentation lists the machines and guest operating systems that can 
 be regarded as "working" in GXemul. The best working guest operating 
@@ -85,7 +78,7 @@ Quick start
 To compile, type './configure' and then 'make'. This should work on most
 Unix-like systems. If it does not, then please mail me a bug report.
 
-You might want to experiment with various CC, CXX, and CFLAGS environment
+You might want to experiment with various CC and CFLAGS environment
 variable settings, to get optimum performance.
 
 If you are impatient, and want to try out running a guest operating system 

@@ -2,7 +2,7 @@
 #define	EMUL_H
 
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.45 2007-11-16 08:50:12 debug Exp $
+ *  $Id: emul.h,v 1.43.2.1 2008-01-18 19:12:32 debug Exp $
  */
 
 #include "misc.h"
@@ -55,12 +55,6 @@ struct emul {
 };
 
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
-
 /*  emul.c:  */
 struct emul *emul_new(char *name);
 void emul_destroy(struct emul *emul);
@@ -70,12 +64,12 @@ void emul_machine_setup(struct machine *machine, int n_load, char **load_names,
 	int n_devices, char **device_names);
 void emul_dumpinfo(struct emul *e);
 void emul_simple_init(struct emul *emul);
+struct emul *emul_create_from_configfile(char *fname);
 void emul_run(struct emul *emul);
 
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
+/*  emul_parse.c:  */
+void emul_parse_config(struct emul *e, char *fname);
 
 
 #endif	/*  EMUL_H  */

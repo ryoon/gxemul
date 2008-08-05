@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1656 2007-11-24 02:00:04 debug Exp $
+$Id: HISTORY,v 1.1635.2.9 2008-06-10 00:18:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3675,48 +3675,45 @@ Changelog for GXemul:
 		guestoses.html from OpenBSD 4.1 to 4.2.
 20071112	Branching in CVS to a 0.4.6.1 version, separate from the main
 		development.
-		(This is the main development branch.)
-		EXPERIMENTALLY beginning to convert various source code
-		files to C++ (.c to .cc); it will of course be a major
-		undertaking to redesign the code so that it fits C++, but I
-		think it will be worth it. (main.c => main.cc only so far.)
-		Note: Release 0.4.6.1 will most likely be made from the code
-		base as it was yesterday, plus perhaps some documentation
-		updates.
-		Adding configure options "--with-gui" and "--without-gui";
-		autodetection of gtkmm-2.4 >= 2.12.1. A binary "gxemul-gui"
-		is hardlinked to "gxemul"; when started, it should (in the
-		future) bring up a GUI version of GXemul. For now, it just
-		displays a dummy GTK+ window.
-20071113	The dummy GUI now includes a menu bar.
-20071114	Minor manpage and Makefile updates.
-		Building and running GXemul now requires both X11 and gtkmm.
-		debug/fatal are moved from main.cc to misc.cc.
-		main.cc now just calls the main emulator, which is moved to
-		src/GXemul.cc.
-20071116	Reverting the stuff I did two days ago: gtkmm/X11 are now
-		optional again.
-		Finally adding "install" and "uninstall" Makefile targets. :)
-		Moving the rest of main.cc (the main function) into GXemul.cc.
-		Removing the old config file parser (src/emul_parse.c),
-		and doc/configfiles.html.
-		Moving remaining src/*.c{,c} into a new src/main/ directory.
-		Beginning on separating the main GUI window into a "workspace"
-		and a "debug console" area.
-20071117	Removing the dummy M32R skeleton again.
-		Converting some .c files to .cc (without redesigning the code,
-		just to make it use the C++ compiler): cpu_sparc.c,
-		cpu_mips_coproc.c, memory_*.c.
-		Converting most of src/cpus/.
-		Converting src/net/*.c and src/promemul/*.c to *.cc.
-20071119	Converting src/file/*.c to *.cc.
-20071120	Removing remaining references to the old config file stuff in
-		the documentaion.
-20071121	Converting src/useremul/*.c, src/symbol/*.c, and some
-		remaining files in src/main/ to *.cc. (Still no redesign,
-		simply converting to use the C++ compiler.)
-20071123	Beginning to converting src/machines/*.c to *.cc.
-20071124	Planning a new configuration file format; beginning on
-		ConfigNode.{cc,h}. Adding doc/fileformat.html.
-		Adding a "test" makefile target, for unit testing. "make
-		install" runs the test target.
+		(This is the 0.4.6.1 branch.)
+20071219	NetBSD 4.0 has been released. Doing regression testing of
+		some systems listed on guestoses.html.
+		Fixing an alignment bug in dev_vga, when allocating 1 byte.
+
+==============  RELEASE 0.4.6.1  ==============
+
+20080118	Applying a WDC patch from Oleksandr Tymoshenko (dev_wdc.c and
+		bus_pci.c), fixing the order of 16-bit words within 32-bit
+		words in the identify struct, and not clearing the error on
+		reads from the error register anymore.
+
+==============  RELEASE 0.4.6.2  ==============
+
+20080120	Some minor OpenFirmware fixes: Adding a "memory" property to
+		"/chosen", adding a dummy claim() service.
+20080205	Switching order of DINCLUDE and XINCLUDE in
+		src/devices/Makefile (thanks to Ning Zhao for the tip).
+20080222	Adding a DEV_DISK_OFFSET_HIGH32 register, for reading/writing
+		the top 32 bits of the offset register (useful for emulated
+		32-bit archs), as suggested by Julian Elischer.
+
+==============  RELEASE 0.4.6.3  ==============
+
+20080605	Fixing a corner case in ARM pc-relative loads, which was
+		unimplemented before. (Triggered by doing builds of pkgsrc
+		stuff inside emulated NetBSD/cats.)
+20080610	Applying a patch from Jiri Svoboda, which implements the
+		ARM "bkpt" instruction.
+
+==============  RELEASE 0.4.6.4  ==============
+
+20080611	Correcting the ARM pc-relative load fix; the wrong address
+		variable was used. Also, the pc-relative _load_ code was
+		used for stores as well, which was completely incorrect.
+		On ARM, since pc-relative loads are converted into immediate
+		movs, on writes to pages that contain such translations, the
+		ENTIRE page must be invalidated, not just the 1/32th that
+		was code. This has now been implemented.
+
+==============  RELEASE 0.4.6.5  ==============
+

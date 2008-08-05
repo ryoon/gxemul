@@ -2,7 +2,7 @@
 #define	TIMER_H
 
 /*
- *  Copyright (C) 2006-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,17 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.h,v 1.8 2007-11-12 13:50:06 debug Exp $
+ *  $Id: timer.h,v 1.7.2.1 2008-01-18 19:12:32 debug Exp $
  */
 
 struct timer;
 
 #define	TIMER_BASE_FREQUENCY	65.0	/*  Hz  */
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
 
 struct timer *timer_add(double freq, void (*timer_tick)(struct timer *timer,
 	void *extra), void *extra);
@@ -51,8 +46,5 @@ void timer_stop(void);
 
 void timer_init(void);
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 #endif	/*  TIMER_H  */

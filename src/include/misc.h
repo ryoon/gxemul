@@ -2,7 +2,7 @@
 #define	MISC_H
 
 /*
- *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.262 2007-11-16 23:45:08 debug Exp $
+ *  $Id: misc.h,v 1.259.2.1 2008-01-18 19:12:32 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -44,24 +44,6 @@
  */
 
 #include "../../config.h"
-
-
-// Use Glib::ustring if available, otherwise std::string:
-#ifdef __cplusplus
-#ifdef WITH_GUI
-#include <glibmm/ustring.h>
-typedef Glib::ustring string;
-#else	// !WITH_GUI
-#include <string>
-typedef std::string string;
-#endif
-#endif
-
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
 
 
 #ifdef NO_C99_PRINTF_DEFINES
@@ -250,17 +232,20 @@ void file_load(struct machine *machine, struct memory *mem,
 	int arch, uint64_t *gpp, int *byte_order, uint64_t *tocp);
 
 
+/*  main.c:  */
+void debug_indentation(int diff);
+void debug(char *fmt, ...);
+void fatal(char *fmt, ...);
+
+
 /*  misc.c:  */
 unsigned long long mystrtoull(const char *s, char **endp, int base);
-int mymkstemp(char *templ);
+int mymkstemp(char *template);
 #ifdef USE_STRLCPY_REPLACEMENTS
 size_t mystrlcpy(char *dst, const char *src, size_t size);
 size_t mystrlcat(char *dst, const char *src, size_t size);
 #endif
 void print_separator_line(void);
-void debug_indentation(int diff);
-void debug(const char *fmt, ...);
-void fatal(const char *fmt, ...);
 
 
 /*  mvmeprom.c:  */
@@ -281,9 +266,5 @@ int sh_ipl_g_emul(struct cpu *);
 void yamon_machine_setup(struct machine *machine, uint64_t env);
 int yamon_emul(struct cpu *);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif	/*  MISC_H  */

@@ -2,7 +2,7 @@
 #define	CPU_ARM_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,24 +28,17 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.77 2007-11-17 11:15:33 debug Exp $
+ *  $Id: cpu_arm.h,v 1.75.2.1 2008-01-18 19:12:31 debug Exp $
  */
 
 #include "misc.h"
 #include "interrupt.h"
 
-
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
-
-
 struct cpu_family;
 
 /*  ARM CPU types:  */
 struct arm_cpu_type_def {
-	const char	*name;
+	char		*name;
 	uint32_t	cpu_id;
 	int		flags;
 	int		icache_shift;
@@ -319,11 +312,5 @@ int arm_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 int arm_translate_v2p_mmu(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
 
 #endif	/*  CPU_ARM_H  */

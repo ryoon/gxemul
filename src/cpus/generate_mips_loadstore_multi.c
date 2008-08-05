@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_mips_loadstore_multi.c,v 1.1 2007-01-30 19:21:54 debug Exp $
+ *  $Id: generate_mips_loadstore_multi.c,v 1.1.2.1 2008-01-18 19:12:27 debug Exp $
  */
 
 #include <stdio.h>

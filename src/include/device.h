@@ -2,7 +2,7 @@
 #define	DEVICE_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.23 2007-11-17 11:15:33 debug Exp $
+ *  $Id: device.h,v 1.21.2.1 2008-01-18 19:12:32 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
@@ -71,11 +71,6 @@ struct pci_entry {
 
 #define	DEVINIT(name)		int devinit_ ## name (struct devinit *devinit)
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif /* __cplusplus */
-
 /*  autodev.c: (built automatically in the devices/ directory):  */
 void autodev_init(void);
 
@@ -83,7 +78,7 @@ void autodev_init(void);
 int device_register(char *name, int (*initf)(struct devinit *));
 struct device_entry *device_lookup(char *name);
 int device_unregister(char *name);
-void *device_add(struct machine *machine, const char *name_and_params);
+void *device_add(struct machine *machine, char *name_and_params);
 void device_dumplist(void);
 void device_set_exit_on_error(int exit_on_error);
 void device_init(void);
@@ -93,9 +88,5 @@ int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
 	struct pci_device *));
 void (*pci_lookup_initf(const char *name))(struct machine *machine,
 	struct memory *mem, struct pci_device *pd);
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 #endif	/*  DEVICE_H  */

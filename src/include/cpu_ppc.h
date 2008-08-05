@@ -2,7 +2,7 @@
 #define	CPU_PPC_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,16 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.73 2007-11-17 11:15:33 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.72.2.1 2008-01-18 19:12:31 debug Exp $
  */
 
 #include "misc.h"
-
-
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
 
 
 struct cpu_family;
@@ -47,7 +41,7 @@ struct cpu_family;
 
 /*  PPC CPU types:  */
 struct ppc_cpu_type_def { 
-	const char	*name;
+	char		*name;
 	int		pvr;
 	int		bits;
 	int		flags;
@@ -225,11 +219,5 @@ int ppc_cpu_family_init(struct cpu_family *);
 /*  memory_ppc.c:  */
 int ppc_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
 
 #endif	/*  CPU_PPC_H  */

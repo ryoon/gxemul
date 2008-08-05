@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.99 2007-06-15 19:57:33 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.99.2.1 2008-01-18 19:12:29 debug Exp $
  *  
  *  COMMENT: MC146818 real-time clock
  *

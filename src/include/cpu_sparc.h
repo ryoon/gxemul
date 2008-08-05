@@ -2,7 +2,7 @@
 #define	CPU_SPARC_H
 
 /*
- *  Copyright (C) 2005-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,16 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.50 2007-11-17 08:33:29 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.49.2.1 2008-01-18 19:12:32 debug Exp $
  */
 
 #include "misc.h"
-
-
-#ifdef __cplusplus
-extern "C"
-{ 
-#endif /* __cplusplus */
 
 
 struct cpu_family;
@@ -45,7 +39,7 @@ struct cpu_family;
 
 /*  SPARC CPU types:  */
 struct sparc_cpu_type_def { 
-	const char	*name;
+	char		*name;
 	int		v;			/*  v8, v9 etc  */
 	int		h;			/*  hypervisor? sun4v = 1  */
 	int		bits;			/*  32 or 64  */
@@ -362,11 +356,6 @@ int sparc_cpu_family_init(struct cpu_family *);
 /*  memory_sparc.c:  */
 int sparc_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
-
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 
 #endif	/*  CPU_SPARC_H  */

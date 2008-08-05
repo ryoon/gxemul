@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2007  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2008  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.27 2007-06-28 14:58:38 debug Exp $
+ *  $Id: debugger.c,v 1.27.2.1 2008-01-18 19:12:27 debug Exp $
  *
  *  Single-step debugger.
  *

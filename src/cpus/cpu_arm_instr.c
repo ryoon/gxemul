@@ -2801,8 +2801,8 @@ X(to_be_translated)
 
 		/*  "bkpt", ARMv5 and above  */
 		if ((iword & 0x0ff000f0) == 0x01200070) {
-			ic->arg[0] = addr & 0xfff;
 			ic->f = cond_instr(bkpt);
+			ic->arg[0] = addr & 0xfff;
 			break;
 		}
 
@@ -2924,9 +2924,15 @@ X(to_be_translated)
 		else
 			ic->arg[1] = (size_t)(void *)arm_r[iword & 0xfff];
 		if ((iword & 0x0e000010) == 0x06000010) {
+#if 0
 			if (!cpu->translation_readahead)
 				fatal("Not a Load/store TODO\n");
 			goto bad;
+#else
+			/*  GDB uses this for breakpoints.  */
+			ic->f = cond_instr(und);
+			ic->arg[0] = addr & 0xfff;
+#endif
 		}
 		/*  Special case: pc-relative load within the same page:  */
 		if (rn == ARM_PC && rd != ARM_PC && main_opcode < 6 && l_bit) {
@@ -3134,7 +3140,7 @@ X(to_be_translated)
 		 *  For now, treat as Undefined instructions. This causes e.g.
 		 *  Linux/ARM to emulate these instructions (floating point).
 		 */
-#if 0
+#if 1
 		ic->f = cond_instr(und);
 		ic->arg[0] = addr & 0xfff;
 #else

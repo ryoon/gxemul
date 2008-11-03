@@ -3723,3 +3723,5 @@ Changelog for GXemul:
 		Also enabling ARM UND exceptions for ARM floating point
 		instructions (needed by both Linux and NetBSD/arm).
 20081103	Fix for a free() bug in bootblock_iso9660.c.
+		Updating the OpenBSD/landisk installation instructions from
+		4.2 to 4.4, after verifying that it works.

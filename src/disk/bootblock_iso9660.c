@@ -340,7 +340,7 @@ printf("\n");
 	memmove(tmpfname + 1, tmpfname, strlen(tmpfname) + 1);
 	tmpfname[0] = 8;
 
-	(*load_namesp)[*n_loadp - 1] = tmpfname;
+	(*load_namesp)[*n_loadp - 1] = strdup(tmpfname);
 
 	res = 1;
 

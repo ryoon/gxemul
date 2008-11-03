@@ -3722,4 +3722,4 @@ Changelog for GXemul:
 		which is needed by gdb when running inside the emulator.
 		Also enabling ARM UND exceptions for ARM floating point
 		instructions (needed by both Linux and NetBSD/arm).
-
+20081103	Fix for a free() bug in bootblock_iso9660.c.

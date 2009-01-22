@@ -3837,3 +3837,4 @@ Changelog for GXemul:
 		configure script. Removing almost everything from the man
 		page.
 		Removing obsolete header files.
+		Removing obsolete documentation.

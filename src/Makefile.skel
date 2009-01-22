@@ -4,11 +4,7 @@
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
-all: do_include
-	$(MAKE) do_components do_ir do_main do_ui
-
-do_include:
-	cd include; $(MAKE)
+all: do_components do_ir do_main do_ui
 
 do_components:
 	cd components; $(MAKE)
@@ -25,14 +21,12 @@ do_ui:
 
 clean:
 	rm -f core *.core tmp_*.c
-	cd include; $(MAKE) clean
 	cd components; $(MAKE) clean
 	cd ir; $(MAKE) clean
 	cd main; $(MAKE) clean
 	cd ui; $(MAKE) clean
 
 clean_all: clean
-	cd include; $(MAKE) clean_all
 	cd components; $(MAKE) clean_all
 	cd ir; $(MAKE) clean_all
 	cd main; $(MAKE) clean_all

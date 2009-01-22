@@ -3836,3 +3836,4 @@ Changelog for GXemul:
 		use 0.4.x. Only C++ compiler (not C) is now detected by the
 		configure script. Removing almost everything from the man
 		page.
+		Removing obsolete header files.

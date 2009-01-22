@@ -946,7 +946,6 @@ D="$D src/components/machines src/components/memory"
 D="$D src/ir"
 D="$D src/main src/main/actions src/main/commands src/main/fileloaders"
 D="$D src/ui src/ui/console src/ui/nullui"
-D="$D src/include"
 for a in $D; do
 	echo "creating $a/Makefile"
 	touch $a/Makefile

@@ -1,6 +1,0 @@
-file_aout.c  a.out executable file support
-file_ecoff.c  ECOFF file support
-file_elf.c  ELF file support
-file_macho.c  Mach-O file support
-file_raw.c  Raw file support
-file_srec.c  SREC file support

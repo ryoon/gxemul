@@ -1,4 +1,0 @@
-
-	/*  autodev_tail.c  */
-}
-

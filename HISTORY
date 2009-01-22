@@ -3831,3 +3831,8 @@ Changelog for GXemul:
 20090118	Machine component tree dumps are now automagically included
 		in the HTML documentation for individual machines.
 20090120	Continuing on native code generation.
+20090122	Deciding (again!) to remove ALL legacy code. People who
+		want to use old GXemul machines and features will have to
+		use 0.4.x. Only C++ compiler (not C) is now detected by the
+		configure script. Removing almost everything from the man
+		page.

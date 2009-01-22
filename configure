@@ -87,6 +87,7 @@ if [ z"$*" != z ]; then
 			WITHI18N=YES
 		else if [ z$a = z--without-i18n ]; then
 			WITHI18N=NO
+			WITHGLIBMM=NO
 		else if [ z$a = z--without-native-code ]; then
 			WITHNATIVECODE=NO
 		else if [ z$a = z--with-x11 ]; then

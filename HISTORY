@@ -3805,3 +3805,4 @@ Changelog for GXemul:
 ==============  RELEASE 0.4.7  ==============
 
 20090103	Merging fixes from the main trunk.
+20090122	Merging in fdiv.sss and fadd.dsd from the main trunk.

@@ -300,6 +300,12 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 	doing the MBR partitioning, and choose to install from CD-ROM.)
 </ol>
 
+<p>(While it is possible to install and run NetBSD/hpcmips without the <tt>-X</tt>
+command line option (i.e. using serial console), NetBSD 4.0.1's default
+<tt>/etc/ttys</tt> file after a full install does not have
+<tt>/dev/console</tt> enabled, so you need to edit <tt>/etc/ttys</tt>
+before you reboot after the install, to be able to log in.)
+
 <p>
 If everything worked, NetBSD should now be installed on the disk image.
 Use the following command line to boot the emulated hpcmips machine:<pre>

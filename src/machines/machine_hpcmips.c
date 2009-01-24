@@ -389,7 +389,7 @@ MACHINE_SETUP(hpcmips)
 	store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type,
 	    hpc_fb_encoding);
 	store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse,
-	    BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
+	    machine->x11_md.in_use? BI_CNUSE_BUILTIN : BI_CNUSE_SERIAL);
 
 	/*  printf("hpc_bootinfo.platid_cpu     = 0x%08x\n",
 	    hpc_bootinfo.platid_cpu);

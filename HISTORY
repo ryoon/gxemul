@@ -3809,3 +3809,5 @@ Changelog for GXemul:
 20090123	NetBSD/hpcmips can now be installed and run using serial
 		console (i.e. without -X), in addition to using the
 		framebuffer.
+
+==============  RELEASE 0.4.7.1  ==============

@@ -50,8 +50,6 @@ void IRNative::Execute(void *addr)
 #ifdef WITHUNITTESTS
 #ifdef NATIVE_CODE_GENERATION
 
-#include <sys/mman.h>
-
 static int variable;
 static void SmallFunction()
 {

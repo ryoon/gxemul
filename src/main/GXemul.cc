@@ -703,7 +703,7 @@ void GXemul::PrintUsage(bool longUsage) const
 		    " start an emulation. You have\n"
 		    "the following alternatives:\n") <<
 		    "\n" <<
-		    _("  1. Run  gxemul  with machine selection options "
+		    _("  1. Run  gxemul  with the machine selection option "
 		    "(-e), which creates\n"
 		    "     a default emulation from a template machine.\n\n"
 		    "  2. Run  gxemul  with a configuration file (.gxemul).\n"

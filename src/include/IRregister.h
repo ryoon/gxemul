@@ -1,8 +1,8 @@
-#ifndef IRNATIVEAMD64_H
-#define	IRNATIVEAMD64_H
+#ifndef IRREGISTER_H
+#define	IRREGISTER_H
 
 /*
- *  Copyright (C) 2008-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2009  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -30,28 +30,70 @@
 
 #include "misc.h"
 
-#include "IRNative.h"
+typedef int IRregisterNr;
 
 
 /**
- * \brief An AMD64 IRNative code generator.
+ * \brief A class describing a (native) register.
  */
-class IRNativeAMD64
-	: public IRNative
+class IRregister
 {
 public:
+	IRregister(const string& native_register_name, int native_register)
+		: reserved(false)
+		, inUse(false)
+		, dirty(false)
+		, dirty_offset(0)
+		, address(0)
+		, implementation_register(native_register)
+		, implementation_register_name(native_register_name)
+	{
+	}
+
 	/**
-	 * \brief Constructs an %IRNativeAMD64 instance.
+	 * \brief True if this register is reserved (e.g. for a cpu struct
+	 * pointer, or for ABI reasons), false if it is available for use
+	 * by the register allocator.
 	 */
-	IRNativeAMD64();
+	bool	reserved;
 
-	virtual ~IRNativeAMD64() { }
+	/**
+	 * \brief True if the register corresponds to a value in the CPU
+	 * struct, described by the address field.
+	 */
+	bool	inUse;
 
-	// These are described in IRNative.h:
-	void SetupRegisters(vector<IRregister>& registers);
+	/**
+	 * \brief True if the register needs to be written back to memory.
+	 *
+	 * Only valid if inUse is also true.
+	 */
+	bool	dirty;
 
-private:
+	/**
+	 * \brief A constant offset to be added to a register before reading
+	 * from it, or writing it back to memory.
+	 */
+	int	dirty_offset;
+
+	/**
+	 * \brief Offset into the cpu struct that this register corresponds
+	 * to.
+	 *
+	 * Only valid if inUse is true.
+	 */
+	size_t	address;
+
+	/**
+	 * \brief Backend register number.
+	 */
+	IRregisterNr	implementation_register;
+
+	/**
+	 * \brief Register name, for debugging.
+	 */
+	string	implementation_register_name;
 };
 
 
-#endif	// IRNATIVEAMD64_H
+#endif	// IRREGISTER_H

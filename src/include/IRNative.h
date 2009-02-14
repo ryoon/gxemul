@@ -29,31 +29,21 @@
  */
 
 #include "misc.h"
-#include "UnitTest.h"
 
-class IRInstruction;
+#include "IRregister.h"
+#include "UnitTest.h"
 
 
 /**
- * \brief A baseclass for native code generators.
+ * \brief A helper/baseclass for native code generators.
  *
- * A native code generator is fed IRInstruction elements, and as output it
- * should be able to generate native machine code in memory which
- * corresponds to the IR code.
+ * TODO
  */
 class IRNative
 	: public UnitTestable
+	, public ReferenceCountable
 {
-public:
-	enum Opcode
-	{
-		OpcodeAdd2,
-		OpcodeAdd3,
-		OpcodeMove,
-		OpcodeStore
-	};
-
-public:
+protected:
 	/**
 	 * \brief Constructs an %IRNative instance.
 	 */
@@ -61,40 +51,26 @@ public:
 	{
 	}
 
+public:
 	virtual ~IRNative()
 	{
 	}
 
 	/**
-	 * \brief Clears the code generator's list of instructions.
+	 * \brief Gets a native code generator for the host architecture.
+	 *
+	 * \return A reference to a native code generator, or NULL if no
+	 * support for native code generation was compiled in.
 	 */
-	virtual void Clear() = 0;
+	static refcount_ptr<IRNative> GetIRNative();
 
 	/**
-	 * \brief Adds an instruction to the native code generator.
+	 * \brief Setup native registers.
 	 *
-	 * \param opcode The main opcode.
+	 * This function adds registers that the IR register allocator then
+	 * uses.
 	 */
-	virtual void Add(enum Opcode opcode) = 0;
-	
-	/**
-	 * \brief Calculates the size of the code which is to be generated.
-	 *
-	 * \return The size in bytes.
-	 */
-	virtual size_t GetSize() const = 0;
-	
-	/**
-	 * \brief Generates code into a buffer.
-	 *
-	 * Note: For some archs, after the code has been generated, the dst
-	 * buffer is invalidated in the instruction cache, so that it can
-	 * be executed. (Not needed on all architectures, e.g. amd64.)
-	 *
-	 * \param maxSize The size of the buffer in bytes.
-	 * \param dst The pointer to the buffer.
-	 */
-	virtual void Generate(size_t maxSize, uint8_t * dst) const = 0;
+	virtual void SetupRegisters(vector<IRregister>& registers) = 0;
 
 	/**
 	 * \brief Executes code on the host, from a specified address in

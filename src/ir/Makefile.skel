@@ -5,7 +5,7 @@
 CXXFLAGS=$(CXXWARNINGS) $(CXXOPTIM) $(CPEDANTIC) $(INCLUDE1)
 LIBS=$(OTHERLIBS)
 
-OBJS=	IRBlockCache.o IRNativeAMD64.o
+OBJS=	IR.o IRBlockCache.o IRNativeAMD64.o
 
 all: $(OBJS) IRNative.o
 

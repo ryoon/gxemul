@@ -27,7 +27,28 @@
 
 #include "IRNative.h"
 
-#ifdef NATIVE_CODE_GENERATION
+#ifdef NATIVE_ABI_AMD64
+#include "IRNativeAMD64.h"
+#endif
+
+#ifdef NATIVE_ABI_ALPHA
+#include "IRNativeAlpha.h"
+#endif
+
+
+refcount_ptr<IRNative> IRNative::GetIRNative()
+{
+#ifndef NATIVE_CODE_GENERATION
+	// TODO!
+	TODO.
+#endif
+#ifdef NATIVE_ABI_AMD64
+	return new IRNativeAMD64();
+#endif
+#ifdef NATIVE_ABI_ALPHA
+	return new IRNativeAlpha();
+#endif
+}
 
 
 /*
@@ -41,14 +62,10 @@ void IRNative::Execute(void *addr)
 }
 
 
-#endif	// NATIVE_CODE_GENERATION
-
-
 /*****************************************************************************/
 
 
 #ifdef WITHUNITTESTS
-#ifdef NATIVE_CODE_GENERATION
 
 static int variable;
 static void SmallFunction()
@@ -69,13 +86,9 @@ static void Test_IRNative_Execute()
 	UnitTest::Assert("variable after", variable, 123);
 }
 
-#endif	// NATIVE_CODE_GENERATION
-
 UNITTESTS(IRNative)
 {
-#ifdef NATIVE_CODE_GENERATION
 	UNITTEST(Test_IRNative_Execute);
-#endif	// NATIVE_CODE_GENERATION
 }
 
 #endif

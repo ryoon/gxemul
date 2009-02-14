@@ -1,8 +1,8 @@
-#ifndef IRNATIVEAMD64_H
-#define	IRNATIVEAMD64_H
+#ifndef IR_H
+#define	IR_H
 
 /*
- *  Copyright (C) 2008-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2009  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -30,28 +30,61 @@
 
 #include "misc.h"
 
+#include "IRBlockCache.h"
 #include "IRNative.h"
+#include "IRregister.h"
+#include "UnitTest.h"
 
 
 /**
- * \brief An AMD64 IRNative code generator.
+ * \brief A Intermediate Representation for code generation.
+ *
+ * The code generated can either be native code in a format that is executed
+ * directly on the host, or it can be a (much slower) host-independent
+ * format.
  */
-class IRNativeAMD64
-	: public IRNative
+class IR
+	: public UnitTestable
 {
 public:
 	/**
-	 * \brief Constructs an %IRNativeAMD64 instance.
+	 * \brief Constructs an %IR instance.
+	 *
+	 * \param blockCache A block cache used to store translated code
+	 *		     blocks.
 	 */
-	IRNativeAMD64();
+	IR(IRBlockCache& blockCache);
 
-	virtual ~IRNativeAMD64() { }
+	~IR();
 
-	// These are described in IRNative.h:
-	void SetupRegisters(vector<IRregister>& registers);
+	/*  Code generation:  */
+	void Flush();
+	void Let_64(uint64_t value, IRregisterNr *returnReg);
+	void Load_64(size_t relativeStructOffset, IRregisterNr* valueReg);
+	void Store_64(IRregisterNr valueReg, size_t relativeStructOffset);
+
+
+	/********************************************************************/
+
+	static void RunUnitTests(int& nSucceeded, int& nFailures);
 
 private:
+	void InitRegisterAllocator();
+	void UndirtyRegisterOffset(IRregister* reg);
+	void FlushRegister(IRregister* reg);
+	IRregisterNr GetNewRegisterNr();
+
+private:
+	IRBlockCache&		m_blockCache;
+	refcount_ptr<IRNative>	m_nativeGenerator;
+
+	// Register allocator:
+	//	At the front of the mru list is the most recently used
+	//	register. When allocating a new register using GetNewRegisterNr,
+	//	the back of the list is consulted.
+	vector<IRregister>	m_registers;
+	list<IRregister*>	m_mruRegisters;
 };
 
 
-#endif	// IRNATIVEAMD64_H
+#endif	// IR_H

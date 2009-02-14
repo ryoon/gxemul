@@ -3838,3 +3838,5 @@ Changelog for GXemul:
 		page.
 		Removing obsolete header files.
 		Removing obsolete documentation.
+20090214	Continuing on native code generation: beginning on register
+		allocation.

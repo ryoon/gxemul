@@ -1,5 +1,10 @@
-Code generation thoughts (2009-02-11 and 2009-02-13)
-----------------------------------------------------
+Code generation thoughts
+------------------------
+
+2009-02-13: Writing down initial thoughs about micro-ops, how to translate
+	simple stuff like "addu", and how register caching/delayed write back
+	is done, and how emulated load/store could work (with pessimistic
+	register caching).
 
 Random ramblings, which (I hope) will be the basis for the IR and native
 code generator in GXemul 0.5.x:
@@ -274,6 +279,9 @@ When storing values in registers when pessimistic mode is on:
 	store opcodes are not delayed
 	add/inc opcodes are not delayed
 
+It is therefore important that code uses as FEW registers as possible in
+pessimistic mode, since they are all "destroyed".
+
 The 'label' opcode is not valid unless pessimistic mode is used!
 
 More complex cases:
@@ -335,5 +343,4 @@ Operations so far:
 	call C
 	return/break on failure from call C
 
-	
 

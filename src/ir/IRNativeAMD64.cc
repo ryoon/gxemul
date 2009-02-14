@@ -36,38 +36,65 @@ IRNativeAMD64::IRNativeAMD64()
 }
 
 
-void IRNativeAMD64::Clear()
+void IRNativeAMD64::SetupRegisters(vector<IRregister>& registers)
 {
-	// TODO
-}
+	registers.clear();
 
+	IRregister rax("rax", 0);
+	registers.push_back(rax);
 
-void IRNativeAMD64::Add(enum Opcode opcode)
-{
-	switch (opcode) {
+	IRregister rcx("rcx", 1);
+	registers.push_back(rcx);
 
-	default:
-		std::cerr << "IRNativeAMD64::Add: Unimplemented opcode "
-		    << opcode << ".\n";
-		throw std::exception();
-	}
-}
+	IRregister rdx("rdx", 2);
+	registers.push_back(rdx);
 
+	IRregister rbx("rbx", 3);
+	rbx.reserved = true;		// callee-save. reserved for now.
+	registers.push_back(rbx);
 
-size_t IRNativeAMD64::GetSize() const
-{
-	return 1;	// TODO
-}
+	IRregister rsp("rsp", 4);
+	rsp.reserved = true;
+	registers.push_back(rsp);
 
+	IRregister rbp("rbp", 5);
+	rbp.reserved = true;
+	registers.push_back(rbp);
 
-void IRNativeAMD64::Generate(size_t maxSize, uint8_t * dst) const
-{
-	// Function prelude: Nothing on amd64.
+	IRregister rsi("rsi", 6);
+	registers.push_back(rsi);
 
-	// TODO
-	
-	// Function postlude: Just a retq will do.
-	dst[0] = 0xc3;
+	IRregister rdi("rdi", 7);	// rdi always holds a pointer to the
+	rdi.reserved = true;		// CPU struct, or equivalent.
+	registers.push_back(rdi);
+
+	IRregister r8("r8", 8);
+	registers.push_back(r8);
+
+	IRregister r9("r9", 9);
+	registers.push_back(r9);
+
+	IRregister r10("r10", 10);
+	registers.push_back(r10);
+
+	IRregister r11("r11", 11);
+	registers.push_back(r11);
+
+	IRregister r12("r12", 12);
+	r12.reserved = true;		// callee-save. reserved for now.
+	registers.push_back(r12);
+
+	IRregister r13("r13", 13);
+	r13.reserved = true;		// callee-save. reserved for now.
+	registers.push_back(r13);
+
+	IRregister r14("r14", 14);
+	r14.reserved = true;		// callee-save. reserved for now.
+	registers.push_back(r14);
+
+	IRregister r15("r15", 15);
+	r15.reserved = true;		// callee-save. reserved for now.
+	registers.push_back(r15);
 }
 
 
@@ -77,42 +104,7 @@ void IRNativeAMD64::Generate(size_t maxSize, uint8_t * dst) const
 /*****************************************************************************/
 
 
-#ifdef WITHUNITTESTS
-#ifdef NATIVE_ABI_AMD64
+// Note: This class is unit tested, but not from here.
+// It is tested from the main IR class.
 
-#include <sys/mman.h>
 
-// TODO: If these tests are written more or less architecture independent,
-// then they could be reused for e.g. Alpha as well.
-
-static void Test_IRNativeAMD64_DoNothing()
-{
-	IRNativeAMD64 nativeAMD64;
-	IRNative* native = &nativeAMD64;
-
-	size_t size = native->GetSize();
-	UnitTest::Assert("size should be non-zero, since the return instruction"
-	    " must be in there somewhere", size >= 1);
-
-	uint8_t * buf = (uint8_t *) mmap(NULL, size,
-	    PROT_EXEC | PROT_WRITE | PROT_READ, MAP_ANON | MAP_PRIVATE, -1, 0);
-	UnitTest::Assert("unable to mmap?", buf != MAP_FAILED && buf != NULL);
-
-	// Generate and execute the code. Nothing should happen, but
-	// at least there should be no crash/segfault.
-	native->Generate(size, buf);
-	IRNative::Execute(buf);
-
-	munmap(buf, size);
-}
-
-#endif	// NATIVE_ABI_AMD64
-
-UNITTESTS(IRNativeAMD64)
-{
-#ifdef NATIVE_ABI_AMD64
-	UNITTEST(Test_IRNativeAMD64_DoNothing);
-#endif	// NATIVE_ABI_AMD64
-}
-
-#endif

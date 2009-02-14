@@ -186,6 +186,7 @@ void IR::Store_64(IRregisterNr valueReg, size_t relativeStructOffset)
 			if (reg->dirty && reg->address != relativeStructOffset)
 				FlushRegister(reg);
 
+			reg->inUse = true;
 			reg->dirty = true;
 			reg->address = relativeStructOffset;
 
@@ -255,7 +256,37 @@ static void Test_IR_RegisterReuse()
 	    r_4, r_2);
 }
 
-static void Test_IR_VariableAssignment()
+static void Test_IR_DelayedStore()
+{
+	IRBlockCache blockCache(1048576);
+	IR ir(blockCache);
+
+	struct cpu cpu;
+	cpu.variable = 42;
+
+	IRregisterNr r_1;
+	ir.Let_64(123, &r_1);
+
+	ir.Store_64(r_1, (size_t)&cpu.variable - (size_t)&cpu);
+	// TODO: This store above should not have outputted anything.
+	
+	// TODO: Flushing should output the actual store.
+	//ir.Flush();
+	
+	// TODO: Flushing again should not output anything new.
+	//ir.Flush();
+
+	// TODO: generate code
+
+	UnitTest::Assert("before IR execution", cpu.variable, 42);
+
+	// Execute the code.
+	// TODO
+
+	// UnitTest::Assert("after IR execution", cpu.variable, 123);
+}
+
+static void Test_IR_LoadAfterStore()
 {
 	IRBlockCache blockCache(1048576);
 	IR ir(blockCache);
@@ -268,21 +299,23 @@ static void Test_IR_VariableAssignment()
 
 	ir.Store_64(r_1, (size_t)&cpu.variable - (size_t)&cpu);
 
-	// TODO: generate code
+	IRregisterNr r_2 = 1000;
+	ir.Load_64((size_t)&cpu.other_dummy - (size_t)&cpu, &r_2);
+	UnitTest::Assert("should have gotten a new register for the dummy",
+	    r_2 != r_1);
 
-	UnitTest::Assert("before IR execution", cpu.variable, 42);
-
-	// Execute the code.
-	// TODO
-
-	// UnitTest::Assert("after IR execution", cpu.variable, 123);
+	IRregisterNr r_3 = 2000;
+	ir.Load_64((size_t)&cpu.variable - (size_t)&cpu, &r_3);
+	UnitTest::Assert("should have reused the first register number",
+	    r_3, r_1);
 }
 
 UNITTESTS(IR)
 {
 	UNITTEST(Test_IR_RegisterAllocation);
 	UNITTEST(Test_IR_RegisterReuse);
-	UNITTEST(Test_IR_VariableAssignment);
+	UNITTEST(Test_IR_DelayedStore);
+	UNITTEST(Test_IR_LoadAfterStore);
 }
 
 #endif

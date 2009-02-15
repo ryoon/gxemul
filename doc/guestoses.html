@@ -66,7 +66,7 @@ SUCH DAMAGE.
   <li><a href="#openbsdcatsinstall">OpenBSD/cats 4.0</a>
   <li><a href="#openbsdlandiskinstall">OpenBSD/landisk 4.4</a>
   <li><a href="#openbsdmvme88kinstall">OpenBSD/mvme88k 4.4</a>
-  <li><a href="#helenos">HelenOS 0.3.0</a>
+  <li><a href="#helenos">HelenOS 0.4.0</a>
   <li><a href="#ultrixinstall">Ultrix/RISC 4.5</a>
   <li><a href="#sprite">Sprite for DECstation</a>
   <li><a href="#declinux">Debian GNU/Linux for DECstation</a>
@@ -119,8 +119,10 @@ or are not yet working but could be in the future.
 
 <p>Some operating systems are listed with a version number <i>less</i> 
 than what was available at the time of this GXemul release (e.g. 
-NetBSD/prep). The reasons for this is because of incompleteness in 
+NetBSD/prep). The reasons for this may be because of incompleteness in 
 GXemul's machine, device, and/or processor implementations.
+It may also simply be that I have not had time to verify the 
+installation prodecure with any higher version that the listed one.
 
 
 
@@ -1904,32 +1906,35 @@ from within the guest OS.
 <a name="helenos"></a>
 <h3>HelenOS:</h3>
 
-<a href="http://www.helenos.eu/">HelenOS</a> can run in GXemul's
+<a href="http://www.helenos.org/">HelenOS</a> can run in GXemul's
 <tt>testarm</tt> and <tt>testmips</tt> machine modes.
 
 <p>To run HelenOS for ARM in GXemul:
 <ol>
   <li>Download the HelenOS kernel:<pre>
-	<a href="http://www.helenos.eu/releases/HelenOS-0.3.0-arm32-gxemul.boot">http://www.helenos.eu/releases/HelenOS-0.3.0-arm32-gxemul.boot</a>
+	<a href="http://www.helenos.org/releases/HelenOS-0.4.0-arm32-gxemul.boot">http://www.helenos.org/releases/HelenOS-0.4.0-arm32-gxemul.boot</a>
   </pre>
   <li>Start GXemul using the following command line:<pre>
-  	<b>gxemul -X -E testarm HelenOS-0.3.0-arm32-gxemul.boot</b>
+  	<b>gxemul -X -E testarm HelenOS-0.4.0-arm32-gxemul.boot</b>
   </pre>
 </ol>
 
 <p>To run HelenOS for MIPS in GXemul:
 <ol>
   <li>Download the HelenOS kernel:<pre>
-	<a href="http://www.helenos.eu/releases/HelenOS-0.3.0-mips32-gxemul.boot">http://www.helenos.eu/releases/HelenOS-0.3.0-mips32-gxemul.boot</a>
+	<a href="http://www.helenos.org/releases/HelenOS-0.4.0-mips32-gxemul.boot">http://www.helenos.org/releases/HelenOS-0.4.0-mips32-gxemul.boot</a>
   </pre>
   <li>Start GXemul using the following command line:<pre>
-  	<b>gxemul -X -E testmips -C 5Kc HelenOS-0.3.0-mips32-gxemul.boot</b>
+  	<b>gxemul -X -E testmips -C 5Kc HelenOS-0.4.0-mips32-gxemul.boot</b>
   </pre>
-	(Note the <tt>-C 5Kc</tt> option.)
+	(Note the <tt>-C 5Kc</tt> option. HelenOS depends on the fact that
+	the MIPS rdhwr instruction should trigger an 'invalid opcode'
+	exception, and the default testmips CPU (5KE) does not treat this
+	as an invalid opcode. It is valid, but not yet implemented.)
 </ol>
 
-<p>Once the kernel has booted, you can press e.g. F2 to get to the
-Tetris task, or F12 to enter the kernel console.
+<p>Once the kernel has booted, you can press e.g. F3 to get to the
+command line shell, or F12 + Enter to enter the kernel console.
 
 
 

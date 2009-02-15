@@ -3811,3 +3811,5 @@ Changelog for GXemul:
 		framebuffer.
 
 ==============  RELEASE 0.4.7.1  ==============
+
+20090215	Updating the guest OS page for HelenOS 0.4.0.

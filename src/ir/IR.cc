@@ -92,12 +92,10 @@ void IR::FlushRegister(IRregister* reg)
 	if (!reg->dirty)
 		return;
 
-#ifndef NDEBUG
 	if (!reg->inUse) {
 		std::cerr << "Huh? Register dirty, but not in use?\n";
 		throw std::exception();
 	}
-#endif
 
 	UndirtyRegisterOffset(reg);
 

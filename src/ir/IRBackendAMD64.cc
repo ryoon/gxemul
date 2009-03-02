@@ -25,18 +25,18 @@
  *  SUCH DAMAGE.
  */
 
-#include "IRNativeAMD64.h"
+#include "IRBackendAMD64.h"
 
 #ifdef NATIVE_ABI_AMD64
 
 
-IRNativeAMD64::IRNativeAMD64()
-	: IRNative()
+IRBackendAMD64::IRBackendAMD64()
+	: IRBackend()
 {
 }
 
 
-void IRNativeAMD64::SetupRegisters(vector<IRregister>& registers)
+void IRBackendAMD64::SetupRegisters(vector<IRregister>& registers)
 {
 	registers.clear();
 

@@ -25,70 +25,31 @@
  *  SUCH DAMAGE.
  */
 
-#include "IRNative.h"
-
-#ifdef NATIVE_ABI_AMD64
-#include "IRNativeAMD64.h"
-#endif
-
-#ifdef NATIVE_ABI_ALPHA
-#include "IRNativeAlpha.h"
-#endif
+#include "IRBackendPortable.h"
 
 
-refcount_ptr<IRNative> IRNative::GetIRNative()
+IRBackendPortable::IRBackendPortable()
+	: IRBackend()
 {
-#ifndef NATIVE_CODE_GENERATION
-	// TODO!
-	TODO.
-#endif
-#ifdef NATIVE_ABI_AMD64
-	return new IRNativeAMD64();
-#endif
-#ifdef NATIVE_ABI_ALPHA
-	return new IRNativeAlpha();
-#endif
 }
 
 
-/*
- *  Note: This .cc module needs to be compiled without -ansi -pedantic,
- *  since calling generated code like this gives a warning.
- */
-void IRNative::Execute(void *addr)
+void IRBackendPortable::SetupRegisters(vector<IRregister>& registers)
 {
-	void (*func)() = (void (*)()) addr;
-	func();
+	registers.clear();
+
+	IRregister temp0("temp0", 0);
+	registers.push_back(temp0);
+
+	IRregister temp1("temp1", 1);
+	registers.push_back(temp1);
 }
 
 
 /*****************************************************************************/
 
 
-#ifdef WITHUNITTESTS
+// Note: This class is unit tested, but not from here.
+// It is tested from the main IR class.
 
-static int variable;
-static void SmallFunction()
-{
-	variable = 123;
-}
 
-static void Test_IRNative_Execute()
-{
-	// Tests that it is possible to execute code, given a pointer to
-	// a void function.
-
-	variable = 42;
-	UnitTest::Assert("variable before", variable, 42);
-
-	IRNative::Execute((void*)&SmallFunction);
-
-	UnitTest::Assert("variable after", variable, 123);
-}
-
-UNITTESTS(IRNative)
-{
-	UNITTEST(Test_IRNative_Execute);
-}
-
-#endif

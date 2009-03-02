@@ -1,8 +1,8 @@
-#ifndef IR_H
-#define	IR_H
+#ifndef IRBACKEND_H
+#define	IRBACKEND_H
 
 /*
- *  Copyright (C) 2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2008-2009  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -30,61 +30,64 @@
 
 #include "misc.h"
 
-#include "IRBlockCache.h"
-#include "IRBackend.h"
 #include "IRregister.h"
 #include "UnitTest.h"
 
 
 /**
- * \brief A Intermediate Representation for code generation.
+ * \brief A helper/baseclass for code generator backends.
  *
- * The code generated can either be native code in a format that is executed
- * directly on the host, or it can be a (much slower) host-independent
- * format.
+ * TODO
  */
-class IR
+class IRBackend
 	: public UnitTestable
+	, public ReferenceCountable
 {
-public:
+protected:
 	/**
-	 * \brief Constructs an %IR instance.
-	 *
-	 * \param blockCache A block cache used to store translated code
-	 *		     blocks.
+	 * \brief Constructs an %IRBackend instance.
 	 */
-	IR(IRBlockCache& blockCache);
+	IRBackend()
+	{
+	}
 
-	~IR();
+public:
+	virtual ~IRBackend()
+	{
+	}
 
-	/*  Code generation:  */
-	void Flush();
-	void Let_64(uint64_t value, IRregisterNr *returnReg);
-	void Load_64(size_t relativeStructOffset, IRregisterNr* valueReg);
-	void Store_64(IRregisterNr valueReg, size_t relativeStructOffset);
+	/**
+	 * \brief Gets a code generator backend for the host architecture.
+	 *
+	 * \param useNativeIfAvailable True if a native JIT should be tried
+	 *	first, before falling back to the portable (slow)
+	 *	implementation.
+	 * \return A reference to a code generator backend.
+	 */
+	static refcount_ptr<IRBackend> GetIRBackend(
+	    bool useNativeIfAvailable = true);
+
+	/**
+	 * \brief Setup native registers.
+	 *
+	 * This function adds registers that the IR register allocator then
+	 * uses.
+	 */
+	virtual void SetupRegisters(vector<IRregister>& registers) = 0;
+
+	/**
+	 * \brief Executes code on the host, from a specified address in
+	 * host memory.
+	 *
+	 * \param addr The address of the (generated) code.
+	 */
+	static void Execute(void *addr);
 
 
 	/********************************************************************/
 
 	static void RunUnitTests(int& nSucceeded, int& nFailures);
-
-private:
-	void InitRegisterAllocator();
-	void UndirtyRegisterOffset(IRregister* reg);
-	void FlushRegister(IRregister* reg);
-	IRregisterNr GetNewRegisterNr();
-
-private:
-	IRBlockCache&		m_blockCache;
-	refcount_ptr<IRBackend>	m_codeGenerator;
-
-	// Register allocator:
-	//	At the front of the mru list is the most recently used
-	//	register. When allocating a new register using GetNewRegisterNr,
-	//	the back of the list is consulted.
-	vector<IRregister>	m_registers;
-	list<IRregister*>	m_mruRegisters;
 };
 
 
-#endif	// IR_H
+#endif	// IRBACKEND_H

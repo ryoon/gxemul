@@ -1,6 +1,3 @@
-#ifndef IR_H
-#define	IR_H
-
 /*
  *  Copyright (C) 2009  Anders Gavare.  All rights reserved.
  *
@@ -28,63 +25,75 @@
  *  SUCH DAMAGE.
  */
 
-#include "misc.h"
-
-#include "IRBlockCache.h"
 #include "IRBackend.h"
-#include "IRregister.h"
-#include "UnitTest.h"
+
+#include "IRBackendPortable.h"
+
+#ifdef NATIVE_ABI_AMD64
+#include "IRBackendAMD64.h"
+#endif
+
+#ifdef NATIVE_ABI_ALPHA
+#include "IRBackendAlpha.h"
+#endif
 
 
-/**
- * \brief A Intermediate Representation for code generation.
- *
- * The code generated can either be native code in a format that is executed
- * directly on the host, or it can be a (much slower) host-independent
- * format.
- */
-class IR
-	: public UnitTestable
+refcount_ptr<IRBackend> IRBackend::GetIRBackend(bool useNativeIfAvailable)
 {
-public:
-	/**
-	 * \brief Constructs an %IR instance.
-	 *
-	 * \param blockCache A block cache used to store translated code
-	 *		     blocks.
-	 */
-	IR(IRBlockCache& blockCache);
-
-	~IR();
-
-	/*  Code generation:  */
-	void Flush();
-	void Let_64(uint64_t value, IRregisterNr *returnReg);
-	void Load_64(size_t relativeStructOffset, IRregisterNr* valueReg);
-	void Store_64(IRregisterNr valueReg, size_t relativeStructOffset);
+	if (useNativeIfAvailable) {
+#ifndef NATIVE_CODE_GENERATION
+		return new IRBackendPortable();
+#endif
+#ifdef NATIVE_ABI_AMD64
+		return new IRBackendAMD64();
+#endif
+#ifdef NATIVE_ABI_ALPHA
+		return new IRBackendAlpha();
+#endif
+	} else {
+		return new IRBackendPortable();
+	}
+}
 
 
-	/********************************************************************/
-
-	static void RunUnitTests(int& nSucceeded, int& nFailures);
-
-private:
-	void InitRegisterAllocator();
-	void UndirtyRegisterOffset(IRregister* reg);
-	void FlushRegister(IRregister* reg);
-	IRregisterNr GetNewRegisterNr();
-
-private:
-	IRBlockCache&		m_blockCache;
-	refcount_ptr<IRBackend>	m_codeGenerator;
-
-	// Register allocator:
-	//	At the front of the mru list is the most recently used
-	//	register. When allocating a new register using GetNewRegisterNr,
-	//	the back of the list is consulted.
-	vector<IRregister>	m_registers;
-	list<IRregister*>	m_mruRegisters;
-};
+/*
+ *  Note: This .cc module needs to be compiled without -ansi -pedantic,
+ *  since calling generated code like this gives a warning.
+ */
+void IRBackend::Execute(void *addr)
+{
+	void (*func)() = (void (*)()) addr;
+	func();
+}
 
 
-#endif	// IR_H
+/*****************************************************************************/
+
+
+#ifdef WITHUNITTESTS
+
+static int variable;
+static void SmallFunction()
+{
+	variable = 123;
+}
+
+static void Test_IRBackend_Execute()
+{
+	// Tests that it is possible to execute code, given a pointer to
+	// a void function.
+
+	variable = 42;
+	UnitTest::Assert("variable before", variable, 42);
+
+	IRBackend::Execute((void*)&SmallFunction);
+
+	UnitTest::Assert("variable after", variable, 123);
+}
+
+UNITTESTS(IRBackend)
+{
+	UNITTEST(Test_IRBackend_Execute);
+}
+
+#endif

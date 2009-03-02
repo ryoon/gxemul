@@ -1,8 +1,8 @@
-#ifndef IRNATIVE_H
-#define	IRNATIVE_H
+#ifndef IRBACKENDPORTABLE_H
+#define	IRBACKENDPORTABLE_H
 
 /*
- *  Copyright (C) 2008-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2009  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -30,61 +30,31 @@
 
 #include "misc.h"
 
-#include "IRregister.h"
-#include "UnitTest.h"
+#include "IRBackend.h"
 
 
 /**
- * \brief A helper/baseclass for native code generators.
+ * \brief An IRBackend which does not generate native (host) code.
  *
- * TODO
+ * The implementation is written in portable code, instead of JIT-ing code
+ * aimed at a specific cpu.
  */
-class IRNative
-	: public UnitTestable
-	, public ReferenceCountable
+class IRBackendPortable
+	: public IRBackend
 {
-protected:
-	/**
-	 * \brief Constructs an %IRNative instance.
-	 */
-	IRNative()
-	{
-	}
-
 public:
-	virtual ~IRNative()
-	{
-	}
-
 	/**
-	 * \brief Gets a native code generator for the host architecture.
-	 *
-	 * \return A reference to a native code generator, or NULL if no
-	 * support for native code generation was compiled in.
+	 * \brief Constructs an %IRBackendPortable instance.
 	 */
-	static refcount_ptr<IRNative> GetIRNative();
+	IRBackendPortable();
 
-	/**
-	 * \brief Setup native registers.
-	 *
-	 * This function adds registers that the IR register allocator then
-	 * uses.
-	 */
-	virtual void SetupRegisters(vector<IRregister>& registers) = 0;
+	virtual ~IRBackendPortable() { }
 
-	/**
-	 * \brief Executes code on the host, from a specified address in
-	 * host memory.
-	 *
-	 * \param addr The address of the (generated) code.
-	 */
-	static void Execute(void *addr);
+	// These are described in IRBackend.h:
+	void SetupRegisters(vector<IRregister>& registers);
 
-
-	/********************************************************************/
-
-	static void RunUnitTests(int& nSucceeded, int& nFailures);
+private:
 };
 
 
-#endif	// IRNATIVE_H
+#endif	// IRBACKENDPORTABLE_H

@@ -3840,3 +3840,4 @@ Changelog for GXemul:
 		Removing obsolete documentation.
 20090214	Continuing on native code generation: beginning on register
 		allocation.
+20090302	Renaming IRNative* to IRBackend*.

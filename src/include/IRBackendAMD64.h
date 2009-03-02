@@ -1,5 +1,5 @@
-#ifndef IRNATIVEAMD64_H
-#define	IRNATIVEAMD64_H
+#ifndef IRBACKENDAMD64_H
+#define	IRBACKENDAMD64_H
 
 /*
  *  Copyright (C) 2008-2009  Anders Gavare.  All rights reserved.
@@ -30,28 +30,28 @@
 
 #include "misc.h"
 
-#include "IRNative.h"
+#include "IRBackend.h"
 
 
 /**
- * \brief An AMD64 IRNative code generator.
+ * \brief An AMD64 IRBackend code generator.
  */
-class IRNativeAMD64
-	: public IRNative
+class IRBackendAMD64
+	: public IRBackend
 {
 public:
 	/**
-	 * \brief Constructs an %IRNativeAMD64 instance.
+	 * \brief Constructs an %IRBackendAMD64 instance.
 	 */
-	IRNativeAMD64();
+	IRBackendAMD64();
 
-	virtual ~IRNativeAMD64() { }
+	virtual ~IRBackendAMD64() { }
 
-	// These are described in IRNative.h:
+	// These are described in IRBackend.h:
 	void SetupRegisters(vector<IRregister>& registers);
 
 private:
 };
 
 
-#endif	// IRNATIVEAMD64_H
+#endif	// IRBACKENDAMD64_H

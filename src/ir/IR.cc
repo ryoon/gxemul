@@ -30,7 +30,7 @@
 
 IR::IR(IRBlockCache& blockCache)
 	: m_blockCache(blockCache)
-	, m_nativeGenerator(IRNative::GetIRNative())
+	, m_codeGenerator(IRBackend::GetIRBackend())
 {
 	InitRegisterAllocator();
 }
@@ -43,9 +43,9 @@ IR::~IR()
 
 void IR::InitRegisterAllocator()
 {
-	// Ask the native code generator for definitions of all its registers:
+	// Ask the code generator backend for definitions of all its registers:
 	m_registers.clear();
-	m_nativeGenerator->SetupRegisters(m_registers);
+	m_codeGenerator->SetupRegisters(m_registers);
 
 	// Add all non-reserved registers to a linked list. This is the list
 	// that registers are allocated from.

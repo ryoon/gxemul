@@ -45,6 +45,7 @@ public:
 		, dirty(false)
 		, dirty_offset(0)
 		, address(0)
+		, size(sizeof(uint64_t))
 		, implementation_register(native_register)
 		, implementation_register_name(native_register_name)
 	{
@@ -83,6 +84,13 @@ public:
 	 * Only valid if inUse is true.
 	 */
 	size_t	address;
+
+	/**
+	 * \brief Nr of bytes of this register that are in use.
+	 *
+	 * Meaningful values are 1 through 8. (8 to 64 bits.)
+	 */
+	int	size;
 
 	/**
 	 * \brief Backend register number.

@@ -56,14 +56,26 @@ refcount_ptr<IRBackend> IRBackend::GetIRBackend(bool useNativeIfAvailable)
 }
 
 
+void IRBackend::SetAddress(void* address)
+{
+	m_address = address;
+}
+
+
+void* IRBackend::GetAddress() const
+{
+	return m_address;
+}
+
+
 /*
  *  Note: This .cc module needs to be compiled without -ansi -pedantic,
  *  since calling generated code like this gives a warning.
  */
-void IRBackend::Execute(void *addr)
+void IRBackend::Execute(void *addr, void *cpustruct)
 {
-	void (*func)() = (void (*)()) addr;
-	func();
+	void (*func)(void *) = (void (*)(void *)) addr;
+	func(cpustruct);
 }
 
 
@@ -73,9 +85,17 @@ void IRBackend::Execute(void *addr)
 #ifdef WITHUNITTESTS
 
 static int variable;
-static void SmallFunction()
+
+struct something
 {
-	variable = 123;
+	int	dummy1;
+	int	dummy2;
+};
+
+static void SmallFunction(void *input)
+{
+	struct something* s = (struct something*) input;
+	variable = s->dummy1 + s->dummy2;
 }
 
 static void Test_IRBackend_Execute()
@@ -86,7 +106,11 @@ static void Test_IRBackend_Execute()
 	variable = 42;
 	UnitTest::Assert("variable before", variable, 42);
 
-	IRBackend::Execute((void*)&SmallFunction);
+	struct something testStruct;
+	testStruct.dummy1 = 120;
+	testStruct.dummy2 = 3;
+
+	IRBackend::Execute((void*)&SmallFunction, &testStruct);
 
 	UnitTest::Assert("variable after", variable, 123);
 }

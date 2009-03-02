@@ -46,6 +46,36 @@ void IRBackendPortable::SetupRegisters(vector<IRregister>& registers)
 }
 
 
+void IRBackendPortable::SetRegisterToImmediate_64(IRregister* reg, uint64_t value)
+{
+	// TODO
+}
+
+
+void IRBackendPortable::RegisterRead(IRregister* reg)
+{
+	// TODO
+}
+
+
+void IRBackendPortable::RegisterWriteback(IRregister* reg)
+{
+	// TODO
+}
+
+
+void IRBackendPortable::WriteIntro()
+{
+	// TODO
+}
+
+
+void IRBackendPortable::WriteOutro()
+{
+	// TODO
+}
+
+
 /*****************************************************************************/
 
 

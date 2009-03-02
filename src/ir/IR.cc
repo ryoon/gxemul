@@ -32,7 +32,12 @@ IR::IR(IRBlockCache& blockCache)
 	: m_blockCache(blockCache)
 	, m_codeGenerator(IRBackend::GetIRBackend())
 {
+
 	InitRegisterAllocator();
+
+	int dummyGeneration;
+	m_blockCacheCurrentStart = m_blockCache.Allocate(0,dummyGeneration);
+	m_codeGenerator->SetAddress(m_blockCacheCurrentStart);
 }
 
 
@@ -51,7 +56,8 @@ void IR::InitRegisterAllocator()
 	// that registers are allocated from.
 	m_mruRegisters.clear();
 	for (size_t i=0; i<m_registers.size(); i++) {
-#ifndef NDEBUG
+		// ... but make sure first that there are no name or
+		// register number collisions.
 		for (size_t j=0; j<i; j++) {
 			if (m_registers[i].implementation_register ==
 			    m_registers[j].implementation_register) {
@@ -67,7 +73,6 @@ void IR::InitRegisterAllocator()
 				throw std::exception();
 			}
 		}
-#endif
 
 		if (!m_registers[i].reserved)
 			m_mruRegisters.push_back(&m_registers[i]);
@@ -99,14 +104,11 @@ void IR::FlushRegister(IRregister* reg)
 
 	UndirtyRegisterOffset(reg);
 
-	// TODO: write back to memory
-	
-	std::cerr << "todo: writeback not yet implemented\n";
-	throw std::exception();
+	m_codeGenerator->RegisterWriteback(reg);
 }
 
 
-IRregisterNr IR::GetNewRegisterNr()
+IRregister* IR::GetNewRegister(int size)
 {
 	// Take the register at the back of the list:
 	IRregister* reg = m_mruRegisters.back();
@@ -116,8 +118,39 @@ IRregisterNr IR::GetNewRegisterNr()
 
 	m_mruRegisters.push_front(reg);
 	reg->inUse = false;
+	reg->size = size;
 
-	return reg->implementation_register;
+	return reg;
+}
+
+
+// TODO: WriteIntro!
+
+
+size_t IR::GetCurrentGeneratedCodeSize() const
+{
+	void* curEnd = m_codeGenerator->GetAddress();
+	void* curStart = m_blockCacheCurrentStart;
+	return (char *)curEnd - (char *)curStart;
+}
+
+
+void* IR::Finalize()
+{
+	// Emit function return code:
+	m_codeGenerator->WriteOutro();
+
+	size_t length = GetCurrentGeneratedCodeSize();
+
+	// Allocate _after_ we've outputted the actual code :-)
+	int generation;
+	void* curStart = m_blockCache.Allocate(length, generation);
+
+	// Now, allocate 0 bytes to get a new nicely aligned start address:
+	m_blockCacheCurrentStart = m_blockCache.Allocate(0, generation);
+	m_codeGenerator->SetAddress(m_blockCacheCurrentStart);
+
+	return curStart;
 }
 
 
@@ -131,9 +164,10 @@ void IR::Flush()
 
 void IR::Let_64(uint64_t value, IRregisterNr *returnReg)
 {
-	*returnReg = GetNewRegisterNr();
+	IRregister* reg = GetNewRegister(sizeof(uint64_t));
+	*returnReg = reg->implementation_register;
 
-	// TODO: emit instruction "let" into the specific register.
+	m_codeGenerator->SetRegisterToImmediate_64(reg, value);
 }
 
 
@@ -156,19 +190,15 @@ void IR::Load_64(size_t relativeStructOffset, IRregisterNr* valueReg)
 	}
 
 	// Otherwise, perform an actual load:
-	*valueReg = GetNewRegisterNr();
-
-	// TODO: emit instruction to load into the register
+	IRregister* reg = GetNewRegister(sizeof(uint64_t));
+	*valueReg = reg->implementation_register;
 
 	// Mark the register as inUse with the specified address:
-	// (It should be at the front of the mru list by now.)
-	IRregister* reg = m_mruRegisters.front();
-	if (reg->implementation_register != *valueReg) {
-		std::cerr << "Internal error: Load\n";
-		throw std::exception();
-	}
 	reg->inUse = true;
 	reg->address = relativeStructOffset;
+
+	// Emit instruction to load into the register:
+	m_codeGenerator->RegisterRead(reg);
 }
 
 
@@ -180,6 +210,12 @@ void IR::Store_64(IRregisterNr valueReg, size_t relativeStructOffset)
 		if ((*it)->implementation_register == valueReg) {
 			IRregister* reg = *it;
 
+			if (reg->size != sizeof(uint64_t)) {
+				std::cerr << "TODO: Store a different size"
+				    " than the register's size?\n";
+				throw std::exception();
+			}
+			
 			// Already dirty, with some other address?
 			if (reg->dirty && reg->address != relativeStructOffset)
 				FlushRegister(reg);
@@ -265,23 +301,45 @@ static void Test_IR_DelayedStore()
 	IRregisterNr r_1;
 	ir.Let_64(123, &r_1);
 
+	size_t s1 = ir.GetCurrentGeneratedCodeSize();
+
 	ir.Store_64(r_1, (size_t)&cpu.variable - (size_t)&cpu);
-	// TODO: This store above should not have outputted anything.
-	
-	// TODO: Flushing should output the actual store.
-	//ir.Flush();
-	
-	// TODO: Flushing again should not output anything new.
-	//ir.Flush();
 
-	// TODO: generate code
+	// This store above should not have outputted anything.
+	size_t s2 = ir.GetCurrentGeneratedCodeSize();
+	UnitTest::Assert("store should not have outputted anything yet", s1, s2);
 
+	// Flushing should output the actual store.
+	ir.Flush();
+	size_t s3 = ir.GetCurrentGeneratedCodeSize();
+	UnitTest::Assert("store should now have been flushed", s2 != s3);
+	
+	// Flushing again should not output anything new.
+	ir.Flush();
+	size_t s4 = ir.GetCurrentGeneratedCodeSize();
+	UnitTest::Assert("nothing more should have been outputted", s3, s4);
+
+	// Finally, generate the code...
+	void* generatedCode = ir.Finalize();
+
+	UnitTest::Assert("no generated code?", generatedCode != NULL);
 	UnitTest::Assert("before IR execution", cpu.variable, 42);
 
-	// Execute the code.
-	// TODO
+	{
+		uint8_t* p = (uint8_t *) generatedCode;
+		printf("Debug dump of generated code:\n");
+		for (int i=0; i<4; i++) {
+			for (int j=0; j<16; j++) {
+				printf(" %02x", p[i*16+j]);
+			}
+			printf("\n");
+		}
+	}
 
-	// UnitTest::Assert("after IR execution", cpu.variable, 123);
+	// ... and execute it:
+	IRBackend::Execute(generatedCode, &cpu);
+
+	UnitTest::Assert("after IR execution", cpu.variable, 123);
 }
 
 static void Test_IR_LoadAfterStore()

@@ -58,6 +58,8 @@ public:
 	~IR();
 
 	/*  Code generation:  */
+	size_t GetCurrentGeneratedCodeSize() const;
+	void* Finalize();
 	void Flush();
 	void Let_64(uint64_t value, IRregisterNr *returnReg);
 	void Load_64(size_t relativeStructOffset, IRregisterNr* valueReg);
@@ -72,10 +74,12 @@ private:
 	void InitRegisterAllocator();
 	void UndirtyRegisterOffset(IRregister* reg);
 	void FlushRegister(IRregister* reg);
-	IRregisterNr GetNewRegisterNr();
+	IRregister* GetNewRegister(int size);
 
 private:
 	IRBlockCache&		m_blockCache;
+	void*			m_blockCacheCurrentStart;
+
 	refcount_ptr<IRBackend>	m_codeGenerator;
 
 	// Register allocator:

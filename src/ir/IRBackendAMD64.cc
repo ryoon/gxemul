@@ -98,6 +98,57 @@ void IRBackendAMD64::SetupRegisters(vector<IRregister>& registers)
 }
 
 
+void IRBackendAMD64::SetRegisterToImmediate_64(IRregister* reg, uint64_t value)
+{
+	int r = reg->implementation_register;
+	
+	uint8_t* addr = (uint8_t *) GetAddress();
+
+	// Worst case: full 64-bit value:  mov $0x123456789abcdef,%reg
+	*addr++ = 0x48 + ((r >> 3) & 1);
+	*addr++ = 0xb8 + (r & 7);
+	*addr++ = value;
+	*addr++ = value >>  8;
+	*addr++ = value >> 16;
+	*addr++ = value >> 24;
+	*addr++ = value >> 32;
+	*addr++ = value >> 40;
+	*addr++ = value >> 48;
+	*addr++ = value >> 56;
+
+	// TODO: more optimized cases (8-bit and 32-bit)
+	// (but be aware of signedness!)
+
+	SetAddress(addr);
+}
+
+
+void IRBackendAMD64::RegisterRead(IRregister* reg)
+{
+	// TODO: Emit code.
+}
+
+
+void IRBackendAMD64::RegisterWriteback(IRregister* reg)
+{
+	// TODO: Emit code.
+}
+
+
+void IRBackendAMD64::WriteIntro()
+{
+	// TODO
+}
+
+
+void IRBackendAMD64::WriteOutro()
+{
+	uint8_t* addr = (uint8_t *) GetAddress();
+	*addr++ = 0xc3;	// retq
+	SetAddress(addr);
+}
+
+
 #endif	// NATIVE_ABI_AMD64
 
 

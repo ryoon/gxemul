@@ -52,6 +52,11 @@ public:
 
 	// These are described in IRBackend.h:
 	void SetupRegisters(vector<IRregister>& registers);
+	void SetRegisterToImmediate_64(IRregister* reg, uint64_t value);
+	void RegisterRead(IRregister* reg);
+	void RegisterWriteback(IRregister* reg);
+	void WriteIntro();
+	void WriteOutro();
 
 private:
 };

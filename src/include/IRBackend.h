@@ -68,25 +68,92 @@ public:
 	    bool useNativeIfAvailable = true);
 
 	/**
+	 * \brief Sets the current address in memory where code may be
+	 *	generated.
+	 *
+	 * \param address The address in host memory where code will be
+	 *	generated.
+	 */
+	void SetAddress(void* address);
+
+	/**
+	 * \brief Gets the current address in memory where code is being
+	 *	generated.
+	 *
+	 * \return The address in host memory where code will be
+	 *	generated next.
+	 */
+	void* GetAddress() const;
+
+	/**
 	 * \brief Setup native registers.
 	 *
 	 * This function adds registers that the IR register allocator then
 	 * uses.
+	 *
+	 * \param registers A reference to a vector into which the backend
+	 *	registers will be added.
 	 */
 	virtual void SetupRegisters(vector<IRregister>& registers) = 0;
+
+	/**
+	 * \brief Set a register to an immediate 64-bit value.
+	 *
+	 * \param reg The register to set.
+	 * \param value The immediate value.
+	 */
+	virtual void SetRegisterToImmediate_64(
+		IRregister* reg, uint64_t value) = 0;
+
+	/**
+	 * \brief Read a register from the CPU struct.
+	 *
+	 * The register's size, address, and implementation register control
+	 * what is actually emitted.
+	 *
+	 * \param reg The register to read into.
+	 */
+	virtual void RegisterRead(IRregister* reg) = 0;
+
+	/**
+	 * \brief Write back a dirty register to the CPU struct.
+	 *
+	 * The register's size, address, and implementation register control
+	 * what is actually emitted.
+	 *
+	 * \param reg The register to write back.
+	 */
+	virtual void RegisterWriteback(IRregister* reg) = 0;
+
+	/**
+	 * \brief Write function "intro".
+	 */
+	virtual void WriteIntro() = 0;
+
+	/**
+	 * \brief Write function "outro".
+	 */
+	virtual void WriteOutro() = 0;
 
 	/**
 	 * \brief Executes code on the host, from a specified address in
 	 * host memory.
 	 *
+	 * The cpustruct parameter is given as a paremeter to the code,
+	 * when it starts to execute.
+	 *
 	 * \param addr The address of the (generated) code.
+	 * \param cpustruct The address of the cpu struct.
 	 */
-	static void Execute(void *addr);
+	static void Execute(void *addr, void *cpustruct);
 
 
 	/********************************************************************/
 
 	static void RunUnitTests(int& nSucceeded, int& nFailures);
+
+private:
+	void*		m_address;
 };
 
 

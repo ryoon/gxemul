@@ -3813,3 +3813,5 @@ Changelog for GXemul:
 ==============  RELEASE 0.4.7.1  ==============
 
 20090215	Updating the guest OS page for HelenOS 0.4.0.
+20090513	Fixing the MIPS tne, teq, tge, tgeu, tlt, and tltu instructions
+		to allow non-zero "code" values.

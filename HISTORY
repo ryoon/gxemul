@@ -3815,3 +3815,5 @@ Changelog for GXemul:
 20090215	Updating the guest OS page for HelenOS 0.4.0.
 20090513	Fixing the MIPS tne, teq, tge, tgeu, tlt, and tltu instructions
 		to allow non-zero "code" values.
+		Adding a new Linux/Malta "variant 2" entry to the unsupported
+		guest OS page.

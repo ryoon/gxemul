@@ -354,7 +354,7 @@ are emulated well enough to run at least one "guest OS":
     <li><b>Acer Pica-61</b> (<a href="guestoses.html#netbsdarcinstall">NetBSD/arc</a>)
     <li><b>NEC MobilePro 770, 780, 800, 880</b> (<a href="guestoses.html#netbsdhpcmipsinstall">NetBSD/hpcmips</a>)
     <li><b>Cobalt</b> (<a href="guestoses.html#netbsdcobaltinstall">NetBSD/cobalt</a>)
-    <li><b>Malta</b> (<a href="guestoses.html#netbsdevbmipsinstall">NetBSD/evbmips</a>, Linux/Malta <font color="#0000e0">(<super>*1</super>)</font>)
+    <li><b>Malta</b> (<a href="guestoses.html#netbsdevbmipsinstall">NetBSD/evbmips</a>, <a href="unsupported.html#linux_malta2">Linux/Malta</a> <font color="#0000e0">(<super>*1</super>)</font>)
     <li><b>Algorithmics P5064</b> (<a href="guestoses.html#netbsdalgorinstall">NetBSD/algor</a>)
     <li><b>SGI O2 (aka IP32)</b> <font color="#0000e0">(<super>*2</super>)</font>
 	(<a href="guestoses.html#netbsdsgimips">NetBSD/sgi</a>)
@@ -382,10 +382,9 @@ are emulated well enough to run at least one "guest OS":
 
 <p>
 <small><font color="#0000e0">(<super>*1</super>)</font> =
-Linux/Malta may be run as a guest OS, however I have not yet found any stable
-URL to pre-compiled Linux/Malta kernels. Thus, Linux/Malta emulation is not
-tested for every release of the emulator; sometimes it works, sometimes
-it doesn't.</small>
+Linux/Malta sometimes works as a guest OS, but running Linux/Malta in GXemul
+is much more experimental/unknown than NetBSD, so it is still on the
+<a href="unsupported.html">"unsupported"</a> page.</small>
 
 <br><small><font color="#0000e0">(<super>*2</super>)</font> =
 The emulation is enough for root-on-nfs, but no disk controller (SCSI nor 

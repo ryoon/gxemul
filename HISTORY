@@ -3819,3 +3819,5 @@ Changelog for GXemul:
 		guest OS page.
 20090518	Changing the 8253 interrupt mechanism to assert interrupts
 		regardless of "mode" bits, causing Linux/Malta to get further.
+		Hacking on piix4 a bit to attempt to please Linux/Malta;
+		interrupts are lost.

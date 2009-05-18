@@ -3817,3 +3817,5 @@ Changelog for GXemul:
 		to allow non-zero "code" values.
 		Adding a new Linux/Malta "variant 2" entry to the unsupported
 		guest OS page.
+20090518	Changing the 8253 interrupt mechanism to assert interrupts
+		regardless of "mode" bits, causing Linux/Malta to get further.

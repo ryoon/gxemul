@@ -43,69 +43,6 @@
 
 #include "../../config.h"
 
-#define	COPYRIGHT_MSG	"Copyright (C) 2003-2009  Anders Gavare"
-
-// The recommended way to add a specific message to the startup banner or
-// about box is to use the SECONDARY_MSG. This should end with a newline
-// character, unless it is completely empty.
-//
-// Example:  "Modified by XYZ to include support for machine type UVW.\n"
-//
-#define	SECONDARY_MSG	""
-
-
-// Use Glib::ustring if available, otherwise std::string. Define
-// stringchar to be the type of a character.
-#ifdef WITH_GLIBMM
-#include <glibmm/ustring.h>
-typedef Glib::ustring string;
-typedef gunichar stringchar;
-#else
-#include <string>
-typedef std::string string;
-typedef char stringchar;
-#endif
-
-// Use Glib's I18N support if available
-#if defined(I18N) && defined(WITH_GLIBMM)
-#include <glibmm/i18n.h>
-#else
-#define	_(x)	(x)
-#endif
-
-#include <iostream>
-using std::ostream;
-
-#include <memory>
-using std::auto_ptr;
-
-#include <list>
-using std::list;
-
-#include <map>
-using std::map;
-
-#include <set>
-using std::set;
-
-#include <sstream>
-using std::stringstream;
-
-#include <vector>
-using std::vector;
-
-using std::min;
-using std::max;
-
-
-#ifndef NDEBUG
-#include "thirdparty/debug_new.h"
-#endif
-
-// Reference counting is needed in lots of places, so it is best to
-// include it from this file.
-#include "refcount_ptr.h"  
-
 
 #ifdef NO_C99_PRINTF_DEFINES
 /*
@@ -174,13 +111,6 @@ struct cpu;
 struct emul;
 struct machine;
 struct memory;
-
-
-enum Endianness
-{
-	BigEndian = 0,
-	LittleEndian
-};
 
 
 #define	NO_BYTE_ORDER_OVERRIDE		-1
@@ -262,6 +192,77 @@ enum Endianness
 		if ((ptr) == NULL)					\
 			FAILURE("Out of memory");			\
 	}
+
+
+/*  bootblock.c:  */
+int load_bootblock(struct machine *m, struct cpu *cpu,
+	int *n_loadp, char ***load_namesp);
+
+
+/*  bootblock_apple.c:  */
+int apple_load_bootblock(struct machine *m, struct cpu *cpu,
+	int disk_id, int disk_type, int *n_loadp, char ***load_namesp);
+
+
+/*  bootblock_iso9660.c:  */
+int iso_load_bootblock(struct machine *m, struct cpu *cpu,
+	int disk_id, int disk_type, int iso_type, unsigned char *buf,
+	int *n_loadp, char ***load_namesp);
+
+
+/*  dec_prom.c:  */
+int decstation_prom_emul(struct cpu *cpu);
+
+
+/*  dreamcast.c:  */
+void dreamcast_machine_setup(struct machine *);
+int dreamcast_emul(struct cpu *cpu);
+
+
+/*  dreamcast_scramble.c:  */
+void dreamcast_descramble(char *from, char *to);
+
+
+/*  file.c:  */
+int file_n_executables_loaded(void);
+void file_load(struct machine *machine, struct memory *mem,
+	char *filename, uint64_t *entrypointp,
+	int arch, uint64_t *gpp, int *byte_order, uint64_t *tocp);
+
+
+/*  main.c:  */
+void debug_indentation(int diff);
+void debug(char *fmt, ...);
+void fatal(char *fmt, ...);
+
+
+/*  misc.c:  */
+unsigned long long mystrtoull(const char *s, char **endp, int base);
+int mymkstemp(char *template);
+#ifdef USE_STRLCPY_REPLACEMENTS
+size_t mystrlcpy(char *dst, const char *src, size_t size);
+size_t mystrlcat(char *dst, const char *src, size_t size);
+#endif
+void print_separator_line(void);
+
+
+/*  mvmeprom.c:  */
+void mvmeprom_init(struct machine *machine);
+int mvmeprom_emul(struct cpu *cpu);
+
+
+/*  ps2_bios.c:  */
+int playstation2_sifbios_emul(struct cpu *cpu);
+
+
+/*  sh_ipl_g.c:  */
+void sh_ipl_g_emul_init(struct machine *machine);
+int sh_ipl_g_emul(struct cpu *);
+
+
+/*  yamon.c:  */
+void yamon_machine_setup(struct machine *machine, uint64_t env);
+int yamon_emul(struct cpu *);
 
 
 #endif	/*  MISC_H  */

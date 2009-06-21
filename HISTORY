@@ -3821,3 +3821,5 @@ Changelog for GXemul:
 		regardless of "mode" bits, causing Linux/Malta to get further.
 		Hacking on piix4 a bit to attempt to please Linux/Malta;
 		interrupts are lost.
+20090610	Making configuration files work again! (Thanks to Wu Kan for
+		noticing this bug.)

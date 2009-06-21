@@ -3823,3 +3823,4 @@ Changelog for GXemul:
 		interrupts are lost.
 20090610	Making configuration files work again! (Thanks to Wu Kan for
 		noticing this bug.)
+20090611	Documentation updates (NetBSD 5 etc).

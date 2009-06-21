@@ -6,20 +6,56 @@ Some things, in no specific order, that I'd like to fix:
 
 -------------------------------------------------------------------------------
 
-Goals for 0.5.x:
+0.4.x[.y] = maintenance + bugfixes
 
-  [ ]	Make -K default on?
+Tested:
+  <li><a href="#netbsdpmaxinstall">NetBSD/pmax 5.0</a>
+  <li><a href="#netbsdcatsinstall">NetBSD/cats 5.0</a>
+  <li><a href="#openbsdlandiskinstall">OpenBSD/landisk 4.5</a>
 
-  [ ]	Start to SLOWLY convert to C++. Instead of restarting from scratch
-	(which was my last experiment with GXemul/C++), only translate
-	things that make sense.
+Didn't work:
+  <li><a href="#netbsdmacppcinstall">NetBSD/macppc 5.0</a>  Some emulated PROM stuff not implemented yet
+  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 5.0</a>  PCMCIA problems
 
-  [ ]	Go through ALL emulation modes, to find out which ones have
-	good timer code, and which ones have broken timers. Try to fix
-	those that are broken.
+CURRENTLY TESTING:
 
-  [ ]	Perhaps continue on one or more unfinished architectures, such as
-	Alpha or SPARC? Or something new like M32R?
+Non-tested:
+  <li><a href="#netbsdarcinstall">NetBSD/arc 4.0.1</a>
+  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.1</a>
+  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 4.0.1</a>
+  <li><a href="#netbsdalgorinstall">NetBSD/algor 3.1</a>
+  <li><a href="#netbsdsgimips">NetBSD/sgimips 3.1</a>
+  <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
+  <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.1</a>
+  <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
+  <li><a href="#netbsdpmppc">NetBSD/pmppc 3.1</a>
+  <li><a href="#netbsdlandiskinstall">NetBSD/landisk 4.0.1</a>
+  <li><a href="dreamcast.html#netbsd_generic_md">NetBSD/dreamcast 4.0</a>
+  <li><a href="dreamcast.html#linux_live_cd">Linux/dreamcast</a>
+  <li><a href="#openbsdpmaxinstall">OpenBSD/pmax 2.8-BETA</a>
+  <li><a href="#openbsdcatsinstall">OpenBSD/cats 4.0</a>
+  <li><a href="#openbsdmvme88kinstall">OpenBSD/mvme88k 4.4</a>
+
+
+0.5.x is skipped (it was the C++ version that I never had time to write.)
+
+
+Goals for 0.6.x:
+
+  [ ]   Home page: move to sourceforge!
+  	 [ ]  Remove personal references (from the old home page).
+  	 [ ]  Go back to C-style c2html browsable tree.
+  	 [ ]  How to deal with SVN?
+
+  [ ]   Maybe remove some unused/nonworking devices/machines?
+
+  [ ]   Make everything build with make -j X.
+  
+  [ ]	Overhaul of the device framework: break out memory busses! This
+  	would (in the best case) allow a correct implementation of e.g. PCI,
+  	and cache emulation! :-)  Ideal solution would be if all devices
+  	were runtime attachable/removable, and if there was a fast path for
+  	device access (virtual memory page => immediate device function call).
 
 
 -------------------------------------------------------------------------------

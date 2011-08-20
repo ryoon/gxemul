@@ -228,7 +228,7 @@ public:
 	 */
 	bool operator < (const refcount_ptr& other) const
 	{
-		ptrdiff_t diff = m_p - other.m_p;
+		std::ptrdiff_t diff = m_p - other.m_p;
 		return diff < 0;
 	}
 

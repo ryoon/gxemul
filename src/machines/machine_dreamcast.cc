@@ -139,7 +139,7 @@ MACHINE_SETUP(dreamcast)
 
 	/*  The "luftvarg" 4KB intro uses memory at paddr 0x0ef00000...  */
 	/*  (*2)   (TODO: Make this a _mirror_ of 0x0c000000?)  */
-	// dev_ram_init(machine, 0x0e000000, 16 * 1048576, DEV_RAM_RAM, 0);
+	dev_ram_init(machine, 0x0e000000, 16 * 1048576, DEV_RAM_RAM, 0);
 
 	device_add(machine, "pvr");
 /*	device_add(machine, "mb8696x addr=0x600400 addr_mult=4");  */

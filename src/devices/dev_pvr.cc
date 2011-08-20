@@ -29,7 +29,8 @@
  *
  *  Implemented by reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
  *  http://mc.pp.se/dc/pvr.html, source code of various demos and KalistOS,
- *  and doing a lot of guessing.
+ *  attempting to run the PROM from my own Dreamcast, and doing a lot of
+ *  guessing.
  *
  *  TODO: Almost everything
  *
@@ -47,6 +48,8 @@
  *  Real Rendering, using OpenGL if possible.
  *  Tile bins... with 6 pointers for each tile (?)
  *  PVR DMA.
+ *  Textures.
+ *  ...
  */
 
 #include <stdio.h>
@@ -91,7 +94,8 @@
 // An expanded (more easily read) variant of all the rendering commands.
 struct pvr_drawing_command {
 	int		cmd;
-	uint32_t	texture;
+	uint32_t	texture_word3;
+	int		texture_format;
 	int		texture_xsize;
 	int		texture_ysize;
 
@@ -250,8 +254,8 @@ void pvr_dma_transfer(struct cpu *cpu, struct pvr_data *d)
 		dar = d->dma_reg[PVR_ADDR / sizeof(uint32_t)];
 
 		if (dar != 0x10000000) {
-			fatal("[ NOTE: DMA to non-TA: dar=%08x (delta %i), sar=%08x (delta %i) ]\n",
-			    (int)dar, (int)dst_delta, (int)sar, (int)src_delta);
+			//fatal("[ NOTE: DMA to non-TA: dar=%08x (delta %i), sar=%08x (delta %i) ]\n",
+			//    (int)dar, (int)dst_delta, (int)sar, (int)src_delta);
 			dar = 0x04000000 | (dar & 0x007fffff);
 			if (dst_delta == 0)
 				dst_delta = src_delta;
@@ -622,8 +626,11 @@ static void line(struct pvr_data *d, int x1, int y1, int x2, int y2)
 // Ugly quick-hack z-buffer line drawer, for triangles.
 // Assumes 16-bit color.
 static void simpleline(struct pvr_data *d, int y, double x1, double x2,
-	double z1, double z2, int color)
+	double z1, double z2, int r, int g, int b)
 {
+	// NOTE/TODO: Hardcoded for 565.
+	int color = ((r >> 3) << 11) + ((g >> 2) << 5) + (b >> 3);
+
 	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
 	if (x1 > x2) {
 		double tmpf = x1; x1 = x2; x2 = tmpf;
@@ -649,12 +656,98 @@ static void simpleline(struct pvr_data *d, int y, double x1, double x2,
 	}
 }
 
+static void texturedline(struct pvr_data *d,
+	int texture_pixelformat, bool twiddled,
+	int texture, int texture_xsize, int texture_ysize,
+	int y, double x1, double x2, double z1, double z2,
+	double u1, double u2, double v1, double v2)
+{
+	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
+	if (x1 > x2) {
+		double tmpf = x1; x1 = x2; x2 = tmpf;
+		tmpf = z1; z1 = z2; z2 = tmpf;
+		tmpf = u1; u1 = u2; u2 = tmpf;
+		tmpf = v1; v1 = v2; v2 = tmpf;
+	}
+
+	int bytesperpixel = 2;
+
+	switch (texture_pixelformat)
+	{
+	case 1:	// RGB565
+		bytesperpixel = 2;
+	case 6:	// 8-bit palette
+		bytesperpixel = 1;
+	default:
+		// TODO
+		break;
+	}
+
+	double dz12 = (x2 - x1 != 0) ? ( (double)(z2 - z1) / (double)(x2 - x1) ) : 0;
+	double du12 = (x2 - x1 != 0) ? ( (double)(u2 - u1) / (double)(x2 - x1) ) : 0;
+	double dv12 = (x2 - x1 != 0) ? ( (double)(v2 - v1) / (double)(x2 - x1) ) : 0;
+
+	double z = z1, u = u1, v = v1;
+
+	for (int x = x1; x <= x2; ++x) {
+		if (x > 0 && y > 0 && x < d->xsize && y < d->ysize) {
+			int ofs = x + y * d->xsize;
+			if (d->vram_z[ofs] > z)
+				continue;
+
+			d->vram_z[ofs] = z;
+
+			int fbofs = fb_base + ofs * d->bytes_per_pixel;
+
+			// Get color from texture:
+			int texturex = u * texture_xsize;
+			texturex &= (texture_xsize-1);
+			int texturey = v * texture_ysize;
+			texturey &= (texture_ysize-1);
+
+			int textureofs;
+			if (twiddled) {
+				texturex = 
+				(texturex&1)|((texturex&2)<<1)|((texturex&4)<<2)|((texturex&8)<<3)|((texturex&16)<<4)|
+				      ((texturex&32)<<5)|((texturex&64)<<6)|((texturex&128)<<7)|((texturex&256)<<8)|((texturex&512)<<9);
+				texturey = 
+				(texturey&1)|((texturey&2)<<1)|((texturey&4)<<2)|((texturey&8)<<3)|((texturey&16)<<4)|
+				      ((texturey&32)<<5)|((texturey&64)<<6)|((texturey&128)<<7)|((texturey&256)<<8)|((texturey&512)<<9);
+				textureofs = texturex * 2 + texturey;
+			} else {
+				textureofs = texturex + texturey * texture_xsize;
+			}
+
+			textureofs *= bytesperpixel;	// 2 bytes per pixel.
+
+			int addr = texture + textureofs;
+			addr = ((addr & 4) << 20) | (addr & 3) | ((addr & 0x7ffff8) >> 1);
+
+			int color;
+			if (bytesperpixel == 2) {
+				color = d->vram[addr] + (d->vram[addr+1] << 8);
+			} else {
+				color = d->vram[addr];
+				// TODO: multiple palette banks.
+				color = d->reg[PVRREG_PALETTE / sizeof(uint32_t) + color];
+			}
+
+			d->vram[(fbofs+0) % VRAM_SIZE] = color & 255;
+			d->vram[(fbofs+1) % VRAM_SIZE] = color >> 8;
+		}
+		
+		z += dz12;
+		u += du12;
+		v += dv12;
+	}
+}
+
 // Slow software rendering, for debugging:
 static void pvr_render_triangle(struct pvr_data *d,
 	int x1, int y1, double z1,
 	int x2, int y2, double z2,
 	int x3, int y3, double z3,
-	int flatcolor)
+	int r, int g, int b)
 {
 	// Wire-frame test:
 	if (false) {
@@ -695,7 +788,7 @@ static void pvr_render_triangle(struct pvr_data *d,
 	double stopx = x1, stopz = z1;
 	for (int y = y1; y < y2; ++y)
 	{
-		simpleline(d, y, startx, stopx, startz, stopz, flatcolor);
+		simpleline(d, y, startx, stopx, startz, stopz, r, g, b);
 		startx += dx13; startz += dz13;
 		stopx += dx12; stopz += dz12;
 	}
@@ -703,7 +796,7 @@ static void pvr_render_triangle(struct pvr_data *d,
 	stopx = x2; stopz = z2;
 	for (int y = y2; y < y3; ++y)
 	{
-		simpleline(d, y, startx, stopx, startz, stopz, flatcolor);
+		simpleline(d, y, startx, stopx, startz, stopz, r, g, b);
 		startx += dx13; startz += dz13;
 		stopx += dx23; stopz += dz23;
 	}
@@ -711,7 +804,84 @@ static void pvr_render_triangle(struct pvr_data *d,
 
 
 // Slow software rendering, for debugging:
-static void pvr_render_texture(struct pvr_data *d, int* wf_x, int* wf_y, double* wf_z, int flatcolor)
+static void pvr_render_triangle_textured(struct pvr_data *d,
+	int texture_pixelformat, bool twiddled,
+	int texture, int texture_xsize, int texture_ysize,
+	int x1, int y1, double z1, double u1, double v1,
+	int x2, int y2, double z2, double u2, double v2,
+	int x3, int y3, double z3, double u3, double v3)
+{
+	// Wire-frame test:
+	if (false) {
+		line(d, x1, y1, x2, y2);
+		line(d, x1, y1, x3, y3);
+		line(d, x2, y2, x3, y3);
+		return;
+	}
+
+	// Easiest if 1, 2, 3 are in order top to bottom.
+	if (y2 < y1) {
+		int tmp = x1; x1 = x2; x2 = tmp;
+		tmp = y1; y1 = y2; y2 = tmp;
+		double tmpf = z1; z1 = z2; z2 = tmpf;
+		tmpf = u1; u1 = u2; u2 = tmpf;
+		tmpf = v1; v1 = v2; v2 = tmpf;
+	}
+
+	if (y3 < y1) {
+		int tmp = x1; x1 = x3; x3 = tmp;
+		tmp = y1; y1 = y3; y3 = tmp;
+		double tmpf = z1; z1 = z3; z3 = tmpf;
+		tmpf = u1; u1 = u3; u3 = tmpf;
+		tmpf = v1; v1 = v3; v3 = tmpf;
+	}
+
+	if (y3 < y2) {
+		int tmp = x2; x2 = x3; x3 = tmp;
+		tmp = y2; y2 = y3; y3 = tmp;
+		double tmpf = z2; z2 = z3; z3 = tmpf;
+		tmpf = u2; u2 = u3; u3 = tmpf;
+		tmpf = v2; v2 = v3; v3 = tmpf;
+	}
+
+	double dx12 = (y2-y1 != 0) ? ( (x2 - x1) / (double)(y2 - y1) ) : 0.0;
+	double dx13 = (y3-y1 != 0) ? ( (x3 - x1) / (double)(y3 - y1) ) : 0.0;
+	double dx23 = (y3-y2 != 0) ? ( (x3 - x2) / (double)(y3 - y2) ) : 0.0;
+
+	double dz12 = (y2-y1 != 0) ? ( (z2 - z1) / (double)(y2 - y1) ) : 0.0;
+	double dz13 = (y3-y1 != 0) ? ( (z3 - z1) / (double)(y3 - y1) ) : 0.0;
+	double dz23 = (y3-y2 != 0) ? ( (z3 - z2) / (double)(y3 - y2) ) : 0.0;
+
+	double du12 = (y2-y1 != 0) ? ( (u2 - u1) / (double)(y2 - y1) ) : 0.0;
+	double du13 = (y3-y1 != 0) ? ( (u3 - u1) / (double)(y3 - y1) ) : 0.0;
+	double du23 = (y3-y2 != 0) ? ( (u3 - u2) / (double)(y3 - y2) ) : 0.0;
+
+	double dv12 = (y2-y1 != 0) ? ( (v2 - v1) / (double)(y2 - y1) ) : 0.0;
+	double dv13 = (y3-y1 != 0) ? ( (v3 - v1) / (double)(y3 - y1) ) : 0.0;
+	double dv23 = (y3-y2 != 0) ? ( (v3 - v2) / (double)(y3 - y2) ) : 0.0;
+
+	double startx = x1, startz = z1, startu = u1, startv = v1;
+	double stopx = x1, stopz = z1, stopu = u1, stopv = v1;
+	for (int y = y1; y < y2; ++y)
+	{
+		texturedline(d, texture_pixelformat, twiddled, texture, texture_xsize, texture_ysize, y, startx, stopx, startz, stopz, startu, stopu, startv, stopv);
+		startx += dx13; startz += dz13; startu += du13; startv += dv13;
+		stopx += dx12; stopz += dz12; stopu += du12; stopv += dv12;
+	}
+
+	stopx = x2; stopz = z2; stopu = u2; stopv = v2;
+	for (int y = y2; y < y3; ++y)
+	{
+		texturedline(d, texture_pixelformat, twiddled, texture, texture_xsize, texture_ysize, y, startx, stopx, startz, stopz, startu, stopu, startv, stopv);
+		startx += dx13; startz += dz13; startu += du13; startv += dv13;
+		stopx += dx23; stopz += dz23; stopu += du23; stopv += dv23;
+	}
+}
+
+
+// Slow software rendering, for debugging:
+static void pvr_render_polygon(struct pvr_data *d, int* wf_x, int* wf_y,
+	double* wf_z, int r, int g, int b)
 {
 	// Wire-frame test:
 	if (false) {
@@ -722,15 +892,47 @@ static void pvr_render_texture(struct pvr_data *d, int* wf_x, int* wf_y, double*
 		return;
 	}
 
-	// Render as two triangles:
+	// Render as two non-textured triangles:
 	pvr_render_triangle(d,
 	    wf_x[0], wf_y[0], wf_z[0],
 	    wf_x[1], wf_y[1], wf_z[1],
-	    wf_x[2], wf_y[2], wf_z[2], flatcolor);
+	    wf_x[2], wf_y[2], wf_z[2], r, g, b);
 	pvr_render_triangle(d,
 	    wf_x[1], wf_y[1], wf_z[1],
 	    wf_x[2], wf_y[2], wf_z[2],
-	    wf_x[3], wf_y[3], wf_z[3], flatcolor);
+	    wf_x[3], wf_y[3], wf_z[3], r, g, b);
+}
+
+
+// Slow software rendering, for debugging:
+static void pvr_render_texture(struct pvr_data *d,
+	int texture_pixelformat, bool twiddled,
+	int texture, int texture_xsize, int texture_ysize,
+	int* wf_x, int* wf_y,
+	double* wf_z, double* wf_u, double* wf_v)
+{
+	// Wire-frame test:
+	if (false) {
+		line(d, wf_x[0], wf_y[0], wf_x[1], wf_y[1]);
+		line(d, wf_x[0], wf_y[0], wf_x[2], wf_y[2]);
+		line(d, wf_x[1], wf_y[1], wf_x[3], wf_y[3]);
+		line(d, wf_x[2], wf_y[2], wf_x[3], wf_y[3]);
+		return;
+	}
+
+	// Render as two textured triangles:
+	pvr_render_triangle_textured(d,
+	    texture_pixelformat, twiddled,
+	    texture, texture_xsize, texture_ysize,
+	    wf_x[0], wf_y[0], wf_z[0], wf_u[0], wf_v[0],
+	    wf_x[1], wf_y[1], wf_z[1], wf_u[1], wf_v[1],
+	    wf_x[2], wf_y[2], wf_z[2], wf_u[2], wf_v[2]);
+	pvr_render_triangle_textured(d,
+	    texture_pixelformat, twiddled,
+	    texture, texture_xsize, texture_ysize,
+	    wf_x[1], wf_y[1], wf_z[1], wf_u[1], wf_v[1],
+	    wf_x[2], wf_y[2], wf_z[2], wf_u[2], wf_v[2],
+	    wf_x[3], wf_y[3], wf_z[3], wf_u[3], wf_v[3]);
 }
 
 
@@ -740,7 +942,7 @@ static void pvr_clear_drawing_commands(struct pvr_data* d)
 }
 
 
-static void pvr_add_drawing_command(struct pvr_data* d, int cmd, uint32_t texture,
+static void pvr_add_drawing_command(struct pvr_data* d, int cmd, uint32_t texture_word3,
 	int texture_xsize, int texture_ysize,
 	double x, double y, double z, double u, double v, double extra1, double extra2)
 {
@@ -760,7 +962,7 @@ static void pvr_add_drawing_command(struct pvr_data* d, int cmd, uint32_t textur
 	}
 
 	d->drawing_commands[d->n_drawing_commands].cmd = cmd;
-	d->drawing_commands[d->n_drawing_commands].texture = texture;
+	d->drawing_commands[d->n_drawing_commands].texture_word3 = texture_word3;
 	d->drawing_commands[d->n_drawing_commands].texture_xsize = texture_xsize;
 	d->drawing_commands[d->n_drawing_commands].texture_ysize = texture_ysize;
 	d->drawing_commands[d->n_drawing_commands].x = x;
@@ -786,9 +988,12 @@ static void pvr_add_drawing_command(struct pvr_data* d, int cmd, uint32_t textur
 void pvr_render(struct cpu *cpu, struct pvr_data *d)
 {
 	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
-	int wf_point_nr, texture = 0;
-	int flatcolor = 0xf978;
-	int wf_x[4], wf_y[4]; double wf_z[4];
+	int wf_point_nr;
+	int texture = 0, texture_xsize = 0, texture_ysize = 0;
+	bool texture_twiddled = false;
+	int texture_pixelformat = 0;
+	int color_r = 128, color_g = 128, color_b = 128;
+	int wf_x[4], wf_y[4]; double wf_z[4], wf_u[4], wf_v[4];
 
 	debug("[ pvr_render: rendering to FB offset 0x%x ]\n", fb_base);
 
@@ -817,34 +1022,60 @@ void pvr_render(struct cpu *cpu, struct pvr_data *d)
 			wf_x[wf_point_nr] = command->x;
 			wf_y[wf_point_nr] = command->y;
 			wf_z[wf_point_nr] = command->z;
+			wf_u[wf_point_nr] = command->u;
+			wf_v[wf_point_nr] = command->v;
 			wf_point_nr ++;
 
+			// TODO: support all variants of coloring
+			// (will be a lot of work)
+			color_r = command->v * 128;
+			color_g = command->extra1 * 128;
+			color_b = command->extra2 * 128;
+
 			if (wf_point_nr == 4) {
-				pvr_render_texture(d, wf_x, wf_y, wf_z, flatcolor);
+				if (texture == 0)
+					pvr_render_polygon(d, wf_x, wf_y, wf_z, color_r, color_g, color_b);
+				else
+					pvr_render_texture(d,
+					    texture_pixelformat, texture_twiddled, texture,
+					    texture_xsize, texture_ysize,
+					    wf_x, wf_y, wf_z, wf_u, wf_v);
 
 				if (command->cmd == 1) {
 					// Not a closing vertex, then move points 2 and 3
 					// into slots 0 and 1, so that the stripe can continue.
 					wf_point_nr = 2;
-					wf_x[0] = wf_x[2]; wf_y[0] = wf_y[2]; wf_z[0] = wf_z[2];
-					wf_x[1] = wf_x[3]; wf_y[1] = wf_y[3]; wf_z[1] = wf_z[3];
+					wf_x[0] = wf_x[2]; wf_y[0] = wf_y[2]; wf_z[0] = wf_z[2]; wf_u[0] = wf_u[2]; wf_u[0] = wf_u[2];
+					wf_x[1] = wf_x[3]; wf_y[1] = wf_y[3]; wf_z[1] = wf_z[3]; wf_v[1] = wf_v[3]; wf_v[1] = wf_v[3];
 				} else {
-					// Closing vertex. Change the color for the next stripe.
+					// Closing vertex.
 					wf_point_nr = 0;
-					flatcolor = ((flatcolor * 0xf813) ^ 0xcc01) - 0xf928;
 				}
 			}
 			break;
 			
 		case 3:	// polygon or modifier volume:
 			wf_point_nr = 0;
-			texture = command->texture;
+
+			// NOTE/TODO: This is MOSTLY correct, but when booting
+			// the Dreamcast PROM, the "@Dreamcast" logo in the
+			// upper lefthand corner is only rendered correctly
+			// if this texture_twiddled assignment is reversed!
+			texture_twiddled = ! ((command->texture_word3 >> 24) & 1);
+			texture_pixelformat = (command->texture_word3 >> 27) & 7;
+			texture_xsize = command->texture_xsize;
+			texture_ysize = command->texture_ysize;
+
+			// Texture address in vram:
+			texture = command->texture_word3;
 			texture <<= 3;
 			texture &= 0x7fffff;
 
+			color_r = command->v * 128;
+			color_g = command->extra1 * 128;
+			color_b = command->extra2 * 128;
+
 			/* if (texture != 0) {
-				// NOTE: Maybe depends on "twiddle" bit in one of
-				// the TA command words.
 				fatal("PVR TEXTURE = 0x%08x\n", texture);
 				for (int i = 0; i < 500; ++i) {
 					int addr = texture + i;
@@ -853,8 +1084,6 @@ void pvr_render(struct cpu *cpu, struct pvr_data *d)
 				}
 				fatal("\n");
 			} */
-
-			flatcolor = ((flatcolor * 0xf813) ^ 0xcc01) - 0xf928;
 
 			break;
 			
@@ -969,9 +1198,18 @@ static void pvr_ta_command(struct cpu *cpu, struct pvr_data *d, int list_ofs)
 			uint32_t texture = ta[3];
 			int texture_usize = 8 << ((ta[2] >> 3) & 7);
 			int texture_vsize = 8 << (ta[2] & 7);
+
+			// Alpha, R, G, B? TODO
+			struct ieee_float_value u, v, extra1, extra2;
+			ieee_interpret_float_value(ta[4], &u, IEEE_FMT_S);
+			ieee_interpret_float_value(ta[5], &v, IEEE_FMT_S);
+			ieee_interpret_float_value(ta[6], &extra1, IEEE_FMT_S);
+			ieee_interpret_float_value(ta[7], &extra2, IEEE_FMT_S);
+
 			pvr_add_drawing_command(d, 3, useTexture ? texture : 0,
 			    texture_usize, texture_vsize,
-			    0,0,0, 0,0,0, 0);
+			    0,0,0, u.f, v.f, extra1.f, extra2.f);
+
 			d->current_list_type = (ta[0] >> 24) & 7;
 		}
 		break;
@@ -1010,6 +1248,8 @@ static void pvr_ta_command(struct cpu *cpu, struct pvr_data *d, int list_ofs)
 		}
 		break;
 	case 1:	// user clip: Ignore for now.
+	case 3:	// unknown command 3: Ignore for now.
+	case 6:	// unknown command 6: Ignore for now.
 		/*  TODO  */
 		break;
 	default:fatal("Unimplemented TA command: %i\n", ta[0] >> 29);
@@ -1027,6 +1267,10 @@ DEVICE_ACCESS(pvr_ta)
 		fatal("pvr_ta access len = %i: TODO\n", (int) len);
 		exit(1);
 	}
+
+	// Tile Accelerator commands can be sent to 0x10000000 through
+	// 0x107fffff, it seems, but the SH4 store queues only have 64 bytes.
+	relative_addr &= (sizeof(d->ta) - 1);
 
 	if (writeflag == MEM_WRITE) {
 		idata = memory_readmax64(cpu, data, len);
@@ -1714,6 +1958,10 @@ DEVICE_ACCESS(pvr)
 		}
 		break;
 
+	// case PVRREG_YUV_STAT:
+	//	// TODO. The "luftvarg" demo accesses this register.
+	//	break;
+
 	default:if (writeflag == MEM_READ) {
 			fatal("[ pvr: read from UNIMPLEMENTED addr 0x%x ]\n",
 			    (int)relative_addr);
@@ -2054,7 +2302,7 @@ DEVINIT(pvr)
 
 	/*  Tile Accelerator command area at 0x10000000:  */
 	memory_device_register(machine->memory, "pvr_ta",
-	    0x10000000, sizeof(d->ta), dev_pvr_ta_access, d, DM_DEFAULT, NULL);
+	    0x10000000, 0x800000, dev_pvr_ta_access, d, DM_DEFAULT, NULL);
 
 	/*  PVR2 DMA registers at 0x5f6800:  */
 	memory_device_register(machine->memory, "pvr_dma", 0x005f6800,

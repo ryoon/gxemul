@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,9 @@
  *
  *  The only difference from the raw Unix concept is that the Dreamcast's
  *  clock is based at 1950 instead of 1970.
+ *
+ *  The Dreamcast PROM seems to want to write a 1 to 0x00710008, to set
+ *  the date/time?
  */
 
 #include <stdio.h>
@@ -47,7 +50,7 @@
 #include "misc.h"
 
 
-/*  #define debug fatal  */
+#define debug fatal
 
 struct dreamcast_rtc_data {
 	int		dummy;

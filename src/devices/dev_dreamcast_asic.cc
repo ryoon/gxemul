@@ -46,7 +46,7 @@
 #include "thirdparty/sh4_exception.h"
 
 
-#define debug fatal
+// #define debug fatal
 
 #define	DREAMCAST_ASIC_TICK_SHIFT	15
 
@@ -175,10 +175,10 @@ DEVICE_ACCESS(dreamcast_asic)
 		break;
 
 	default:if (writeflag == MEM_READ) {
-			fatal("[ dreamcast_asic: read from addr 0x%x ]\n",
+			debug("[ dreamcast_asic: read from addr 0x%x ]\n",
 			    (int)relative_addr);
 		} else {
-			fatal("[ dreamcast_asic: write to addr 0x%x: 0x%x ]\n",
+			debug("[ dreamcast_asic: write to addr 0x%x: 0x%x ]\n",
 			    (int)relative_addr, (int)idata);
 		}
 	}

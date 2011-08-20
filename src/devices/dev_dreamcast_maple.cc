@@ -94,25 +94,23 @@ struct dreamcast_maple_data {
  *
  *  TODO: Figure out strings and numbers of _real_ Maple devices.
  */
-#if 0
-static struct maple_device maple_device_controller = {
+struct maple_device maple_device_controller = {
 	{
 		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_CONTROLLER)),	/*  di_func  */
-		{ 0,0,0 },			/*  di_function_data[3]  */
-		0,				/*  di_area_code  */
+		{ LE32_TO_HOST(0xfe060f00),0,0 },/* di_function_data[3]  */
+		0xff,				/*  di_area_code  */
 		0,				/*  di_connector_direction  */
 		"Dreamcast Controller",		/*  di_product_name  */
 		"di_product_license",		/*  di_product_license  */
-		LE16_TO_HOST(100),		/*  di_standby_power  */
-		LE16_TO_HOST(100)		/*  di_max_power  */
+		LE16_TO_HOST(0x01ae),		/*  di_standby_power  */
+		LE16_TO_HOST(0x01f4)		/*  di_max_power  */
 	}
 };
-#endif
-static struct maple_device maple_device_keyboard = {
+struct maple_device maple_device_keyboard = {
 	{
 		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_KEYBOARD)),/*  di_func  */
 		{ LE32_TO_HOST(2),0,0 },	/*  di_function_data[3]  */
-		0,				/*  di_area_code  */
+		0xff,				/*  di_area_code  */
 		0,				/*  di_connector_direction  */
 		"Keyboard",			/*  di_product_name  */
 		"di_product_license",		/*  di_product_license  */
@@ -120,20 +118,18 @@ static struct maple_device maple_device_keyboard = {
 		LE16_TO_HOST(100)		/*  di_max_power  */
 	}
 };
-#if 0
-static struct maple_device maple_device_mouse = {
+struct maple_device maple_device_mouse = {
 	{
 		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_MOUSE)),/*  di_func  */
-		{ 0,0,0 },			/*  di_function_data[3]  */
-		0,				/*  di_area_code  */
+		{ LE32_TO_HOST(0xfe060f00),0,0 },/* di_function_data[3]  */
+		0xff,				/*  di_area_code  */
 		0,				/*  di_connector_direction  */
 		"Dreamcast Mouse",		/*  di_product_name  */
 		"di_product_license",		/*  di_product_license  */
-		LE16_TO_HOST(100),		/*  di_standby_power  */
-		LE16_TO_HOST(100)		/*  di_max_power  */
+		LE16_TO_HOST(0x0069),		/*  di_standby_power  */
+		LE16_TO_HOST(0x0120)		/*  di_max_power  */
 	}
 };
-#endif
 
 
 DEVICE_TICK(maple)
@@ -147,72 +143,70 @@ DEVICE_TICK(maple)
 		d->char_queue_head = (d->char_queue_head + 1) % MAX_CHARS;
 		if (d->char_queue_head == d->char_queue_tail)
 			fatal("[ dreamcast_maple: KEYBOARD QUEUE OVERRUN! ]\n");
-	}
 
-#if 0
-	/*
-	 *  NOTE/TODO:
-	 *
-	 *  Implement the controller in a reasonable way!
-	 */
+		/*
+		 *  NOTE/TODO:
+		 *
+		 *  Implement the controller in a reasonable way!
+		 */
 
-	control_bits = 0;
-	switch (key) {
-	case 'a':
-	case 'A':
-		control_bits = 0x0004;
-		break;
-	case 'b':
-	case 'B':
-		control_bits = 0x0002;
-		break;
-	case 'c':
-	case 'C':
-		control_bits = 0x0001;
-		break;
-	case 'x':
-	case 'X':
-		control_bits = 0x0400;
-		break;
-	case 'y':
-	case 'Y':
-		control_bits = 0x0200;
-		break;
-	case 'z':
-	case 'Z':
-		control_bits = 0x0100;
-		break;
-	case 's':
-	case 'S':	/*  Start  */
-		control_bits = 0x0008;
-		break;
-	case '8':	/*  up  */
-		control_bits = 0x0010;
-		break;
-	case '2':	/*  down  */
-	case 'k':
-		control_bits = 0x0020;
-		break;
-	case '4':	/*  left  */
-	case 'u':
-		control_bits = 0x0040;
-		break;
-	case '6':	/*  right  */
-	case 'o':
-		control_bits = 0x0080;
-		break;
-	}
+		int control_bits = 0;
+		switch (key) {
+		case 'a':
+		case 'A':
+			control_bits = 0x0004;
+			break;
+		case 'b':
+		case 'B':
+			control_bits = 0x0002;
+			break;
+		case 'c':
+		case 'C':
+			control_bits = 0x0001;
+			break;
+		case 'x':
+		case 'X':
+			control_bits = 0x0400;
+			break;
+		case 'y':
+		case 'Y':
+			control_bits = 0x0200;
+			break;
+		case 'z':
+		case 'Z':
+			control_bits = 0x0100;
+			break;
+		case 's':
+		case 'S':	/*  Start  */
+			control_bits = 0x0008;
+			break;
+		case '8':	/*  up  */
+			control_bits = 0x0010;
+			break;
+		case '2':	/*  down  */
+		case 'k':
+			control_bits = 0x0020;
+			break;
+		case '4':	/*  left  */
+		case 'u':
+			control_bits = 0x0040;
+			break;
+		case '6':	/*  right  */
+		case 'o':
+			control_bits = 0x0080;
+			break;
+		}
 
-	if (control_bits != 0) {
-		/*  Add to the controller queue:  */
-		d->controller_queue[d->controller_queue_head] = control_bits;
-		d->controller_queue_head =
-		    (d->controller_queue_head + 1) % MAX_CONTROLLER_DATA;
-		if (d->controller_queue_head == d->controller_queue_tail)
-			fatal("[ dreamcast_maple: CONTROLLER QUEUE "
-			    "OVERRUN! ]\n");
+		if (control_bits != 0) {
+			/*  Add to the controller queue:  */
+			d->controller_queue[d->controller_queue_head] = control_bits;
+			d->controller_queue_head =
+			    (d->controller_queue_head + 1) % MAX_CONTROLLER_DATA;
+			if (d->controller_queue_head == d->controller_queue_tail)
+				fatal("[ dreamcast_maple: CONTROLLER QUEUE "
+				    "OVERRUN! ]\n");
+		}
 	}
-#endif
 }
 
 
@@ -281,7 +275,7 @@ static void maple_getcond_controller_response(struct dreamcast_maple_data *d,
 	memset(buf, 0, 8);
 	buf[0] = c & 0xff;
 	buf[1] = c >> 8;
-	buf[4] = buf[5] = buf[6] = buf[7] = 0;
+	buf[2] = buf[3] = buf[4] = buf[5] = buf[6] = buf[7] = 0x80;
 
 	cpu->memory_rw(cpu, cpu->mem, receive_addr, (unsigned char *) (void *) &buf, 8,
 	    MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
@@ -454,9 +448,9 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 			exit(1);
 		}
 
-		/*  debug("[ dreamcast_maple: cmd=0x%02x, port=%c, unit=%i"
-		    ", datalen=%i words ]\n", cmd, port+'A', unit,
-		    datalen_cmd);  */
+		/*  fatal("[ dreamcast_maple: cmd=0x%02x, port=%c, unit=%i"
+		    ", datalen=%i words. receive_addr=0x%08x ]\n",
+		    cmd, port+'A', unit, datalen_cmd, receive_addr);  */
 
 		/*
 		 *  Handle the command:
@@ -511,6 +505,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 			} else {
 				fatal("[ dreamcast_maple: WARNING: GETCOND: "
 				    "UNIMPLEMENTED 0x%08"PRIx32" ]\n", cond);
+				exit(1);
 			}
 			break;
 
@@ -528,6 +523,9 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 		if (last_message)
 			break;
 	}
+
+	// TODO: Should the DMA address be updated?
+	d->dmaaddr = addr;
 
 	/*  Assert the SYSASIC_EVENT_MAPLE_DMADONE event:  */
 	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_MAPLE_DMADONE);
@@ -547,11 +545,12 @@ DEVICE_ACCESS(dreamcast_maple)
 	case 0x04:	/*  MAPLE_DMAADDR  */
 		if (writeflag == MEM_WRITE) {
 			d->dmaaddr = idata;
-			/*  debug("[ dreamcast_maple: dmaaddr set to 0x%08x"
+			/* debug("[ dreamcast_maple: dmaaddr set to 0x%08x"
 			    " ]\n", d->dmaaddr);  */
 		} else {
 			fatal("[ dreamcast_maple: TODO: read from dmaaddr ]\n");
 			odata = d->dmaaddr;
+			exit(1);
 		}
 		break;
 
@@ -604,6 +603,16 @@ DEVICE_ACCESS(dreamcast_maple)
 		}
 		break;
 
+	case 0xe8:	/*  UNKNOWN_0xe8  */
+		if (writeflag == MEM_WRITE) {
+			// The Dreamcast PROM writes 1 here.
+			if (idata != 1) {
+				fatal("[ dreamcast_maple: UNIMPLEMENTED 0xe8 "
+				    "value 0x%08x ]\n", (int)idata);
+			}
+		}
+		break;
+
 	default:if (writeflag == MEM_READ) {
 			fatal("[ dreamcast_maple: UNIMPLEMENTED read from "
 			    "addr 0x%x ]\n", (int)relative_addr);
@@ -631,7 +640,7 @@ DEVINIT(dreamcast_maple)
 	    0x5f6c00, 0x100, dev_dreamcast_maple_access, d, DM_DEFAULT, NULL);
 
 	/*  Devices connected to port A..D:  */
-	d->device[0] = NULL;	/*  &maple_device_controller;  */
+	d->device[0] = &maple_device_controller;
 	d->device[1] = NULL;
 	d->device[2] = &maple_device_keyboard;
 	d->device[3] = NULL;	/*  TODO:  &maple_device_mouse;  */

@@ -242,6 +242,16 @@ static void handle_command(struct cpu *cpu, struct dreamcast_gdrom_data *d)
 	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_GDROM);
 }
 
+void dreamcast_gdrom_update_stat(struct cpu *cpu, struct dreamcast_gdrom_data *d)
+{
+	// See NetBSD's gdrom.c.
+	d->stat = 6;
+
+	if (diskimage_exist(cpu->machine, 0, DISKIMAGE_IDE)) {
+		d->stat = 0;
+	}
+}
+
 
 DEVICE_ACCESS(dreamcast_gdrom)
 {
@@ -342,6 +352,7 @@ DEVICE_ACCESS(dreamcast_gdrom)
 
 	case GDROM_STAT:
 		if (writeflag == MEM_READ) {
+			dreamcast_gdrom_update_stat(cpu, d);
 			odata = d->stat;
 		} else {
 			fatal("[ Write to GDROM_STAT? ]\n");

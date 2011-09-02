@@ -4577,4 +4577,6 @@ Changelog for GXemul:
 		textures yet.
 20110706	Implementing register pair variant of SuperH fmov_frm_rn,
 		adding implementations of "LDS Rm,MACH", and "LDS Rm,MACL".
+20110902	Reviving the old legacy Alpha CPU support, which was removed
+		20090703 (i.e. NOT using the new framework).
 

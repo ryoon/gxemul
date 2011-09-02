@@ -2,7 +2,7 @@
 #define	CPU_H
 
 /*
- *  Copyright (C) 2005-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -229,6 +229,7 @@ struct physpage_ranges {
 
 
 /*  Include all CPUs' header files here:  */
+#include "cpu_alpha.h"
 #include "cpu_arm.h"
 #include "cpu_m88k.h"
 #include "cpu_mips.h"
@@ -436,6 +437,7 @@ struct cpu {
 	 *  specifics, etc.
 	 */
 	union {
+		struct alpha_cpu      alpha;
 		struct arm_cpu        arm;
 		struct m88k_cpu       m88k;
 		struct mips_cpu       mips;

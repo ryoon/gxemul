@@ -373,6 +373,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 	m->cpu_family = cpu_family_ptr_by_number(m->arch);
 
+	if (m->arch == ARCH_ALPHA)
+		m->arch_pagesize = 8192;
+
 	machine_memsize_fix(m);
 
 	/*
@@ -555,6 +558,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		cpu->pc = entrypoint;
 
 		switch (m->arch) {
+
+		case ARCH_ALPHA:
+			/*  For position-independent code:  */
+			cpu->cd.alpha.r[ALPHA_T12] = cpu->pc;
+			break;
 
 		case ARCH_ARM:
 			if (cpu->pc & 3) {

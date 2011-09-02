@@ -204,13 +204,13 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 	ok = 0;
 	switch (arch) {
-	/*case ARCH_ALPHA:
+	case ARCH_ALPHA:
 		switch (emachine) {
 		case EM_ALPHA:
 		case -28634:
 			ok = 1;
 		}
-		break;*/
+		break;
 	case ARCH_ARM:
 		switch (emachine) {
 		case EM_ARM:

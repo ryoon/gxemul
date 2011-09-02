@@ -21,6 +21,23 @@ $(OBJS): Makefile
 
 ###############################################################################
 
+cpu_alpha.o: cpu_alpha.cc cpu_alpha_instr.cc cpu_dyntrans.cc memory_rw.cc \
+	tmp_alpha_head.cc tmp_alpha_tail.cc
+
+cpu_alpha_instr.cc: cpu_alpha_instr_alu.cc tmp_alpha_misc.cc
+
+tmp_alpha_misc.cc: cpu_alpha_instr_loadstore.cc generate_alpha_misc
+	./generate_alpha_misc > tmp_alpha_misc.cc
+
+tmp_alpha_head.cc: generate_head
+	./generate_head alpha Alpha > tmp_alpha_head.cc
+
+tmp_alpha_tail.cc: generate_tail
+	./generate_tail alpha Alpha > tmp_alpha_tail.cc
+
+
+###############################################################################
+
 cpu_arm.o: cpu_arm.cc cpu_arm_instr.cc cpu_dyntrans.cc memory_rw.cc \
 	tmp_arm_head.cc tmp_arm_tail.cc
 

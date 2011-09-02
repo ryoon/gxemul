@@ -4,7 +4,7 @@
 
 CXXFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 
-OBJS=	machine.o machine_algor.o machine_arc.o \
+OBJS=	machine.o machine_algor.o machine_alpha.o machine_arc.o \
 	machine_cats.o machine_cobalt.o machine_dreamcast.o machine_evbmips.o \
 	machine_hpcarm.o machine_hpcmips.o machine_hpcsh.o machine_iq80321.o \
 	machine_iyonix.o machine_landisk.o machine_macppc.o \

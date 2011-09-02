@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  Copyright (C) 2003-2010  Anders Gavare.  All rights reserved.
+#  Copyright (C) 2003-2011  Anders Gavare.  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -186,6 +186,11 @@ printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
 
 #  Include support for all CPU types:
 printf "#define ADD_ALL_CPU_FAMILIES    " >> config.h
+
+#  Alpha
+printf " add_cpu_family(alpha_cpu_family_init, ARCH_ALPHA);" >> config.h
+CPU_ARCHS="$CPU_ARCHS cpu_alpha.o cpu_alpha_palcode.o memory_alpha.o"
+CPU_TOOLS="$CPU_TOOLS generate_alpha_misc"
 
 #  ARM
 printf " add_cpu_family(arm_cpu_family_init, ARCH_ARM);" >> config.h

@@ -456,10 +456,14 @@ void DYNTRANS_FUNCTION_TRACE_DEF(struct cpu *cpu, int n_args)
 	char *symbol;
 	uint64_t ot;
 	int x, print_dots = 1, n_args_to_print =
+#if defined(DYNTRANS_ALPHA)
+	    6
+#else
 #if defined(DYNTRANS_SH) || defined(DYNTRANS_M88K)
 	    8	/*  Both for 32-bit and 64-bit SuperH, and M88K  */
 #else
 	    4	/*  Default value for most archs  */
+#endif
 #endif
 	    ;
 
@@ -488,6 +492,9 @@ void DYNTRANS_FUNCTION_TRACE_DEF(struct cpu *cpu, int n_args)
 	 */
 	for (x=0; x<n_args_to_print; x++) {
 		int64_t d = cpu->cd.DYNTRANS_ARCH.
+#ifdef DYNTRANS_ALPHA
+		    r[ALPHA_A0
+#endif
 #ifdef DYNTRANS_ARM
 		    r[0
 #endif

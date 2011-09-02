@@ -606,11 +606,11 @@ X(implver)
 
 
 /*
- *  mull:  Signed Multiply 32x32 => 32.
+ *  mull, mull_imm:  Signed Multiply 32x32 => 32.
  *
  *  arg[0] = pointer to destination uint64_t
  *  arg[1] = pointer to source uint64_t
- *  arg[2] = pointer to source uint64_t
+ *  arg[2] = pointer to source uint64_t or immediate
  */
 X(mull)
 {
@@ -618,18 +618,28 @@ X(mull)
 	int32_t b = reg(ic->arg[2]);
 	reg(ic->arg[0]) = (int64_t)(int32_t)(a * b);
 }
+X(mull_imm)
+{
+	int32_t a = reg(ic->arg[1]);
+	int32_t b = ic->arg[2];
+	reg(ic->arg[0]) = (int64_t)(int32_t)(a * b);
+}
 
 
 /*
- *  mulq:  Unsigned Multiply 64x64 => 64.
+ *  mulq, mulq_imm:  Unsigned Multiply 64x64 => 64.
  *
  *  arg[0] = pointer to destination uint64_t
  *  arg[1] = pointer to source uint64_t
- *  arg[2] = pointer to source uint64_t
+ *  arg[2] = pointer to source uint64_t or immediate
  */
 X(mulq)
 {
 	reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]);
+}
+X(mulq_imm)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) * ic->arg[2];
 }
 
 
@@ -932,6 +942,7 @@ X(to_be_translated)
 		case 0x3b: ic->f = instr(s8subq); break;
 		case 0x3d: ic->f = instr(cmpule); break;
 		case 0x4d: ic->f = instr(cmplt); break;
+		// case 0x69: ic->f = instr(subq_v); break;
 		case 0x6d: ic->f = instr(cmple); break;
 
 		case 0x80: ic->f = instr(addl_imm); break;
@@ -1093,10 +1104,14 @@ X(to_be_translated)
 			ic->arg[2] = (size_t)((rb << 3) + (func >> 8));
 		else
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
+		// TODO: mulq/v etc? overflow detection
+		// bit 0..6 are function, but 7 is "imm" bit.
 		switch (func & 0xff) {
 		case 0x00: ic->f = instr(mull); break;
 		case 0x20: ic->f = instr(mulq); break;
 		case 0x30: ic->f = instr(umulh); break;
+		case 0x80: ic->f = instr(mull_imm); break;
+		case 0xa0: ic->f = instr(mulq_imm); break;
 		default:if (!cpu->translation_readahead)
 				fatal("[ Alpha: unimplemented function 0x%03x "
 				    "for opcode 0x%02x ]\n", func, opcode);

@@ -224,7 +224,7 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		/*
 		 *  a0 = op, a1 = vaddr
 		 */
-		fatal("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
+		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
 		    PRIx64" ]\n", (int64_t)a0, (uint64_t)a1);
 		cpu->invalidate_translation_caches(cpu, a1, INVALIDATE_VADDR);
 		break;

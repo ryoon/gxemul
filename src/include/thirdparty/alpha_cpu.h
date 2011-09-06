@@ -204,12 +204,12 @@ struct alpha_logout_area {
 #define	ALPHA_PGBYTES		(1 << ALPHA_PGSHIFT)
 
 #define	ALPHA_USEG_BASE		0			/* virtual */
-#define	ALPHA_USEG_END		0x000003ffffffffff
+#define	ALPHA_USEG_END		0x000003ffffffffffULL
 
-#define	ALPHA_K0SEG_BASE	0xfffffc0000000000	/* direct-mapped */
-#define	ALPHA_K0SEG_END		0xfffffdffffffffff
-#define	ALPHA_K1SEG_BASE	0xfffffe0000000000	/* virtual */
-#define	ALPHA_K1SEG_END		0xffffffffffffffff
+#define	ALPHA_K0SEG_BASE	0xfffffc0000000000ULL	/* direct-mapped */
+#define	ALPHA_K0SEG_END		0xfffffdffffffffffULL
+#define	ALPHA_K1SEG_BASE	0xfffffe0000000000ULL	/* virtual */
+#define	ALPHA_K1SEG_END		0xffffffffffffffffULL
 
 #define ALPHA_K0SEG_TO_PHYS(x)	((x) & ~ALPHA_K0SEG_BASE)
 #define ALPHA_PHYS_TO_K0SEG(x)	((x) | ALPHA_K0SEG_BASE)

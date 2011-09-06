@@ -623,6 +623,11 @@ Some things, in no specific order, that I'd like to fix:
 			A pcibus can be added into a mainbus (in a machine.)
 			etc.
 		bool IsItOkToAddItToThisProposedParentComponent(propsedParent) const;
+	[ ]  Exceptions/traps to CPUs, could perhaps be generalized to sending
+	     "messages" or "interrupts" to any device/component. How should this
+	     be done manually from the command interpreter?
+	       cpu0.break              cause a breakpoint exception? if the cpu supports it
+	       cpu0.exception [args]   where args is VERY dependent on the exception
 
   [ ]	ConsoleUI and/or CommandInterpreter: Make use of COLUMNS environment variable
 	when printing e.g. tab completion tables.

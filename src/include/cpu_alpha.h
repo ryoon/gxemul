@@ -73,16 +73,41 @@ struct cpu_family;
 #define	N_ALPHA_KENTRY		6
 
 #define	ALPHA_V0		0
+#define	ALPHA_T0		1
+#define	ALPHA_T1		2
+#define	ALPHA_T2		3
+#define	ALPHA_T3		4
+#define	ALPHA_T4		5
+#define	ALPHA_T5		6
+#define	ALPHA_T6		7
+
+#define	ALPHA_T7		8
+#define	ALPHA_S0		9
+#define	ALPHA_S1		10
+#define	ALPHA_S2		11
+#define	ALPHA_S3		12
+#define	ALPHA_S4		13
+#define	ALPHA_S5		14
+#define	ALPHA_FP		15
+
 #define	ALPHA_A0		16
 #define	ALPHA_A1		17
 #define	ALPHA_A2		18
 #define	ALPHA_A3		19
 #define	ALPHA_A4		20
 #define	ALPHA_A5		21
+#define	ALPHA_T8		22
+#define	ALPHA_T9		23
+
+#define	ALPHA_T10		24
+#define	ALPHA_T11		25
 #define	ALPHA_RA		26
 #define	ALPHA_T12		27
+#define	ALPHA_AT		28
+#define	ALPHA_GP		29
 #define	ALPHA_SP		30
 #define	ALPHA_ZERO		31
+
 #define	N_ALPHA_REGS		32
 
 #define ALPHA_REG_NAMES		{				\
@@ -130,15 +155,16 @@ struct alpha_cpu {
 
 	/*  Misc.:  */
 	uint64_t		pcc;			/*  Cycle Counter  */
-	uint64_t		ipl;
 	uint64_t		load_linked_addr;
 	int			ll_flag;
 
 	int			irq_asserted;
 
 	/*  OSF1 PALcode specific:  */
+	uint64_t		ps;		/*  Processor Status  */
 	uint64_t		vptptr;		/*  Virtual Page Table Ptr  */
 	uint64_t		sysvalue;
+	uint64_t		mces;		/*  Machine Check Error Summary  */
 	uint64_t		kgp;		/*  Kernel GP  */
 	uint64_t		kentry[N_ALPHA_KENTRY];
 	uint64_t		ctx;		/*  Ptr to current PCB (?)  */
@@ -164,9 +190,6 @@ void alpha_init_64bit_dummy_tables(struct cpu *cpu);
 int alpha_run_instr(struct cpu *cpu);
 int alpha_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
-int alpha_userland_memory_rw(struct cpu *cpu, struct memory *mem,
-	uint64_t vaddr, unsigned char *data, size_t len, int writeflag,
-	int cache_flags);
 int alpha_cpu_family_init(struct cpu_family *);
 
 /*  cpu_alpha_palcode.c:  */

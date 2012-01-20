@@ -4581,4 +4581,7 @@ Changelog for GXemul:
 		20090703 (i.e. NOT using the new framework).
 20110906	Slowly continuing on the Alpha emulation mode: going through
 		the existing virtual memory and PALcode stuff.
+20120120	Avoid crash in cpu_ppc_instr_loadstore.cc for 64-bit emulation
+		(since only 32-bit access is actually implemented); fallback
+		to generic (slow) access.
 

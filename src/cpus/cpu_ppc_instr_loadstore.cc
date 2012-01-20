@@ -169,6 +169,16 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 
 void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 {
+#ifndef MODE32
+	/************************************************************/
+	/* For now, 64-bit access is done using the slow fallback.  */
+	if (!cpu->is_32bit) {
+		LS_GENERIC_N(cpu, ic);
+		return;
+	}
+#endif
+
+
 #ifdef MODE32
 	uint32_t addr =
 #else
@@ -201,17 +211,6 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 		return;
 	}
 #endif
-
-
-#ifndef MODE32
-/*******************************************/
-if (!cpu->is_32bit) {
-LS_GENERIC_N(cpu, ic);
-return;
-}
-/*******************************************/
-#endif
-
 
 	if (page == NULL) {
 		LS_GENERIC_N(cpu, ic);

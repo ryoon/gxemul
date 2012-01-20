@@ -1,7 +1,14 @@
 #!/bin/sh
 #
 #  Regression test: Automated install of NetBSD/pmax using R3000 CPU.
-#  Starta with:
+#
+#  1. Place the iso here:
+#
+#	../../emul/mips/pmaxcd-5.1.1.iso
+#
+#     (update test_netbsd_pmax_install.*expect when changing version)
+#
+#  2. Start the regression test with:
 #
 #	test/test_netbsd_pmax_install.sh
 #

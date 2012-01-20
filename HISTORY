@@ -4586,4 +4586,5 @@ Changelog for GXemul:
 		to generic (slow) access.
 		Minor OpenFirmware and SPR fixes to reach further with a
 		FreeBSD/powerpc 9.0 kernel (-Xe g4).
+		Updating the NetBSD/pmax install instructions: 5.1 -> 5.1.1.
 

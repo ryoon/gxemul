@@ -541,6 +541,15 @@ Some things, in no specific order, that I'd like to fix:
 	     fail, while R could create an implicit empty overlay
 	     in the tmp directory, so that writes within a session
 	     will succeed. At reboot/reset they'd be lost.
+	[ ]  Make sure that there is either
+		a) a sync after each write to make sure that the data is
+		   consistently written, or that
+		b) (for the test devices at least, or perhaps some others)
+		   a mechanism is available to turn off the write-after-every-access
+		   policy but then the data must be manually synched by the
+		   guest OS every now and then.
+	     (This will be a requirement for e.g. a persistent Single
+	     Storage guest OS.)
 
   [ ]	Breakpoints
 

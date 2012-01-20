@@ -4584,4 +4584,6 @@ Changelog for GXemul:
 20120120	Avoid crash in cpu_ppc_instr_loadstore.cc for 64-bit emulation
 		(since only 32-bit access is actually implemented); fallback
 		to generic (slow) access.
+		Minor OpenFirmware and SPR fixes to reach further with a
+		FreeBSD/powerpc 9.0 kernel (-Xe g4).
 

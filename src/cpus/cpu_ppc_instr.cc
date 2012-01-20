@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2012  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -1738,6 +1738,15 @@ X(mtspr) {
 	/*  TODO: Check permission  */
 	reg(ic->arg[1]) = reg(ic->arg[0]);
 }
+X(mtspr_sprg2) {
+	if (cpu->cd.ppc.bits == 32) {
+		// Ignore for now. FreeBSD/powerpc seems to write 0xffffffe0
+		// here, and read it back. If it is non-zero, it assumes a 64-bit
+		// cpu.
+	} else {
+		reg(ic->arg[1]) = reg(ic->arg[0]);
+	}
+}
 X(mtlr) {
 	cpu->cd.ppc.spr[SPR_LR] = reg(ic->arg[0]);
 }
@@ -2615,10 +2624,13 @@ X(openfirmware)
 	if (cpu->running == 0) {
 		cpu->n_translated_instrs --;
 		cpu->cd.ppc.next_ic = &nothing_call;
+		debugger_n_steps_left_before_interaction = 0;
 	}
+
 	cpu->pc = cpu->cd.ppc.spr[SPR_LR];
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);
+
 	quick_pc_to_pointers(cpu);
 }
 
@@ -3284,6 +3296,9 @@ X(to_be_translated)
 				break;
 			case SPR_CTR:
 				ic->f = instr(mtctr);
+				break;
+			case SPR_SPRG2:
+				ic->f = instr(mtspr_sprg2);
 				break;
 			default:ic->f = instr(mtspr);
 			}

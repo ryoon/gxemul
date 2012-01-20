@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2012  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -109,7 +109,7 @@ static void of_store_32bit_in_host(unsigned char *d, uint32_t x)
 /*
  *  find_device_handle():
  *
- *  name may consist of multiple names, separaed with slashes.
+ *  name may consist of multiple names, separated with slashes.
  */
 static int find_device_handle(struct of_data *ofd, const char *name)
 {
@@ -409,6 +409,38 @@ OF_SERVICE(peer)
 }
 
 
+OF_SERVICE(open)
+{
+	// TODO.
+	uint64_t ptr = OF_GET_ARG(0);
+
+	string s;
+
+	int i = 0;
+	while (true) {
+		unsigned char ch;
+		if (!cpu->memory_rw(cpu, cpu->mem, ptr + i, &ch,
+		    1, MEM_READ, CACHE_DATA | NO_EXCEPTIONS)) {
+			fatal("[ of: TODO: write: memory_rw() error ]\n");
+			exit(1);
+		}
+
+		if (ch == 0)
+			break;
+
+		s += ch;
+		++ i;
+	}
+
+	if (s != "") {
+		cout << "Unimplemented OF_SERVICE(open) with name: '" << s << "'\n";
+		exit(1);
+	}
+
+	return 0;
+}
+
+
 OF_SERVICE(read)
 {
 	/*  int handle = OF_GET_ARG(0);  */
@@ -582,8 +614,11 @@ static void of_dump_devices(struct of_data *ofd, int parent)
 			od = od->next;
 			continue;
 		}
-		debug("\"%s\"\n", od->name, od->handle);
+		
+		debug("\"%s\"", od->name);
+		debug(" (handle %i)\n", od->handle);
 		debug_indentation(iadd);
+		
 		while (pr != NULL) {
 			debug("(%s: ", pr->name);
 			if (pr->flags == OF_PROP_STRING)
@@ -593,6 +628,7 @@ static void of_dump_devices(struct of_data *ofd, int parent)
 			debug(")\n");
 			pr = pr->next;
 		}
+		
 		of_dump_devices(ofd, od->handle);
 		debug_indentation(-iadd);
 		od = od->next;
@@ -905,6 +941,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	uint64_t fb_addr, int fb_xsize, int fb_ysize)
 {
 	unsigned char *memory_reg, *memory_av;
+	unsigned char *root_address_cells, *root_size_cells;
 	unsigned char *zs_assigned_addresses;
 	struct of_device *memory_dev, *mmu, *devstdout, *devstdin;
 	struct of_data *ofd;
@@ -919,6 +956,15 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 
 	/*  Root = device 1  */
 	of_add_device(ofd, "", "");
+	of_add_prop_str(machine, ofd, "/", "model", "GXemul OpenFirmware machine");
+
+	CHECK_ALLOCATION(root_address_cells = (unsigned char *) malloc(1 * sizeof(uint32_t)));
+	of_store_32bit_in_host(root_address_cells, 0);
+	of_add_prop(ofd, "/", "#address-cells", root_address_cells, 1 * sizeof(uint32_t), 0);
+
+	CHECK_ALLOCATION(root_size_cells = (unsigned char *) malloc(1 * sizeof(uint32_t)));
+	of_store_32bit_in_host(root_size_cells, 0);
+	of_add_prop(ofd, "/", "#size-cells", root_size_cells, 1 * sizeof(uint32_t), 0);
 
 	of_add_device(ofd, "io", "/");
 	devstdin  = of_add_device(ofd, "stdin", "/io");
@@ -984,10 +1030,10 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_store_32bit_in_host(memory_reg + 0, 0);
 	of_store_32bit_in_host(memory_reg + 4, machine->physical_ram_in_mb<<20);
 	of_store_32bit_in_host(memory_av + 0, 10 << 20);
-	of_store_32bit_in_host(memory_av + 4,
-	    (machine->physical_ram_in_mb - 10) << 20);
+	of_store_32bit_in_host(memory_av + 4, (machine->physical_ram_in_mb - 10) << 20);
 	of_add_prop(ofd, "/memory", "reg", memory_reg, 2 * sizeof(uint32_t), 0);
-	of_add_prop(ofd, "/memory", "available",memory_av,2*sizeof(uint32_t),0);
+	of_add_prop(ofd, "/memory", "available", memory_av, 2*sizeof(uint32_t),0);
+	of_add_prop_str(machine, ofd, "/memory", "name", "memory");
 	of_add_prop_str(machine, ofd, "/memory","device_type","memory"/*?*/);
 
 	of_add_prop_int32(ofd, "/chosen", "memory", memory_dev->handle);
@@ -1011,6 +1057,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_add_service(ofd, "package-to-path", of__package_to_path, 3, 1);
 	of_add_service(ofd, "parent", of__parent, 1, 1);
 	of_add_service(ofd, "peer", of__peer, 1, 1);
+	of_add_service(ofd, "open", of__open, 1, 1);
 	of_add_service(ofd, "read", of__read, 3, 1);
 	of_add_service(ofd, "write", of__write, 3, 1);
 
@@ -1118,6 +1165,7 @@ int of_emul(struct cpu *cpu)
 		fatal("[ of: unimplemented service \"%s\" with %i input "
 		    "args and %i output values ]\n", service, nargs, nret);
 		cpu->running = 0;
+		exit(1);
 	}
 
 	for (i=0; i<nargs; i++)

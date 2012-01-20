@@ -3279,6 +3279,9 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.spr[spr]);
 			switch (spr) {
+			// Reuse SPR_TB* for TBR_TB*:
+			case TBR_TBL: ic->f = instr(mftb); break;
+			case TBR_TBU: ic->f = instr(mftbu); break;
 			case SPR_PMC1:	ic->f = instr(mfspr_pmc1); break;
 			default:	ic->f = instr(mfspr);
 			}

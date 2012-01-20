@@ -4588,4 +4588,4 @@ Changelog for GXemul:
 		FreeBSD/powerpc 9.0 kernel (-Xe g4).
 		Updating the NetBSD/pmax install instructions: 5.1 -> 5.1.1.
 		Updating the NetBSD/cobalt install instructions 5.0.1 to 5.1.1.
-
+		Redirect PowerPC SPRs 0x10c/10d to 0x11c/11d (Time Base).

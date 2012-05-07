@@ -4724,6 +4724,9 @@ X(to_be_translated)
 					ic->f = instr(nop);
 				break;
 
+                        case 29: ic->f = instr(reserved);
+                                 break;
+
 			default:if (!cpu->translation_readahead)
 					fatal("unimplemented rdhwr "
 					    "register rd=%i\n", rd);
@@ -4758,6 +4761,8 @@ X(to_be_translated)
 		else
 			ic->f = instr(reserved);
 	}
+#else
+	x64 = x64; // avoid compiler warning
 #endif
 
 

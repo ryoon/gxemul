@@ -855,15 +855,12 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 */
 		if ((iw & 0x0fb0fff0) == 0x0120f000 ||
 		    (iw & 0x0fb0f000) == 0x0320f000) {
-			int a = (iw >> 16) & 15;
 			debug("msr%s\t%s", condition, (iw&0x400000)? "S":"C");
 			debug("PSR_");
-			switch (a) {
-			case 1:	debug("ctl"); break;
-			case 8:	debug("flg"); break;
-			case 9:	debug("all"); break;
-			default:debug(" UNIMPLEMENTED (a=%i)", a);
-			}
+			if (iw & (1<<19)) debug("f");
+			if (iw & (1<<18)) debug("s");
+			if (iw & (1<<17)) debug("x");
+			if (iw & (1<<16)) debug("c");
 			if (iw & 0x02000000) {
 				int r = (iw >> 7) & 30;
 				uint32_t b = iw & 0xff;

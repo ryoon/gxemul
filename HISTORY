@@ -4591,3 +4591,4 @@ Changelog for GXemul:
 		Redirect PowerPC SPRs 0x10c/10d to 0x11c/11d (Time Base).
 20120121	Updating OpenBSD/landisk installation instructions: 4.9 -> 5.0.
 20120507	Adding a patch from Juli Mallett for MIPS rdhwr reg 29.
+20120617	Adding a patch from James Peacock for ARM MSR fields.

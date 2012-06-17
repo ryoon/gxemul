@@ -704,6 +704,11 @@ Y(ret)
 X(msr_imm)
 {
 	uint32_t mask = ic->arg[1];
+
+	if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32) {
+		mask &= 0xff000000;
+	}
+
 	int switch_register_banks = (mask & ARM_FLAG_MODE) &&
 	    ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) !=
 	    (ic->arg[0] & ARM_FLAG_MODE));
@@ -757,15 +762,15 @@ X(msr_imm_spsr)
 		break;
 	default:fatal("msr_spsr: unimplemented mode %i\n",
 		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
-{
-	/*  Synchronize the program counter:  */
-	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-	old_pc = cpu->pc;
-	printf("msr_spsr: old pc = 0x%08"PRIx32"\n", old_pc);
-}
+		{
+			/*  Synchronize the program counter:  */
+			uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
+			    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+			cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+			old_pc = cpu->pc;
+			printf("msr_spsr: old pc = 0x%08"PRIx32"\n", old_pc);
+		}
 		exit(1);
 	}
 }
@@ -2501,7 +2506,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
-	int p_bit, u_bit, w_bit, l_bit, regform, rm, c, t, any_pc_reg;
+	int p_bit, u_bit, w_bit, l_bit, regform, rm, any_pc_reg; // , c, t
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the address of the instruction:  */
@@ -2551,8 +2556,8 @@ X(to_be_translated)
 	rn    = (iword >> 16) & 15;
 	rd    = (iword >> 12) & 15;
 	r8    = (iword >> 8) & 15;
-	c     = (iword >> 7) & 31;
-	t     = (iword >> 4) & 7;
+	// c     = (iword >> 7) & 31;
+	// t     = (iword >> 4) & 7;
 	rm    = iword & 15;
 
 	if (condition_code == 0xf) {
@@ -2703,13 +2708,18 @@ X(to_be_translated)
 				imm = (imm >> 2) | ((imm & 3) << 30);
 			ic->arg[0] = imm;
 			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rm]);
-			switch ((iword >> 16) & 15) {
-			case 1:	ic->arg[1] = 0x000000ff; break;
-			case 8:	ic->arg[1] = 0xff000000; break;
-			case 9:	ic->arg[1] = 0xff0000ff; break;
-			default:if (!cpu->translation_readahead)
-					fatal("unimpl a: msr regform\n");
-				goto bad;
+			{
+				uint32_t arg1 = 0;
+				if (iword & (1<<16)) arg1 |= 0x000000ff;
+				if (iword & (1<<17)) arg1 |= 0x0000ff00;
+				if (iword & (1<<18)) arg1 |= 0x00ff0000;
+				if (iword & (1<<19)) arg1 |= 0xff000000;
+				if (arg1 == 0) {
+					if (!cpu->translation_readahead)
+						fatal("msr no fields\n");
+					goto bad;
+				}
+				ic->arg[1] = arg1;
 			}
 			break;
 		}

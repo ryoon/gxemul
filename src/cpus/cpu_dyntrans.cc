@@ -1283,6 +1283,8 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 				*physpage_entryp = ppp->next_ofs;
 		}
 #else
+		prev_ppp = prev_ppp;	// shut up compiler warning
+
 		/*
 		 *  Instead of removing the page from the code cache, each
 		 *  entry can be set to "to_be_translated". This is slow in
@@ -1420,6 +1422,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		writeflag &= ~MEMORY_USER_ACCESS;
 		useraccess = 1;
 	}
+
+	useraccess = useraccess;  // shut up compiler warning about unused var
 
 #ifdef DYNTRANS_M88K
 	/*  TODO  */

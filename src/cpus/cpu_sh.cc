@@ -395,7 +395,7 @@ void sh_cpu_dumpinfo(struct cpu *cpu)
 int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 {
 	uint16_t iword = *((uint16_t *)&ib[0]);
-	int hi4, lo4, lo8;
+	int hi4, lo8; // , lo4
 
 	if (!cpu->is_32bit)
 		return 0;
@@ -405,7 +405,9 @@ int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 	else
 		iword = LE16_TO_HOST(iword);
 
-	hi4 = iword >> 12; lo4 = iword & 15; lo8 = iword & 255;
+	hi4 = iword >> 12;
+	lo8 = iword & 255;
+	// lo4 = iword & 15;
 
         switch (hi4) {
 	case 0x0:

@@ -633,7 +633,7 @@ void ppc_irq_interrupt_deassert(struct interrupt *interrupt)
 int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr)
 {
-	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
+	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit; //, oe_bit;
 	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb, bt, ba, bb, fpreg;
 	int bfa, to, load, wlen, no_rb = 0;
 	uint64_t offset, addr;
@@ -1096,7 +1096,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_NEGO:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
-			oe_bit = (iword >> 10) & 1;
+			// oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
 			switch (xo) {
 			case PPC_31_NEG:  mnem = "neg"; break;
@@ -1119,7 +1119,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_ADDZEO:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
-			oe_bit = (iword >> 10) & 1;
+			// oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
 			switch (xo) {
 			case PPC_31_ADDZE:
@@ -1178,7 +1178,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
-			oe_bit = (iword >> 10) & 1;
+			// oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
 			switch (xo) {
 			case PPC_31_ADDC:
@@ -1391,7 +1391,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
-			oe_bit = (iword >> 10) & 1;
+			// oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
 			switch (xo) {
 			case PPC_31_DIVWU:  mnem = "divwu"; break;

@@ -314,7 +314,7 @@ DEVICE_ACCESS(adb)
 {
 	uint64_t idata = 0, odata = 0;
 	struct adb_data *d = (struct adb_data *) extra;
-	uint8_t old = 0;
+	// uint8_t old = 0;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -336,7 +336,7 @@ DEVICE_ACCESS(adb)
 	if (writeflag == MEM_READ)
 		odata = d->reg[relative_addr >> VIA_REG_SHIFT];
 	else {
-		old = d->reg[relative_addr >> VIA_REG_SHIFT];
+		// old = d->reg[relative_addr >> VIA_REG_SHIFT];
 		switch (relative_addr) {
 		case vIFR:
 			/*

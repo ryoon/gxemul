@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2012  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -57,7 +57,7 @@ extern int quiet_mode;
  *  arcbios_add_string_to_component():
  */
 void arcbios_add_string_to_component(struct machine *machine,
-	char *string, uint64_t component)
+	char *str, uint64_t component)
 {
 	if (machine->md.arc->n_string_to_components
 	    >= MAX_STRING_TO_COMPONENT) {
@@ -66,10 +66,10 @@ void arcbios_add_string_to_component(struct machine *machine,
 	}
 
 	CHECK_ALLOCATION(machine->md.arc->string_to_component[machine->
-	    md.arc->n_string_to_components] = strdup(string));
+	    md.arc->n_string_to_components] = strdup(str));
 
 	debug("adding ARC component mapping: 0x%08x = %s\n",
-	    (int)component, string);
+	    (int)component, str);
 
 	machine->md.arc->string_to_component_value[
 	    machine->md.arc->n_string_to_components] = component;

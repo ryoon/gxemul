@@ -1910,7 +1910,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	uint32_t op26, op10, op11, d, s1, s2, cr6, imm16;
-	int32_t d16, d26, simm16;
+	int32_t d16, d26; //, simm16;
 	int offset, shift;
 	int in_crosspage_delayslot = 0;
 	void (*samepage_function)(struct cpu *, struct m88k_instr_call *)=NULL;
@@ -1983,7 +1983,7 @@ X(to_be_translated)
 	s1     = (iword >> 16) & 0x1f;
 	s2     =  iword        & 0x1f;
 	imm16  =  iword        & 0xffff;
-	simm16 = (int16_t) (iword & 0xffff);
+	// simm16 = (int16_t) (iword & 0xffff);
 	cr6    = (iword >>  5) & 0x3f;
 	d16    = ((int16_t) (iword & 0xffff)) * 4;
 	d26    = ((int32_t)((iword & 0x03ffffff) << 6)) >> 4;

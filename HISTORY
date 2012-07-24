@@ -4592,3 +4592,6 @@ Changelog for GXemul:
 20120121	Updating OpenBSD/landisk installation instructions: 4.9 -> 5.0.
 20120507	Adding a patch from Juli Mallett for MIPS rdhwr reg 29.
 20120617	Adding a patch from James Peacock for ARM MSR fields.
+20120724	Adding a patch from David Brownlee (mkstemp on NetBSD), and
+		trying to make things build without warnings with GCC 4.6.x.
+

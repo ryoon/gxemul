@@ -529,6 +529,23 @@ fi
 rm -f _testprog _testprog.error _testprog.stdout
 
 
+#  -Wextra -Wno-unused-but-set-variable
+printf "checking whether -Wextra -Wno-unused-but-set-variable can be used... "
+$CXX $CXXFLAGS -Wextra -Wno-unused-but-set-variable _testprog.cc -o _testprog 1> _testprog.stdout 2>&1
+cat _testprog.stdout >> _testprog.error
+if grep strict _testprog.error > /dev/null 2>&1; then
+	printf "no\n"
+else
+	if [ -x _testprog ]; then
+		CWARNINGS="$CWARNINGS -Wextra -Wno-unused-but-set-variable"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+fi
+rm -f _testprog _testprog.error _testprog.stdout
+
+
 #  -Wcast-align
 printf "checking whether -Wcast-align can be used... "
 $CXX $CXXFLAGS -Wcast-align _testprog.cc -o _testprog 1> _testprog.stdout 2>&1
@@ -804,11 +821,12 @@ rm -f _tests.cc _tests.o _tests
 #  mkstemp missing?
 printf "checking for mkstemp... "
 printf "#include <unistd.h>
-int main(int argc, char *argv[]) { int x; char *y = \"abc\";
+#include <stdlib.h>
+int main(int argc, char *argv[]) { int x; char y[4] = \"abc\";
 x = mkstemp(y); return 0;}\n" > _tests.cc
 $CXX $CXXFLAGS _tests.cc -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
-	printf "missing, using workaround\n"
+	printf "missing, using workaround (perhaps not working properly)\n"
 	printf "#define mkstemp mymkstemp\n" >> config.h
 else
 	printf "found\n"

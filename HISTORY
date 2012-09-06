@@ -4596,4 +4596,5 @@ Changelog for GXemul:
 		trying to make things build without warnings with GCC 4.6.x.
 20120731	Adding a patch from David Brownlee: a more reasonable TOC is
 		returned in dev_dreamcast_gdrom.cc (for NetBSD/dreamcast).
+20120906	Adding a patch from George Koehler to fix DHCP response bug.
 

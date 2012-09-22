@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2012  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -84,7 +84,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	uint32_t c32;
 #endif
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
- || defined(A__RSC) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
+ || defined(A__RSC) || defined(A__RSB) || defined(A__SBC) || defined(A__SUB)
 #ifdef A__S
 	uint64_t
 #else
@@ -234,7 +234,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	cpu->cd.arm.flags
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
-	    = 0;
+	    &= ~(ARM_F_V | ARM_F_C | ARM_F_Z | ARM_F_N);
 #else
 	    &= ~(ARM_F_Z | ARM_F_N);
 #endif

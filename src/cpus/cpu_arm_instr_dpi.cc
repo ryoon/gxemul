@@ -111,7 +111,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 
 #if defined(A__MOV) || defined(A__MVN) || defined(A__TST) || defined(A__TEQ) \
  || defined(A__AND) || defined(A__BIC) || defined(A__EOR) || defined(A__ORR)
-#if !defined(A__REG) && defined(A__S)
+#if !defined(A__REG) && !defined(A__REGSHORT) && defined(A__S)
 	/*
 	 *  TODO: This is not 100% correct, but should work with "recommended"
 	 *  ARM code: Immediate values larger than 255 are encoded with

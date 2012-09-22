@@ -2847,9 +2847,19 @@ X(to_be_translated)
 				q = 0;
 			ic->arg[1] = (size_t)(void *)arm_r[(iword & 0xfff) + q];
 		} else {
+			int steps = r8;
+
 			imm = iword & 0xff;
+			
 			while (r8-- > 0)
 				imm = (imm >> 2) | ((imm & 3) << 30);
+
+			if (steps != 0 && imm < 256) {
+				if (!cpu->translation_readahead)
+					fatal("TODO: see cpu_arm_instr_dpi; non-zero steps but still under 256 is not implemented yet\n");
+				goto bad;
+			}
+
 			ic->arg[1] = imm;
 		}
 

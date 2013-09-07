@@ -4607,4 +4607,5 @@ Changelog for GXemul:
 		anyway, leading to wrong Carry flag results for e.g. the TST
 		instruction. This was triggered when running int64_t modulo.
 20130907	Updating NetBSD/dreamcast test instructions: 5.1 -> 6.1.1.
+		Updating NetBSD/pmax install instructions: 5.1.1 -> 6.1.1.
 

@@ -4606,4 +4606,5 @@ Changelog for GXemul:
 		complex things), the code should not be run, but it was run
 		anyway, leading to wrong Carry flag results for e.g. the TST
 		instruction. This was triggered when running int64_t modulo.
+20130907	Updating NetBSD/dreamcast test instructions: 5.1 -> 6.1.1.
 

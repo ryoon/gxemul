@@ -59,7 +59,7 @@
 /*
  * SII hardware registers
  */
-typedef volatile struct {
+typedef /*volatile*/ struct {
 	u_short	sdb;		/* SCSI Data Bus and Parity */
 	u_short	pad0;
 	u_short	sc1;		/* SCSI Control Signals One */

@@ -10,7 +10,7 @@ OBJS=	machine.o machine_algor.o machine_alpha.o machine_arc.o \
 	machine_iyonix.o machine_landisk.o machine_macppc.o \
 	machine_mvme88k.o machine_mvmeppc.o machine_netwinder.o \
 	machine_playstation2.o machine_pmax.o machine_pmppc.o machine_prep.o \
-	machine_qemu.o machine_sgi.o machine_test.o 
+	machine_qemu.o machine_rpi.o machine_sgi.o machine_test.o 
 
 all:
 	$(MAKE) objs

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2013  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -54,8 +54,8 @@ static int n_pci_entries = 0;
  */
 static int device_entry_compar(const void *a, const void *b)
 {
-	const struct device_entry *pa = (struct device_entry *) a;
-	const struct device_entry *pb = (struct device_entry *) b;
+	const struct device_entry *pa = (const struct device_entry *) a;
+	const struct device_entry *pb = (const struct device_entry *) b;
 
 	return strcmp(pa->name, pb->name);
 }

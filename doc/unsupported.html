@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2003-2010  Anders Gavare.  All rights reserved.
+Copyright (C) 2003-2013  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -55,6 +55,7 @@ SUCH DAMAGE.
   <li><a href="unsupported.html#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="unsupported.html#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="unsupported.html#netbsdplaystation2">NetBSD/playstation2</a>
+  <li><a href="unsupported.html#netbsdrpi">NetBSD/raspberrypi</a>
 </ul>
 
 <p>NOTE: The guest operating systems listed on this page are here because
@@ -751,6 +752,69 @@ keyboard input from a keyboard which doesn't exist.
 
 
 
+<p><br>
+<a name="netbsdrpi"></a>
+<h3>NetBSD/raspberrypi:</h3>
+
+<p>This doesn't work yet. Starting point for development:
+
+<p>See <a href="http://wiki.netbsd.org/ports/evbarm/raspberry_pi/">http://wiki.netbsd.org/ports/evbarm/raspberry_pi/</a> for more info on NetBSD.
+
+<p>To start debugging/development:
+<ol>
+	<li>Download something similar to:<pre>
+	http://nyftp.netbsd.org/pub/NetBSD-daily/HEAD/201310032210Z/evbarm/binary/kernel/netbsd-RPI.gz
+</pre>
+	<li><tt>gxemul -tviK -E rpi netbsd-RPI.gz</tt>
+</pre>
+</ol>
+
+<p>TODO: Everything.
+
+<pre>
+GXemul> u
+&lt;kernel_text&gt;
+c00081e0:  e10f1000	mrs	r1,CPSR
+c00081e4:  e166f001	msr	SPSR_sx,r1
+c00081e8:  e28f1048	add	r1,pc,#0x48
+c00081ec:  e8912106	ldmia	r1,{r1,r2,r8,sp}
+c00081f0:  ee0d8f90	mcr	15,0,r8,cr13,cr0,4
+
+It starts up in kernel_text, which is in NetBSD usr/src/sys/arch/arm/arm32/locore.S:
+
+ENTRY_NP(kernel_text)
+
+ASENTRY_NP(start)
+        mrs     r1, cpsr                /* fetch CPSR value */
+        msr     spsr_sx, r1             /* set SPSR[23:8] to known value */
+
+        adr     r1, .Lstart
+        ldmia   r1, {r1, r2, r8, sp}    /* Set initial stack and */
+
+#if defined(TPIDRPRW_IS_CURCPU) || defined(TPIDRPRW_IS_CURLWP)
+        mcr     p15, 0, r8, c13, c0, 4
+#endif
+#if defined(TPIDRPRW_IS_CURLWP)
+        ldr     r8, [r8, #L_CPU]        /* r8 needs curcpu in it */
+#endif
+
+        mov     r4, #0
+#ifdef _ARM_ARCH_DWORD_OK
+        mov     r5, #0
+#endif
+
+</pre>
+
+<p>
+Also useful for testing:
+<pre>https://github.com/raspberrypi/firmware/blob/master/boot/kernel.img
+gxemul -tvK -E rpi 0x00000000:kernel.img
+</pre>
+
+FreeBSD sd card image:
+<pre>
+http://www.db.net/downloads/bsd-pi-250580M.img.xz
+</pre>
 
 
 </p>

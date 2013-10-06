@@ -2,7 +2,7 @@
 #define	MACHINE_H
 
 /*
- *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2013  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -242,6 +242,7 @@ struct machine {
 #define	MACHINE_IQ80321		5005
 #define	MACHINE_IYONIX		5006
 #define	MACHINE_QEMU_ARM	5007
+#define	MACHINE_RPI		5008
 
 /*  SH:  */
 #define	MACHINE_BARESH		6000

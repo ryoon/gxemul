@@ -770,10 +770,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 int main(int argc, char *argv[])
 {
 	/*  Setting constants:  */
-	const int constant_yes = 1;
-	const int constant_true = 1;
-	const int constant_no = 0;
-	const int constant_false = 0;
+	int constant_yes = 1;
+	int constant_true = 1;
+	int constant_no = 0;
+	int constant_false = 0;
 
 	struct emul *emul;
 	int config_file = 0;

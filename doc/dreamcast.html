@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+Copyright (C) 2006-2013  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -47,6 +47,7 @@ SUCH DAMAGE.
 <ul>
   <li><a href="#intro">Introduction</a>
   <li><a href="#binaries">Running raw binaries (IP.BIN and 1ST_READ.BIN)</a>
+  <li><a href="#rom">Experimenting with ROM dumps</a>
   <li><a href="#netbsd_generic_md">NetBSD/dreamcast GENERIC_MD</a>
   <li><a href="#netbsd_live_cd">NetBSD/dreamcast Live CD</a>
   <li><a href="#linux_live_cd">Linux/dreamcast Live CD</a>
@@ -186,6 +187,64 @@ KOS examples, which more or less works:
 <a href="20110624-dreamcast-gltest.png"><img src="20110624-dreamcast-gltest-small.png"></a>
 &nbsp;&nbsp;
 <a href="20110703-dreamcast-gltest.png"><img src="20110703-dreamcast-gltest-small.png"></a>
+
+
+
+
+
+
+<p><br>
+<a name="rom"></a>
+<h3>Experimenting with ROM dumps:</h3>
+
+As mentioned above under the <a href="#binaries">Running raw binaries</a> section,
+the emulation of Dreamcast hardware is not correct enough to run things that
+really rely on the hardware functioning properly such as games. Even more
+picky about the hardware is the original ROM itself. Even though running an
+original Dreamcast ROM in the emulator does not really work, it can be fun and/or
+interesting to experiment with.
+
+<p>
+The first step is to dump the ROM contents (and possibly flash memory) of your
+Dreamcast.
+
+<ul>
+	<li><tt>0x00000000 - 0x001fffff</tt>: ROM bios (2 MB)
+	<li><tt>0x00200000 - 0x003fffff</tt>: Flash (256 KB)
+</ul>
+
+<p>There are several ways to dump these. I wrote a simple program which displayed
+memory contents as white and black squares on the screen, and recorded it
+with a web cam, and then wrote another program to look at those images and
+dump the resulting bytes into a file:
+
+<p>
+<a href="20131109-displayDreamcastMemory.png"><img src="20131109-displayDreamcastMemory-small.png"></a>
+
+<p><small>(Here shown running in the emulator rather than on real hardware.)</small>
+
+<p>If you don't feel like writing your own dumping program, there are programs
+already written by others that can e.g. send the contents of memory
+over http over ethernet (see <a href="https://www.youtube.com/watch?v=DVowfmrifN8">https://www.youtube.com/watch?v=DVowfmrifN8</a>
+for an example).
+Nomatter how you dump your Dreamcast's ROM bios and flash memory, they end
+up in two files, let's call them <tt>dc_bios.bin</tt> and <tt>dc_flash.bin</tt>.
+
+<p>
+To start GXemul and load the bios and flash, use the following command line:
+<pre>
+	<b>gxemul -XEdreamcast -v 0x200000:dc_flash.bin 0x0:dc_bios.bin</b>
+</pre>
+
+<p>As can be seen, graphics isn't emulated well enough to draw the bootup
+logo. A gray "something" is displayed where the logo is supposed to be.
+
+<p>
+<a href="20131109-biostest.png"><img src="20131109-biostest-small.png"></a>
+
+<p>
+It doesn't really do anything meaningful yet. It probably gets stuck in
+some loop where it tries to detect hardware.
 
 
 

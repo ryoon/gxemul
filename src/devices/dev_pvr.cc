@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2013  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -69,8 +69,10 @@
 #include "thirdparty/dreamcast_sysasicvar.h"
 
 
-// #define	TA_DEBUG
-// #define debug fatal
+/* For debugging: */
+#define DEBUG_RENDER_AS_WIRE_FRAME	// Renders 3-corner textured polygons as wire-frame
+// #define	TA_DEBUG		// Dumps TA commands
+// #define debug fatal			// Dumps debug even without -v.
 
 #define	INTERNAL_FB_ADDR	0x300000000ULL
 #define	PVR_FB_TICK_SHIFT	18
@@ -729,7 +731,7 @@ static void texturedline(struct pvr_data *d,
 			} else {
 				color = d->vram[addr];
 				// TODO: multiple palette banks.
-				color = d->reg[PVRREG_PALETTE / sizeof(uint32_t) + color];
+//				color = d->reg[PVRREG_PALETTE / sizeof(uint32_t) + color];
 			}
 
 			d->vram[(fbofs+0) % VRAM_SIZE] = color & 255;
@@ -740,6 +742,21 @@ static void texturedline(struct pvr_data *d,
 		u += du12;
 		v += dv12;
 	}
+
+	/*
+	printf("Parts of VRAM that are in use:\n");
+	for (int a = 0; a < VRAM_SIZE; a+=256)
+	{
+		for (int b = 0; b < 256; ++b)
+		{
+			if (d->vram[a+b] != 0)
+			{
+				printf("used offset %08x\n", a);
+				break;
+			}
+		}
+	}
+	*/
 }
 
 // Slow software rendering, for debugging:
@@ -749,14 +766,6 @@ static void pvr_render_triangle(struct pvr_data *d,
 	int x3, int y3, double z3,
 	int r, int g, int b)
 {
-	// Wire-frame test:
-	if (false) {
-		line(d, x1, y1, x2, y2);
-		line(d, x1, y1, x3, y3);
-		line(d, x2, y2, x3, y3);
-		return;
-	}
-
 	// Easiest if 1, 2, 3 are in order top to bottom.
 	if (y2 < y1) {
 		int tmp = x1; x1 = x2; x2 = tmp;
@@ -800,6 +809,13 @@ static void pvr_render_triangle(struct pvr_data *d,
 		startx += dx13; startz += dz13;
 		stopx += dx23; stopz += dz23;
 	}
+
+#ifdef DEBUG_RENDER_AS_WIRE_FRAME
+	// Wire-frame test:
+	line(d, x1, y1, x2, y2);
+	line(d, x1, y1, x3, y3);
+	line(d, x2, y2, x3, y3);
+#endif
 }
 
 
@@ -811,14 +827,6 @@ static void pvr_render_triangle_textured(struct pvr_data *d,
 	int x2, int y2, double z2, double u2, double v2,
 	int x3, int y3, double z3, double u3, double v3)
 {
-	// Wire-frame test:
-	if (false) {
-		line(d, x1, y1, x2, y2);
-		line(d, x1, y1, x3, y3);
-		line(d, x2, y2, x3, y3);
-		return;
-	}
-
 	// Easiest if 1, 2, 3 are in order top to bottom.
 	if (y2 < y1) {
 		int tmp = x1; x1 = x2; x2 = tmp;
@@ -876,6 +884,13 @@ static void pvr_render_triangle_textured(struct pvr_data *d,
 		startx += dx13; startz += dz13; startu += du13; startv += dv13;
 		stopx += dx23; stopz += dz23; stopu += du23; stopv += dv23;
 	}
+
+#ifdef DEBUG_RENDER_AS_WIRE_FRAME
+	// Wire-frame test:
+	line(d, x1, y1, x2, y2);
+	line(d, x1, y1, x3, y3);
+	line(d, x2, y2, x3, y3);
+#endif
 }
 
 
@@ -911,15 +926,6 @@ static void pvr_render_texture(struct pvr_data *d,
 	int* wf_x, int* wf_y,
 	double* wf_z, double* wf_u, double* wf_v)
 {
-	// Wire-frame test:
-	if (false) {
-		line(d, wf_x[0], wf_y[0], wf_x[1], wf_y[1]);
-		line(d, wf_x[0], wf_y[0], wf_x[2], wf_y[2]);
-		line(d, wf_x[1], wf_y[1], wf_x[3], wf_y[3]);
-		line(d, wf_x[2], wf_y[2], wf_x[3], wf_y[3]);
-		return;
-	}
-
 	// Render as two textured triangles:
 	pvr_render_triangle_textured(d,
 	    texture_pixelformat, twiddled,

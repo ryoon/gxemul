@@ -4609,4 +4609,4 @@ Changelog for GXemul:
 20130907	Updating NetBSD/dreamcast test instructions: 5.1 -> 6.1.1.
 		Updating NetBSD/pmax install instructions: 5.1.1 -> 6.1.1.
 20131006	Adding a dummy Raspberry Pi machine mode.
-
+20131109	Updating OpenBSD/landisk install instructions: 5.0 -> 5.4.

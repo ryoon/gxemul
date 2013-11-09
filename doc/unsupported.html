@@ -765,7 +765,7 @@ keyboard input from a keyboard which doesn't exist.
 	<li>Download something similar to:<pre>
 	http://nyftp.netbsd.org/pub/NetBSD-daily/HEAD/201310032210Z/evbarm/binary/kernel/netbsd-RPI.gz
 </pre>
-	<li><tt>gxemul -tviK -E rpi netbsd-RPI.gz</tt>
+	<li><tt><b>gxemul -tviK -E rpi netbsd-RPI.gz</b></tt>
 </pre>
 </ol>
 
@@ -808,12 +808,19 @@ ASENTRY_NP(start)
 <p>
 Also useful for testing:
 <pre>https://github.com/raspberrypi/firmware/blob/master/boot/kernel.img
-gxemul -tvK -E rpi 0x00000000:kernel.img
+<b>gxemul -tvK -E rpi 0x00000000:kernel.img</b>
 </pre>
 
 FreeBSD sd card image:
 <pre>
 http://www.db.net/downloads/bsd-pi-250580M.img.xz
+# Extract the kernel from the second (2) slice' first partition (a):
+mdconfig -a -t vnode -f bsd-pi-250580M.img
+mount /dev/md0s2a /mnt/
+cp /mnt/boot/kernel/kernel* .
+umount /mnt
+mdconfig -d -u 0
+<b>gxemul -tK -E rpi kernel</b>
 </pre>
 
 

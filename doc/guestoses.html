@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2003-2013  Anders Gavare.  All rights reserved.
+Copyright (C) 2003-2014  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -47,7 +47,7 @@ SUCH DAMAGE.
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
   <li><a href="#legacy">Legacy emulation modes</a>
-  <li><a href="#netbsdpmaxinstall">NetBSD/pmax 6.1.1</a>
+  <li><a href="#netbsdpmaxinstall">NetBSD/pmax 6.1.4</a>
   <li><a href="#netbsdarcinstall">NetBSD/arc 5.0.1</a>
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 5.0.2</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 5.1.1</a>
@@ -218,11 +218,11 @@ follow these instructions:
 
 </pre>
   <li>Download a NetBSD CD-ROM iso image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/6.1.1/NetBSD-6.1.1-pmax.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/6.1.1/NetBSD-6.1.1-pmax.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/6.1.4/NetBSD-6.1.4-pmax.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/6.1.4/NetBSD-6.1.4-pmax.iso</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
-	<b>gxemul -X -e 3max -d nbsd_pmax.img -d b:NetBSD-6.1.1-pmax.iso</b>
+	<b>gxemul -X -e 3max -d nbsd_pmax.img -d b:NetBSD-6.1.4-pmax.iso</b>
 </pre>
 </ol>
 
@@ -241,8 +241,12 @@ NetBSD from the harddisk image:<pre>
 
 and log in as <tt>root</tt>. Type <tt>startx</tt> to start X windows.
 
-<p>(Remove <b><tt>-X</tt></b> if you only want a serial console.)
+<p>Remove <b><tt>-X</tt></b> if you only want a serial console.
 
+<p>(It seems that NetBSD 6.1.4 needs the user to enter root disk
+name (<tt>sd0</tt>) when booting. I don't think that was necessary when
+booting earlier NetBSD versions in the emulator,
+so there has been some regression here.)
 
 
 
@@ -1772,7 +1776,7 @@ instructions:
 </pre>
 
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -e mvme187 -d obsd_mvme88k.img -d b:openbsd_mvme88k_4.5.iso -j 4.5/mvme88k/bsd.rd</b>
+	<b>gxemul -e mvme187old -d obsd_mvme88k.img -d b:openbsd_mvme88k_4.5.iso -j 4.5/mvme88k/bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
@@ -1951,7 +1955,7 @@ instructions:
 Once the install has finished, the following command should let you 
 boot from the harddisk image:
 <pre>
-	<b>gxemul -e mvme187 -d obsd_mvme88k.img bsd</b>
+	<b>gxemul -e mvme187old -d obsd_mvme88k.img bsd</b>
 </pre>
 
 <p>When asked about root disk, enter <tt><b>sd0</b></tt>.

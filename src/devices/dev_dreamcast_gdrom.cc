@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -348,14 +348,11 @@ DEVICE_ACCESS(dreamcast_gdrom)
 
 	case GDROM_REGX:
 		if (writeflag == MEM_READ) {
-			fatal("Read from GDROM_REGX?\n");
-			// exit(1);
+			debug("[ Read to GDROM_REGX? ]\n");
 		} else {
 			/*  NetBSD/dreamcast writes 0 here.  */
-			if (idata != 0) {
-				fatal("[ Write to GDROM_REGX? ]\n");
-				/*  exit(1);  */
-			}
+			if (idata != 0)
+				debug("[ Write 0x%x to GDROM_REGX? ]\n", (int)idata);
 		}
 		break;
 
@@ -421,7 +418,7 @@ DEVICE_ACCESS(dreamcast_gdrom)
 				d->busy |= 0x08;
 				d->cmd_count = 0;
 			} else if (idata == 0xef) {
-				fatal("dreamcast_gdrom: ROM: TODO\n");
+				debug("dreamcast_gdrom: ROM: TODO\n");
 				SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_GDROM);
 			} else {
 				fatal("dreamcast_gdrom: unimplemented "

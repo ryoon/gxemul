@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -33,9 +33,6 @@
  *
  *  The only difference from the raw Unix concept is that the Dreamcast's
  *  clock is based at 1950 instead of 1970.
- *
- *  The Dreamcast PROM seems to want to write a 1 to 0x00710008, to set
- *  the date/time?
  */
 
 #include <stdio.h>
@@ -70,9 +67,13 @@ DEVICE_ACCESS(dreamcast_rtc)
 
 	case 0:
 	case 4:
+		/*
+		 *  While writing to the RTC could set the date/time of the
+		 *  host, that would probably be very annoying. For now,
+		 *  simply ignore writes.
+		 */
 		if (writeflag == MEM_WRITE)
-			debug("[ dreamcast_rtc: Writes are ignored, only "
-			    "reads are supported. ]\n");
+			break;
 
 		gettimeofday(&tv, NULL);
 
@@ -83,6 +84,13 @@ DEVICE_ACCESS(dreamcast_rtc)
 			odata = (odata >> 16) & 0xffff;
 		else
 			odata &= 0xffff;
+		break;
+
+	case 8:
+		/*
+		 *  The Dreamcast PROM writes a 1 here when setting the
+		 *  date/time. Let's ignore it for now.
+		 */
 		break;
 
 	default:

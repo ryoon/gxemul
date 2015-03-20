@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -170,6 +170,8 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
 	for (i=0; i<N_ARM_REGS - 1; i++)
 		CPU_SETTINGS_ADD_REGISTER32(arm_regname[i], cpu->cd.arm.r[i]);
+
+	CPU_SETTINGS_ADD_REGISTER32("cpsr", cpu->cd.arm.cpsr);
 
 	/*  Register the CPU's "IRQ" and "FIQ" interrupts:  */
 	{
@@ -344,13 +346,15 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 		debug("cpu%i:  cpsr = ", x);
-		debug("%s%s%s%s%s%s",
+		debug("%s%s%s%s%s%s%s%s",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_N)? "N" : "n",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_Z)? "Z" : "z",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_C)? "C" : "c",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_V)? "V" : "v",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_Q)? "Q" : "q",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_I)? "I" : "i",
-		    (cpu->cd.arm.cpsr & ARM_FLAG_F)? "F" : "f");
+		    (cpu->cd.arm.cpsr & ARM_FLAG_F)? "F" : "f",
+    		    (cpu->cd.arm.cpsr & ARM_FLAG_T)? "T" : "t");
 		if (mode < ARM_MODE_USR32)
 			debug("   pc =  0x%07x", (int)(cpu->pc & 0x03ffffff));
 		else
@@ -734,6 +738,194 @@ void arm_irq_interrupt_deassert(struct interrupt *interrupt)
 
 
 /*
+ *  arm_cpu_disassemble_instr_thumb():
+ *
+ *  Like arm_cpu_disassemble_instr below, but for THUMB encodings.
+ *  Note that the disassbmly uses regular ARM mnemonics, not "THUMB
+ *  assembly language".
+ */                     
+int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
+        int running, uint64_t dumpaddr)
+{
+	uint16_t iw;
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iw = ib[0] + (ib[1]<<8);
+	else
+		iw = ib[1] + (ib[0]<<8);
+	debug("%04x    \t", (int)iw);
+
+	int main_opcode = (iw >> 12) & 15;
+	int rn = (iw >> 6) & 7;
+	int rs_rb = (iw >> 3) & 7;
+	int rd = iw & 7;
+	int offset5 = (iw >> 6) & 0x1f;
+	int b_bit = (iw >> 12) & 1;
+	int l_bit = (iw >> 11) & 1;
+	int addsub_op = (iw >> 9) & 1;
+	int addsub_immediate = (iw >> 10) & 1;
+	int op11 = (iw >> 11) & 3;
+	int op10 = (iw >> 10) & 3;
+	int op8 = (iw >> 8) & 3;
+	int h1 = (iw >> 7) & 1;
+	int h2 = (iw >> 6) & 1;
+	int condition_code = (iw >> 8) & 15;
+	const char* condition = arm_condition_string[condition_code];
+	const char* symbol;
+	uint64_t offset;
+	int tmp;
+
+	switch (main_opcode)
+	{
+	case 0x0:
+	case 0x1:
+		if (op11 < 3) {
+			// Move shifted register.
+			debug("movs\tr%i,r%i, %s #%i\n",
+				rd,
+				rs_rb,
+				op11 & 1 ? "lsr" : (op11 & 2 ? "asr" : "lsl"),
+				offset5);
+		} else {
+			// Add/subtract.
+			debug("%s\tr%i,r%i,%s%i\n",
+				addsub_op ? "subs" : "adds",
+				rd,
+				rs_rb,
+				addsub_immediate ? "#" : "r",
+				rn);
+		}
+		break;
+
+	case 0x2:
+	case 0x3:
+		// Move/compare/add/subtract immediate.
+		rd = (iw >> 8) & 7;
+		if (op11 & 2) {
+			debug("%s\tr%i,r%i,#%i\n",
+				op11 & 1 ? "subs" : "adds",
+				rd, rd,
+				iw & 0xff);
+		} else {
+			debug("%s\tr%i,#%i\n",
+				op11 & 1 ? "cmp" : "movs",
+				rd,
+				iw & 0xff);
+		}
+		break;
+
+	case 0x4:
+		switch (op10) {
+		case 0:
+			// ALU operations.
+			debug("TODO main_opcode = %i, op10 = %i\n", main_opcode, op10);
+			break;
+
+		case 1:
+			// Hi register operations / branch exchange.
+			if (h1)
+				rd += 8;
+			if (h2)
+				rs_rb += 8;
+			switch (op8) {
+			case 0:
+			case 1:
+			case 2:
+				if (h1 == 0 && h2 == 0) {
+					debug("TODO main_opcode = %i, op10 = %i, h1 AND h2 are zero?!\n", main_opcode, op10);
+				} else {
+					if (op8 == 0)
+						debug("add\tr%i,r%i,r%i\n", rd, rd, rs_rb);
+					else
+						debug("%s\tr%i,r%i\n",
+							op8 == 1 ? "cmp" : "mov", rd, rs_rb);
+				}
+				break;
+			case 3:
+				if (h1 == 1) {
+					debug("TODO main_opcode = %i, op10 = %i, h1 set for BX?!\n", main_opcode, op10);
+				} else {
+					debug("bx\tr%i\n", rs_rb);
+				}
+				break;
+			}
+			break;
+
+		case 2:
+		case 3:
+			// PC-relative load.
+			debug("TODO main_opcode = %i, op10 = %i\n", main_opcode, op10);
+			break;
+		}
+		break;
+
+	case 0x6:
+	case 0x7:
+		// Load/Store with immediate offset.
+		debug("%s%s\tr%i,[r%i,#%i]\n",
+			l_bit ? "ldr" : "str",
+			b_bit ? "b" : "",
+			rd,
+			rs_rb,
+			offset5 * (b_bit ? sizeof(uint8_t) : sizeof(uint32_t)));
+		break;
+
+	case 0x8:
+		// Load/Store halfword.
+		debug("%sh\tr%i,[r%i,#%i]\n",
+			l_bit ? "ldr" : "str",
+			rd,
+			rs_rb,
+			offset5 * sizeof(uint16_t));
+		break;
+
+	case 0xd:
+		if (condition_code < 0xe) {
+			// Conditional branch.
+			debug("b%s\t", condition);
+			tmp = (iw & 0xff) << 1;
+			if (tmp & 0x100)
+				tmp |= 0xfffffe00;
+			tmp = (int32_t)(dumpaddr + 4 + tmp);
+			debug("0x%x", (int)tmp);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    tmp, &offset);
+			if (symbol != NULL)
+				debug(" \t<%s>", symbol);
+			debug("\n");
+		} else {
+			// ? (0xe).
+			// Software interrupt (0xf).
+			debug("UNIMPLEMENTED\n");
+		}
+		break;
+
+	case 0xe:
+		// Unconditional branch.
+		if (iw & 0x0800) {
+			debug("UNKNOWN encoding?\n");
+		} else {
+			tmp = (iw & 0x7ff) << 1;
+			if (tmp & 0x800)
+				tmp |= 0xfffff000;
+			tmp = (int32_t)(dumpaddr + 4 + tmp);
+			debug("bal\t0x%x", (int)tmp);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    tmp, &offset);
+			if (symbol != NULL)
+				debug(" \t<%s>", symbol);
+			debug("\n");
+		}
+		break;
+
+	default:
+		debug("TODO: unimplemented opcode %i\n", main_opcode);
+	}
+
+	return sizeof(uint16_t);
+}
+
+
+/*
  *  arm_cpu_disassemble_instr():
  *
  *  Convert an instruction word into human readable format, for instruction
@@ -766,6 +958,9 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("cpu%i:\t", cpu->cpu_id);
 
 	debug("%08x:  ", (int)dumpaddr);
+
+	if (cpu->cd.arm.cpsr & ARM_FLAG_T)
+		return arm_cpu_disassemble_instr_thumb(cpu, ib, running, dumpaddr);
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);

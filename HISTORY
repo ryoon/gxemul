@@ -4610,3 +4610,18 @@ Changelog for GXemul:
 		Updating NetBSD/pmax install instructions: 5.1.1 -> 6.1.1.
 20131006	Adding a dummy Raspberry Pi machine mode.
 20131109	Updating OpenBSD/landisk install instructions: 5.0 -> 5.4.
+20140803	Some cleanup and minor progress of the Dreamcast PVR graphics.
+		(The graphics displayed when attempting to run the original
+		ROM now looks more reasonable.)
+		Updating NetBSD/dreamcast test instructions: 6.1.1 -> 6.1.4.
+		Updating NetBSD/pmax install instructions: 6.1.1 -> 6.1.4.
+		Renaming machine mvme187 to mvme187old to avoid collision.
+		Enabling ELF file support for 88K experiments.
+20140805	Fixing color bug in dev_pvr.cc simpleline, which is used when
+		rendering Gouraud shaded triangles.
+20140810	Beginning on disassembly of ARM THUMB (16-bit) encoding.
+20140815	Adding rudimentary culling of clockwise / counter-clockwise
+		polygons in the PVR rendering code.
+20140816	Fixing console.cc so that it doesn't complain about buffer
+		overrun when pasting a lot of data.
+

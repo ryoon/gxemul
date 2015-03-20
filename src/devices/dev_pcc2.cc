@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -62,7 +62,7 @@
 #define DEV_PCC2_TICK_SHIFT	14
 
 
-#define	debug fatal
+// #define	debug fatal
 
 struct pcc2_data {
 	struct interrupt	cpu_irq;
@@ -250,6 +250,10 @@ static void reassert_interrupts(struct pcc2_data *d)
 	if ((d->pcctwo_reg[PCCTWO_IPL] & INTERRUPT_LEVEL_MASK) >
 	    (d->pcctwo_reg[PCCTWO_MASK] & INTERRUPT_LEVEL_MASK))
 		assert = 1;
+
+	debug("[ pcc2: IPL = %i, MASK = %i => %s ]\n", d->pcctwo_reg[PCCTWO_IPL]& INTERRUPT_LEVEL_MASK,
+		d->pcctwo_reg[PCCTWO_MASK] & INTERRUPT_LEVEL_MASK,
+		assert ? "ASSERT" : "no assert");
 
 	/*  ... but only allow interrupts if Master Interrupt Enable is on:  */
 	if (!(d->pcctwo_reg[PCCTWO_GENCTL] & PCC2_MIEN))
@@ -575,6 +579,8 @@ DEVICE_ACCESS(mvme187_iack)
 	} else {
 		odata = d->pcctwo_reg[PCCTWO_VECBASE] + d->cur_int_vec[
 		    (relative_addr >> 2) & INTERRUPT_LEVEL_MASK];
+		debug("[ pcc2: mvme187_iack level %i => vector 0x%02x ]\n",
+		    (int)(relative_addr >> 2), (int)odata);
 
 		memory_writemax64(cpu, data, len, odata);
 	}

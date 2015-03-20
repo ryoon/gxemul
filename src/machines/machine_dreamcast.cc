@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -71,14 +71,13 @@ MACHINE_SETUP(dreamcast)
 	 *  others:
 	 *
 	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
-	 *  0x00200000 - 0x003fffff	Flash (256 KB)
+	 *  0x00200000 - 0x0021ffff	Flash (128 KB) (perhaps multiple images afterwards?)
 	 *				The bytes read by the Dreamcast PROM during
 	 *				boot are:
-	 *				    Offset 0x1a000 .. 0x1a004 = 5 bytes
+	 *				    Offset 0x1a000 .. 0x1a004 = 5 bytes debug/startup state?
 	 *					hex digits (maybe limited to 0x30, 0x31, 0x32, or 0x33)
-	 *					0x1a000 could be the machine's region code
-	 *				    Offset 0x1a056 .. 0x1a05d = 8 bytes
-	 *					serial number / machine ID.
+	 *				    Offset 0x1a02d .. 0x1a037 = date/time values.
+	 *				    Offset 0x1a056 .. 0x1a05d = 8 bytes serial number / machine ID.
 	 *  0x005f0000 - ...            ???
 	 *  0x005f6800 - ...		PowerVR2 DMA registers
 	 *  0x005f6900 - ...		ASIC registers
@@ -89,8 +88,9 @@ MACHINE_SETUP(dreamcast)
 	 *  0x005f7800 - ...		G2 External DMA registers
 	 *  0x005f7c00 - ...		DMA (?) for some device (PVR related?)
 	 *  0x005f8000 - 0x005f9fff	PVR registers (graphics)
-	 *  0x00600000 - ...		??? some device
-	 *  0x00600400 - 0x0060047f	LAN Adapter (MB86967) registers
+	 *  0x00600000 - 0x006007ff	G2 bus: Modem
+	 *  0x00600400 - 0x0060047f	G2 bus: LAN Adapter (MB86967) registers?
+	 *  0x00620000 - 0x00623fff	G2 bus: Expansion port?
 	 *  0x00606900 - ...		???
 	 *  0x00700000 - ...		SPU registers (sound)
 	 *  0x00702800 - 0x007028ff	???
@@ -98,18 +98,22 @@ MACHINE_SETUP(dreamcast)
 	 *  0x00703xxx - ...		AICA something
 	 *  0x00710000 - 0x00710007	RTC registers
 	 *  0x00800000 - 0x009fffff	AICA (Sound) RAM (2 MB) (*4)
-	 *  0x01000000 - ...		Parallel port registers
+	 *  0x01000000 - 0x01ffffff	G2 bus or Parallel port registers?
 	 *  0x02000000 - ...		CD-ROM port registers
+	 *  0x03000000 - 0x03ffffff	G2 bus (?)
 	 *  0x04000000 - 0x047fffff	Video RAM (*)     (64-bit)
 	 *  0x05000000 - 0x057fffff	Video RAM (8 MB)  (32-bit)
+	 *  0x06000000 - 0x067fffff	Video RAM (*)     (64-bit) (copy)
+	 *  0x07000000 - 0x077fffff	Video RAM (8 MB)  (32-bit) (copy)
 	 *  0x0c000000 - 0x0cffffff	RAM (16 MB)
 	 *  0x0e000000 - 0x0effffff	Copy of RAM? (*2)
-	 *  0x10000000 - ...		Tile accelerator command area
-	 *  0x10800000 - ...		Write-only mirror of Video RAM (?)
-	 *  0x11000000 - ...		PVR DMA area??
-	 *  0x14000000 - ...		G2 (?)  Or Modem/Extension port?
+	 *  0x10000000 - 0x107fffff	Tile Accelerator: command area
+	 *  0x10800000 - 0x10ffffff	Tile Accelerator: YUV data
+	 *  0x11000000 - 0x11ffffff	Tile Accelerator: Texture data
+	 *  0x14000000 - 0x17ffffff	G2 bus (?)
 	 *
-	 *  (*) = with banks 0 and 1 switched; 64-bit read/write access...
+	 *  (*1) = with banks 0 and 1 switched; 64-bit read/write access...
+	 *  (*2) The "luftvarg" 4KB intro uses memory at paddr 0x0ef00000...
 	 *  (*3) = See VOUTC in Linux' drivers/video/pvr2fb.c.
 	 *  (*4) = It seems that ARM machine code is placed here.
 	 */
@@ -117,7 +121,7 @@ MACHINE_SETUP(dreamcast)
 	dev_ram_init(machine, 0x00000000, 2 * 1024 * 1024,
 	    DEV_RAM_RAM /* | DEV_RAM_TRACE_ALL_ACCESSES */, 0x0, "bootrom");
 
-	dev_ram_init(machine, 0x00200000, 256 * 1024,
+	dev_ram_init(machine, 0x00200000, 128 * 1024,
 	    DEV_RAM_RAM /* | DEV_RAM_TRACE_ALL_ACCESSES */, 0x0, "flash");
 
 	dev_ram_init(machine, 0x00600004, 4, DEV_RAM_RAM, 0);
@@ -127,19 +131,20 @@ MACHINE_SETUP(dreamcast)
 	dev_ram_init(machine, 0x00703000, 0x1fff, DEV_RAM_RAM, 0);
 
 	/*  Sound RAM:  */
-	dev_ram_init(machine, 0x00800000, 2 * 1048576, DEV_RAM_RAM, 0);
+	dev_ram_init(machine, 0x00800000, 2 * 1048576, DEV_RAM_RAM, 0, "sound_ram");
 
 	/*
 	 *  HACK!  TODO: Remove this device at 0x00a00000 once NetBSD has
 	 *  been fixed to not clear 6 MB beyound the sound RAM area.
 	 */
-	dev_ram_init(machine, 0x00a00000, 6 * 1048576, DEV_RAM_RAM, 0);
+	dev_ram_init(machine, 0x00a00000, 6 * 1048576, DEV_RAM_RAM, 0, "hack_for_netbsd");
 
+	/*  RAM:  */
 	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
 
-	/*  The "luftvarg" 4KB intro uses memory at paddr 0x0ef00000...  */
-	/*  (*2)   (TODO: Make this a _mirror_ of 0x0c000000?)  */
-	dev_ram_init(machine, 0x0e000000, 16 * 1048576, DEV_RAM_RAM, 0);
+	/*  Image of RAM:  */
+	dev_ram_init(machine, 0x0e000000, 16 * 1048576, DEV_RAM_MIRROR
+		| DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x0c000000, "ram_mirror");
 
 	device_add(machine, "pvr");
 /*	device_add(machine, "mb8696x addr=0x600400 addr_mult=4");  */

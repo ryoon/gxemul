@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -99,6 +99,135 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 			return MEMORY_ACCESS_FAILED;
 	}
 
+#if 0
+	/*
+	 *  For quick-and-dirty debugging of 32-bit code, typically
+	 *  unknown ROM code:  Write out a summary of accessed memory ranges.
+	 */
+	if (cpu->running && paddr < 0x00300000)
+	{
+		static int swriteflag = -1, lastswriteflag;
+		static int32_t start = -1, stop = -1;
+		static int32_t laststart = -1, laststop = -1;
+
+		if (start == -1)
+		{
+			start = stop = paddr;
+			swriteflag = writeflag;
+		}
+		else
+		{
+			if (paddr == stop + len && writeflag == swriteflag)
+			{
+				stop = paddr;
+			}
+			else
+			{
+				if (start != laststart || stop != laststop || swriteflag != lastswriteflag)
+				{
+					printf("%s  %08x -- %08x  %i-bit\n",
+						swriteflag ? "WRITE" : "READ ",
+						(int)start, (int)(stop + len - 1), (int)len*8);
+				}
+
+				laststart = start; laststop = stop; lastswriteflag = swriteflag;
+
+				start = stop = paddr;
+				swriteflag = writeflag;
+			}
+		}
+
+		// Make sure the access is not put into quick lookup tables:
+		ok |= MEMORY_NOT_FULL_PAGE;
+	}
+#endif
+
+#if 0
+	/*
+	 *  For quick-and-dirty test to see which memory addresses are in use,
+	 *  making a "waterfall spectrum"...
+	 */
+	if (cpu->running && (paddr < 0x200000 ||
+		(paddr >= 0x0c000000 && paddr < 0x0d000000)))
+	{
+		int64_t xsize = 1920, ysize = 1080;
+		static int y = 0;
+		static int count = 0;
+		static uint8_t* buf = NULL;
+
+		if (buf == NULL)
+		{
+			buf = (uint8_t*)malloc(xsize * ysize*3);
+			memset(buf, 0xff, xsize * ysize*3);
+		}
+
+		uint64_t paddr2 = paddr - 0x0c000000;
+		
+		if (paddr < 0x200000)
+			paddr2 = paddr + 16*1048576;
+
+		int64_t max = 16*1048576 + (2*1048576);
+
+		int64_t x = xsize * paddr2 / max;
+
+		if (x >= 0 && x < xsize)
+		{
+			if (writeflag)
+			{
+				int c = buf[(x+y*xsize)*3+0];
+				if (c == 255)
+					c = 128;
+				else if (c > 0)
+				{
+					c = c - 8;
+				}
+
+				buf[(x+y*xsize)*3+1] = c;
+				buf[(x+y*xsize)*3+2] = c;
+			}
+			else
+			{
+				int c = buf[(x+y*xsize)*3+1];
+				if (c == 255)
+					c = 128;
+				else if (c > 0)
+				{
+					c = c - 8;
+				}
+
+				buf[(x+y*xsize)*3+0] = c;
+				buf[(x+y*xsize)*3+2] = c;
+			}
+		}
+		
+		for (int meg = 0; meg < 18; ++meg)
+			buf[((xsize * (meg * 0x100000LL) / max) +y*xsize)*3+1] = 64;
+
+		count ++;
+		if (count >= 8192)
+		{
+			count = 0;
+			y ++;
+			
+			if (y >= ysize)
+			{
+				static int n = 0;
+				char name[40];
+				snprintf(name, sizeof(name), "memory_%05i.ppm", n++);
+				FILE* f = fopen(name, "w");
+				printf("writing out %s\n", name);
+				fprintf(f, "P6\n%i %i\n255\n", (int)xsize, (int)ysize);
+				fwrite((char*)buf, 1, (int)(xsize*ysize*3), f);
+				fclose(f);
+				memset(buf, 0xff, xsize*ysize);
+				y = 0;
+			}
+		}
+		
+		// Make sure the access is not put into quick lookup tables:
+		ok |= MEMORY_NOT_FULL_PAGE;
+	}
+#endif
 
 	/*
 	 *  Memory mapped device?

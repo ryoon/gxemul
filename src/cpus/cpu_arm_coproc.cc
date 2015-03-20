@@ -153,6 +153,11 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		    (cpu->cd.arm.control & ARM_CONTROL_WBUFFER))
 			debug("[ %s the write buffer ]\n", cpu->cd.arm.control &
 			    ARM_CONTROL_WBUFFER? "enabling" : "disabling");
+
+		old_control &= ~ARM_CONTROL_BIG;
+		if (cpu->byte_order == EMUL_BIG_ENDIAN)
+			old_control |= ARM_CONTROL_BIG;
+
 		if ((old_control & ARM_CONTROL_BIG) !=
 		    (cpu->cd.arm.control & ARM_CONTROL_BIG)) {
 			fatal("ERROR: Trying to switch endianness. Not "

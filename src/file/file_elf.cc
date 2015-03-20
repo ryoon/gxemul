@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -204,6 +204,12 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 	ok = 0;
 	switch (arch) {
+	case ARCH_M88K:
+		switch (emachine) {
+		case EM_88K:
+			ok = 1;
+		}
+		break;
 	case ARCH_ALPHA:
 		switch (emachine) {
 		case EM_ALPHA:

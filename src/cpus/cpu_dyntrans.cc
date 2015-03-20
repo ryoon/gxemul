@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -248,6 +248,14 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 			sh_exception(cpu, 0, cpu->cd.sh.int_to_assert, 0);
 #endif
 	}
+
+#ifdef DYNTRANS_ARM
+	if (cpu->cd.arm.cpsr & ARM_FLAG_T) {
+		fatal("THUMB execution not implemented.\n");
+		cpu->running = false;
+		return 0;
+	}
+#endif
 
 	cached_pc = cpu->pc;
 
@@ -1061,6 +1069,34 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 }
 #endif
 
+/*
+	int found = -1;
+	for (int q = 0; q < 192; ++q)
+	{
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[q].vaddr_page == vaddr_page &&
+			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[q].valid)
+		{
+			if (found >= 0)
+			{
+				printf("ALREADY FOUND = %i\n", found);
+				int zz = found;
+				printf("%03i: ", zz);
+				printf("vaddr=%016llx\n", (long long)cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[zz].vaddr_page);
+				printf("valid=%i\n", cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[zz].valid);
+
+				zz = q;
+				printf("%03i: ", zz);
+				printf("vaddr=%016llx\n", (long long)cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[zz].vaddr_page);
+				printf("valid=%i\n", cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[zz].valid);
+
+				exit(1);
+			}
+			
+			found = q;
+		}
+	}
+*/
+
 	l3->host_load[x3] = NULL;
 	l3->host_store[x3] = NULL;
 	l3->phys_addr[x3] = 0;
@@ -1069,6 +1105,16 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[
 		    l3->vaddr_to_tlbindex[x3] - 1].valid = 0;
 		l3->refcount --;
+	} else {/*
+		printf("APA: vaddr_page=%016llx l3->refcount = %i\n", (long long)vaddr_page, l3->refcount);
+		for (int zz = 0; zz < 128; ++zz)
+		{
+			printf("%03i: ", zz);
+			printf("vaddr=%016llx\n", (long long)cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[zz].vaddr_page);
+			printf("valid=%i\n", cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[zz].valid);
+		}
+		
+		exit(1);*/
 	}
 	l3->vaddr_to_tlbindex[x3] = 0;
 
@@ -1627,6 +1673,10 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			l3->host_store[x3] = writeflag? host_page : NULL;
 			l3->phys_addr[x3] = paddr_page;
 		}
+		
+		/*  HM!  /2013-11-17  */
+		/*  Should this be here?  2014-08-02  */
+		//l3->phys_page[x3] = NULL;
 
 #ifdef BUGHUNT
 /*  Count how many pages are actually in use:  */

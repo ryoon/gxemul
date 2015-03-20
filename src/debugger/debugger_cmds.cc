@@ -1105,6 +1105,10 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	if (addr_start == MAGIC_UNTOUCHED)
 		addr_start = c->pc;
 
+	// Hack for ARM (THUMB):
+	if (m->arch == ARCH_ARM)
+		addr_start &= ~1;
+
 	addr_end = addr_start + 1000;
 
 	/*  endaddr:  */

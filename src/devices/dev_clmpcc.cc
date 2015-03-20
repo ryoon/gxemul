@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -222,9 +222,12 @@ DEVICE_ACCESS(clmpcc)
 		break;
 
 	case CLMPCC_REG_TEOIR:	/*  Tx End of Interrupt Register  */
-	case CLMPCC_REG_REOIR:	/*  Rx End of Interrupt Register  */
 		/*  TODO: Do something more realistic?  */
 		INTERRUPT_DEASSERT(d->irq_scc_tx);
+		break;
+
+	case CLMPCC_REG_REOIR:	/*  Rx End of Interrupt Register  */
+		/*  TODO: Do something more realistic?  */
 		INTERRUPT_DEASSERT(d->irq_scc_rx);
 		break;
 

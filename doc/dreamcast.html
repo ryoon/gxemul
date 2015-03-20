@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2006-2013  Anders Gavare.  All rights reserved.
+Copyright (C) 2006-2014  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -47,7 +47,7 @@ SUCH DAMAGE.
 <ul>
   <li><a href="#intro">Introduction</a>
   <li><a href="#binaries">Running raw binaries (IP.BIN and 1ST_READ.BIN)</a>
-  <li><a href="#rom">Experimenting with ROM dumps</a>
+  <li><a href="#rom">Experimenting with ROM dumps from your own machine</a>
   <li><a href="#netbsd_generic_md">NetBSD/dreamcast GENERIC_MD</a>
   <li><a href="#netbsd_live_cd">NetBSD/dreamcast Live CD</a>
   <li><a href="#linux_live_cd">Linux/dreamcast Live CD</a>
@@ -87,7 +87,10 @@ These sometimes work to a certain degree.
 <a name="binaries"></a>
 <h3>Running raw binaries (IP.BIN and 1ST_READ.BIN):</h3>
 
-<b>Note:</b> This is very experimental, as GXemul's Dreamcast emulation is very incomplete.
+<i>(<b>Note:</b> This is very experimental, as GXemul's Dreamcast emulation is very incomplete,
+but in principle it could be used as a help when you are developing your own
+code to run on the Dreamcast. For example, it may be easier to debug things
+in the emulator than on the real Dreamcast.)</i>
 
 <p>According to <a href="http://mc.pp.se/dc/ip.bin.html">http://mc.pp.se/dc/ip.bin.html</a>,
 the Dreamcast loads files from the last data track (from track session 2?). The
@@ -159,8 +162,7 @@ for more details on IP.BIN and 1ST_READ.BIN
 
 <p>
 Almost none of the Dreamcast's hardware is actually emulated by GXemul so far
-(sound, textured graphics, input devices other than keyboard), but a simple
-256-byte demo works:
+(sound, textured graphics, etc), but a simple 256-byte demo works:
 
 <p><a href="20110606-dreamcast-roto.png"><img src="20110606-dreamcast-roto-small.png"></a>
 
@@ -180,6 +182,26 @@ Almost none of the Dreamcast's hardware is actually emulated by GXemul so far
 </ul>
 
 <p>
+Another example is <a href="http://mc.pp.se/dc/serslave.html">Marcus Comstedt's
+"Serial upload slave"</a> program. Extract IP.BIN from
+<a href="http://mc.pp.se/dc/files/serial_slave.tar.gz">http://mc.pp.se/dc/files/serial_slave.tar.gz</a>.
+Then launch it in the emulator like this:
+<pre>
+	gxemul -X Edreamcast 0x8c008000:0:0x8c000140:IP.BIN
+</pre>
+
+According to Marcus' page, <tt>?</tt> prints out the version number (V103 in
+this case), and it handles <tt>S0</tt>, <tt>S3</tt>, and <tt>S7</tt>
+<a href="https://en.wikipedia.org/wiki/SREC_%28file_format%29#mediaviewer/File:Motorola_SREC_Chart.png">SREC
+line entries</a>. <tt>S7</tt> causes it to print <tt>OK</tt> and start the uploaded
+program. Here is a screenshot where a hobby operating system kernel
+(<a href="http://gavare.se/ycx5/">YCX5/dreamcast</a>) is launched this way,
+by pasting the SREC entries into the window called "SH4 SCIF":
+
+<p>
+<a href="20140803-serial-upload-slave.png"><img src="20140803-serial-upload-slave-small.png"></a>
+
+<p>
 Here is another example with a 3D test program ("gltest.bin") from the
 KOS examples, which more or less works:
 
@@ -187,6 +209,8 @@ KOS examples, which more or less works:
 <a href="20110624-dreamcast-gltest.png"><img src="20110624-dreamcast-gltest-small.png"></a>
 &nbsp;&nbsp;
 <a href="20110703-dreamcast-gltest.png"><img src="20110703-dreamcast-gltest-small.png"></a>
+&nbsp;&nbsp;
+<a href="20140803-dreamcast-gltest.png"><img src="20140803-dreamcast-gltest-small.png"></a>
 
 
 
@@ -195,13 +219,13 @@ KOS examples, which more or less works:
 
 <p><br>
 <a name="rom"></a>
-<h3>Experimenting with ROM dumps:</h3>
+<h3>Experimenting with ROM dumps from your own machine:</h3>
 
 As mentioned above under the <a href="#binaries">Running raw binaries</a> section,
 the emulation of Dreamcast hardware is not correct enough to run things that
 really rely on the hardware functioning properly such as games. Even more
 picky about the hardware is the original ROM itself. Even though running an
-original Dreamcast ROM in the emulator does not really work, it can be fun and/or
+original Dreamcast ROM in the emulator <b>does not really work</b>, it can be fun and/or
 interesting to experiment with.
 
 <p>
@@ -210,7 +234,7 @@ Dreamcast.
 
 <ul>
 	<li><tt>0x00000000 - 0x001fffff</tt>: ROM bios (2 MB)
-	<li><tt>0x00200000 - 0x003fffff</tt>: Flash (256 KB)
+	<li><tt>0x00200000 - 0x003fffff</tt>: Flash (256 KB) (128 KB according to <a href="http://mc.pp.se/dc/flashmem.html">http://mc.pp.se/dc/flashmem.html</a>)
 </ul>
 
 <p>There are several ways to dump these. I wrote a simple program which displayed
@@ -227,24 +251,66 @@ dump the resulting bytes into a file:
 already written by others that can e.g. send the contents of memory
 over http over ethernet (see <a href="https://www.youtube.com/watch?v=DVowfmrifN8">https://www.youtube.com/watch?v=DVowfmrifN8</a>
 for an example).
-Nomatter how you dump your Dreamcast's ROM bios and flash memory, they end
-up in two files, let's call them <tt>dc_bios.bin</tt> and <tt>dc_flash.bin</tt>.
+Nomatter how you dump your Dreamcast's ROM bios and flash memory, they should end
+up in two files. Common names on the Internet seem to be <tt>dc_bios.bin</tt> and
+<tt>dc_flash.bin</tt>, so let's call them that.
 
-<p>
-To start GXemul and load the bios and flash, use the following command line:
+<p>In principle, to start GXemul and load your BIOS and Flash memory images,
+the following command line should be used (-Q means to not do PROM emulation
+in software):
 <pre>
-	<b>gxemul -XEdreamcast -v 0x200000:dc_flash.bin 0x0:dc_bios.bin</b>
+	<b>gxemul -X -Q -E dreamcast 0x200000:dc_flash.bin 0x0:dc_bios.bin</b>
 </pre>
 
-<p>As can be seen, graphics isn't emulated well enough to draw the bootup
-logo. A gray "something" is displayed where the logo is supposed to be.
+<p>
+Unsurprisingly, one of the first things the ROM BIOS boot code does is to copy itself
+from ROM (physical address range <tt>0x00000000 - 0x001fffff</tt>) into RAM
+(virtual address range <tt>0x8c000000 - 0x8c1fffff</tt>).
+However, some of the ROM memory range (<tt>0x00004300 - 0x000052fc</tt> I think)
+is still accessed later on.
+ 
+<p>It is also possible to attempt to launch a BIOS in RAM only, skipping the ROM-to-RAM
+copying, by setting the initial PC to use after loading the BIOS image.
+For the specific BIOS image in my Dreamcast, the PC to use is 0x8c000120.
+GXemul does not currently emulate the hardware well enough to get past a never ending
+loop at the start, so I also have to use the following <tt>put</tt> command
+to patch the BIOS in memory to get past that point.
+<pre>
+	<b>gxemul -X -Q -E dreamcast -c 'put h 0x8c0d7df6,0x8800' 0x8c000000:0:0x8c000120:dc_bios.bin</b>
+</pre>
+
+<p>After getting past the never ending loop, the "set date/time" dialog
+appears. Presumably it finds a mismatch between what it sees in the Flash
+memory (stored date/time) and the emulated RTC chip's date/time.
+After pressing "U" (for "left") and "A" on the keyboard, the main
+menu is reached.
 
 <p>
-<a href="20131109-biostest.png"><img src="20131109-biostest-small.png"></a>
+<a href="20140802-dreamcast-bios-test1.png"><img src="20140802-dreamcast-bios-test1-small.png"></a>
+&nbsp;&nbsp;
+<a href="20140802-dreamcast-bios-test2.png"><img src="20140802-dreamcast-bios-test2-small.png"></a>
+&nbsp;&nbsp;
+<a href="20140802-dreamcast-bios-test3.png"><img src="20140802-dreamcast-bios-test3-small.png"></a>
+&nbsp;&nbsp;
+<a href="20140803-dreamcast-bios-test4.png"><img src="20140803-dreamcast-bios-test4-small.png"></a>
 
-<p>
-It doesn't really do anything meaningful yet. It probably gets stuck in
-some loop where it tries to detect hardware.
+<p>The graphics is wrong; it is a work in progress, everything has to be
+reverse-engineered and double-checked both with the BIOS and with homebrew
+programs and developer examples.
+Wire-frames can be turned on by defining <tt>DEBUG_RENDER_AS_WIRE_FRAME</tt>
+in <tt>dev_pvr.cc</tt>.
+It is also exceedingly slow, since it is done in software. (A possible
+future enhancement could be to make use of the host's OpenGL hardware.)
+
+<p>The following keyboard keys correspond to controller inputs:
+<pre>
+	             <b>8</b> <font color="#a00000">Up</font>                          <b>A B C D X Y Z</b> = Buttons
+	<b>4</b> or <b>U</b> <font color="#a00000">Left</font>               <b>6</b> or <b>O</b> <font color="#a00000">Right</font>     <b>S</b>             = Start button
+	             <b>2</b> or <b>K</b> <font color="#a00000">Down</font>
+</pre>
+
+<p>There are no analog inputs yet.
+
 
 
 
@@ -264,12 +330,12 @@ interface is emulated yet, so root-on-nfs is not possible.
 &nbsp;&nbsp;&nbsp;
 <a href="20061104-netbsd-dreamcast-real.jpg"><img src="20061104-netbsd-dreamcast-real_small.png"></a>
 
-<p>(The photo on the right shows NetBSD/dreamcast running both on a real 
-Dreamcast, and in the emulator.)
+<p>The photo on the right shows NetBSD/dreamcast running both on a real 
+Dreamcast, and in the emulator. Unfortunately without a keyboard...
 
 <p>Download the kernel here:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz</a> (optional)
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.4/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.4/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.4/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-6.1.4/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz</a> (optional)
 </pre>
 
 If you downloaded the symbols, gunzip them before proceeding.
@@ -279,7 +345,7 @@ If you downloaded the symbols, gunzip them before proceeding.
 	<b>gxemul -XEdreamcast netbsd-GENERIC_MD.gz</b>
 
 	# With symbols (makes single-stepping and tracing more meaningful):
-	<b>gxemul -XEdreamcast netbsd-GENERIC_MD.gz netbsd-GENERIC_MD.symbols</b>
+	<b>gxemul -XEdreamcast netbsd-GENERIC_MD.symbols.gz netbsd-GENERIC_MD.gz</b>
 
 </pre>
 
@@ -308,11 +374,10 @@ GXemul:
 	<a href="http://netbsd.student.utwente.nl/rpaulo/">http://netbsd.student.utwente.nl/rpaulo/</a>
 </pre>
 
-<p><font color="#ff0000">NOTE (February 2007):</font>
+<p><i><font color="#ff0000">NOTE (February 2007):</font>
 The ISO image seems to have been removed from the server,
 but you should be able to create one from scratch using
-instructions available at various locations on the Internet.
-
+instructions available at various locations on the Internet.</i>
 
 <p>Only the ISO9660 filesystem image is needed:<pre>
 	<a href="http://netbsd.student.utwente.nl/rpaulo/livecd.raw.bz2">http://netbsd.student.utwente.nl/rpaulo/livecd.raw.bz2</a>
@@ -353,7 +418,10 @@ Enter.
 	<a href="http://ftp.riken.go.jp/pub/misc/Japan/m17n.org/super-h/CD-R/lc2000.iso">http://ftp.riken.go.jp/pub/misc/Japan/m17n.org/super-h/CD-R/lc2000.iso</a>
 </pre>
 
-Once you have downloaded the ISO image, type the following command to 
+<p><i><font color="#ff0000">NOTE (August 2014):</font>
+The ISO image seems to have been removed from the server!</i>
+
+<p>Once you have downloaded the ISO image, type the following command to 
 boot directly from the image:<pre>
 	<b>gxemul -XEdreamcast -d lc2000.iso</b>
 </pre>

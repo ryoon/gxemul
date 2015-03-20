@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2007-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -204,7 +204,7 @@ MACHINE_REGISTER(mvme88k)
 	machine_entry_add_alias(me, "mvme88k");
 
 	machine_entry_add_subtype(me, "MVME187", MACHINE_MVME88K_187,
-	    "mvme187", NULL);
+	    "mvme187old", NULL);
 
 	machine_entry_add_subtype(me, "MVME188", MACHINE_MVME88K_188,
 	    "mvme188", NULL);

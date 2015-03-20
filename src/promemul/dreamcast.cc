@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -56,11 +56,11 @@
  *
  *  0x8c010000: This is where the first binary executable gets loaded. The name
  *              of the executable is given in IP.BIN, and refers to the ISO9660
- *              filename on the CDROM.
+ *              filename on the CDROM. A common file name is "1ST_READ.BIN".
  *
  *  See http://mc.pp.se/dc/syscalls.html for a description of what the
- *  PROM syscalls do. (The symbolic names in this module are the same as on
- *  that page.)
+ *  PROM syscalls do. The symbolic names in this module are the same as on
+ *  that page.
  */
 
 #include <stdio.h>
@@ -219,6 +219,9 @@ void dreamcast_machine_setup(struct machine *machine)
 
 	dreamcast_romfont_init(machine);
 
+	/*  Return address, if the user program returns: exit.  */
+	cpu->cd.sh.pr = 0x8c0000e0 + (0x100 - 0xb0);
+
 	/*  Stack starting at end of RAM.  */
 	cpu->cd.sh.r[15] = 0x8c000000 + 16 * 1048576;
 }
@@ -327,7 +330,7 @@ void dreamcast_emul(struct cpu *cpu)
 		/*
 		 *  This seems to have two uses:
 		 *
-		 *  1. KalistOS calls this from arch_menu(), i.e. to return
+		 *  1. KallistiOS calls this from arch_menu(), i.e. to return
 		 *     from a running program.
 		 *  2. The "licence code" in the IP.BIN code when booting from
 		 *     a bootable CD image calls this once the license screen
@@ -343,7 +346,7 @@ void dreamcast_emul(struct cpu *cpu)
 
 			booting_from_cdrom = 0;
 
-			// Jump to boostrap 1
+			// Jump to bootstrap 1
 			cpu->pc = 0x8c00b800;
 			return;
 		} else {

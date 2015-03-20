@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -240,7 +240,7 @@ X(b)
 	cpu->pc = (uint32_t)((cpu->pc & 0xfffff000) + (int32_t)ic->arg[0]);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 Y(b)
 
@@ -334,15 +334,26 @@ void (*arm_cond_instr_b_samepage[16])(struct cpu *,
  */
 X(bx)
 {
+	uint32_t old_cpsr = cpu->cd.arm.cpsr;
 	cpu->pc = reg(ic->arg[0]);
-	if (cpu->pc & 1) {
-		fatal("thumb: TODO\n");
-		exit(1);
+	if (cpu->pc & 1)
+		cpu->cd.arm.cpsr |= ARM_FLAG_T;
+	else
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+
+	if (cpu->cd.arm.cpsr != old_cpsr)
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+	if (cpu->pc & 2 && ((cpu->pc & 1) == 0)) {
+		fatal("[ ARM pc misaligned? 0x%08x ]\n", (int)cpu->pc);
+		cpu->running = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.arm.next_ic = &nothing_call;
+		return;
 	}
-	cpu->pc &= ~3;
 
 	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 Y(bx)
 
@@ -354,17 +365,28 @@ Y(bx)
  */
 X(bx_trace)
 {
+	uint32_t old_cpsr = cpu->cd.arm.cpsr;
 	cpu->pc = cpu->cd.arm.r[ARM_LR];
-	if (cpu->pc & 1) {
-		fatal("thumb: TODO\n");
-		exit(1);
+	if (cpu->pc & 1)
+		cpu->cd.arm.cpsr |= ARM_FLAG_T;
+	else
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+
+	if (cpu->cd.arm.cpsr != old_cpsr)
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+	if (cpu->pc & 2 && ((cpu->pc & 1) == 0)) {
+		fatal("[ ARM pc misaligned? 0x%08x ]\n", (int)cpu->pc);
+		cpu->running = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.arm.next_ic = &nothing_call;
+		return;
 	}
-	cpu->pc &= ~3;
 
 	cpu_functioncall_trace_return(cpu);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 Y(bx_trace)
 
@@ -383,7 +405,7 @@ X(bl)
 	cpu->pc = pc + (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 Y(bl)
 
@@ -398,14 +420,26 @@ X(blx)
 	uint32_t lr = ((uint32_t)cpu->pc & 0xfffff000) + (int32_t)ic->arg[2];
 	cpu->cd.arm.r[ARM_LR] = lr;
 	cpu->pc = reg(ic->arg[0]);
-	if (cpu->pc & 1) {
-		fatal("thumb: TODO\n");
-		exit(1);
+
+	uint32_t old_cpsr = cpu->cd.arm.cpsr;
+	if (cpu->pc & 1)
+		cpu->cd.arm.cpsr |= ARM_FLAG_T;
+	else
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+
+	if (cpu->cd.arm.cpsr != old_cpsr)
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+	if (cpu->pc & 2 && ((cpu->pc & 1) == 0)) {
+		fatal("[ ARM pc misaligned? 0x%08x ]\n", (int)cpu->pc);
+		cpu->running = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.arm.next_ic = &nothing_call;
+		return;
 	}
-	cpu->pc &= ~3;
 
 	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 Y(blx)
 
@@ -426,7 +460,7 @@ X(bl_trace)
 	cpu_functioncall_trace(cpu, cpu->pc);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 Y(bl_trace)
 
@@ -679,14 +713,14 @@ X(ret_trace)
 		    ((cpu->pc & mask_within_page) >> ARM_INSTR_ALIGNMENT_SHIFT);
 	} else {
 		/*  Find the new physical page and update pointers:  */
-		quick_pc_to_pointers(cpu);
+		quick_pc_to_pointers_arm(cpu);
 	}
 }
 Y(ret_trace)
 X(ret)
 {
 	cpu->pc = cpu->cd.arm.r[ARM_LR];
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 Y(ret)
 
@@ -854,7 +888,7 @@ X(openfirmware)
 	cpu->pc = cpu->cd.arm.r[ARM_LR];
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 }
 
 
@@ -1193,7 +1227,7 @@ X(bdt_load)
 		    same page!  */
 		/*  Find the new physical page and update the
 		    translation pointers:  */
-		quick_pc_to_pointers(cpu);
+		quick_pc_to_pointers_arm(cpu);
 	}
 }
 Y(bdt_load)
@@ -1758,7 +1792,7 @@ X(cmps_0_beq)
 		cpu->cd.arm.flags = ARM_F_Z | ARM_F_C;
 		cpu->pc = (uint32_t)(((uint32_t)cpu->pc & 0xfffff000)
 		    + (int32_t)ic[1].arg[0]);
-		quick_pc_to_pointers(cpu);
+		quick_pc_to_pointers_arm(cpu);
 	} else {
 		/*  Semi-ugly hack which sets the negative-bit if a < 0:  */
 		cpu->cd.arm.flags = ARM_F_C | ((a >> 28) & 8);
@@ -1776,7 +1810,7 @@ X(cmps_pos_beq)
 		cpu->cd.arm.flags |= ARM_F_Z;
 		cpu->pc = (uint32_t)(((uint32_t)cpu->pc & 0xfffff000)
 		    + (int32_t)ic[1].arg[0]);
-		quick_pc_to_pointers(cpu);
+		quick_pc_to_pointers_arm(cpu);
 	} else {
 		cpu->cd.arm.next_ic = &ic[2];
 		if (c & 0x80000000)
@@ -1794,7 +1828,7 @@ X(cmps_neg_beq)
 		cpu->cd.arm.flags |= ARM_F_Z;
 		cpu->pc = (uint32_t)(((uint32_t)cpu->pc & 0xfffff000)
 		    + (int32_t)ic[1].arg[0]);
-		quick_pc_to_pointers(cpu);
+		quick_pc_to_pointers_arm(cpu);
 	} else {
 		cpu->cd.arm.next_ic = &ic[2];
 		if (c & 0x80000000)
@@ -2067,7 +2101,7 @@ X(end_of_page)
 	cpu->pc += (ARM_IC_ENTRIES_PER_PAGE << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	quick_pc_to_pointers_arm(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
@@ -2561,16 +2595,16 @@ X(to_be_translated)
 	rm    = iword & 15;
 
 	if (condition_code == 0xf) {
-		if ((iword & 0xfc70f000) == 0xf450f000) {
+//		if ((iword & 0xfc70f000) == 0xf450f000) {
 			/*  Preload:  TODO.  Treat as NOP for now.  */
 			ic->f = instr(nop);
 			goto okay;
-		}
-
-		if (!cpu->translation_readahead)
-			fatal("TODO: ARM condition code 0x%x\n",
-			    condition_code);
-		goto bad;
+//		}
+//
+//		if (!cpu->translation_readahead)
+//			fatal("TODO: ARM condition code 0x%x\n",
+//			    condition_code);
+//		goto bad;
 	}
 
 

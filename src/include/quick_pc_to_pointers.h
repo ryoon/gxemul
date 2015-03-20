@@ -15,7 +15,18 @@
 	} else								\
 		DYNTRANS_PC_TO_POINTERS(cpu);				\
 }
+
+#ifndef quick_pc_to_pointers_arm
+#define	quick_pc_to_pointers_arm(cpu) {					\
+	if (cpu->cd.arm.cpsr & ARM_FLAG_T) {				\
+		cpu->cd.arm.next_ic = &nothing_call;			\
+	} else								\
+		quick_pc_to_pointers(cpu);				\
+}
+#endif
+
 #else
 #define quick_pc_to_pointers(cpu)	DYNTRANS_PC_TO_POINTERS(cpu)
 #endif
+
 

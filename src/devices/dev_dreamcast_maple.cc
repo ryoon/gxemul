@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2014  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -148,6 +148,9 @@ DEVICE_TICK(maple)
 		 *  NOTE/TODO:
 		 *
 		 *  Implement the controller in a reasonable way!
+		 *  Theoretically, there are all of these buttons: ABCD XYZ Start
+		 *  and two digital pads, two analog joysticks, and two
+		 *  analog fire buttons (left and right).
 		 */
 
 		int control_bits = 0;
@@ -164,6 +167,11 @@ DEVICE_TICK(maple)
 		case 'C':
 			control_bits = 0x0001;
 			break;
+		case 'd':
+		case 'D':
+			control_bits = 0x0800;
+			break;
+
 		case 'x':
 		case 'X':
 			control_bits = 0x0400;
@@ -176,10 +184,12 @@ DEVICE_TICK(maple)
 		case 'Z':
 			control_bits = 0x0100;
 			break;
+
 		case 's':
 		case 'S':	/*  Start  */
 			control_bits = 0x0008;
 			break;
+
 		case '8':	/*  up  */
 			control_bits = 0x0010;
 			break;
@@ -275,7 +285,8 @@ static void maple_getcond_controller_response(struct dreamcast_maple_data *d,
 	memset(buf, 0, 8);
 	buf[0] = c & 0xff;
 	buf[1] = c >> 8;
-	buf[2] = buf[3] = buf[4] = buf[5] = buf[6] = buf[7] = 0x80;
+	buf[2] = buf[3] = 0;				// 0 = not pressed
+	buf[4] = buf[5] = buf[6] = buf[7] = 128;	// 128 = centered
 
 	cpu->memory_rw(cpu, cpu->mem, receive_addr, (unsigned char *) (void *) &buf, 8,
 	    MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
@@ -371,7 +382,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 	uint32_t addr = d->dmaaddr;
 
 	if (!d->enable) {
-		fatal("[ maple_do_dma_xfer: not enabled? ]\n");
+		debug("[ maple_do_dma_xfer: not enabled? ]\n");
 		return;
 	}
 

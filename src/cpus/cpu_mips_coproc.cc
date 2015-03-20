@@ -539,10 +539,18 @@ static void invalidate_asid(struct cpu *cpu, unsigned int asid)
 		}
 
 		for (i=0; i<ntlbs; i++) {
-			if (tlb[i].mask != 0 && tlb[i].mask != 0x1800) {
+			// printf("A %02i: %016llx\n", i, (long long)tlb[i].mask);
+			uint64_t mask = tlb[i].mask & ~ 0x7ff;
+			if (mask != 0 && mask != 0x1800) {
 				non4kpages = 1;
+				//printf("non4kpages!\n");exit(1);
 				continue;
 			}
+
+//			if ((tlb[i].hi & ENTRYHI_ASID) == asid &&
+//			    !(tlb[i].hi & TLB_G)) {
+//				uint64_t vaddr0, vaddr1;
+//				vaddr0 = cp->tlbs[i].hi & ~fillmask & ~mask & ~ENTRYHI_ASID;
 
 			if ((tlb[i].hi & ENTRYHI_ASID) == asid &&
 			    !(tlb[i].hi & TLB_G)) {
@@ -1538,6 +1546,7 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 		else
 			xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
 		vpn2 = cp->reg[COP0_ENTRYHI] & xmask;
+
 		found = -1;
 		for (i=0; i<cp->nr_of_tlbs; i++) {
 			int gbit = cp->tlbs[i].hi & TLB_G;
@@ -1557,6 +1566,7 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 			}
 		}
 	}
+
 	if (found == -1)
 		cp->reg[COP0_INDEX] = INDEX_P;
 	else {
@@ -1864,7 +1874,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		 *  pages to the TLB:  (TODO: 4KB hardcoded... ugly)
 		 */
 		psize = 1 << pfn_shift;
-		for (ptmp = 0; ptmp < psize; ptmp += 0x1000) {
+		for (ptmp = 0; ptmp < psize; ptmp += 0x2000) {
 			if (wf0)
 				cpu->invalidate_code_translation(cpu,
 				    paddr0 + ptmp, INVALIDATE_PADDR);

@@ -327,7 +327,7 @@ int MIPS_CPUComponent::GetDyntransICshift() const
 }
 
 
-void (*MIPS_CPUComponent::GetDyntransToBeTranslated())(CPUDyntransComponent*, DyntransIC*) const
+DyntransIC_t MIPS_CPUComponent::GetDyntransToBeTranslated() const
 {
 	bool mips16 = m_pc & 1? true : false;
 	return mips16? instr_ToBeTranslated_MIPS16 : instr_ToBeTranslated;

@@ -194,7 +194,7 @@ void CPUDyntransComponent::DyntransClearICPage(struct DyntransIC* icpage)
 	// Fill the page with "to be translated" entries, which when executed
 	// will read the instruction from memory, attempt to translate it, and
 	// then execute it.
-	void (*f)(CPUDyntransComponent*, DyntransIC*) = GetDyntransToBeTranslated();
+	DyntransIC_t f = GetDyntransToBeTranslated();
 
 	for (int i=0; i<m_dyntransICentriesPerPage; ++i)
 		icpage[i].f = f;

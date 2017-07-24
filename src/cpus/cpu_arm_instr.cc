@@ -2670,6 +2670,7 @@ X(to_be_translated)
 					ic->f = cond_instr(bx);
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+			ic->arg[2] = (addr & 0xffc) + 4;
                         break;
                 }
 		if ((iword & 0x0fb00ff0) == 0x1000090) {
@@ -2888,7 +2889,7 @@ X(to_be_translated)
 			while (r8-- > 0)
 				imm = (imm >> 2) | ((imm & 3) << 30);
 
-			if (steps != 0 && imm < 256) {
+			if (steps != 0 && imm < 256 && imm != 0) {
 				if (!cpu->translation_readahead)
 					fatal("TODO: see cpu_arm_instr_dpi; non-zero steps but still under 256 is not implemented yet\n");
 				goto bad;

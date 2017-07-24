@@ -33,6 +33,8 @@ template <class T>
 class refcount_ptr;
 
 
+#include <stddef.h>
+
 /**
  * \brief Base class for reference countable objects.
  *

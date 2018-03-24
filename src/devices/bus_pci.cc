@@ -1095,7 +1095,7 @@ printf("reg = 0x%x\n", reg);
 	case PCI_COMMAND_STATUS_REG:
 		if (value & PCI_COMMAND_IO_ENABLE)
 			enabled = 1;
-printf("  value = 0x%"PRIx32"\n", value);
+printf("  value = 0x%" PRIx32 "\n", value);
 		if (wdc0 != NULL)
 			wdc_set_io_enabled((struct wdc_data *) wdc0, enabled);
 		if (wdc1 != NULL)
@@ -1429,4 +1429,3 @@ PCIINIT(ati_radeon_9200_2)
 	/*  TODO  */
 	allocate_device_space(pd, 0x1000, 0x400000, &port, &memaddr);
 }
-

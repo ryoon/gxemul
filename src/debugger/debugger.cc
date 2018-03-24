@@ -164,9 +164,9 @@ static void show_breakpoint(struct machine *m, int i)
 {
 	printf("%3i: 0x", i);
 	if (m->cpus[0]->is_32bit)
-		printf("%08"PRIx32, (uint32_t) m->breakpoints.addr[i]);
+		printf("%08" PRIx32, (uint32_t) m->breakpoints.addr[i]);
 	else
-		printf("%016"PRIx64, (uint64_t) m->breakpoints.addr[i]);
+		printf("%016" PRIx64, (uint64_t) m->breakpoints.addr[i]);
 	if (m->breakpoints.string[i] != NULL)
 		printf(" (%s)", m->breakpoints.string[i]);
 	printf("\n");
@@ -731,4 +731,3 @@ void debugger_init(struct emul *emul)
 	last_cmd_index = 0;
 	repeat_cmd[0] = '\0';
 }
-

@@ -515,7 +515,7 @@ string GXemul::Version()
 #else
 	    << "(unknown version)"
 #endif
-	    << "      "COPYRIGHT_MSG"\n"SECONDARY_MSG;
+	    << "      " COPYRIGHT_MSG "\n" SECONDARY_MSG;
 
 	return ss.str();
 }
@@ -1164,4 +1164,3 @@ UNITTESTS(GXemul)
 
 
 #endif
-

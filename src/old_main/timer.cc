@@ -229,6 +229,7 @@ void timer_start(void)
 
 	memset(&saction, 0, sizeof(saction));
 	saction.sa_handler = timer_tick;
+	saction.sa_flags = SA_RESTART;
 
 	sigaction(SIGALRM, &saction, NULL);
 

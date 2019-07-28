@@ -804,7 +804,7 @@ abort();
 			strlcpy(bootpath, "rz(0,0,0)", sizeof(bootpath));
 		else
 #endif
-			strlcpy(bootpath, "5/rz1/", sizeof(bootpath));
+			strlcpy(bootpath, "5/rz0/", sizeof(bootpath));
 
 		if (machine->bootdev_id < 0 || machine->force_netboot) {
 			/*  tftp boot:  */

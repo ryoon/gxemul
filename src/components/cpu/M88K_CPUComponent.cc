@@ -337,7 +337,7 @@ int M88K_CPUComponent::GetDyntransICshift() const
 }
 
 
-void (*M88K_CPUComponent::GetDyntransToBeTranslated())(CPUDyntransComponent*, DyntransIC*)
+DyntransIC_t M88K_CPUComponent::GetDyntransToBeTranslated()
 {
 	return instr_ToBeTranslated;
 }

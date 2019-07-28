@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -142,7 +142,7 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
 	x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
 	x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N)) & mask3;
-	/*  fatal("X3: addr=%016"PRIx64" x1=%x x2=%x x3=%x\n",
+	/*  fatal("X3: addr=%016" PRIx64" x1=%x x2=%x x3=%x\n",
 	    (uint64_t) addr, (int) x1, (int) x2, (int) x3);  */
 	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 	/*  fatal("  l2 = %p\n", l2);  */

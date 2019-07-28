@@ -318,7 +318,7 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 		addr = strtoull(b1, NULL, 16);
 		len  = strtoull(b2, NULL, 16);
 		type = b3[0];
-		/*  printf("addr=%016" PRIx64 " len=%016" PRIx64 " type=%i\n",
+		/*  printf("addr=%016" PRIx64" len=%016" PRIx64" type=%i\n",
 		    addr, len, type);  */
 
 		if (type == 't' || type == 'r' || type == 'g')
@@ -418,3 +418,4 @@ void symbol_init(struct symbol_context *sc)
 	sc->sorted_array = 0;
 	sc->n_symbols = 0;
 }
+

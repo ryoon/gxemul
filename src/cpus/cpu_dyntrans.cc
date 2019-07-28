@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2014  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -141,7 +141,7 @@ static void gather_statistics(struct cpu *cpu)
 			cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) << \
 			    DYNTRANS_INSTR_ALIGNMENT_SHIFT);		\
 			cpu->pc += (low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT);\
-			printf("Crash at %016" PRIx64 "\n", cpu->pc);	\
+			printf("Crash at %016" PRIx64"\n", cpu->pc);	\
 			printf("nr of I calls: %lli\n", nr_of_I_calls);	\
 			printf("Next ic = %p\n", cpu->cd.		\
 				DYNTRANS_ARCH.next_ic);			\
@@ -251,9 +251,12 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 
 #ifdef DYNTRANS_ARM
 	if (cpu->cd.arm.cpsr & ARM_FLAG_T) {
-		fatal("THUMB execution not implemented.\n");
-		cpu->running = false;
-		return 0;
+		// fatal("THUMB execution not implemented.\n");
+		// cpu->running = false;
+		// return 0;
+		
+		arm_cpu_interpret_thumb_SLOW(cpu);
+		return 1;
 	}
 #endif
 
@@ -288,7 +291,7 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 				int len =
 #endif
 				    cpu_disassemble_instr(
-				    cpu->machine, cpu, instr, 1, 0);
+				    cpu->machine, cpu, instr, 1, cpu->pc);
 #ifdef DYNTRANS_DELAYSLOT
 				/*  Show the instruction in the delay slot,
 				    if any:  */
@@ -305,7 +308,7 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 					cpu->delay_slot = DELAYED;
 					cpu->pc += len;
 					cpu_disassemble_instr(cpu->machine,
-					    cpu, instr, 1, 0);
+					    cpu, instr, 1, cpu->pc);
 					cpu->delay_slot = saved_delayslot;
 					cpu->pc -= len;
 				}
@@ -460,7 +463,7 @@ int DYNTRANS_RUN_INSTR_DEF(struct cpu *cpu)
 void DYNTRANS_FUNCTION_TRACE_DEF(struct cpu *cpu, int n_args)
 {
 	int show_symbolic_function_name = 1;
-        char strbuf[50];
+        char strbuf[55];
 	char *symbol;
 	uint64_t ot;
 	int x, print_dots = 1, n_args_to_print =
@@ -525,10 +528,18 @@ void DYNTRANS_FUNCTION_TRACE_DEF(struct cpu *cpu, int n_args)
 
 		if (d > -256 && d < 256)
 			fatal("%i", (int)d);
-		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
-			fatal("\"%s\"", memory_conv_to_string(cpu,
-			    cpu->mem, d, strbuf, sizeof(strbuf)));
-		else if (symbol != NULL && ot == 0 &&
+		else if (memory_points_to_string(cpu, cpu->mem, d, 1)) {
+			memset(strbuf, 0, sizeof(strbuf));
+			memory_conv_to_string(cpu,
+			    cpu->mem, d, strbuf, sizeof(strbuf));
+			fatal("\"%s\"", strbuf);
+			// TODO: This shows "..." when the string is longer
+			// _or exactly the max length_. An improvement would
+			// be to detect the case where the string is exactly
+			// the max length and not show "..." then.
+			if (strlen(strbuf) >= sizeof(strbuf)-1)
+				fatal("...");
+		} else if (symbol != NULL && ot == 0 &&
 		    show_symbolic_function_name)
 			fatal("&%s", symbol);
 		else {
@@ -612,7 +623,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
 	x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
 	x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N)) & mask3;
-	/*  fatal("X3: cached_pc=%016" PRIx64 " x1=%x x2=%x x3=%x\n",
+	/*  fatal("X3: cached_pc=%016" PRIx64" x1=%x x2=%x x3=%x\n",
 	    (uint64_t)cached_pc, (int)x1, (int)x2, (int)x3);  */
 	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 	/*  fatal("  l2 = %p\n", l2);  */
@@ -657,8 +668,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			 *  exception handler.
 			 */
 			/*  fatal("TODO: instruction vaddr=>paddr translation "
-			    "failed. vaddr=0x%" PRIx64 "\n", (uint64_t)cached_pc);
-			fatal("!! cpu->pc=0x%" PRIx64 "\n", (uint64_t)cpu->pc); */
+			    "failed. vaddr=0x%" PRIx64"\n", (uint64_t)cached_pc);
+			fatal("!! cpu->pc=0x%" PRIx64"\n", (uint64_t)cpu->pc); */
 
 			/*  If there was an exception, the PC has changed.
 			    Update cached_pc:  */
@@ -691,7 +702,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 
 			/*  printf("EXCEPTION HANDLER: vaddr = 0x%x ==> "
 			    "paddr = 0x%x\n", (int)cpu->pc, (int)paddr);
-			fatal("!? cpu->pc=0x%" PRIx64 "\n", (uint64_t)cpu->pc); */
+			fatal("!? cpu->pc=0x%" PRIx64"\n", (uint64_t)cpu->pc); */
 
 			if (!ok) {
 				fatal("FATAL: could not find physical"
@@ -754,7 +765,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	if (physpage_ofs == 0) {
 		uint32_t previous_first_page_in_chain;
 
-		/*  fatal("CREATING page %lli (physaddr 0x%" PRIx64 "), table "
+		/*  fatal("CREATING page %lli (physaddr 0x%" PRIx64"), table "
 		    "index %i\n", (long long)pagenr, (uint64_t)physaddr,
 		    (int)table_index);  */
 
@@ -799,8 +810,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
 
-	/*  printf("cached_pc=0x%016" PRIx64 "  pagenr=%lli  table_index=%lli, "
-	    "physpage_ofs=0x%016" PRIx64 "\n", (uint64_t)cached_pc, (long long)
+	/*  printf("cached_pc=0x%016" PRIx64"  pagenr=%lli  table_index=%lli, "
+	    "physpage_ofs=0x%016" PRIx64"\n", (uint64_t)cached_pc, (long long)
 	    pagenr, (long long)table_index, (uint64_t)physpage_ofs);  */
 }
 
@@ -861,8 +872,8 @@ have_it:
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
 
-	/*  printf("cached_pc=0x%016" PRIx64 "  pagenr=%lli  table_index=%lli, "
-	    "physpage_ofs=0x%016" PRIx64 "\n", (uint64_t)cached_pc, (long long)
+	/*  printf("cached_pc=0x%016" PRIx64"  pagenr=%lli  table_index=%lli, "
+	    "physpage_ofs=0x%016" PRIx64"\n", (uint64_t)cached_pc, (long long)
 	    pagenr, (long long)table_index, (uint64_t)physpage_ofs);  */
 }
 #endif	/*  DYNTRANS_PC_TO_POINTERS_FUNC  */
@@ -1329,7 +1340,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 				*physpage_entryp = ppp->next_ofs;
 		}
 #else
-		prev_ppp = prev_ppp;	// shut up compiler warning
+		(void)prev_ppp;	// shut up compiler warning
 
 		/*
 		 *  Instead of removing the page from the code cache, each
@@ -1439,8 +1450,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	vaddr_page &= 0xffffffffULL;
 
 	if (paddr_page > 0xffffffffULL) {
-		fatal("update_translation_table(): v=0x%016" PRIx64 ", h=%p w=%i"
-		    " p=0x%016" PRIx64 "\n", vaddr_page, host_page, writeflag,
+		fatal("update_translation_table(): v=0x%016" PRIx64", h=%p w=%i"
+		    " p=0x%016" PRIx64"\n", vaddr_page, host_page, writeflag,
 		    paddr_page);
 		exit(1);
 	}
@@ -1456,8 +1467,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	struct DYNTRANS_L2_64_TABLE *l2;
 	struct DYNTRANS_L3_64_TABLE *l3;
 
-	/*  fatal("update_translation_table(): v=0x%016" PRIx64 ", h=%p w=%i"
-	    " p=0x%016" PRIx64 "\n", (uint64_t)vaddr_page, host_page, writeflag,
+	/*  fatal("update_translation_table(): v=0x%016" PRIx64", h=%p w=%i"
+	    " p=0x%016" PRIx64"\n", (uint64_t)vaddr_page, host_page, writeflag,
 	    (uint64_t)paddr_page);  */
 #endif
 
@@ -1469,7 +1480,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		useraccess = 1;
 	}
 
-	useraccess = useraccess;  // shut up compiler warning about unused var
+	(void)useraccess;  // shut up compiler warning about unused var
 
 #ifdef DYNTRANS_M88K
 	/*  TODO  */
@@ -1730,11 +1741,11 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 					quiet_mode = tmp_old_quiet_mode;
 				}
 #ifdef MODE32
-				fatal("BREAKPOINT: pc = 0x%" PRIx32 "\n(The "
+				fatal("BREAKPOINT: pc = 0x%" PRIx32"\n(The "
 				    "instruction has not yet executed.)\n",
 				    (uint32_t)cpu->pc);
 #else
-				fatal("BREAKPOINT: pc = 0x%" PRIx64 "\n(The "
+				fatal("BREAKPOINT: pc = 0x%" PRIx64"\n(The "
 				    "instruction has not yet executed.)\n",
 				    (uint64_t)cpu->pc);
 #endif
@@ -1894,9 +1905,9 @@ bad:	/*
 
 	if (cpu->machine->instruction_trace) {
 		if (cpu->is_32bit)
-			fatal(" at 0x%" PRIx32 "\n", (uint32_t)cpu->pc);
+			fatal(" at 0x%" PRIx32"\n", (uint32_t)cpu->pc);
 		else
-			fatal(" at 0x%" PRIx64 "\n", (uint64_t)cpu->pc);
+			fatal(" at 0x%" PRIx64"\n", (uint64_t)cpu->pc);
 	} else {
 		fatal(":\n");
 		DISASSEMBLE(cpu, ib, 1, 0);
@@ -1923,3 +1934,4 @@ stop_running_translated:
 	ic->f(cpu, ic);
 
 #endif	/*  DYNTRANS_TO_BE_TRANSLATED_TAIL  */
+

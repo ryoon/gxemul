@@ -2,7 +2,7 @@
 #define	CPU_ARM_H
 
 /*
- *  Copyright (C) 2005-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -69,6 +69,10 @@ struct arm_cpu_type_def {
 	"and", "eor", "sub", "rsb", "add", "adc", "sbc", "rsc",	\
 	"tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn" }
 
+#define	ARM_THUMB_DPI_NAMES		{			\
+	"ands", "eors", "lsls", "lsrs", "asrs", "adcs", "sbcs", "rors",	\
+	"tst", "negs", "cmp", "cmn", "orrs", "muls", "bics", "mvns" }
+
 #define	ARM_IC_ENTRIES_SHIFT		10
 
 #define	ARM_N_IC_ARGS			3
@@ -89,6 +93,9 @@ struct arm_cpu_type_def {
 #define	ARM_FLAG_C	0x20000000	/*  Carry flag  */
 #define	ARM_FLAG_V	0x10000000	/*  Overflow flag  */
 #define	ARM_FLAG_Q	0x08000000	/*  DSP saturation overflow  */
+#define	ARM_FLAG_J	0x01000000	/*  Java flag (BXJ instruction ARMv5J)  */
+#define	ARM_FLAG_E	0x00000200	/*  Data Endianness (SETEND instruction ARMv6)  */
+#define	ARM_FLAG_A	0x00000100	/*  A = 1 disables Imprecise Data Aborts (ARMv6)  */
 #define	ARM_FLAG_I	0x00000080	/*  Interrupt disable  */
 #define	ARM_FLAG_F	0x00000040	/*  Fast Interrupt disable  */
 #define	ARM_FLAG_T	0x00000020	/*  Thumb mode  */
@@ -155,6 +162,7 @@ struct arm_cpu {
 	uint32_t		und_r13_r14[2];
 
 	uint32_t		tmp_pc;		/*  Used for load/stores  */
+	uint32_t		tmp_branch;	/*  Set by THUMB branch prefix instruction  */
 
 	/*
 	 *  Flag/status registers:
@@ -288,6 +296,7 @@ void arm_translation_table_set_l1(struct cpu *cpu, uint32_t vaddr,
 void arm_translation_table_set_l1_b(struct cpu *cpu, uint32_t vaddr,
 	uint32_t paddr);
 void arm_exception(struct cpu *, int);
+int arm_cpu_interpret_thumb_SLOW(struct cpu*);
 int arm_run_instr(struct cpu *cpu);
 void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
@@ -306,6 +315,10 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
 void arm_coproc_xscale_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
+
+/*  cpu_arm_instr.c:  */
+void arm_push(struct cpu* cpu, uint32_t* np, int p_bit, int u_bit, int s_bit, int w_bit, uint16_t regs);
+void arm_pop(struct cpu* cpu, uint32_t* np, int p_bit, int u_bit, int s_bit, int w_bit, uint32_t iw);
 
 /*  memory_arm.c:  */
 int arm_translate_v2p(struct cpu *cpu, uint64_t vaddr,

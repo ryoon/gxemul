@@ -731,3 +731,4 @@ void debugger_init(struct emul *emul)
 	last_cmd_index = 0;
 	repeat_cmd[0] = '\0';
 }
+

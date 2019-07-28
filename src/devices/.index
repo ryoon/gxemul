@@ -18,7 +18,7 @@ dev_dc7085.cc  DC7085 serial controller, used in some DECstation models
 dev_dec21030.cc  DEC 21030 "TGA" graphics card
 dev_dec21143.cc  DEC 21143 "Tulip" ethernet controller
 dev_dec5800.cc  DECsystem 58x0 devices
-dev_dec_ioasic.cc  IOASIC device used in the DECstation "3MIN" and "3MAX" machines
+dev_dec_ioasic.cc  IOASIC device used in some DECstation machines
 dev_disk.cc  A simple disk controller device, for the test machines
 dev_dreamcast_asic.cc  Dreamcast-specific ASIC
 dev_dreamcast_g2.cc  Dreamcast G2 bus
@@ -41,11 +41,13 @@ dev_irqc.cc  Generic IRQ controller for the test machines
 dev_jazz.cc  Microsoft Jazz-related stuff (Acer PICA-61, etc)
 dev_kn01.cc  DEC KN01 ("PMAX", DECstation type 1) control register and VDAC
 dev_kn02.cc  DEC KN02 mainbus (TurboChannel interrupt controller)
+dev_kn02ba.cc  DEC KN02BA "3min" TurboChannel interrupt controller
 dev_kn220.cc  DEC KN220 (DECsystem 5500) devices
 dev_kn230.cc  DEC KN230 (MIPSMATE 5100) stuff
 dev_lca.cc  LCA PCI bus, for Alpha machines
 dev_le.cc  LANCE ethernet, as used in DECstations
 dev_lpt.cc  LPT (parallel printer) controller
+dev_luna88k.cc  OMRON Luna 88K-specific devices and control registers
 dev_m8820x.cc  M88200/M88204 CMMU (Cache/Memory Management Unit)
 dev_malta_lcd.cc  Malta (evbmips) LCD display
 dev_mb8696x.cc  Fujitsu MB8696x Ethernet interface (used in the Dreamcast)
@@ -56,6 +58,7 @@ dev_mvme187.cc  MVME187-specific devices and control registers
 dev_ns16550.cc  NS16550 serial controller
 dev_ohci.cc  USB Open Host Controller Interface
 dev_osiop.cc  NCR 53C710 SCSI I/O Processor (SIOP)
+dev_palmbus.cc  VoCore Palmbus
 dev_pcc2.cc  Peripheral Channel Controller (PCC2) bus (used in MVME machines)
 dev_pccmos.cc  PC CMOS/RTC device (ISA ports 0x70 and 0x71)
 dev_pcic.cc  Intel 82365SL PC Card Interface Controller
@@ -77,13 +80,15 @@ dev_rtc.cc  A generic Real-Time Clock device, for the test machines
 dev_rtl8139c.cc  Realtek 8139 ethernet controller
 dev_scc.cc  Serial controller used in some DECsystem and SGI machines
 dev_sfb.cc  SFB TURBOchannel framebuffer (graphics card)
-dev_sgi_gbe.cc  SGI "gbe", graphics controller + framebuffer
+dev_sgi_gbe.cc  SGI "Graphics Back End", graphics controller + framebuffer
 dev_sgi_ip19.cc  SGI IP19 (and IP25) stuff
 dev_sgi_ip20.cc  SGI IP20 stuff
 dev_sgi_ip22.cc  SGI IP22 stuff
-dev_sgi_ip30.cc  SGI IP30 stuff
-dev_sgi_ip32.cc  SGI IP32 stuff (CRIME, MACE, MACEPCI, mec, ust, mte)
+dev_sgi_ip30.cc  SGI IP30 ("Octane") stuff
+dev_sgi_ip32.cc  SGI IP32 stuff (CRIME, MACE, MACEPCI, ust)
 dev_sgi_mardigras.cc  MardiGras graphics controller on SGI IP30 (Octane)
+dev_sgi_mec.cc  SGI IP32 "mec" ethernet
+dev_sgi_re.cc  SGI O2 "Rendering Engine"
 dev_sh4.cc  SH4-specific memory mapped registers (0xf0000000 - 0xffffffff)
 dev_sii.cc  SII SCSI controller, used in some DECstation systems
 dev_sn.cc  National Semiconductor SONIC ("sn") DP83932 ethernet controller

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,12 +28,15 @@
  *  COMMENT: Adaptec AHC SCSI controller
  *
  *  NetBSD should say something like this, on SGI-IP32:
- *	ahc0 at pci0 dev 1 function 0
- *	ahc0: interrupting at crime irq 0
- *	ahc0: aic7880 Wide Channel A, SCSI Id=7, 16/255 SCBs
- *	ahc0: Host Adapter Bios disabled.  Using default SCSI device parameters
  *
- *  TODO:  This more or less just a dummy device, so far.
+ *	ahc0 at pci0 dev 1 function 0: Adaptec aic7880 Ultra SCSI adapter
+ *	ahc0: interrupting at crime interrupt 8
+ *	ahc0: Using left over BIOS settings
+ *	ahc0: Host Adapter has no SEEPROM. Using default SCSI target parameters
+ *	ahc0: aic7880: Ultra Wide Channel A, SCSI Id=0, 16/253 SCBs
+ *	scsibus0 at ahc0: 16 targets, 8 luns per target
+ *
+ *  TODO:  This is just a dummy device, so far.
  */
 
 #include <stdio.h>
@@ -49,8 +52,8 @@
 #include "thirdparty/aic7xxx_reg.h"
 
 
-/* #define	AHC_DEBUG
-   #define debug fatal */
+#define	AHC_DEBUG
+#define debug fatal
 
 
 #define	DEV_AHC_LENGTH		0x100
@@ -69,12 +72,9 @@ DEVICE_ACCESS(ahc)
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  YUCK! SGI uses reversed order inside 32-bit words:  */
+	/*  SGI uses weird reversed order addresses:  */
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		relative_addr = (relative_addr & ~0x3)
-		    | (3 - (relative_addr & 3));
-
-	relative_addr %= DEV_AHC_LENGTH;
+		relative_addr ^= 3;
 
 	if (len != 1)
 		fatal("[ ahc: ERROR! Unimplemented len %i ]\n", len);

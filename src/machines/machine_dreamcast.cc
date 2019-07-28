@@ -65,7 +65,7 @@ MACHINE_SETUP(dreamcast)
 
 	/*
 	 *  Physical address layout on the Dreamcast, according to a
-	 *  combination of sources:  NetBSD sources, KalistOS sources,
+	 *  combination of sources:  NetBSD sources, KallistiOS sources,
 	 *  http://www.boob.co.uk/docs/Dreamcast_memory.txt, and
 	 *  http://www.ludd.luth.se/~jlo/dc/memory.txt, and possibly some
 	 *  others:

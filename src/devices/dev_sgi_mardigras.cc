@@ -203,7 +203,7 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		return;
 	}
 
-	debug("mardigras_20400(): 0x%016" PRIx64 "\n", (uint64_t) idata);
+	debug("mardigras_20400(): 0x%016" PRIx64"\n", (uint64_t) idata);
 }
 
 
@@ -319,3 +319,4 @@ DEVINIT(sgi_mardigras)
 
 	return 1;
 }
+

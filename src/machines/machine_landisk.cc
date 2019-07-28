@@ -142,3 +142,4 @@ MACHINE_REGISTER(landisk)
 	machine_entry_add_alias(me, "landisk");
 	machine_entry_add_alias(me, "usl-5p");
 }
+

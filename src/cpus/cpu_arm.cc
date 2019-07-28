@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2014  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,8 +28,13 @@
  *  ARM CPU emulation.
  *
  *  A good source of quick info on ARM instruction encoding:
+ *  http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html
  *
- *	http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html
+ *  Another one, with details about THUMB:
+ *  http://engold.ui.ac.ir/~nikmehr/Appendix_B2.pdf
+ *
+ *  and yet another one, with descriptions about THUMB semantics:
+ *  https://web.eecs.umich.edu/~prabal/teaching/eecs373-f10/readings/ARM_QRC0006_UAL16.pdf
  */
 
 #include <stdio.h>
@@ -61,7 +66,13 @@ static const char *arm_dpiname[16] = ARM_DPI_NAMES;
 static int arm_dpi_uses_d[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1 };
 static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
 
+static const char *arm_thumb_dpiname[16] = ARM_THUMB_DPI_NAMES;
+
 static int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
+
+extern uint8_t condition_hi[16];
+extern uint8_t condition_ge[16];
+extern uint8_t condition_gt[16];
 
 /*  For quick_pc_to_pointers():  */
 void arm_pc_to_pointers(struct cpu *cpu);
@@ -346,12 +357,15 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 		debug("cpu%i:  cpsr = ", x);
-		debug("%s%s%s%s%s%s%s%s",
+		debug("%s%s%s%s%s%s%s%s%s%s%s",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_N)? "N" : "n",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_Z)? "Z" : "z",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_C)? "C" : "c",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_V)? "V" : "v",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_Q)? "Q" : "q",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_J)? "J" : "j",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_E)? "E" : "e",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_A)? "A" : "a",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_I)? "I" : "i",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_F)? "F" : "f",
     		    (cpu->cd.arm.cpsr & ARM_FLAG_T)? "T" : "t");
@@ -637,7 +651,7 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 		break;
 	}
 
-	retaddr += 4;
+	retaddr += (cpu->cd.arm.cpsr & ARM_FLAG_T ? 2 : 4);
 
 	arm_save_register_bank(cpu);
 
@@ -755,7 +769,7 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 	debug("%04x    \t", (int)iw);
 
 	int main_opcode = (iw >> 12) & 15;
-	int rn = (iw >> 6) & 7;
+	int r6 = (iw >> 6) & 7;
 	int rs_rb = (iw >> 3) & 7;
 	int rd = iw & 7;
 	int offset5 = (iw >> 6) & 0x1f;
@@ -765,6 +779,7 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 	int addsub_immediate = (iw >> 10) & 1;
 	int op11 = (iw >> 11) & 3;
 	int op10 = (iw >> 10) & 3;
+	int rd8 = (iw >> 8) & 7;
 	int op8 = (iw >> 8) & 3;
 	int h1 = (iw >> 7) & 1;
 	int h2 = (iw >> 6) & 1;
@@ -773,17 +788,18 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 	const char* symbol;
 	uint64_t offset;
 	int tmp;
-
+	uint32_t tmp32;
+	
 	switch (main_opcode)
 	{
 	case 0x0:
 	case 0x1:
-		if (op11 < 3) {
+		if (op11 <= 2) {
 			// Move shifted register.
-			debug("movs\tr%i,r%i, %s #%i\n",
-				rd,
-				rs_rb,
+			debug("%ss\tr%i,r%i,#%i\n",
 				op11 & 1 ? "lsr" : (op11 & 2 ? "asr" : "lsl"),
+				rd,
+				rs_rb,				
 				offset5);
 		} else {
 			// Add/subtract.
@@ -792,7 +808,7 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 				rd,
 				rs_rb,
 				addsub_immediate ? "#" : "r",
-				rn);
+				r6);
 		}
 		break;
 
@@ -817,7 +833,17 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 		switch (op10) {
 		case 0:
 			// ALU operations.
-			debug("TODO main_opcode = %i, op10 = %i\n", main_opcode, op10);
+			debug("%s\t%s,%s",
+				arm_thumb_dpiname[(iw >> 6) & 15],
+				arm_regname[rd],
+				arm_regname[rs_rb]);
+			
+			if (running) {
+				debug("\t\t; %s = 0x%x", arm_regname[rd], cpu->cd.arm.r[rd]);
+				debug(", %s = 0x%x", arm_regname[rs_rb], cpu->cd.arm.r[rs_rb]);
+			}
+
+			debug("\n");
 			break;
 
 		case 1:
@@ -835,16 +861,32 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 				} else {
 					if (op8 == 0)
 						debug("add\tr%i,r%i,r%i\n", rd, rd, rs_rb);
-					else
-						debug("%s\tr%i,r%i\n",
-							op8 == 1 ? "cmp" : "mov", rd, rs_rb);
+					else {
+						if (op8 == 2 && rd == rs_rb)
+							debug("nop\n");	// mov rX,rX
+						else {
+							debug("%s\t%s,%s",
+							    op8 == 1 ? "cmp" : "mov",
+							    	arm_regname[rd],
+							    	arm_regname[rs_rb]);
+							if (running) {
+								debug("\t\t; %s = 0x%x", arm_regname[rd], cpu->cd.arm.r[rd]);
+								debug(", %s = 0x%x", arm_regname[rs_rb], cpu->cd.arm.r[rs_rb]);
+							}
+							debug("\n");
+						}
+					}
 				}
 				break;
 			case 3:
 				if (h1 == 1) {
 					debug("TODO main_opcode = %i, op10 = %i, h1 set for BX?!\n", main_opcode, op10);
 				} else {
-					debug("bx\tr%i\n", rs_rb);
+					debug("bx\t%s\n", arm_regname[rs_rb]);
+
+					// Extra newline when returning from function.
+					// if (running && rs_rb == ARM_LR)
+					//	debug("\n");
 				}
 				break;
 			}
@@ -853,11 +895,42 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 		case 2:
 		case 3:
 			// PC-relative load.
-			debug("TODO main_opcode = %i, op10 = %i\n", main_opcode, op10);
+			debug("ldr\t%s,[pc,#%i]\t; ",
+				arm_regname[rd8],
+				(iw & 0xff) * 4);
+
+			// Is this address calculation correct?
+			// It works with real code, but is not the same as that of
+			// http://engold.ui.ac.ir/~nikmehr/Appendix_B2.pdf
+			tmp = (dumpaddr & ~3) + 4 + (iw & 0xff) * 4;
+			debug("0x%x", (int)tmp);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    tmp, &offset);
+			if (symbol != NULL)
+				debug(" <%s>", symbol);
+			debug("\n");
 			break;
 		}
 		break;
 
+	case 0x5:
+		// Load/Store with register offset.
+		switch ((iw >> 9) & 7) {
+		case 0:	debug("str"); break;
+		case 1:	debug("strh"); break;
+		case 2:	debug("strb"); break;
+		case 3:	debug("ldrsb"); break;
+		case 4:	debug("ldr"); break;
+		case 5:	debug("ldrh"); break;
+		case 6:	debug("ldrb"); break;
+		case 7:	debug("ldrsh"); break;
+		}
+		debug("\t%s,[%s,%s]\n",
+			arm_regname[rd],
+			arm_regname[rs_rb],
+			arm_regname[r6]);
+		break;
+		
 	case 0x6:
 	case 0x7:
 		// Load/Store with immediate offset.
@@ -878,6 +951,57 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 			offset5 * sizeof(uint16_t));
 		break;
 
+	case 0x9:
+		// Load/Store stack pointer relative.
+		debug("%s\t%s,[sp,#%i]\n",
+			l_bit ? "ldr" : "str",
+			arm_regname[rd8],
+			4 * (iw & 0xff));
+		break;
+
+	case 0xa:
+		// add rx, sp or pc plus imm
+		debug("add\t%s,%s,#%i\n",
+			arm_regname[rd8],
+			iw & 0x0800 ? "sp" : "pc",
+			4 * (iw & 0xff));
+		break;
+
+	case 0xb:
+		/*  Bits 11..8:  */
+		switch (condition_code) {
+		case 0x0:
+			tmp = (iw & 0x7f) << 2;
+			debug(iw & 0x80 ? "sub" : "add");
+			debug("\tsp,#%i\n", tmp);
+			break;
+		case 0x4:
+		case 0x5:
+		case 0xc:
+		case 0xd:
+			debug(condition_code & 8 ? "pop" : "push");
+			debug("\t{");
+			for (tmp=0; tmp<8; ++tmp) {
+				if (iw & (1 << tmp))
+					debug("%s,", arm_regname[tmp]);
+			}
+			if (condition_code & 1) {			
+				if (condition_code & 8)
+					debug("pc");
+				else
+					debug("lr");
+			}
+			debug("}\n");
+
+			// Extra newline when returning from function.
+			// if (running && (condition_code & 8) && (condition_code & 1))
+			//	debug("\n");
+			break;
+		default:
+			debug("TODO: unimplemented opcode 0x%x,0x%x\n", main_opcode, condition_code);
+		}
+		break;
+		
 	case 0xd:
 		if (condition_code < 0xe) {
 			// Conditional branch.
@@ -892,9 +1016,9 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 			if (symbol != NULL)
 				debug(" \t<%s>", symbol);
 			debug("\n");
+		} else if (condition_code == 0xf) {
+			debug("swi\t#0x%x\n", iw & 0xff);
 		} else {
-			// ? (0xe).
-			// Software interrupt (0xf).
 			debug("UNIMPLEMENTED\n");
 		}
 		break;
@@ -902,26 +1026,677 @@ int arm_cpu_disassemble_instr_thumb(struct cpu *cpu, unsigned char *ib,
 	case 0xe:
 		// Unconditional branch.
 		if (iw & 0x0800) {
-			debug("UNKNOWN encoding?\n");
+			uint32_t addr = (dumpaddr + 4 + (cpu->cd.arm.tmp_branch + (((iw >> 1) & 0x3ff) << 2))) & ~3;
+			
+			debug("blx\t");
+			if (running) {
+				debug("0x%x", addr);
+				symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
+				if (symbol != NULL)
+					debug(" \t<%s>", symbol);
+				debug("\n");
+			} else
+				debug("offset depending on prefix at runtime\n");
 		} else {
 			tmp = (iw & 0x7ff) << 1;
 			if (tmp & 0x800)
 				tmp |= 0xfffff000;
 			tmp = (int32_t)(dumpaddr + 4 + tmp);
-			debug("bal\t0x%x", (int)tmp);
-			symbol = get_symbol_name(&cpu->machine->symbol_context,
-			    tmp, &offset);
+			debug("b\t0x%x", (int)tmp);
+			symbol = get_symbol_name(&cpu->machine->symbol_context, tmp, &offset);
 			if (symbol != NULL)
 				debug(" \t<%s>", symbol);
 			debug("\n");
 		}
 		break;
 
+	case 0xf:
+		if (iw & 0x0800) {
+			uint32_t addr = (dumpaddr + 2 + (cpu->cd.arm.tmp_branch + ((iw & 0x7ff) << 1)));
+			
+			debug("bl\t");
+			if (running) {
+				debug("0x%x", addr);
+				symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
+				if (symbol != NULL)
+					debug(" \t<%s>", symbol);
+				debug("\n");
+			} else
+				debug("offset depending on prefix at runtime\n");
+		} else {
+			tmp32 = iw & 0x07ff;
+			if (tmp32 & 0x0400)
+				tmp32 |= 0xfffff800;
+			tmp32 <<= 12;
+			debug("bprefix\t0x%x\n", tmp32);
+		}
+		break;
+
 	default:
-		debug("TODO: unimplemented opcode %i\n", main_opcode);
+		debug("TODO: unimplemented opcode 0x%x\n", main_opcode);
 	}
 
 	return sizeof(uint16_t);
+}
+
+
+/*
+ *  arm_cpu_interpret_thumb_SLOW():
+ *
+ *  Slow interpretation of THUMB instructions.
+ *
+ *  TODO: Either replace this with dyntrans in the old framework, or
+ *  implement ARM (including THUMB) in the new framework. :-)
+ *  For now, this is better than nothing.
+ */
+int arm_cpu_interpret_thumb_SLOW(struct cpu *cpu)
+{
+	uint16_t iw;
+	uint8_t ib[sizeof(uint16_t)];
+	uint32_t addr = cpu->pc & ~1;
+
+	if (!(cpu->pc & 1) || !(cpu->cd.arm.cpsr & ARM_FLAG_T)) {
+		fatal("arm_cpu_interpret_thumb_SLOW called when not in "
+			"THUMB mode?\n");
+		cpu->running = 0;
+		return 0;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
+			sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
+		fatal("arm_cpu_interpret_thumb_SLOW(): could not read "
+			"the instruction\n");
+		cpu->running = 0;
+		return 0;
+	}
+	
+	if (cpu->machine->instruction_trace) {
+		uint64_t offset;
+		char* symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    addr, &offset);
+		if (symbol != NULL && offset == 0)
+			debug("<%s>\n", symbol);
+
+		if (cpu->machine->ncpus > 1)
+			debug("cpu%i:\t", cpu->cpu_id);
+
+		debug("%08x:  ", (int)addr & ~1);
+		arm_cpu_disassemble_instr_thumb(cpu, ib, 1, cpu->pc);
+	}
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iw = ib[0] + (ib[1]<<8);
+	else
+		iw = ib[1] + (ib[0]<<8);
+
+	cpu->ninstrs ++;
+
+	int main_opcode = (iw >> 12) & 15;
+	int condition_code = (iw >> 8) & 15;
+	int op10 = (iw >> 10) & 3;
+	int op11_8 = (iw >> 8) & 15;
+	int rd8 = (iw >> 8) & 7;
+	int r6 = (iw >> 6) & 7;
+	int r3 = (iw >> 3) & 7;
+	int rd = (iw >> 0) & 7;
+	int hd = (iw >> 7) & 1;
+	int hm = (iw >> 6) & 1;
+	int imm6 = (iw >> 6) & 31;
+	uint8_t word[sizeof(uint32_t)];
+	uint32_t tmp;
+	int t, len, isLoad;
+
+	switch (main_opcode)
+	{
+	case 0x0:
+		if (iw & 0x0800) {
+			// lsr
+			tmp = cpu->cd.arm.r[r3];
+			if (imm6 > 1)
+				tmp >>= (imm6 - 1);
+			cpu->cd.arm.r[rd] = cpu->cd.arm.r[r3] >> imm6;
+			tmp &= 1;
+		} else {
+			// lsl
+			tmp = cpu->cd.arm.r[r3];
+			if (imm6 > 1)
+				tmp <<= (imm6 - 1);
+			cpu->cd.arm.r[rd] = cpu->cd.arm.r[r3] << imm6;
+			tmp >>= 31;
+		}
+		cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+		if (cpu->cd.arm.r[rd] == 0)
+			cpu->cd.arm.flags |= ARM_F_Z;
+		if ((int32_t)cpu->cd.arm.r[rd] < 0)
+			cpu->cd.arm.flags |= ARM_F_N;
+		if (imm6 != 0) {
+			// tmp is "last bit shifted out"
+			cpu->cd.arm.flags &= ~ARM_F_C;
+			if (tmp)
+				cpu->cd.arm.flags |= ARM_F_C;
+		}
+		break;
+
+	case 0x1:
+		if (!(iw & 0x0800)) {
+			// asr
+			tmp = cpu->cd.arm.r[r3];
+			if (imm6 > 1)
+				tmp = (int32_t)tmp >> (imm6 - 1);
+			cpu->cd.arm.r[rd] = (int32_t)cpu->cd.arm.r[r3] >> imm6;
+			tmp &= 1;
+			cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+			if (cpu->cd.arm.r[rd8] == 0)
+				cpu->cd.arm.flags |= ARM_F_Z;
+			if ((int32_t)cpu->cd.arm.r[rd8] < 0)
+				cpu->cd.arm.flags |= ARM_F_N;
+			if (imm6 != 0) {
+				// tmp is "last bit shifted out"
+				cpu->cd.arm.flags &= ~ARM_F_C;
+				if (tmp)
+					cpu->cd.arm.flags |= ARM_F_C;
+			}
+		} else {
+			// add or sub
+			int isSub = iw & 0x0200;
+			int isImm3 = iw & 0x0400;
+			uint64_t old = cpu->cd.arm.r[r3];
+			uint64_t tmp64 = isImm3 ? r6 : cpu->cd.arm.r[r6];
+			tmp64 = (uint32_t)(isSub ? -tmp64 : tmp64);
+			uint64_t result = old + tmp64;
+			cpu->cd.arm.r[rd] = result;
+			cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N | ARM_F_C | ARM_F_V);
+			if (result == 0)
+				cpu->cd.arm.flags |= ARM_F_Z;
+			if ((int32_t)result < 0)
+				cpu->cd.arm.flags |= ARM_F_N;
+			if (result & 0x100000000ULL)
+				cpu->cd.arm.flags |= ARM_F_C;
+			if (result & 0x80000000) {
+				if ((tmp64 & 0x80000000) == 0 && (old & 0x80000000) == 0)
+					cpu->cd.arm.flags |= ARM_F_V;
+			} else {
+				if ((tmp64 & 0x80000000) != 0 && (old & 0x80000000) != 0)
+					cpu->cd.arm.flags |= ARM_F_V;
+			}
+		}
+		break;
+
+	case 0x2:
+		// movs or cmp
+		if (iw & 0x0800) {
+			uint64_t old = cpu->cd.arm.r[rd8];
+			uint64_t tmp64 = (uint32_t)(-(iw & 0xff));
+			uint64_t result = old + tmp64;
+			cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N | ARM_F_C | ARM_F_V);
+			if (result == 0)
+				cpu->cd.arm.flags |= ARM_F_Z;
+			if ((int32_t)result < 0)
+				cpu->cd.arm.flags |= ARM_F_N;
+			if (result & 0x100000000ULL)
+				cpu->cd.arm.flags |= ARM_F_C;
+			if (result & 0x80000000) {
+				if ((tmp64 & 0x80000000) == 0 && (old & 0x80000000) == 0)
+					cpu->cd.arm.flags |= ARM_F_V;
+			} else {
+				if ((tmp64 & 0x80000000) != 0 && (old & 0x80000000) != 0)
+					cpu->cd.arm.flags |= ARM_F_V;
+			}
+		} else {
+			cpu->cd.arm.r[rd8] = iw & 0xff;
+			cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+			if (cpu->cd.arm.r[rd8] == 0)
+				cpu->cd.arm.flags |= ARM_F_Z;
+		}
+		break;
+
+	case 0x3:
+		// adds or sub
+		{
+			uint64_t old = cpu->cd.arm.r[rd8];
+			uint64_t tmp64 = iw & 0xff;
+			
+			if (iw & 0x0800)
+				tmp64 = (uint32_t)(-tmp64);
+
+			uint64_t result = old + tmp64;
+			cpu->cd.arm.r[rd8] = result;
+
+			cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N | ARM_F_C | ARM_F_V);
+			if (result == 0)
+				cpu->cd.arm.flags |= ARM_F_Z;
+			if ((int32_t)result < 0)
+				cpu->cd.arm.flags |= ARM_F_N;
+			if (result & 0x100000000ULL)
+				cpu->cd.arm.flags |= ARM_F_C;
+			if (result & 0x80000000) {
+				if ((tmp64 & 0x80000000) == 0 && (old & 0x80000000) == 0)
+					cpu->cd.arm.flags |= ARM_F_V;
+			} else {
+				if ((tmp64 & 0x80000000) != 0 && (old & 0x80000000) != 0)
+					cpu->cd.arm.flags |= ARM_F_V;
+			}
+		}
+		break;
+
+	case 0x4:
+		switch (op10) {
+		case 0:
+			// "DPIs":
+			switch ((iw >> 6) & 15) {
+			case 0:// ands
+				cpu->cd.arm.r[rd] &= cpu->cd.arm.r[r3];
+				cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+				if (cpu->cd.arm.r[rd] == 0)
+					cpu->cd.arm.flags |= ARM_F_Z;
+				if ((int32_t)cpu->cd.arm.r[rd] < 0)
+					cpu->cd.arm.flags |= ARM_F_N;
+				break;
+			case 1:// eors
+				cpu->cd.arm.r[rd] ^= cpu->cd.arm.r[r3];
+				cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+				if (cpu->cd.arm.r[rd] == 0)
+					cpu->cd.arm.flags |= ARM_F_Z;
+				if ((int32_t)cpu->cd.arm.r[rd] < 0)
+					cpu->cd.arm.flags |= ARM_F_N;
+				break;
+			case 7:// rors
+				{
+					int amount = cpu->cd.arm.r[r3] & 0xff;
+					for (int i = 0; i < (amount & 31); ++i) {
+						int c = cpu->cd.arm.r[rd] & 1;
+						cpu->cd.arm.r[rd] >>= 1;
+						cpu->cd.arm.flags &= ~ARM_F_C;
+						if (c) {
+							cpu->cd.arm.flags |= ARM_F_C;
+							cpu->cd.arm.r[rd] |= 0x80000000;
+						}
+					}
+					
+					// Rotating right by e.g. 32 means that the C flag
+					// should be updated, but the register isn't
+					// really rotated.
+					if (amount != 0 && (amount & 31) == 0) {
+						cpu->cd.arm.flags &= ~ARM_F_C;
+						if (cpu->cd.arm.r[rd] & 0x80000000)
+							cpu->cd.arm.flags |= ARM_F_C;
+					}
+					
+					if (cpu->cd.arm.r[rd] == 0)
+						cpu->cd.arm.flags |= ARM_F_Z;
+					if ((int32_t)cpu->cd.arm.r[rd] < 0)
+						cpu->cd.arm.flags |= ARM_F_N;
+				}
+				break;
+			case 8:// tst
+				tmp = cpu->cd.arm.r[rd] & cpu->cd.arm.r[r3];
+				cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+				if (tmp == 0)
+					cpu->cd.arm.flags |= ARM_F_Z;
+				if ((int32_t)tmp < 0)
+					cpu->cd.arm.flags |= ARM_F_N;
+				break;
+			case 10:	// cmp
+				{
+					uint64_t old = cpu->cd.arm.r[rd];
+					uint64_t tmp64 = (uint32_t) (-cpu->cd.arm.r[r3]);
+					uint64_t result = old + tmp64;
+					cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N | ARM_F_C | ARM_F_V);
+					if (result == 0)
+						cpu->cd.arm.flags |= ARM_F_Z;
+					if ((int32_t)result < 0)
+						cpu->cd.arm.flags |= ARM_F_N;
+					if (result & 0x100000000ULL)
+						cpu->cd.arm.flags |= ARM_F_C;
+					if (result & 0x80000000) {
+						if ((tmp64 & 0x80000000) == 0 && (old & 0x80000000) == 0)
+							cpu->cd.arm.flags |= ARM_F_V;
+					} else {
+						if ((tmp64 & 0x80000000) != 0 && (old & 0x80000000) != 0)
+							cpu->cd.arm.flags |= ARM_F_V;
+					}
+				}
+				break;
+			case 12:// orrs
+				cpu->cd.arm.r[rd] |= cpu->cd.arm.r[r3];
+				cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+				if (cpu->cd.arm.r[rd] == 0)
+					cpu->cd.arm.flags |= ARM_F_Z;
+				if ((int32_t)cpu->cd.arm.r[rd] < 0)
+					cpu->cd.arm.flags |= ARM_F_N;
+				break;
+			case 13:// muls
+				cpu->cd.arm.r[rd] *= cpu->cd.arm.r[r3];
+				cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+				if (cpu->cd.arm.r[rd] == 0)
+					cpu->cd.arm.flags |= ARM_F_Z;
+				if ((int32_t)cpu->cd.arm.r[rd] < 0)
+					cpu->cd.arm.flags |= ARM_F_N;
+				break;
+			default:
+				debug("TODO: unimplemented DPI %i at pc 0x%08x\n", (iw >> 6) & 15, (int)cpu->pc);
+				cpu->running = 0;
+				return 0;
+			}
+			break;
+		case 1:
+			switch (op11_8) {
+			case 6:
+				if (hd)
+					rd += 8;
+				if (hm)
+					r3 += 8;
+				cpu->cd.arm.r[rd] = cpu->cd.arm.r[r3];
+				if (r3 == ARM_PC) {
+					if (cpu->pc & 1) {
+						debug("TODO: double check with manual whether it is correct to use old pc + 8 here; at pc 0x%08x\n", (int)cpu->pc);
+						cpu->running = 0;
+						return 0;
+					}
+					cpu->cd.arm.r[rd] = cpu->pc + 8;
+				}
+				if (rd == ARM_PC) {
+					cpu->pc = cpu->cd.arm.r[rd];
+					cpu->cd.arm.cpsr |= ARM_FLAG_T;
+					if (!(cpu->pc & 1))
+						cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+					cpu->pc = addr - sizeof(uint16_t);
+				}
+				break;
+			case 7:
+				if ((iw & 0xff87) == 0x4700) {
+					//  bx
+					int rm = (iw >> 3) & 15;
+					//  Note: pc will be increased by 2 further down!
+					cpu->pc = cpu->cd.arm.r[rm] - sizeof(uint16_t);
+					if (!(cpu->pc & 1))
+						cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+					if (rm == ARM_LR && cpu->machine->show_trace_tree)
+						cpu_functioncall_trace_return(cpu);
+				} else {
+					debug("TODO: unimplemented opcode 0x%x,%i at pc 0x%08x\n", main_opcode, op11_8, (int)cpu->pc);
+					cpu->running = 0;
+					return 0;
+				}
+				break;
+			default:
+				debug("TODO: unimplemented opcode 0x%x,%i at pc 0x%08x\n", main_opcode, op11_8, (int)cpu->pc);
+				cpu->running = 0;
+				return 0;
+			}
+			break;
+
+		case 2:
+		case 3:
+			// PC-relative load.
+			// Is this address calculation correct?
+			// It works with real code, but is not the same as that of
+			// http://engold.ui.ac.ir/~nikmehr/Appendix_B2.pdf
+			tmp = (addr & ~3) + 4 + (iw & 0xff) * 4;
+
+			if (!cpu->memory_rw(cpu, cpu->mem, tmp, &word[0],
+					sizeof(word), MEM_READ, CACHE_INSTRUCTION)) {
+				fatal("arm_cpu_interpret_thumb_SLOW(): could not load pc-relative word\n");
+				cpu->running = 0;
+				return 0;
+			}
+
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				tmp = word[0] + (word[1]<<8) + (word[2]<<16) + (word[3]<<24);
+			else
+				tmp = word[3] + (word[2]<<8) + (word[1]<<16) + (word[0]<<24);
+
+			cpu->cd.arm.r[rd8] = tmp;
+			break;
+
+		default:
+			debug("TODO: unimplemented opcode 0x%x,%i at pc 0x%08x\n", main_opcode, op10, (int)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
+	case 0x6:
+	case 0x7:
+	case 0x8:
+		// Load/Store with immediate offset.
+		len = main_opcode == 6 ? 4 : (main_opcode == 7 ? 1 : 2);
+		isLoad = iw & 0x0800;
+		addr = (cpu->cd.arm.r[r3] + imm6 * len) & ~(len - 1);
+		tmp = 0;
+
+		if (!isLoad) {
+			tmp = cpu->cd.arm.r[rd];
+
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				for (int i = 0; i < len; ++i)
+					word[i] = (tmp >> (8*i));
+			} else {
+				for (int i = 0; i < len; ++i)
+					word[len - 1 - i] = (tmp >> (8*i));
+			}
+		}
+
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, &word[0],
+				len, isLoad ? MEM_READ : MEM_WRITE, CACHE_DATA)) {
+			fatal("arm_cpu_interpret_thumb_SLOW(): could not load with immediate offset\n");
+			cpu->running = 0;
+			return 0;
+		}
+
+		if (isLoad) {
+			tmp = 0;
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				for (int i = 0; i < len; ++i) {
+					tmp <<= 8;
+					tmp |= word[len - 1 - i];
+				}
+			} else {
+				for (int i = 0; i < len; ++i) {
+					tmp <<= 8;
+					tmp |= word[i];
+				}
+			}
+
+			cpu->cd.arm.r[rd] = tmp;
+		}
+		break;
+
+	case 0x9:
+		// sp-relative load or store
+		if (iw & 0x0800) {
+			addr = (cpu->cd.arm.r[ARM_SP] + (iw & 0xff) * 4) & ~3;
+			if (!cpu->memory_rw(cpu, cpu->mem, addr, &word[0],
+					sizeof(word), MEM_READ, CACHE_DATA)) {
+				fatal("arm_cpu_interpret_thumb_SLOW(): could not load sp-relative word\n");
+				cpu->running = 0;
+				return 0;
+			}
+
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				tmp = word[0] + (word[1]<<8) + (word[2]<<16) + (word[3]<<24);
+			else
+				tmp = word[3] + (word[2]<<8) + (word[1]<<16) + (word[0]<<24);
+
+			cpu->cd.arm.r[rd8] = tmp;
+		} else {
+			tmp = cpu->cd.arm.r[rd8];
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				for (size_t i = 0; i < sizeof(word); ++i)
+					word[i] = (tmp >> (8*i));
+			} else {
+				for (size_t i = 0; i < sizeof(word); ++i)
+					word[sizeof(word) - 1 - i] = (tmp >> (8*i));
+			}
+
+			addr = (cpu->cd.arm.r[ARM_SP] + (iw & 0xff) * 4) & ~3;
+			if (!cpu->memory_rw(cpu, cpu->mem, addr, &word[0],
+					sizeof(word), MEM_WRITE, CACHE_DATA)) {
+				fatal("arm_cpu_interpret_thumb_SLOW(): could not store sp-relative word\n");
+				cpu->running = 0;
+				return 0;
+			}
+		}
+		break;
+
+	case 0xb:
+		switch (op11_8) {
+		case 0:
+			if (iw & 0x0080)
+				cpu->cd.arm.r[ARM_SP] -= ((iw & 0x7f) << 2);
+			else
+				cpu->cd.arm.r[ARM_SP] += ((iw & 0x7f) << 2);
+			break;
+		case 4:
+		case 5:
+			/*  push, i.e. stmdb sp!, reglist  */
+			arm_push(cpu, &cpu->cd.arm.r[ARM_SP], 1, 0, 0, 1, (iw & 0xff) |
+				(iw & 0x100 ? (1 << ARM_LR) : 0));
+			break;
+		case 12:
+		case 13:
+			/*  pop, i.e. ldmia sp!, reglist  */
+			cpu->cd.arm.r[ARM_PC] = cpu->pc;
+			arm_pop(cpu, &cpu->cd.arm.r[ARM_SP], 0, 1, 0, 1, (iw & 0xff) |
+				(iw & 0x100 ? (1 << ARM_PC) : 0));
+			cpu->pc = cpu->cd.arm.r[ARM_PC];
+			if (cpu->pc & 1)
+				cpu->cd.arm.cpsr |= ARM_FLAG_T;
+			else
+				cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+			// If not popping pc, make sure to move to the next instruction:
+			if (!(iw & 0x100))
+				cpu->pc += sizeof(uint16_t);
+			return 1;
+		default:
+			debug("TODO: unimplemented opcode 0x%x,%i at pc 0x%08x\n", main_opcode, op11_8, (int)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
+	case 0xd:
+		if (condition_code < 0xe) {
+			// Conditional branch.
+			tmp = (iw & 0xff) << 1;
+			if (tmp & 0x100)
+				tmp |= 0xfffffe00;
+			tmp = (int32_t)(cpu->pc + 4 + tmp);
+
+			switch (condition_code) {
+			case 0x0:	// eq:
+					t = cpu->cd.arm.flags & ARM_F_Z;
+					break;
+			case 0x1:	// ne:
+					t = !(cpu->cd.arm.flags & ARM_F_Z);
+					break;
+			case 0x2:	// cs:
+					t = cpu->cd.arm.flags & ARM_F_C;
+					break;
+			case 0x3:	// cc:
+					t = !(cpu->cd.arm.flags & ARM_F_C);
+					break;
+			case 0x4:	// mi:
+					t = cpu->cd.arm.flags & ARM_F_N;
+					break;
+			case 0x5:	// pl:
+					t = !(cpu->cd.arm.flags & ARM_F_N);
+					break;
+			case 0x6:	// vs:
+					t = cpu->cd.arm.flags & ARM_F_V;
+					break;
+			case 0x7:	// vc:
+					t = !(cpu->cd.arm.flags & ARM_F_V);
+					break;
+			case 0x8:	// hi:
+					t = condition_hi[cpu->cd.arm.flags];
+					break;
+			case 0x9:	// ls:
+					t = !condition_hi[cpu->cd.arm.flags];
+					break;
+			case 0xa:	// ge:
+					t = condition_ge[cpu->cd.arm.flags];
+					break;
+			case 0xb:	// lt:
+					t = !condition_ge[cpu->cd.arm.flags];
+					break;
+			case 0xc:	// gt:
+					t = condition_gt[cpu->cd.arm.flags];
+					break;
+			case 0xd:	// le:
+					t = !condition_gt[cpu->cd.arm.flags];
+					break;
+			}
+
+			if (t) {
+				cpu->pc = tmp;
+				return 1;
+			}
+		} else if (condition_code == 0xf) {
+			arm_exception(cpu, ARM_EXCEPTION_SWI);
+			return 1;
+		} else {
+			debug("TODO: unimplemented opcode 0x%x, non-branch, at pc 0x%08x\n", main_opcode, (int)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
+	case 0xe:
+		if (iw & 0x0800) {
+			// blx
+			addr = (cpu->pc + 4 + (cpu->cd.arm.tmp_branch + (((iw >> 1) & 0x3ff) << 2))) & ~3;
+
+			if (iw & 1) {
+				fatal("lowest bit set in thumb blx instruction?\n");
+				cpu->running = 0;
+				return 0;
+			}
+
+			cpu->cd.arm.r[ARM_LR] = cpu->pc + 2;
+			cpu->pc = addr;
+			if (cpu->machine->show_trace_tree)
+				cpu_functioncall_trace(cpu, cpu->pc);
+			cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+			return 1;
+		} else {
+			// b
+			tmp = (iw & 0x7ff) << 1;
+			if (tmp & 0x800)
+				tmp |= 0xfffff000;
+			cpu->pc = (int32_t)(cpu->pc + 4 + tmp);
+			return 1;
+		}
+		break;
+
+	case 0xf:
+		if (iw & 0x0800) {
+			// bl
+			addr = (cpu->pc + 2 + (cpu->cd.arm.tmp_branch + ((iw & 0x7ff) << 1)));
+			cpu->cd.arm.r[ARM_LR] = cpu->pc + 2;
+			cpu->pc = addr;
+			if (cpu->machine->show_trace_tree)
+				cpu_functioncall_trace(cpu, cpu->pc);
+			return 1;
+		} else {
+			// "branch prefix".
+			uint32_t tmp32 = iw & 0x07ff;
+			if (tmp32 & 0x0400)
+				tmp32 |= 0xfffff800;
+			tmp32 <<= 12;
+			cpu->cd.arm.tmp_branch = tmp32;
+		}
+		break;
+
+	default:
+		debug("TODO: unimplemented opcode 0x%x at pc 0x%08x\n", main_opcode, (int)cpu->pc);
+		cpu->running = 0;
+		return 0;
+	}
+
+	cpu->pc += sizeof(uint16_t);
+
+	return 1;
 }
 
 
@@ -957,9 +1732,9 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i:\t", cpu->cpu_id);
 
-	debug("%08x:  ", (int)dumpaddr);
+	debug("%08x:  ", (int)dumpaddr & ~1);
 
-	if (cpu->cd.arm.cpsr & ARM_FLAG_T)
+	if (dumpaddr & 1)
 		return arm_cpu_disassemble_instr_thumb(cpu, ib, running, dumpaddr);
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
@@ -978,6 +1753,26 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	r16 = (iw >> 16) & 15;
 	r12 = (iw >> 12) & 15;
 	r8 = (iw >> 8) & 15;
+
+	if ((iw >> 28) == 0xf) {
+		switch (main_opcode) {
+		case 0xa:
+		case 0xb:
+			tmp = (iw & 0xffffff);
+			if (tmp & 0x800000)
+				tmp |= 0xff000000;
+			tmp = (int32_t)(dumpaddr + 8 + 4*tmp + (main_opcode == 0xb? 2 : 0)) + 1;
+			debug("blx\t0x%x", (int)tmp);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    tmp, &offset);
+			if (symbol != NULL)
+				debug(" \t<%s>", symbol);
+			debug("\n");
+			break;
+		default:debug("UNIMPLEMENTED\n");
+		}
+		return sizeof(uint32_t);
+	}
 
 	switch (main_opcode) {
 	case 0x0:

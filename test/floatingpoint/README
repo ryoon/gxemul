@@ -1,0 +1,41 @@
+ARM
+---
+arm-unknown-elf-gcc -I../../src/include/testmachine -g fptest.c -O2 -c -mhard-float
+arm-unknown-elf-gcc -I../../src/include/testmachine -g fpconst.c -O2 -c -mhard-float
+arm-unknown-elf-ld -e f fptest.o fpconst.o -o fptest
+file fptest
+../../gxemul -E testarm fptest > fptest.output
+diff fptest_hostnative.output fptest.output
+
+
+
+MIPS (64-bit)
+-------------
+mips64-unknown-elf-gcc -DMIPS -I../../src/include/testmachine -g fptest.c -O0 -mips4 -mabi=64 -c -G 0
+mips64-unknown-elf-gcc -DMIPS -I../../src/include/testmachine -g fpconst.c -O0 -mips4 -mabi=64 -c -G 0
+mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f fptest.o fpconst.o -o fptest --oformat=elf64-bigmips
+file fptest
+../../gxemul -qE oldtestmips fptest > fptest.output
+diff fptest_hostnative.output fptest.output
+
+
+MIPS (32-bit)
+-------------
+mips64-unknown-elf-gcc -DMIPS -I../../src/include/testmachine -g fptest.c -O0 -mips1 -mabi=32 -c -G 0
+mips64-unknown-elf-gcc -DMIPS -I../../src/include/testmachine -g fpconst.c -O0 -mips1 -mabi=32 -c -G 0
+mips64-unknown-elf-ld -Ttext 0x80030000 -e f fptest.o fpconst.o -o fptest
+file fptest
+../../gxemul -C 4Kc -qE oldtestmips fptest > fptest.output
+diff fptest_hostnative.output fptest.output
+
+
+SH
+--
+sh4-unknown-elf-gcc -I../../src/include/testmachine -O2 -g fptest.c -c
+sh4-unknown-elf-gcc -I../../src/include/testmachine -O2 -g fpconst.c -c
+sh4-unknown-elf-ld -e _f fptest.o fpconst.o -o fptest
+file fptest
+../../gxemul -E testsh fptest > fptest.output
+diff fptest_hostnative.output fptest.output
+// TODO: undefined reference to `__fpscr_values'
+

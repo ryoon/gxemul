@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -45,6 +45,10 @@
 
 #include "testmachine/dev_disk.h"
 
+extern int verbose;
+
+#define	SECTOR_SIZE	512
+
 
 struct disk_data {
 	uint64_t	offset;
@@ -84,6 +88,11 @@ DEVICE_ACCESS(disk)
 		} else {
 			d->offset = idata;
 		}
+		
+		if (d->offset & (SECTOR_SIZE-1))
+			fatal("[ disk: WARNING! offset (%lli) must be %i-byte aligned ]\n",
+				(long long)d->offset, SECTOR_SIZE);
+		
 		break;
 
 	case DEV_DISK_OFFSET_HIGH32:
@@ -110,13 +119,21 @@ DEVICE_ACCESS(disk)
 			switch (d->command) {
 			case 0:	d->status = diskimage_access(cpu->machine,
 				     d->disk_id, DISKIMAGE_IDE, 0,
-				     d->offset, d->buf, 512);
+				     d->offset, d->buf, SECTOR_SIZE);
 				break;
 			case 1:	d->status = diskimage_access(cpu->machine,
 				     d->disk_id, DISKIMAGE_IDE, 1,
-				     d->offset, d->buf, 512);
+				     d->offset, d->buf, SECTOR_SIZE);
 				break;
 			}
+			
+			if (verbose >= 2) {
+				debug("[ disk: %s disk %i offset %lli ]\n",
+					d->command ? "WRITE" : "READ",
+					d->disk_id, (long long)d->offset);
+			}
+			
+			d->offset += SECTOR_SIZE;
 		}
 		break;
 

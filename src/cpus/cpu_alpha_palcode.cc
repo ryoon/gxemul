@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -144,7 +144,7 @@ void alpha_prom_call(struct cpu *cpu)
 		store_buf(cpu, a2, s, len);
 		break;
 
-	default:fatal("[ Alpha PALcode: GXemul PROM call, a0=0x%" PRIx64 " ]\n",
+	default:fatal("[ Alpha PALcode: GXemul PROM call, a0=0x%" PRIx64" ]\n",
 		    (uint64_t) cpu->cd.alpha.r[ALPHA_A0]);
 		cpu->running = 0;
 	}
@@ -307,7 +307,7 @@ Make sure they are correct, as documented in the Manual.
 		 *	a0 = -1: invalidate everything with ASM=0.
 		 *	a0 = -2: invalidate everything
 		 */
-		// debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%" PRIi64 " a1=0x%"
+		// debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%" PRIi64" a1=0x%"
 		//    PRIx64" ]\n", (int64_t)a0, (uint64_t)a1);
 		if (a0 >= 1)
 			cpu->invalidate_translation_caches(cpu, a1, INVALIDATE_VADDR);
@@ -390,3 +390,4 @@ Make sure they are correct, as documented in the Manual.
 	 *  However, it's easier to just leave the registers as they are.
 	 */
 }
+

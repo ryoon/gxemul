@@ -1,13 +1,26 @@
 
 The <tt>sgi_ip32</tt> machine template tries to emulate an
 <a href="http://en.wikipedia.org/wiki/SGI_O2">SGI O2</a> machine,
-for experiments with <a href="http://www.netbsd.org/ports/sgimips/">NetBSD/sgimips</a>,
-<a href="http://openbsd.org/sgi.html">OpenBSD/sgi</a>, Linux for O2,
-and possibly also SGI O2 PROMs and/or IRIX in the future.
+for experiments with primarily
+<a href="http://www.netbsd.org/ports/sgimips/">NetBSD/sgimips</a>,
+<a href="http://openbsd.org/sgi.html">OpenBSD/sgi</a>, and
+<a href="http://ftp.debian.org/debian/dists/Debian8.11/main/installer-mips/current/images/r5k-ip32/">Linux for O2</a>.
+
+<p>
+<font color="#ff0000">NOTE: THE SGI O2 EMULATION MODE IN THE NEW FRAMEWORK
+IS <b>NOT WORKING YET AT ALL</b>! These are preliminary
+instructions on how it <i>may</i> work when the new GXemul framework, and
+in particular the SGI O2 emulation within that framework, is complete enough.</font>
+
+<p>
+<font color="#ff0000">The new framework is planned to support things such
+as emulation of real CPU caches, and RAM at a non-zero base address,
+features used by the SGI O2 (and its PROM).</font>
+
 
 
 <p><br>
-<h3>Experimenting with a PROM from a real SGI O2:</h3>
+<h4>Experimenting with a PROM from a real SGI O2</h4>
 
 This requires that you dump the PROM memory range from your real SGI O2
 machine into a file. Using a serial console hooked up to your O2, executing
@@ -19,24 +32,6 @@ will dump 512 KB of the PROM range. Make sure you capture all the output
 into a file, and then convert the result into a raw binary. (If you don't have
 time to write a converter tool yourself, there is an example converter in
 the GXemul source code distribution: <tt>experiments/sgiprom_to_bin</tt>.)
-
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="../sgi-o2-real.jpg"><img src="../sgi-o2-real_small.jpg"></a>
-&nbsp;&nbsp;&nbsp;
-<a href="../20050817-sgi-o2-success-7.png"><img src="../20050817-sgi-o2-success-7_small.png"></a>
-&nbsp;&nbsp;&nbsp;
-<a href="../20050817-sgi-o2-success-8.png"><img src="../20050817-sgi-o2-success-8_small.png"></a>
-
-<p>The photo on the left is from the real machine. The other two are
-screenshots of the PROM running experimentally in and older version of GXemul,
-using <tt>-Y2</tt> framebuffer scaledown.
-
-<p><font color="#ff0000">
-NOTE: Running the O2 PROM image broke somewhere between release
-0.3.8 and 0.4.0. (Running with graphics broke between 0.3.7 and 0.3.8.)
-The goal is to write a new SGI O2 emulation mode using the new 0.6.0
-framework, which will be able to run the PROM image.</font>
 
 <p>Assuming you have extracted the PROM from your real machine into a
 file called <tt>prom</tt>, the following example shows how to start up the
@@ -58,9 +53,81 @@ cpu0: raw:0xffffffffbfc00000:prom loaded
 GXemul>
 </pre>
 
-<font color="#ff0000">NOTE: RUNNING THE PROM DOES NOT WORK YET! These are preliminary
-instructions on how it may work when the new GXemul framework, and the SGI O2
-emulation in that framework, is complete enough.</font>
+<p><font color="#ff0000">As mentioned above, nothing works yet.</font>
+
+
+
+<p><br><h4>Legacy framework</h4>
+
+<p>As the new framework is <b>not</b> working yet, and especially the SGI O2
+emulation mode in it, the following notes about the <i>legacy framework</i>
+may also be of interest.
+
+<p>Normally, a dump of the PROM image from your real SGI O2 is <i>not</i> needed,
+if what you want to do is to run guest operating systems in the emulator.
+See the following sections of the documentation for how to set up
+NetBSD/sgimips and OpenBSD/sgi:
+
+<p>
+<ul>
+	<li><a href="../guestoses.html#netbsdsgimips">NetBSD/sgimips</a>
+	<li><a href="../guestoses.html#openbsdsgiinstall">OpenBSD/sgi</a>
+</ul>
+
+<p>In order to experiment with a raw PROM dump using the legacy framework,
+the following command line may be used as a starting point:
+
+<pre>
+$ <b>gxemul -QXeo2 0xbfc00000:prom</b>
+</pre>
+
+<p><tt>-Q</tt> turns off GXemul's built-in PROM emulation, allowing raw PROM images
+to be used. <tt>-X</tt> is used to display the graphical framebuffer. (<tt>-X</tt> can be
+omitted if only serial console is what you want.) And finally, <tt>-e o2</tt> selects
+the O2 emulation mode. 0xbfc00000 is the standard ROM address for MIPS-based
+systems.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="../sgi-o2-real.jpg"><img src="../sgi-o2-real_small.jpg"></a>
+&nbsp;&nbsp;&nbsp;
+<a href="../20180910-sgiip32prom-4.13.png">
+<img src="../20180910-sgiip32prom-4.13.png" width=250>
+</a>
+
+<p>The photo on the left is from the real machine. The screenshot to the right
+is from the emulator.
+
+<p><font color="#ff0000">
+NOTE: The SGI O2 PROM does some hardware tests during startup that do not
+work in GXemul, in particular cache detection. So right now,
+there is a hack/workaround which skips cache detection in an ugly way.
+This has been verified to work with PROM versions 2.3, 4.13, and 4.18.
+For other versions, it may need to be manually skipped.</font>
+
+<p>With a IP32 PROM version 4.13 for example, if the hack is commented out,
+the cache detection routine at 0xbfc05180 must be skipped:
+
+<pre>
+$ <b>gxemul -p 0xffffffffbfc05180 -X -Q -e o2 0xbfc00000:prom-4.13</b>
+
+<i>...
+when the breakpoint is hit, type:</i>
+
+pc = ra
+continue
+</pre>
+
+<p>If the 'console' variable in the PROM's environment variable section
+was set to something starting with 'g', output will be graphical, otherwise
+it will be to serial console.
+
+<p>Note however that almost nothing works; <b>most importantly, SCSI is not
+implemented for the SGI O2</b>, so the emulated machine will not be able
+to boot from any kind of disk or CDROM. Audio
+or video hardware is not emulated at all yet either.
+Also, while the graphics emulation has been implemented well enough to run
+NetBSD, OpenBSD, and perhaps also Linux, other things may not work.
 
 
 <p><hr>

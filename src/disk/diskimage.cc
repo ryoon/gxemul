@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -769,6 +769,7 @@ int diskimage_add(struct machine *machine, char *fname)
 	/*  ... but some machines use SCSI by default:  */
 	if (machine->machine_type == MACHINE_PMAX ||
 	    machine->machine_type == MACHINE_ARC ||
+	    machine->machine_type == MACHINE_SGI ||
 	    machine->machine_type == MACHINE_MVME88K)
 		d->type = DISKIMAGE_SCSI;
 
@@ -910,8 +911,13 @@ int diskimage_add(struct machine *machine, char *fname)
 
 	d->writable = access(fname, W_OK) == 0? 1 : 0;
 
-	if (d->is_a_cdrom || prefix_r)
+	if (d->is_a_cdrom || prefix_r) {
 		d->writable = 0;
+	} else {
+		if (!d->writable) {
+			debug("NOTE: '%s' is read-only in the host file system, but 'r:' was not used.\n\n", d->fname);
+		}
+	}
 
 	d->f = fopen(fname, d->writable? "r+" : "r");
 	if (d->f == NULL) {
@@ -1132,3 +1138,4 @@ void diskimage_dump_info(struct machine *machine)
 		d = d->next;
 	}
 }
+

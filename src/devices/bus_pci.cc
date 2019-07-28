@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -63,10 +63,9 @@
 
 extern int verbose;
 
-
-#ifdef UNSTABLE_DEVEL
-#define debug fatal
-#endif
+// #ifdef UNSTABLE_DEVEL
+// #define debug fatal
+// #endif
 
 
 /*
@@ -120,7 +119,9 @@ void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
 				*data = 0;
 		} else {
 			fatal("[ bus_pci_data_access(): write to non-existant"
-			    " device? ]\n");
+			    " device, bus %i func %i device %i ]\n",
+			    pci_data->cur_bus, pci_data->cur_func,
+			    pci_data->cur_device);
 		}
 		return;
 	}
@@ -406,7 +407,7 @@ struct pci_data *bus_pci_init(struct machine *machine, const char *irq_path,
 
 PCIINIT(igsfb)
 {
-	char tmpstr[200];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG,
 	    PCI_ID_CODE(PCI_VENDOR_INTEGRAPHICS, 0x2010));
@@ -487,7 +488,7 @@ PCIINIT(ali_m1543)
 
 PCIINIT(ali_m5229)
 {
-	char tmpstr[300], irqstr[300];
+	char tmpstr[2000], irqstr[1000];
 
 	PCI_SET_DATA(PCI_ID_REG,
 	    PCI_ID_CODE(PCI_VENDOR_ALI, PCI_PRODUCT_ALI_M5229));
@@ -519,59 +520,49 @@ PCIINIT(ali_m5229)
 
 
 /*
- *  Adaptec AHC SCSI controller.
+ *  Adaptec AHC SCSI controller, with values as they are in my SGI O2.
  */
 
-#define PCI_VENDOR_ADP  0x9004          /* Adaptec */
-#define PCI_VENDOR_ADP2 0x9005          /* Adaptec (2nd PCI Vendor ID) */
-#define PCI_PRODUCT_ADP_2940U   0x8178          /* AHA-2940 Ultra */
-#define PCI_PRODUCT_ADP_2940UP  0x8778          /* AHA-2940 Ultra Pro */
+#define PCI_VENDOR_ADP			0x9004          /* Adaptec */
+#define PCI_PRODUCT_ADP_AIC7880		0x8078          /* AIC7880 */
 
 PCIINIT(ahc)
 {
-	/*  Numbers taken from a Adaptec 2940U:  */
-	/*  http://mail-index.netbsd.org/netbsd-bugs/2000/04/29/0000.html  */
-
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_ADP,
-	    PCI_PRODUCT_ADP_2940U));
+	    PCI_PRODUCT_ADP_AIC7880));
 
-	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0x02900007);
+	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0x02800046);
 
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_SCSI, 0) + 0x01);
 
-	PCI_SET_DATA(PCI_BHLC_REG, 0x00004008);
+	PCI_SET_DATA(PCI_BHLC_REG, 0x00001020);
 
-	/*  1 = type i/o. 0x0000e801;  address?  */
-	/*  second address reg = 0xf1002000?  */
-	PCI_SET_DATA(PCI_MAPREG_START + 0x00, 0x00000001);
-	PCI_SET_DATA(PCI_MAPREG_START + 0x04, 0x00000000);
-
+	PCI_SET_DATA(PCI_MAPREG_START + 0x00, 0xffffff01);
+	PCI_SET_DATA(PCI_MAPREG_START + 0x04, 0x80001000);
 	PCI_SET_DATA(PCI_MAPREG_START + 0x08, 0x00000000);
 	PCI_SET_DATA(PCI_MAPREG_START + 0x0c, 0x00000000);
 	PCI_SET_DATA(PCI_MAPREG_START + 0x10, 0x00000000);
 	PCI_SET_DATA(PCI_MAPREG_START + 0x14, 0x00000000);
 	PCI_SET_DATA(PCI_MAPREG_START + 0x18, 0x00000000);
 
-	/*  Subsystem vendor ID? 0x78819004?  */
 	PCI_SET_DATA(PCI_MAPREG_START + 0x1c, 0x00000000);
 
-	PCI_SET_DATA(0x30, 0xef000000);
-	PCI_SET_DATA(PCI_CAPLISTPTR_REG, 0x000000dc);
-	PCI_SET_DATA(0x38, 0x00000000);
-	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x08080109);	/*  interrupt pin A  */
+	PCI_SET_DATA(0x30, 0x80010000);
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x08080100);	/*  interrupt pin  */
+
+	PCI_SET_DATA(0x40, 0x00000180);
+	PCI_SET_DATA(0x40, 0x00000180);
+
 
 	/*
 	 *  TODO:  this address is based on what NetBSD/sgimips uses
-	 *  on SGI IP32 (O2). Fix this!
+	 *  on SGI IP32 (O2). Fix this! Allow devices to move? Or
+	 *  implement PCI space redirection at least!
 	 */
 
-	device_add(machine, "ahc addr=0x18000000");
-
-	/*  OpenBSD/sgi snapshots sometime between 2005-03-11 and
-	    2005-04-04 changed to using 0x1a000000:  */
-	dev_ram_init(machine, 0x1a000000, 0x2000000, DEV_RAM_MIRROR,
-	    0x18000000);
+	// device_add(machine, "ahc addr=0x1a001000");
+	device_add(machine, "ahc addr=0x18002000");
 }
 
 
@@ -713,7 +704,7 @@ PCIINIT(i31244)
 	/*  PCI IDE using dev_wdc:  */
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-		char tmpstr[150];
+		char tmpstr[2000];
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%s.%i",
 		    (long long)(pd->pcibus->pci_actual_io_offset + 0),
 		    pd->pcibus->irq_path_pci, irq & 255);
@@ -816,7 +807,7 @@ int piix_ide_cfg_reg_write(struct pci_device *pd, int reg, uint32_t value)
 
 PCIINIT(piix3_ide)
 {
-	char tmpstr[100];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_82371SB_IDE));
@@ -856,7 +847,7 @@ PCIINIT(piix3_ide)
 
 PCIINIT(piix4_ide)
 {
-	char tmpstr[100];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_82371AB_IDE));
@@ -1008,7 +999,7 @@ int vt82c586_ide_cfg_reg_write(struct pci_device *pd, int reg, uint32_t value)
 
 PCIINIT(vt82c586_ide)
 {
-	char tmpstr[100];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_VIATECH,
 	    PCI_PRODUCT_VIATECH_VT82C586_IDE));
@@ -1095,7 +1086,7 @@ printf("reg = 0x%x\n", reg);
 	case PCI_COMMAND_STATUS_REG:
 		if (value & PCI_COMMAND_IO_ENABLE)
 			enabled = 1;
-printf("  value = 0x%" PRIx32 "\n", value);
+printf("  value = 0x%" PRIx32"\n", value);
 		if (wdc0 != NULL)
 			wdc_set_io_enabled((struct wdc_data *) wdc0, enabled);
 		if (wdc1 != NULL)
@@ -1118,7 +1109,7 @@ printf("  value = 0x%" PRIx32 "\n", value);
 
 PCIINIT(symphony_82c105)
 {
-	char tmpstr[100];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_SYMPHONY,
 	    PCI_PRODUCT_SYMPHONY_82C105));
@@ -1173,8 +1164,8 @@ PCIINIT(rtl8139c)
 {
 	uint64_t port, memaddr;
 	int pci_int_line = 0x101, irq = 0;
-	char irqstr[200];
-	char tmpstr[200];
+	char irqstr[1000];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_REALTEK,
 	    PCI_PRODUCT_REALTEK_RT8139));
@@ -1218,8 +1209,8 @@ PCIINIT(dec21143)
 {
 	uint64_t port, memaddr;
 	int pci_int_line = 0x101, irq = 0, isa = 0;
-	char irqstr[200];
-	char tmpstr[200];
+	char irqstr[1000];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
 	    PCI_PRODUCT_DEC_21142));
@@ -1293,7 +1284,7 @@ PCIINIT(dec21143)
 PCIINIT(dec21030)
 {
 	uint64_t base = 0;
-	char tmpstr[200];
+	char tmpstr[2000];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
 	    PCI_PRODUCT_DEC_21030));
@@ -1429,3 +1420,4 @@ PCIINIT(ati_radeon_9200_2)
 	/*  TODO  */
 	allocate_device_space(pd, 0x1000, 0x400000, &port, &memaddr);
 }
+

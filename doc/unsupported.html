@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2003-2013  Anders Gavare.  All rights reserved.
+Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -45,17 +45,22 @@ SUCH DAMAGE.
 
 <p><br>
 <ul>
-  <li><a href="unsupported.html#mach">Mach/PMAX</a>
-  <li><a href="unsupported.html#declinuxredhat">Redhat Linux for DECstation</a>
-  <li><a href="unsupported.html#openbsdsgiinstall">OpenBSD/sgi</a>
-  <li><a href="unsupported.html#openbsdarcinstall">OpenBSD/arc 2.3</a>
-  <li><a href="unsupported.html#debiancats">Debian GNU/Linux for CATS</a>
-  <li><a href="unsupported.html#linux_malta">Linux/Malta</a> (variant 1)
-  <li><a href="unsupported.html#linux_malta2">Linux/Malta</a> (variant 2)
-  <li><a href="unsupported.html#linux_qemu_mips">Linux/QEMU_MIPS</a>
-  <li><a href="unsupported.html#windows_nt_mips">Windows NT/MIPS</a>
-  <li><a href="unsupported.html#netbsdplaystation2">NetBSD/playstation2</a>
-  <li><a href="unsupported.html#netbsdrpi">NetBSD/raspberrypi</a>
+  <li><a href="#helenosmalta">HelenOS/malta 0.7.2</a>
+  <li><a href="#helenosrpi">HelenOS/rpi 0.7.2</a>
+  <li><a href="#helenosppc">HelenOS/ppc 0.7.1</a>
+  <li><a href="#mach">Mach/PMAX</a>
+  <li><a href="#declinuxredhat">Redhat Linux for DECstation</a>
+  <li><a href="#openbsdarcinstall">OpenBSD/arc 2.3</a>
+  <li><a href="#openbsdluna88k">OpenBSD/luna88k</a>
+  <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
+  <li><a href="#linux_malta">Linux/Malta</a> (variant 1)
+  <li><a href="#linux_malta2">Linux/Malta</a> (variant 2)
+  <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
+  <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
+  <li><a href="#netbsdplaystation2">NetBSD/playstation2</a>
+  <li><a href="#netbsdrpi">NetBSD/raspberrypi</a>
+  <li><a href="#linux_vocore">Linux/VoCore</a>
+  <li><a href="#freebsd_vocore">FreeBSD/VoCore</a>
 </ul>
 
 <p>NOTE: The guest operating systems listed on this page are here because
@@ -68,11 +73,76 @@ page</a>.
 cases, it contains notes about starting guest OSes that are not complete
 (i.e. just booting a kernel, not a full installation of a guest OS).
 
-<p>Also note that ALL modes on this page are
-<a href="guestoses.html#legacy"><font color="#dd2222"><b>legacy modes</b></font></a>.
-
 
 <p><hr>
+
+
+
+
+
+
+
+<p><br>
+<a name="helenosmalta"></a>
+<h3>HelenOS/malta:</h3>
+
+<p>Modern versions of HelenOS <i>almost</i> run in GXemul,
+using the Malta emulation mode, without a graphical framebuffer.
+The PCI devices in GXemul do not seem to be correctly emulated yet.
+
+<p>To run HelenOS for Malta in GXemul:
+<ol>
+  <li>Download the HelenOS kernel:<pre>
+	<a href="http://www.helenos.org/releases/HelenOS-0.7.2-mips32-malta-be.boot">http://www.helenos.org/releases/HelenOS-0.7.2-mips32-malta-be.boot</a>
+    or
+	<a href="http://www.helenos.org/releases/HelenOS-0.7.2-mips32-malta-le.boot">http://www.helenos.org/releases/HelenOS-0.7.2-mips32-malta-le.boot</a>
+  </pre>
+  <li>Start GXemul using the following command line:<pre>
+  	<b>gxemul -e maltabe HelenOS-0.7.2-mips32-malta-be.boot</b>
+    or
+  	<b>gxemul -e malta HelenOS-0.7.2-mips32-malta-le.boot</b>
+  </pre>
+</ol>
+
+
+
+
+<p><br>
+<a name="helenosrpi"></a>
+<h3>HelenOS/rpi:</h3>
+
+<p>The Raspberry Pi mode in GXemul is just a dummy so far.
+These instructions are used as a reminder for me when I wish
+to experiment with the HelenOS kernel:
+
+<p>
+<ol>
+  <li>Download the HelenOS kernel:<pre>
+	<a href="http://www.helenos.org/releases/HelenOS-0.7.2-arm32-raspberrypi.bin">http://www.helenos.org/releases/HelenOS-0.7.2-arm32-raspberrypi.bin</a>
+  </pre>
+  <li>Start GXemul using the following command line:<pre>
+  	<b>gxemul -VE rpi -tv 0x8000:0x40:0x8000:HelenOS-0.7.2-arm32-raspberrypi.bin</b>
+  </pre>
+</ol>
+
+
+
+
+<p><br>
+<a name="helenosppc"></a>
+<h3>HelenOS/ppc:</h3>
+
+<p>This does not work yet.
+
+<p>
+<ol>
+  <li>Download the HelenOS PPC ISO image:<pre>
+	<a href="http://www.helenos.org/releases/HelenOS-0.7.1-ppc32.iso">http://www.helenos.org/releases/HelenOS-0.7.1-ppc32.iso</a>
+  </pre>
+  <li>Start GXemul using the following command line:<pre>
+  	<b>gxemul -M 256 -v -x -e g4 -d HelenOS-0.7.1-ppc32.iso  -j BOOT/image.boot</b>
+  </pre>
+</ol>
 
 
 
@@ -118,8 +188,9 @@ for DECstation in the emulator:
 </pre>
   <li>Load the contents of pmax.tar.Z onto the disk image. This is
 	complicated, and should be described in more detail some time.
-	For now, use your imagination. (For example using OpenBSD/pmax:
-	<i>disklabel -E rz1; newfs -O /dev/rz1a;
+	For now, use your imagination, for example using
+	<a href="guestoses.html#openbsdpmaxinstall">OpenBSD/pmax</a>:
+	<pre>	disklabel -E rz1; newfs -O /dev/rz1a;
 	mount /dev/rz1a /mnt; cd /mnt; download pmax.tar.Z using ftp;
 	tar xzvf pmax.tar.Z; mv pmax_mach/* .; rmdir pmax_mach;
 	mkdir mach_servers;
@@ -127,7 +198,7 @@ for DECstation in the emulator:
 	cp ../etc/mach_init .;
 	cp ../tests/test_service startup;
 	dd if=/dev/zero of=paging_file bs=65536 count=400;
-	cd /; sync; umount /mnt</i>)
+	cd /; sync; umount /mnt</pre>
 	<p>
   <li>Start the emulator with the following command:<pre>
 	<b>gxemul -c 'put w 0x800990e0, 0' -c 'put w 0x80099144, 0' \
@@ -231,182 +302,6 @@ If you need to boot into single user mode, change options to
 
 
 
-
-<p><br>
-<a name="openbsdsgiinstall"></a>
-<h3>OpenBSD/sgi:</h3>
-
-<a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
-can (almost) run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
-
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20050617-openbsd-sgi.png"><img src="20050617-openbsd-sgi_small.png"></a>
-
-<p><font color="#ff0000">NOTE: I haven't succeeded all the way with
-this yet, and this shows/triggers many bugs in the emulator, but some of
-it works.</font>
-
-<p>GXemul does not yet emulate the AHC PCI SCSI controller in the O2. (I have 
-mailed Adaptec several times, asking for documentation, but never received 
-any reply.) OpenBSD/sgi can still run in the emulator, as long as it doesn't
-use SCSI. For a simple test with the ramdisk (install) kernel, try dowloading<pre>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi</a>/<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd.rd">bsd.rd</a>
-
-</pre>and run <b><tt>gxemul -xeo2 bsd.rd</tt></b>.
-
-<p>It might also be possible to netboot. Another emulated machine must 
-then be used as the nfs root server, and the emulated O2 machine must boot 
-as a <a href="http://www.openbsd.org/cgi-bin/man.cgi?query=diskless&amp;manpath=OpenBSD+Current&amp;format=html">diskless</a>
-client. Performing this setup is quite time consuming, but necessary:
-
-<p>
-<ol>
-  <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
-	This needs to have a 800 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdpmaxinstall">Install NetBSD/pmax 3.1 from CDROM</a>.
-	(Don't forget to add the extra partition!)
-  <p>
-  <li>Configure the nfs server machine to act as an nfs server.
-	Start up the emulated DECstation:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img</b>
-</pre>and enter the following commands as <tt>root</tt>
-	inside the emulator:
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>echo hostname=server &gt;&gt; /etc/rc.conf
-echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf
-echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf
-echo 10.0.0.254 &gt; /etc/mygate
-echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports
-echo rpcbind=YES &gt;&gt; /etc/rc.conf
-echo nfs_server=YES &gt;&gt; /etc/rc.conf
-echo mountd=YES &gt;&gt; /etc/rc.conf
-echo bootparamd=YES &gt;&gt; /etc/rc.conf
-printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams
-echo "10:20:30:00:00:10 client" &gt; /etc/ethers
-echo 10.0.0.1 client &gt; /etc/hosts
-reboot</b>
-</pre></td></tr></table>
-  <li>Start the DECstation emulation again, and enter the following
-	commands to download the OpenBSD/sgi distribution:<br>(NOTE: This
-	takes quite some time, even if you have a fast network connection.)
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
-(log in as anonymous...)
-<b>cd pub/OpenBSD/4.0/sgi
-mget b*tgz c*tgz e* g* m*
-quit
-sh
-for a in *.tgz; do echo $a; tar zxfp $a; done
-echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
-rm *.tgz
-dd if=/dev/zero of=swap bs=1024 count=32768
-halt</b>
-</pre></td></tr></table>
-  <li>Download the OpenBSD/sgi GENERIC and RAMDISK kernels:<pre>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd</a>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/sgi/bsd.rd</a>
-
-</pre>
-  <li>Create a configuration file called <tt>config_client</tt>:
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<font color="#2020cf">!  Configuration file for running OpenBSD/sgi diskless with
-!  a NetBSD/pmax machine as the nfs server.
-!
-!  This config file is for the client.</font>
-
-<b>net(
-	add_remote("localhost:12444")   </b>! the server<b>
-	local_port(12445)               </b>! the client<b>
-)
-
-machine(
-	name("client machine")
-	serial_nr(1)
-
-        type("sgi")
-        subtype("o2")
-
-        </b>! load("bsd")<b>
-        load("bsd.rd")
-)
-</b>
-</pre></td></tr></table>
-	... and another configuration file for the server,
-	<tt>config_server</tt>:
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>net(
-	local_port(12444)               </b>! the server<b>
-	add_remote("localhost:12445")   </b>! the client<b>
-)
-
-machine(
-	name("nfs server")
-	serial_nr(2)
-
-        type("dec")
-        subtype("5000/200")
-
-        disk("nbsd_pmax.img")
-)
-</b>
-</pre></td></tr></table>
-  <li>Boot the "<tt>nfs server</tt>" and the OpenBSD/sgi
-	"<tt>client machine</tt>" as two separate emulator instances:<pre>
-	in one xterm:
-	<b>gxemul @config_server</b>
-
-	and then, in another xterm:
-	<b>gxemul @config_client</b>
-
-</pre>
-  <li>In the OpenBSD/sgi window, choose "<tt>s</tt>" (for Shell), and type:
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>ifconfig mec0 10.0.0.1; route add default 10.0.0.254
-mount -v 10.0.0.2:/tftpboot /mnt
-cd /mnt/dev; ./MAKEDEV all; cd /; umount /mnt
-halt</b>
-</pre></td></tr></table>
-	You might want to log in as <tt>root</tt> on the server machine, and
-	run <tt>tcpdump -lnvv</tt> or similar, to see that what the client
-	machine actually does on the network. The <tt>MAKEDEV</tt> script
-	takes almost forever, so be patient.
-</ol>
-
-
-<p><font color="#ff0000">NOTE: Everything up to this point should work. 
-However, the next step (in gray) doesn't actually work:</font>
-
-<p><font color="#888888">Once everything has been set up correctly, change
-<tt>bsd.rd</tt> in <tt>config_client</tt> to just <tt>bsd</tt> (the GENERIC
-kernel). It should now be possible to boot OpenBSD/sgi using the NetBSD/pmax 
-nfs server. (When asked for "<tt>root device :</tt>" on the OpenBSD machine, 
-enter <tt><b>mec0</b></tt>.)</font>
-
-<p><font color="#ff0000">But it doesn't work. Probably because GXemul's
-implementation of the mec (ethernet card used in the O2) is too much of
-a quick hack. For now, use the <tt>bsd.rd</tt> kernel, and (at every
-boot) type:</font><pre>
-	<b>s</b>  (for Shell)
-	<b>ifconfig mec0 10.0.0.1; route add default 10.0.0.254</b>
-	<b>mount -v 10.0.0.2:/tftpboot /mnt</b>
-	<b>cd /mnt; usr/sbin/chroot .</b>
-	<b>sh etc/rc</b>
-</pre>
-
-<p><font color="#ff0000">This will not cause OpenBSD to be booted 
-normally, but at least a few basic things will work.
-By the way, the emulator performs so poorly, that you will have time to 
-fetch several cups of coffee for each of the steps above.</font>
-
-
-
-
-
-
-
-
-
 <p><br>
 <a name="openbsdarcinstall"></a>
 <h3>OpenBSD/arc:</h3>
@@ -492,6 +387,95 @@ happened on real hardware.
 
 
 
+<p><br>
+<a name="openbsdluna88k"></a>
+<h3>OpenBSD/luna88k:</h3>
+
+<p><font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
+
+<p>These instructions are here mostly for me to remember how to debug/proceed:
+
+<p>
+Download a RAMDISK kernel:
+
+<ul>
+	<li><a href="https://ftp.eu.openbsd.org/pub/OpenBSD/5.4/luna88k/bsd.rd">https://ftp.eu.openbsd.org/pub/OpenBSD/5.4/luna88k/bsd.rd</a>
+	<li><a href="https://ftp.eu.openbsd.org/pub/OpenBSD/5.9/luna88k/bsd.rd">https://ftp.eu.openbsd.org/pub/OpenBSD/5.9/luna88k/bsd.rd</a>
+	<li><a href="https://ftp.eu.openbsd.org/pub/OpenBSD/6.2/luna88k/bsd.rd">https://ftp.eu.openbsd.org/pub/OpenBSD/6.2/luna88k/bsd.rd</a>
+</ul>
+
+<p>For 5.4 and below:
+<pre>
+	<b>gxemul -e luna-88k 0x20000:0x20:bsd.rd</b>
+</pre>
+or for the newer ones:
+<pre>
+	<b>gxemul -e luna-88k bsd.rd</b>
+</pre>
+
+<p>From 6.0 and newer, bugs are triggered (most likely in GXemul):
+<pre>
+	panic: amap_wipeout: corrupt amap
+</pre>
+
+<p>The 5.9 kernel gets further than 6.0 (reaching userland), but it 
+seems that OpenBSD was compiled with too heavy optimizations, so the 
+framebuffer scroll up routine does not contain any loads or stores.
+
+<p>Using a breakpoint
+<tt>-p om1_windowmove</tt> in both OpenBSD 5.9 and 6.2 indicates that 
+5.9 must have been optimized too heavily; it loops when trying to copy
+pixels to scroll up the text, but the loop contains "nothing":
+
+<pre>
+s001553b8: 64e70001	subu	r7,r7,1
+s001553bc: 61270001	addu	r9,r7,1
+s001553c0: ec4c0004	bcnd.n	eq0,r12,0x001553d0	; &lt;om1_windowmove+0x3b0>
+s001553c4: 59600000 (d)	or	r11,r0,0x0
+s001553c8: f1a08832	set	r13,r0,1&lt;18>
+s001553cc: f562600d	addu	r11,r2,r13
+s001553d0: 60420004	addu	r2,r2,4
+s001553d4: eda9fff9	bcnd.n	ne0,r9,0x001553b8	; &lt;om1_windowmove+0x398>
+s001553d8: 616b0004 (d)	addu	r11,r11,4
+s001553b8: 64e70001	subu	r7,r7,1
+...
+</pre>
+
+compared to what it looks like in 6.2:
+
+<pre>
+s001547a4: 64e70001	subu	r7,r7,1
+s001547a8: 61270001	addu	r9,r7,1
+s001547ac: 60420004	addu	r2,r2,4
+s001547b0: eda9fffa	bcnd.n	ne0,r9,0x00154798	; &lt;om1_windowmove+0x398>
+s001547b4: 616b0004 (d)	addu	r11,r11,4
+s00154798: edac003e	bcnd.n	ne0,r12,0x00154890	; &lt;om1_windowmove+0x490>
+s0015479c: f1208832 (d)	set	r9,r0,1&lt;18>
+s00154890: f5021409	ld	r8,r2,r9	; [0xb10c958c]
+s00154894: c7ffffc4	br.n	0x001547a4	; &lt;om1_windowmove+0x3a4>
+s00154898: f500240b (d)	st	r8,r0,r11	; [0xb1087f8c]
+s001547a4: 64e70001	subu	r7,r7,1
+</pre>
+
+<p>Note the actual loads and stores to video ram (0xb10.....).
+
+<p>Going back all the way to an old 5.4 kernel allows the framebuffer to 
+be used:
+<pre>
+	<b>gxemul -X -e luna-88k 0x20000:0x20:bsd.rd</b>
+</pre>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20180220-openbsd-luna88k-5.4.png"><img src="20180220-openbsd-luna88k-5.4-small.png"></a>
+
+
+<p>The following is not needed in order to experiment with booting OpenBSD,
+but can be interesting nonetheless: Download 
+<a href="https://ftp.eu.openbsd.org/pub/OpenBSD/6.2/luna88k/boot">https://ftp.eu.openbsd.org/pub/OpenBSD/6.2/luna88k/boot</a> and try
+
+<pre>
+	<b>gxemul -v -e luna-88k 0x00700000:0x20:0x00700000:boot</b>
+</pre>
 
 
 
@@ -665,7 +649,7 @@ kernel, in way similar to the <tt>run-qemu</tt> script:
 <ol>
   <li>Download the archive from
 	<a href="http://wiki.qemu.org/Download">http://wiki.qemu.org/Download</a> and extract it:<pre>
-	<b>wget <a href="http://wiki.qemu.org/download/mips-test-0.2.tar.gz">http://wiki.qemu.org/download/mips-test-0.2.tar.gz</a>
+	<b>wget <a href="http://wiki.qemu.org/download/mips-test-0.2.tar.gz">http://wiki.qemu.org/download/mips-test-0.2.tar.gz</a>		<font color="red"># 2018-11-16: Unfortunately, the file seems to have been removed!</font>
 	tar zxvf mips-test-0.2.tar.gz</b>
 
 </pre>
@@ -825,6 +809,75 @@ mdconfig -d -u 0
 
 
 </p>
+
+
+
+
+
+
+
+<p><br>
+<a name="linux_vocore"></a>
+<h3>Linux/VoCore:</h3>
+
+<p>This doesn't work yet. Only serial console output is implemented,
+nothing else. Starting point for development:
+
+<p>See <a href="http://vocore.io/v1d.html">http://vocore.io/v1d.html</a> for info about the first VoCore model. (There are some newer ones too.)
+
+<p>See <a href="https://openwrt.org/toh/vocore/vocore?datasrt=model">https://openwrt.org/toh/vocore/vocore?datasrt=model</a> for downloadable Linux kernel files etc.
+
+<p>To start debugging/development:
+<ol>
+	<li>Download <a href="http://downloads.lede-project.org/releases/17.01.4/targets/ramips/rt305x/lede-17.01.4-ramips-rt305x-vocore-16M-initramfs-kernel.bin">http://downloads.lede-project.org/releases/17.01.4/targets/ramips/rt305x/lede-17.01.4-ramips-rt305x-vocore-16M-initramfs-kernel.bin</a>
+
+	<li><pre>dd if=lede-17.01.4-ramips-rt305x-vocore-16M-initramfs-kernel.bin of=apa bs=64 iseek=1 oseek=0
+lzma -d &lt; apa &gt; apa2</pre>
+
+	<li><tt><b>gxemul -E vocore 0x80000000:0:0x80000000:apa2</b></tt>
+</pre>
+</ol>
+
+<p>ORIGINAL kernel (from vocore.io):
+<ol>
+	<li>Download <a href="http://vonger.cn/upload/vocore.dock2.bin">http://vonger.cn/upload/vocore.dock2.bin</a> (which may be corrupt? lzma complains...)
+
+	<li><pre>dd if=vocore.dock2.bin of=apa5 bs=64 iseek=1 oseek=0
+lzma -dv &lt; apa5 &gt; apa6</pre>
+
+	<li><tt><b>gxemul -E vocore 0x80000000:0:0x80000000:apa6</b></tt>
+</pre>
+</ol>
+
+
+<p>TODO: Pretty much Everything.
+
+
+
+
+
+<p><br>
+<a name="vreebsd_vocore"></a>
+<h3>FreeBSD/VoCore:</h3>
+
+<p>This doesn't work yet. See comments about Linux above.
+
+<p>According to <a href="https://lists.freebsd.org/pipermail/freebsd-mips/2016-January/004332.html">https://lists.freebsd.org/pipermail/freebsd-mips/2016-January/004332.html</a>,
+a kernel at <a href="https://www.dropbox.com/s/nkwzx5omtx3ye7t/kernel.uboot.rt5350?dl=0">https://www.dropbox.com/s/nkwzx5omtx3ye7t/kernel.uboot.rt5350?dl=0</a> can be experimented with:
+
+<pre>
+kernel.uboot.rt5350: u-boot legacy uImage, FreeBSD Kernel Image, Linux/MIPS, OS Kernel Image (gzip), 1467294 bytes, Tue Dec 29 17:04:13 2015, Load Address: 0x80001120, Entry Point: 0x80001120, Header CRC: 0x3F6D1694, Data CRC: 0x6AF182B5
+
+dd if=kernel.uboot.rt5350 of=apa3 bs=64 iseek=1 oseek=0
+gunzip &lt; apa3 &gt; apa4
+
+<b>gxemul -VEvocore 0x80001120:0:0x80001120:apa4</b>
+</pre>
+
+<p>TODO: Pretty much Everything.
+
+
+
 
 <p><br>
 <hr>

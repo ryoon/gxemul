@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -283,7 +283,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i:\t", cpu->cpu_id);
 
-	debug("%016" PRIx64 ":  ", (uint64_t) dumpaddr);
+	debug("%016" PRIx64":  ", (uint64_t) dumpaddr);
 
 	iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
 	debug("%08x\t", (int)iw);
@@ -680,3 +680,4 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 
 #include "tmp_alpha_tail.cc"
+

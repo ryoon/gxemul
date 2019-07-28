@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -180,7 +180,7 @@ void dev_fb_resize(struct vfb_data *d, int new_xsize, int new_ysize)
 
 #ifdef WITH_X11
 	if (d->fb_window != NULL) {
-		x11_fb_resize(d->fb_window, new_xsize, new_ysize);
+		x11_fb_resize(d->fb_window, d->x11_xsize, d->x11_ysize);
 		x11_set_standard_properties(d->fb_window, d->title);
 	}
 #endif
@@ -236,7 +236,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	int from_x, int from_y)
 {
 	int x, y;
-	long from_ofs, dest_ofs, linelen;
+	size_t from_ofs, dest_ofs, linelen;
 
 	if (fillflag)
 		debug("framebuffer_blockcopyfill(FILL, %i,%i, %i,%i, "
@@ -262,7 +262,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 				    d->framebuffer + dest_ofs;
 
 				if (d->bit_depth == 24) {
-					for (x=0; x<linelen && x <
+					for (x=0; x<(ssize_t)linelen && x <
 					    (int) sizeof(buf); x += 3) {
 						buf[x] = fill_r;
 						buf[x+1] = fill_g;

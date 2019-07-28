@@ -1,5 +1,5 @@
 .\"
-.\" Copyright (C) 2004-2012  Anders Gavare.  All rights reserved.
+.\" Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@
 .\"
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd SEPTEMBER 2010
+.Dd NOVEMBER 2018
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -48,7 +48,7 @@
 .Fl V
 .Nm
 .Fl H
-.Sh SYNOPSIS (LEGACY)
+.Sh SYNOPSIS (OLD FRAMEWORK)
 .Nm
 .Op machine, other, and general options
 .Op file Ar ...
@@ -72,7 +72,9 @@ controllers.
 Note: Only very few emulated machine modes have been rewritten to use the new
 emulation framework introduced in version 0.6.x, so there are two different
 ways to use the emulator. (Most emulation modes and machines are only valid
-in the old framework.) The options available for the new framework are:
+in the old framework.)
+.Pp
+The options available for the new framework are:
 .Pp
 .Bl -tag -width Ds
 .It Fl B
@@ -152,7 +154,7 @@ Here, the existing component name (the framebuffer) and the component to add
 .Sh RUNNING GUEST OPERATING SYSTEMS
 Please read the HTML documentation for more details on how to run complete
 guest operating systems in the emulator.
-.Sh DESCRIPTION (LEGACY)
+.Sh DESCRIPTION (OLD FRAMEWORK)
 The emulator can be invoked in the following ways:
 .Pp
 1. When emulating a complete machine, configuration options can be
@@ -509,7 +511,7 @@ For more information, please read the HTML documentation in the doc/
 subdirectory of the
 .Nm
 distribution.
-.Sh LEGACY EXAMPLES
+.Sh OLD FRAMEWORK EXAMPLES
 The following command will start NetBSD/pmax on an emulated DECstation 
 5000/200 (3MAX):
 .Pp
@@ -529,7 +531,7 @@ If you have compiled the small Hello World program mentioned in the
 documentation, the following command will start up an
 emulated test machine in "paused" mode:
 .Pp
-.Dl "gxemul -E testmips -V hello_mips"
+.Dl "gxemul -E oldtestmips -V hello_mips"
 .Pp
 Paused mode means that you enter the interactive single-step debugger
 directly at startup, instead of launching the Hello World program.
@@ -556,7 +558,8 @@ file in the
 .Nm
 source distribution, some are marked as TODO in the source code itself.
 .Pp
-Most emulation modes are LEGACY modes, which have not yet been rewritten
+Most emulation modes are legacy (Old framework)
+modes, which have not yet been rewritten
 to use the new framework. The documentation is most likely buggy, in the
 sense that it describes things from the old framework when the new one
 applies, and/or vice versa.
@@ -573,7 +576,7 @@ guest operating system's clock run at the same speed as the host clock.
 However, the number of instructions executed per clock tick can
 obviously vary, depending on the current CPU load on the host.
 .Sh AUTHOR
-GXemul is Copyright (C) 2003-2010  Anders Gavare <anders@gavare.se>
+GXemul is Copyright (C) 2003-2018  Anders Gavare <gavare@gmail.com>
 .Pp
 See http://gxemul.sourceforge.net/ for more information. For other Copyright
 messages, see the corresponding parts of the source code and/or

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2012  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -228,7 +228,7 @@ void internal_w(char *arg)
 static void usage(int longusage)
 {
 
-	printf("GXemul " VERSION "    " COPYRIGHT_MSG "\n" SECONDARY_MSG);
+	printf("GXemul " VERSION"    " COPYRIGHT_MSG"\n" SECONDARY_MSG);
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 
@@ -243,7 +243,7 @@ static void usage(int longusage)
 		printf("  -H           Display a list of available machine templates.\n");
 		printf("  -e name      Start with a machine based on template 'name'.\n");
 		printf("  -q           Quiet mode (suppress debug messages).\n");
-		printf("  -V           Start up in interactive mode, paused.\n");
+		printf("  -V           Start up in interactive debugging mode, paused.\n");
 		printf("\n");
 	}
 
@@ -257,7 +257,7 @@ static void usage(int longusage)
 		return;
 	}
 
-	printf("\n--------------------- The following are LEGACY options: ---------------------\n");
+	printf("\nThe following are options for the Old framework:\n");
 
 	printf("\nLegacy usage: %s [machine, other, and general options] [file "
 	    "[...]]\n", progname);
@@ -610,7 +610,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		quiet_mode = 0;
 
 	if (type == NULL && subtype == NULL &&
-	    (single_step == ENTER_SINGLE_STEPPING || argc > 0)) {
+	    (single_step == ENTER_SINGLE_STEPPING || (argc > 0 && argv[0][0] != '@'))) {
 		int res2 = 0;
 		{
 			GXemul gxemul;
@@ -837,7 +837,7 @@ int main(int argc, char *argv[])
 	}
 
 	/*  Print startup message:  */
-	debug("GXemul " VERSION "    " COPYRIGHT_MSG "\n" SECONDARY_MSG
+	debug("GXemul " VERSION"    " COPYRIGHT_MSG"\n" SECONDARY_MSG
 	    "Read the source code and/or documentation for other Copyright "
 	    "messages.\n\n");
 
@@ -932,3 +932,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+

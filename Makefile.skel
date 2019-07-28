@@ -66,4 +66,4 @@ clean_all: clean
 	rm -f src/promemul/Makefile src/include/Makefile
 	rm -f src/useremul/Makefile src/include/Makefile
 	rm -f src/console/Makefile src/symbol/Makefile
-
+	rm -f doc/machines.html doc/components.html doc/machines/machine_*.html

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2012  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -986,8 +986,7 @@ X(frsp)
 	/*  TODO: Signaling vs Quiet NaN  */
 	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
 	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
-	(*(uint64_t *)ic->arg[1]) =
-	    ieee_store_float_value(fl, IEEE_FMT_D, frb.nan);
+	(*(uint64_t *)ic->arg[1]) = ieee_store_float_value(fl, IEEE_FMT_D);
 }
 
 
@@ -1030,17 +1029,14 @@ X(fmul)
 	struct ieee_float_value fra;
 	struct ieee_float_value frc;
 	double result = 0.0;
-	int c, nan = 0;
+	int c;
 
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[2], &frc, IEEE_FMT_D);
-	if (fra.nan || frc.nan)
-		nan = 1;
-	else
-		result = fra.f * frc.f;
-	if (nan)
+	result = fra.f * frc.f;
+	if (isnan(result))
 		c = 1;
 	else {
 		if (result < 0.0)
@@ -1055,7 +1051,7 @@ X(fmul)
 	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
 
 	(*(uint64_t *)ic->arg[0]) =
-	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+	    ieee_store_float_value(result, IEEE_FMT_D);
 }
 X(fmuls)
 {
@@ -1079,18 +1075,15 @@ X(fmadd)
 	struct ieee_float_value frb;
 	struct ieee_float_value frc;
 	double result = 0.0;
-	int nan = 0, cc;
+	int cc;
 
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[b], &frb, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[c], &frc, IEEE_FMT_D);
-	if (fra.nan || frb.nan || frc.nan)
-		nan = 1;
-	else
-		result = fra.f * frc.f + frb.f;
-	if (nan)
+	result = fra.f * frc.f + frb.f;
+	if (isnan(result))
 		cc = 1;
 	else {
 		if (result < 0.0)
@@ -1105,7 +1098,7 @@ X(fmadd)
 	cpu->cd.ppc.fpscr |= (cc << PPC_FPSCR_FPCC_SHIFT);
 
 	(*(uint64_t *)ic->arg[0]) =
-	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+	    ieee_store_float_value(result, IEEE_FMT_D);
 }
 
 
@@ -1124,18 +1117,15 @@ X(fmsub)
 	struct ieee_float_value frb;
 	struct ieee_float_value frc;
 	double result = 0.0;
-	int nan = 0, cc;
+	int cc;
 
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[b], &frb, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[c], &frc, IEEE_FMT_D);
-	if (fra.nan || frb.nan || frc.nan)
-		nan = 1;
-	else
-		result = fra.f * frc.f - frb.f;
-	if (nan)
+	result = fra.f * frc.f - frb.f;
+	if (isnan(result))
 		cc = 1;
 	else {
 		if (result < 0.0)
@@ -1150,7 +1140,7 @@ X(fmsub)
 	cpu->cd.ppc.fpscr |= (cc << PPC_FPSCR_FPCC_SHIFT);
 
 	(*(uint64_t *)ic->arg[0]) =
-	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+	    ieee_store_float_value(result, IEEE_FMT_D);
 }
 
 
@@ -1166,17 +1156,14 @@ X(fadd)
 	struct ieee_float_value fra;
 	struct ieee_float_value frb;
 	double result = 0.0;
-	int nan = 0, c;
+	int c;
 
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-	if (fra.nan || frb.nan)
-		nan = 1;
-	else
-		result = fra.f + frb.f;
-	if (nan)
+	result = fra.f + frb.f;
+	if (isnan(result))
 		c = 1;
 	else {
 		if (result < 0.0)
@@ -1191,7 +1178,7 @@ X(fadd)
 	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
 
 	(*(uint64_t *)ic->arg[2]) =
-	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+	    ieee_store_float_value(result, IEEE_FMT_D);
 }
 X(fadds)
 {
@@ -1203,17 +1190,14 @@ X(fsub)
 	struct ieee_float_value fra;
 	struct ieee_float_value frb;
 	double result = 0.0;
-	int nan = 0, c;
+	int c;
 
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-	if (fra.nan || frb.nan)
-		nan = 1;
-	else
-		result = fra.f - frb.f;
-	if (nan)
+	result = fra.f - frb.f;
+	if (isnan(result))
 		c = 1;
 	else {
 		if (result < 0.0)
@@ -1228,7 +1212,7 @@ X(fsub)
 	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
 
 	(*(uint64_t *)ic->arg[2]) =
-	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+	    ieee_store_float_value(result, IEEE_FMT_D);
 }
 X(fsubs)
 {
@@ -1240,17 +1224,14 @@ X(fdiv)
 	struct ieee_float_value fra;
 	struct ieee_float_value frb;
 	double result = 0.0;
-	int nan = 0, c;
+	int c;
 
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-	if (fra.nan || frb.nan || frb.f == 0)
-		nan = 1;
-	else
-		result = fra.f / frb.f;
-	if (nan)
+	result = fra.f / frb.f;
+	if (isnan(result))
 		c = 1;
 	else {
 		if (result < 0.0)
@@ -1265,7 +1246,7 @@ X(fdiv)
 	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
 
 	(*(uint64_t *)ic->arg[2]) =
-	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+	    ieee_store_float_value(result, IEEE_FMT_D);
 }
 X(fdivs)
 {
@@ -2366,7 +2347,7 @@ X(lfs)
 		ieee_interpret_float_value(*(uint64_t *)ic->arg[0],
 		    &val, IEEE_FMT_S);
 		(*(uint64_t *)ic->arg[0]) =
-		    ieee_store_float_value(val.f, IEEE_FMT_D, val.nan);
+		    ieee_store_float_value(val.f, IEEE_FMT_D);
 	}
 }
 X(lfsx)
@@ -2396,7 +2377,7 @@ X(lfsx)
 		ieee_interpret_float_value(*(uint64_t *)ic->arg[0],
 		    &val, IEEE_FMT_S);
 		(*(uint64_t *)ic->arg[0]) =
-		    ieee_store_float_value(val.f, IEEE_FMT_D, val.nan);
+		    ieee_store_float_value(val.f, IEEE_FMT_D);
 	}
 }
 X(lfd)
@@ -2432,7 +2413,7 @@ X(stfs)
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*old_arg0, &val, IEEE_FMT_D);
-	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S, val.nan);
+	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S);
 
 	ic->arg[0] = (size_t)&tmp_val;
 
@@ -2455,7 +2436,7 @@ X(stfsx)
 	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*old_arg0, &val, IEEE_FMT_D);
-	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S, val.nan);
+	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S);
 
 	ic->arg[0] = (size_t)&tmp_val;
 
@@ -2780,7 +2761,7 @@ X(to_be_translated)
 		} else {
 			if (!cpu->translation_readahead)
 				fatal("[ TODO: Unimplemented ALTIVEC, iword"
-				    " = 0x%08" PRIx32 "x ]\n", iword);
+				    " = 0x%08" PRIx32"x ]\n", iword);
 			goto bad;
 		}
 		break;
@@ -3918,3 +3899,4 @@ X(to_be_translated)
 #include "cpu_dyntrans.cc"
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
+

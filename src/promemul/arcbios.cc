@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2012  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  COMMENT: ARCBIOS emulation
+ *  COMMENT: ARCBIOS and ARCS emulation
  */
 
 #include <stdio.h>
@@ -696,7 +696,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		uint64_t eparent, echild, epeer, tmp;
 		unsigned char buf[8];
 
-		/*  debug("[ addchild: peeraddr = 0x%016" PRIx64 " ]\n",
+		/*  debug("[ addchild: peeraddr = 0x%016" PRIx64" ]\n",
 		    (uint64_t) peeraddr);  */
 
 		cpu->memory_rw(cpu, cpu->mem,
@@ -741,7 +741,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		/*  debug("  epeer=%" PRIx64 " echild=%" PRIx64 " eparent=%" PRIx64
+		/*  debug("  epeer=%" PRIx64" echild=%" PRIx64" eparent=%" PRIx64
 		    "\n", (uint64_t) epeer, (uint64_t) echild,
 		    (uint64_t) eparent);  */
 
@@ -749,16 +749,16 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 			epeer = a;
 			store_64bit_word(cpu, peeraddr + 0 *
 			    machine->md.arc->wordlen, epeer);
-			/*  debug("[ addchild: adding 0x%016" PRIx64 " as peer "
-			    "to 0x%016" PRIx64 " ]\n", (uint64_t) a,
+			/*  debug("[ addchild: adding 0x%016" PRIx64" as peer "
+			    "to 0x%016" PRIx64" ]\n", (uint64_t) a,
 			    (uint64_t) peeraddr);  */
 		}
 		if (peeraddr == parent && echild == 0) {
 			echild = a;
 			store_64bit_word(cpu, peeraddr + 1 *
 			    machine->md.arc->wordlen, echild);
-			/*  debug("[ addchild: adding 0x%016" PRIx64 " as child "
-			    "to 0x%016" PRIx64 " ]\n", (uint64_t) a,
+			/*  debug("[ addchild: adding 0x%016" PRIx64" as child "
+			    "to 0x%016" PRIx64" ]\n", (uint64_t) a,
 			    (uint64_t) peeraddr);  */
 		}
 
@@ -866,8 +866,8 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		    machine->md.arc->next_component_address +
 		    (cpu->machine->md.arc->arc_64bit? 0x18 : 0x0c);
 
-		/*  printf("& ADDING %i: configdata=0x%016" PRIx64 " "
-		    "component=0x%016" PRIx64 "\n",
+		/*  printf("& ADDING %i: configdata=0x%016" PRIx64" "
+		    "component=0x%016" PRIx64"\n",
 		     machine->md.arc->n_configuration_data,
 		    (uint64_t) machine->md.arc->configuration_data_configdata[
 			machine->md.arc->n_configuration_data],
@@ -946,14 +946,14 @@ static void arcbios_get_msdos_partition_size(struct machine *machine,
 ugly_goto:
 	*start = 0; *size = 0;
 
-	/*  printf("reading MSDOS partition from offset 0x%" PRIx64 "\n",
+	/*  printf("reading MSDOS partition from offset 0x%" PRIx64"\n",
 	    (uint64_t) offset);  */
 
 	res = diskimage_access(machine, disk_id, disk_type, 0, offset,
 	    sector, sizeof(sector));
 	if (!res) {
 		fatal("[ arcbios_get_msdos_partition_size(): couldn't "
-		    "read the disk image, id %i, offset 0x%" PRIx64 " ]\n",
+		    "read the disk image, id %i, offset 0x%" PRIx64" ]\n",
 		    disk_id, (uint64_t) offset);
 		return;
 	}
@@ -1236,7 +1236,7 @@ int arcbios_emul(struct cpu *cpu)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
-		debug("[ ARCBIOS GetPeer(node 0x%016" PRIx64 "): 0x%016" PRIx64
+		debug("[ ARCBIOS GetPeer(node 0x%016" PRIx64"): 0x%016" PRIx64
 		    " ]\n", (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_V0]);
 		break;
@@ -1287,8 +1287,8 @@ int arcbios_emul(struct cpu *cpu)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t)cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
-		debug("[ ARCBIOS GetChild(node 0x%016" PRIx64 "): 0x%016"
-		    PRIx64 " ]\n", (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A0],
+		debug("[ ARCBIOS GetChild(node 0x%016" PRIx64"): 0x%016"
+		    PRIx64" ]\n", (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_V0]);
 		break;
 	case 0x2c:		/*  GetParent(node)  */
@@ -1336,19 +1336,19 @@ int arcbios_emul(struct cpu *cpu)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
-		debug("[ ARCBIOS GetParent(node 0x%016" PRIx64 "): 0x%016"
-		    PRIx64 " ]\n", (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A0],
+		debug("[ ARCBIOS GetParent(node 0x%016" PRIx64"): 0x%016"
+		    PRIx64" ]\n", (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_V0]);
 		break;
 	case 0x30:  /*  GetConfigurationData(void *configdata, void *node)  */
-		/*  fatal("[ ARCBIOS GetConfigurationData(0x%016" PRIx64 ","
-		    "0x%016" PRIx64 ") ]\n",
+		/*  fatal("[ ARCBIOS GetConfigurationData(0x%016" PRIx64","
+		    "0x%016" PRIx64") ]\n",
 		    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A1]);  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EINVAL;
 		for (i=0; i<machine->md.arc->n_configuration_data; i++) {
 			/*  fatal("configuration_data_component[%i] = "
-			    "0x%016" PRIx64 "\n", i, (uint64_t) machine->
+			    "0x%016" PRIx64"\n", i, (uint64_t) machine->
 			    md.arc->configuration_data_component[i]);  */
 			if (cpu->cd.mips.gpr[MIPS_GPR_A1] ==
 			    machine->md.arc->configuration_data_component[i]) {
@@ -1671,8 +1671,8 @@ int arcbios_emul(struct cpu *cpu)
 			arcbios_handle_to_start_and_size(machine,
 			    handleTmp, &partition_offset, &size);
 
-			debug("[ ARCBIOS Write(%i,0x%08" PRIx64 ",%i,0x%08"
-			    PRIx64 ") ]\n", (int) cpu->cd.mips.gpr[MIPS_GPR_A0],
+			debug("[ ARCBIOS Write(%i,0x%08" PRIx64",%i,0x%08"
+			    PRIx64") ]\n", (int) cpu->cd.mips.gpr[MIPS_GPR_A0],
 			    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A1],
 			    (int) cpu->cd.mips.gpr[MIPS_GPR_A2],
 			    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A3]);
@@ -1718,13 +1718,13 @@ int arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x70:	/*  Seek(uint32_t handle, int64_t *ofs,
 				 uint32_t whence): uint32_t  */
-		debug("[ ARCBIOS Seek(%i,0x%08" PRIx64 ",%i): ",
+		debug("[ ARCBIOS Seek(%i,0x%08" PRIx64",%i): ",
 		    (int) cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (uint64_t)cpu->cd.mips.gpr[MIPS_GPR_A1],
 		    (int) cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 		if (cpu->cd.mips.gpr[MIPS_GPR_A2] != 0) {
-			fatal("[ ARCBIOS Seek(%i,0x%08" PRIx64 ",%i): "
+			fatal("[ ARCBIOS Seek(%i,0x%08" PRIx64",%i): "
 			    "UNIMPLEMENTED whence=%i ]\n",
 			    (int) cpu->cd.mips.gpr[MIPS_GPR_A0],
 			    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A1],
@@ -1752,7 +1752,7 @@ int arcbios_emul(struct cpu *cpu)
 			    
 			machine->md.arc->current_seek_offset[
 			    cpu->cd.mips.gpr[MIPS_GPR_A0]] = ofs;
-			debug("%016" PRIx64 " ]\n", (uint64_t) ofs);
+			debug("%016" PRIx64" ]\n", (uint64_t) ofs);
 		}
 
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;	/*  Success.  */
@@ -1769,20 +1769,21 @@ int arcbios_emul(struct cpu *cpu)
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
+			uint64_t envptr = machine->machine_type == MACHINE_SGI ? ARC_ENV_STRINGS_SGI : ARC_ENV_STRINGS;
 			for (j=0; j<(ssize_t)strlen((char *)buf); j++) {
 				cpu->memory_rw(cpu, cpu->mem,
-				    (uint64_t)(ARC_ENV_STRINGS + i + j),
+				    (uint64_t)(envptr + i + j),
 				    &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
 			cpu->memory_rw(cpu, cpu->mem,
-			    (uint64_t)(ARC_ENV_STRINGS + i +
+			    (uint64_t)(envptr + i +
 			    strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_NONE);
 			if (nmatches == (int)strlen((char *)buf) && ch2=='=') {
 				cpu->cd.mips.gpr[MIPS_GPR_V0] =
-				    ARC_ENV_STRINGS + i +
+				    envptr + i +
 				    strlen((char *)buf) + 1;
 				return 1;
 			}
@@ -2257,23 +2258,39 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
 	}
 
+	store_pointer_and_advance(cpu, &addr2, 0, is64bit);
+
 	cpu->cd.mips.gpr[MIPS_GPR_A2] = addr2;
+
+	if (machine->machine_type == MACHINE_SGI) {
+		/*
+		 *  The SGI O2 PROM contains an "env" section header like this:
+		 *
+		 *  00004000  00 00 00 00 00 00 00 00  53 48 44 52 00 00 04 00  |........SHDR....|
+		 *  00004010  03 03 00 00 65 6e 76 00  00 00 00 00 00 00 00 00  |....env.........|
+		 *  00004020  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+		 *  00004030  00 00 00 00 31 2e 30 00  00 00 00 00 13 18 11 ae  |....1.0.........|
+		 *
+		 *  followed by environment variables at 0x4000. It is not required
+		 *  by NetBSD/OpenBSD/Linux, but Irix seems to hardcodedly look into
+		 *  the PROM address space for this header.
+		 */
+		store_32bit_word(cpu, ARC_ENV_SGI + 0x08, 0x53484452);
+		store_32bit_word(cpu, ARC_ENV_SGI + 0x0c, 0x00000400);
+		store_32bit_word(cpu, ARC_ENV_SGI + 0x10, 0x03030000);
+		store_32bit_word(cpu, ARC_ENV_SGI + 0x14, 0x656e7600);
+		store_32bit_word(cpu, ARC_ENV_SGI + 0x34, 0x312e3000);
+		store_32bit_word(cpu, ARC_ENV_SGI + 0x3c, 0x131811ae);
+		addr = ARC_ENV_STRINGS_SGI;
+	}
 
 	/*
 	 *  Add environment variables.  For each variable, add it
 	 *  as a string using add_environment_string(), and add a
 	 *  pointer to it to the ARC_ENV_POINTERS array.
 	 */
-	if (machine->x11_md.in_use) {
-		if (machine->machine_type == MACHINE_ARC) {
-			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-			add_environment_string(cpu,
-			    "CONSOLEIN=multi()key()keyboard()console()", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-			add_environment_string(cpu,
-			    "CONSOLEOUT=multi()video()monitor()console()",
-			    &addr);
-		} else {
+	if (machine->machine_type == MACHINE_SGI) {
+		if (machine->x11_md.in_use) {
 			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 			add_environment_string(cpu, "ConsoleIn=keyboard()",
 			    &addr);
@@ -2285,16 +2302,9 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 			    with SGI logo visible on Irix?  */
 			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 			add_environment_string(cpu, "console=g", &addr);
-		}
-	} else {
-		if (machine->machine_type == MACHINE_ARC) {
-			/*  TODO: serial console for ARC?  */
+
 			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-			add_environment_string(cpu,
-			    "CONSOLEIN=multi()serial(0)", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-			add_environment_string(cpu,
-			    "CONSOLEOUT=multi()serial(0)", &addr);
+			add_environment_string(cpu, "gfx=alive", &addr);
 		} else {
 			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 			add_environment_string(cpu, "ConsoleIn=serial(0)",
@@ -2306,14 +2316,54 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 			/*  'd' or 'd2' in Irix, 'ttyS0' in Linux?  */
 			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 			add_environment_string(cpu, "console=d", &addr);
-		}
-	}
 
-	if (machine->machine_type == MACHINE_SGI) {
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu, "gfx=dead", &addr);
+		}
+
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "AutoLoad=No", &addr);
-		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-		add_environment_string(cpu, "diskless=0", &addr);
+		
+		if (machine->bootdev_id < 0 || machine->force_netboot) {
+			/*
+			 *  diskless=1 means boot from network disk? (nfs?)
+			 *  diskless=2 means boot from network tape?
+			 */
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu, "diskless=1", &addr);
+
+			// store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			// add_environment_string(cpu, "tapedevice=bootp()10.0.0.2:/dev/tape", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu, "bootfile=bootp()10.0.0.2:/var/boot/client/unix", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "SystemPartition=bootp()10.0.0.2:/var/boot/client",
+			    &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "root=xyz",
+			    &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "OSLoadPartition=bootp()10.0.0.2:/var/boot/client",
+			    &addr);
+		} else {
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu, "diskless=0", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "SystemPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(8)",
+			    &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "OSLoadPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(0)",
+			    &addr);
+		}
+
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "volume=80", &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
@@ -2326,21 +2376,14 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "nogfxkbd=1", &addr);
 
-		/*  TODO: 'xio(0)pci(15)scsi(0)disk(1)rdisk(0)partition(0)'
-		    on IP30 at least  */
+		/*  TODO IP30: 'xio(0)pci(15)scsi(0)disk(1)rdisk(0)partition(0)'  */
 
-		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-		add_environment_string(cpu,
-		    "SystemPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(8)",
-		    &addr);
-		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-		add_environment_string(cpu,
-		    "OSLoadPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(0)",
-		    &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "OSLoadFilename=/unix", &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "OSLoader=sash", &addr);
+		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+		add_environment_string(cpu, "kernname=unix", &addr);
 
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "rbaud=9600", &addr);
@@ -2350,6 +2393,12 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		add_environment_string(cpu, "crt_option=1", &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
+		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+		add_environment_string(cpu, "netmask=255.0.0.0", &addr);
+		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+		add_environment_string(cpu, "dlserver=10.0.0.2", &addr);
+		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+		add_environment_string(cpu, "srvaddr=10.0.0.2", &addr);
 
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "keybd=US", &addr);
@@ -2360,14 +2409,17 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		add_environment_string(cpu, "dbaud=9600", &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, primary_ether_addr, &addr);
+
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-		add_environment_string(cpu, "verbose=istrue", &addr);
+		add_environment_string(cpu, "verbose=1", &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-		add_environment_string(cpu, "showconfig=istrue", &addr);
+		// showconfig 0 means don't show. 1 means show some.
+		// 2 means show more. TODO: higher values?
+		add_environment_string(cpu, "showconfig=255", &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
 		add_environment_string(cpu, "diagmode=v", &addr);
 		store_pointer_and_advance(cpu, &addr2, addr, is64bit);
-		add_environment_string(cpu, "kernname=unix", &addr);
+		add_environment_string(cpu, "debug_bigmem=1", &addr);
 	} else {
 		char *tmp;
 		size_t mlen = ARC_BOOTSTR_BUFLEN;
@@ -2383,6 +2435,24 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		    machine->bootdev_id);
 		add_environment_string(cpu, tmp, &addr);
 		free(tmp);
+
+		if (machine->x11_md.in_use) {
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "CONSOLEIN=multi()key()keyboard()console()", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "CONSOLEOUT=multi()video()monitor()console()",
+			    &addr);
+		} else {
+			/*  TODO: serial console for ARC?  */
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "CONSOLEIN=multi()serial(0)", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, is64bit);
+			add_environment_string(cpu,
+			    "CONSOLEOUT=multi()serial(0)", &addr);
+		}
 	}
 
 	/*  End the environment strings with an empty zero-terminated
@@ -2456,7 +2526,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		machine->md.arc->console_curx = 0;
 		machine->md.arc->console_cury = 0;
 
-		arcbios_putstring(cpu, "GXemul " VERSION "  ARCBIOS emulation\n");
+		arcbios_putstring(cpu, "GXemul " VERSION"  ARCBIOS emulation\n");
 
 		snprintf(tmpstr, sizeof(tmpstr), "%i cpu%s (%s), %i MB "
 		    "memory\n\n", machine->ncpus, machine->ncpus > 1? "s" : "",
@@ -2609,7 +2679,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 
 	system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass,
 	    COMPONENT_TYPE_ARC, 0,1,2,0, 0xffffffff, name, 0/*ROOT*/, NULL, 0);
-	debug("ARC system @ 0x%" PRIx64 " (\"%s\")\n", (uint64_t) system, name);
+	debug("ARC system @ 0x%" PRIx64" (\"%s\")\n", (uint64_t) system, name);
 
 
 	/*
@@ -2723,15 +2793,15 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 		debug("ARC cpu%i @ 0x%" PRIx64, i, (uint64_t) cpuaddr);
 
 		if (fpu != 0)
-			debug(" (fpu @ 0x%" PRIx64 ")\n", (uint64_t) fpu);
+			debug(" (fpu @ 0x%" PRIx64")\n", (uint64_t) fpu);
 		else
 			debug("\n");
 
-		debug("    picache @ 0x%" PRIx64 ", pdcache @ 0x%" PRIx64 "\n",
+		debug("    picache @ 0x%" PRIx64", pdcache @ 0x%" PRIx64"\n",
 		    (uint64_t) picache, (uint64_t) pdcache);
 
 		if (cpu->cd.mips.cache_secondary >= 12)
-			debug("    sdcache @ 0x%" PRIx64 "\n",
+			debug("    sdcache @ 0x%" PRIx64"\n",
 			    (uint64_t) sdcache);
 
 		if (machine->machine_type == MACHINE_SGI) {
@@ -2740,7 +2810,7 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 			    COMPONENT_CLASS_MemoryClass,
 			    COMPONENT_TYPE_MemoryUnit, 0, 1, 2, 0,
 			    0xffffffff, "memory", cpuaddr, NULL, 0);
-			debug("ARC memory @ 0x%" PRIx64 "\n", (uint64_t) memory);
+			debug("ARC memory @ 0x%" PRIx64"\n", (uint64_t) memory);
 		}
 	}
 
@@ -2847,3 +2917,4 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 
 	arc_environment_setup(machine, is64bit, primary_ether_addr);
 }
+

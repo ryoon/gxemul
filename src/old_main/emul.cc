@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -565,11 +565,16 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			break;
 
 		case ARCH_ARM:
-			if (cpu->pc & 3) {
-				fatal("ARM: lowest bits of pc set: TODO\n");
+			if (cpu->pc & 2) {
+				fatal("ARM: misaligned pc: TODO\n");
 				exit(1);
 			}
-			cpu->pc &= 0xfffffffc;
+
+			cpu->pc = (uint32_t)cpu->pc;
+
+			// Lowest bit of PC indicates THUMB mode.
+			if (cpu->pc & 1)
+				cpu->cd.arm.cpsr |= ARM_FLAG_T;
 			break;
 
 		case ARCH_M88K:
@@ -661,14 +666,14 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			debug("0x%08" PRIx32, (uint32_t)
 			    m->cpus[m->bootstrap_cpu]->pc);
 			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
-				debug(" (gp=0x%08" PRIx32 ")", (uint32_t)
+				debug(" (gp=0x%08" PRIx32")", (uint32_t)
 				    m->cpus[m->bootstrap_cpu]->cd.mips.gpr[
 				    MIPS_GPR_GP]);
 		} else {
 			debug("0x%016" PRIx64, (uint64_t)
 			    m->cpus[m->bootstrap_cpu]->pc);
 			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
-				debug(" (gp=0x%016" PRIx64 ")", (uint64_t)
+				debug(" (gp=0x%016" PRIx64")", (uint64_t)
 				    cpu->cd.mips.gpr[MIPS_GPR_GP]);
 		}
 		break;
@@ -783,15 +788,13 @@ void emul_run(struct emul *emul)
 
 	atexit(fix_console);
 
-	printf("\nNOTE: This is a LEGACY emulation mode.\n\n");
-
 	if (emul == NULL) {
-		printf("No emulation defined. Aborting.\n");
+		fatal("No emulation defined. Aborting.\n");
 		return;
 	}
 
 	if (emul->n_machines == 0) {
-		printf("No machine(s) defined. Aborting.\n");
+		fatal("No machine(s) defined. Aborting.\n");
 		return;
 	}
 
@@ -926,3 +929,4 @@ void emul_run(struct emul *emul)
 
 	console_deinit_main();
 }
+

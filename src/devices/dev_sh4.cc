@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -115,6 +115,7 @@ struct sh4_data {
 	/*  Bus State Controller:  */
 	uint32_t	bsc_bcr1;
 	uint16_t	bsc_bcr2;
+	uint16_t	bsc_bcr3;	/*  SH7751R  */
 	uint32_t	bsc_wcr1;
 	uint32_t	bsc_wcr2;
 	uint32_t	bsc_wcr3;
@@ -844,7 +845,7 @@ DEVICE_ACCESS(sh4_pcic)
 		/*  Hardcoded to what OpenBSD/landisk uses:  */
 		if (writeflag == MEM_WRITE && idata != 0xac000000) {
 			fatal("sh4_pcic: SH4_PCICONF5 unknown value"
-			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			    " 0x%" PRIx32"\n", (uint32_t) idata);
 			exit(1);
 		}
 		break;
@@ -853,7 +854,7 @@ DEVICE_ACCESS(sh4_pcic)
 		/*  Hardcoded to what OpenBSD/landisk uses:  */
 		if (writeflag == MEM_WRITE && idata != 0x8c000000) {
 			fatal("sh4_pcic: SH4_PCICONF6 unknown value"
-			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			    " 0x%" PRIx32"\n", (uint32_t) idata);
 			exit(1);
 		}
 		break;
@@ -862,7 +863,7 @@ DEVICE_ACCESS(sh4_pcic)
 		/*  Hardcoded to what OpenBSD/landisk uses:  */
 		if (writeflag == MEM_WRITE && idata != ((64 - 1) << 20)) {
 			fatal("sh4_pcic: SH4_PCILSR0 unknown value"
-			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			    " 0x%" PRIx32"\n", (uint32_t) idata);
 			exit(1);
 		}
 		break;
@@ -871,7 +872,7 @@ DEVICE_ACCESS(sh4_pcic)
 		/*  Hardcoded to what OpenBSD/landisk uses:  */
 		if (writeflag == MEM_WRITE && idata != 0xac000000) {
 			fatal("sh4_pcic: SH4_PCILAR0 unknown value"
-			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			    " 0x%" PRIx32"\n", (uint32_t) idata);
 			exit(1);
 		}
 		break;
@@ -880,7 +881,7 @@ DEVICE_ACCESS(sh4_pcic)
 		/*  Hardcoded to what OpenBSD/landisk uses:  */
 		if (writeflag == MEM_WRITE && idata != ((64 - 1) << 20)) {
 			fatal("sh4_pcic: SH4_PCILSR1 unknown value"
-			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			    " 0x%" PRIx32"\n", (uint32_t) idata);
 			exit(1);
 		}
 		break;
@@ -889,15 +890,15 @@ DEVICE_ACCESS(sh4_pcic)
 		/*  Hardcoded to what OpenBSD/landisk uses:  */
 		if (writeflag == MEM_WRITE && idata != 0xac000000) {
 			fatal("sh4_pcic: SH4_PCILAR1 unknown value"
-			    " 0x%"PRIx32"\n", (uint32_t) idata);
+			    " 0x%" PRIx32"\n", (uint32_t) idata);
 			exit(1);
 		}
 		break;
 
 	case SH4_PCIMBR:
 		if (writeflag == MEM_WRITE && idata != SH4_PCIC_MEM) {
-			fatal("sh4_pcic: PCIMBR set to 0x%"PRIx32", not"
-			    " 0x%"PRIx32"? TODO\n", (uint32_t) idata,
+			fatal("sh4_pcic: PCIMBR set to 0x%" PRIx32", not"
+			    " 0x%" PRIx32"? TODO\n", (uint32_t) idata,
 			    (uint32_t) SH4_PCIC_MEM);
 			exit(1);
 		}
@@ -905,8 +906,8 @@ DEVICE_ACCESS(sh4_pcic)
 
 	case SH4_PCIIOBR:
 		if (writeflag == MEM_WRITE && idata != SH4_PCIC_IO) {
-			fatal("sh4_pcic: PCIIOBR set to 0x%"PRIx32", not"
-			    " 0x%"PRIx32"? TODO\n", (uint32_t) idata,
+			fatal("sh4_pcic: PCIIOBR set to 0x%" PRIx32", not"
+			    " 0x%" PRIx32"? TODO\n", (uint32_t) idata,
 			    (uint32_t) SH4_PCIC_IO);
 			exit(1);
 		}
@@ -982,7 +983,7 @@ DEVICE_ACCESS(sh4)
 			d->sdmr3 = v;
 		else
 			d->sdmr2 = v;
-		debug("[ sh4: sdmr%i set to 0x%04"PRIx16" ]\n",
+		debug("[ sh4: sdmr%i set to 0x%04" PRIx16" ]\n",
 		    relative_addr & 0x00040000? 3 : 2, v);
 		return 1;
 	}
@@ -1235,7 +1236,7 @@ DEVICE_ACCESS(sh4)
 			if (idata & (TCR_ICPF | TCR_ICPE1 | TCR_ICPE0 |
 			    TCR_CKEG1 | TCR_CKEG0 | TCR_TPSC2)) {
 				fatal("Unimplemented SH4 timer control"
-				    " bits: 0x%08"PRIx32". Aborting.\n",
+				    " bits: 0x%08" PRIx32". Aborting.\n",
 				    (int) idata);
 				exit(1);
 			}
@@ -1361,6 +1362,17 @@ DEVICE_ACCESS(sh4)
 			d->bsc_bcr2 = idata & 0x3ffd;
 		else
 			odata = d->bsc_bcr2;
+		break;
+
+	case SH4_BCR3:
+		if (len != sizeof(uint16_t)) {
+			fatal("Non-16-bit SH4_BCR3 access?\n");
+			exit(1);
+		}
+		if (writeflag == MEM_WRITE)
+			d->bsc_bcr3 = idata;
+		else
+			odata = d->bsc_bcr3;
 		break;
 
 	case SH4_WCR1:
@@ -1703,8 +1715,8 @@ DEVICE_ACCESS(sh4)
 
 	case SH4_SCIF_BASE + SCIF_FDR:
 		/*  Nr of bytes in the TX and RX fifos, respectively:  */
-		odata = console_charavail(d->scif_console_handle) |
-		    (d->scif_tx_fifo_cursize << 8);
+		odata = (console_charavail(d->scif_console_handle)? 1 : 0)
+		    + (d->scif_tx_fifo_cursize << 8);
 		break;
 
 	case SH4_SCIF_BASE + SCIF_SPTR:
@@ -1875,7 +1887,7 @@ DEVINIT(sh4)
 	 *  0xf4000000	SH4_CCDA	D-Cache address array
 	 *  0xf5000000	SH4_CCDD	D-Cache data array
 	 *
-	 *  TODO: Implement more correct cache behaviour?
+	 *  TODO: Implement more correct cache behavior?
 	 */
 
 	dev_ram_init(machine, SH4_CCIA, SH4_ICACHE_SIZE * 2, DEV_RAM_RAM, 0x0);

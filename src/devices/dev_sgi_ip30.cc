@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  COMMENT: SGI IP30 stuff
+ *  COMMENT: SGI IP30 ("Octane") stuff
  *
  *  NOTE/TODO: This is just comprised of hardcoded guesses so far. (Ugly.)
  */

@@ -15,24 +15,25 @@
 <a href="./">Back to the index.</a>
 
 
-<p>Because of severe lack of spare time that can be allocated to the GXemul
-project, the first 0.6.x releases will most likely not be very meaningful to
-end-users, since almost all old features will be deprecated/legacy features,
-and the new features will only work with <tt>testm88k</tt> (which most users
-will not care about), or other partially implemented emulation modes.
-Still, it feels like the way to go forward.
+<p><br>
+Here are some things, in no specific order, that I'd like to fix or
+implement in GXemul. (Some items in this list are perhaps already fixed.)
 
-<p>(The name "0.5.x" was skipped. This was the C++ version that was supposed
-to be a complete rewrite from scratch, with no legacy mode support.
-There was not enough spare time.)
+<p>This list is split between the new framework (written in C++, version 0.6),
+and the older framework which was written in C.
+
+<p>
+<ul>
+	<li><a href="#new">New framework</a>
+	<li><a href="#legacy">Legacy framework</a>
+	<p>
+	<li><a href="#release">Release checklist</a>
+</ul>
 
 
-<p><pre>
+<p><br><h4><a name="new">New framework</a></h4>
 
-Some things, in no specific order, that I'd like to fix:
-(Some items in this list are perhaps already fixed.)
-
-<i>Legend:
+<p><pre><i>Legend:
 
 [ ] = not started yet, or just planning/thinking about it
 [/] = started, either "on paper" or actual implementation
@@ -256,6 +257,17 @@ Some things, in no specific order, that I'd like to fix:
 	     the 16-bit-encoded variant of the rectangle drawing demo (on both
 	     64-bit and 32-bit emulated CPUs).
 	[ ]  All the other devices (interrupts, ethernet, serial, SMP, ...)
+
+  [ ]   Intel i960 CPU and machine modes.
+
+	[/]  i960 instruction disassembly.
+		[X]  i960CA
+
+	[ ]  i960 instruction execution.
+
+  	[ ]  HP 700/RX emulation.
+
+  	[ ]  Cyclone/VH i960 evaluation board emulation (for uClinux/i960).
 
   [ ]	SPARC64? Would be nice; multithreaded Niagara emulation etc.
 
@@ -749,29 +761,35 @@ Some things, in no specific order, that I'd like to fix:
 	[ ]  errno emulation layer
 	[ ]  ioctl emulation layer for all devices :-[
 	[ ]  struct conversions for many syscalls
+</pre>
 
 
 
--------------------------------------------------------------------------------
 
-NOTE: MOST of the stuff below are from pre-0.6.0, so the comments may be
-      a bit out of date, or more likely, only correspond to the LEGACY parts
-      of the code.
-      
-      The long-term goal is to rewrite everything using the new framework,
-      and therefore the comments below will either be incorporated in the
-      rewrite, or they are not applicable any longer.
+<p><br><h4><a name="legacy">Legacy framework</a></h4>
 
--------------------------------------------------------------------------------
+<p><pre>Legacy-mode Debugger:
+	Extend the
+		put [b|h|w|d|q] addr, data    modify emulated memory contents
+	command with a "s" (string) mode, where data is a string. Also
+	"z" which puts a nul-terminated string in memory. It should put the
+	string there one byte at a time.
+	
+		put s 0x80008000, "apa"
+
+	or
+
+		put z 0x80008000, "apa"
 
 
+	Extend the debugger with a "find" command as well, similar to
+	put but with a range?
+
+		find [b|h|w|d|q|s|z] startaddr, endaddr, data
 
 MIPS:
+	o)  Floating point exception correctness. Compare to real hardware!
 	o)  Nicer MIPS status bits in register dumps.
-	o)  Floating point exception correctness.
-	o)  Fix this? Triggered by NetBSD/sgimips? Hm:
-		to_be_translated(): TODO: unimplemented instruction:
-		000000000065102c: 00200800 (d)  rot_00  at,zr,0
 	o)  Some more work on opcodes.
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
@@ -779,10 +797,7 @@ MIPS:
 			o)  DROTR32 and similar MIPS64 rev 2 instructions,
 			    which have a rotation bit which differs from
 			    previous ISAs.
-		x) _MAYBE_ TX79 and R5900 actually differ in their
-		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
-	o)  (Re)implement 128-bit loads/stores for R5900.
 	o)  Coprocessor 1x (i.e. 3) should cause cp1 exceptions, not 3?
 		(See http://lists.gnu.org/archive/html/qemu-devel/2007-05/msg00005.html)
 	o)  R4000 and others:
@@ -799,10 +814,8 @@ MIPS:
 		    Then test with OpenBSD/sgi?
 		x)  Entry LO mask (as above).
 		x)  memory space, exceptions, ...
-		x)  use cop0 framemask for tlb lookups
+		x)  use cop0 framemask for tlb lookups [maybe already working correctly?]
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
-	o)  Playstation 2 with NetBSD? Perhaps USB keyboard is a big step
-	    on the way to running the whole OS. (?)
 
 SuperH:
 	x)  Auto-generation of loads/stores! This should get rid of at least
@@ -832,7 +845,7 @@ SuperH:
 	    this mechanism for its reboot code (machine_reset).
 
 Dreamcast:
-	x)  Try to make the ROM from my real Dreamcast boot.
+	x)  Try to make the ROM from my real Dreamcast boot correctly.
 	x)  PVR:  Lots of stuff. See dev_pvr.c.
 		x)  DMA to non-0x10000000
 		x)  Textures...
@@ -901,25 +914,91 @@ Malta:
 		2. Implement the NIC.
 
 SGI O2:
-	Play around with the SGI O2 PROM image again, from the real O2.
+	differences between real hardware and NetBSD's header files?
 
-	0.3.7: Ok, starts up with graphics (_IF_ the cache detection is skipped)
+		RED/GREEN LED: 1 on real hardware turns off, not on!
 
-	20051112: Ok with graphics
-	20051127: Ok
-	20051201: Ok			-- Somewhere between 20051201 and 20051203
-	20051203: Not work.		   I apparently lost the graphical boot
-	20051211: Does NOT work.
+		nr of bits for the tile ptr
 
-	0.3.8: Boots but switches to serial console ("could not open console") (also with
-	       cache detection skipped manually)
-	0.4.0: The cache detection breakpoint is not triggered :(
+		20008 vs 30008 in crmfb?
+
+		CRMFB_CMAP_OVL = 0x00051400. should be 0x54400? for "color map 17" for overlays?
+
+		crime time bit mask?
+
+		NetBSD's crmfb.c crmfb_set_palette says rgb in reverse maybe?:
+			val = (r &lt;&lt; 8) | (g &lt;&lt; 16) | (b &lt;&lt; 24)
+
+	clocks:
+		Both NetBSD and OpenBSD drift over time.
+
+	bus_pci / O2's pci:
+		reconfigurable memory space redirect?
+		ahc scsi controller! this will be very time consuming.
+		http://mail-index.netbsd.org/port-sgimips/2015/09/24/msg000711.html
+			has some "pcictl pci0 dump -d 1" output which may be worth comparing against.
+
+	ds2502_get_eaddr: ds2502_read_rom failed!
+		PROM complains during bootup. Needed to get further with bootp() diskless booting.
+		Onewire protocol that depends on microsecond timing?
+
+	netbsd starts in "enter pathname of shell" mode; should start netbooting
+		in a more automated fashion?
+
+	netbsd randomly quits 'startx' without showing anything?
+		sometimes also randomly places windows differently.
+
+	ps2 8242:
+		openbsd's X11 doesn't detect keyboard/mouse?
+
+	PROM in GXemul says "SGI-CRM, Rev B", but my real O2 says Rev C?
+
+	graphics:
+		allow other resolutions than 1280x1024? netbsd seems to support it (?).
+
+		netbsd maybe still triggers some acceleration bugs when moving X11 windows?
+		
+		horrible_getputpixel:
+			GBE_CMODE_RGB10 etc from openbsd's header file?
+			performance?
+
+		actually emulate "pipeline" and detect pipeline overruns,
+			i.e. require guest OSes to wait? but then, when to
+			execute commands in the pipeline? (low-prio)
+			get -w 0xb5004000:
+						LEVEL	RD_PTR	WR_PTR	BUF_START
+				0x1e029a68	00	29	29	28
+				0x1e02baea	00	2b	2b	2a
+				0x1e03befa	00	3b	3b	3a
+				0x1e029a68	00	29	29	28
+				0x1e00a289	00	0a	0a	09
+				0x1e03df7c	00	3d	3d	3c
+				0x1e00003f	00	00	00	3f
+				0x1e02fbee	00	2f	2f	2e
+				0x1e02cb2b	00	2c	2c	2b
+				0x1e00b2ca	00	0b	0b	0a
+				0x1e008207	00	08	08	07
+				0x1e = all idle
+
+		i2c vga data, for NetBSD etc.
+		3D graphics? i.e. depth buffers, triangles, etc.
+
+	audio?
+		would be the first audio related thing in gxemul...
+
+	VICE?
+
+	video? probably too complicated.
 
 HPCmips:
 	x)  Mouse/pad support! :)
 	x)  A NIC? (As a PCMCIA device?)
 
 ARM:
+	o)  Big endian does not really work: loads and stores are little endian!
+	o)  THUMB disassembly
+	o)  THUMB execution
+	o)  0xf "condition" execution: see http://engold.ui.ac.ir/~nikmehr/Appendix_B2.pdf
 	o)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
 	o)  Generic ARM "wait"-like instruction?
@@ -1120,39 +1199,34 @@ is kept here, so that the same mistakes may be avoided in the rewrite.]
 		    emulator)
 	o)  Generalize the framebuffer stuff by moving _ALL_ X11
 		specific code to a separate module.
-
-Release checklist:
-	Build on as many platforms as possible.
-	Install as many as possible of the Guest OSes in the documentation;
-		the documentation may need to be updated if there are
-		regressions. (This can take a whole day.)
-	Update the README file.
-	Update the RELEASE NOTES.
-	TODO updates (i.e. set goals for the _next_ release, if possible).
-	HISTORY (mention the release).
-	SVN branch/tag.
-	Send SVN dump to Sourceforge.
-	Tarball creation (make_release.sh)
-	Home page update: version numbers, architectures?
-	Home page News page update: new Release.
-	sync homepage to sourceforge
-	#GXemul on FreeNode (IRC): version number in topic
-	Sourceforge File Release (upload the tarball).
-	gxemul-users mail
-	Freshmeat
-	Wikipedia page (version number and date, possibly architectures update,
-		or description update).
-		https://secure.wikimedia.org/wikipedia/en/wiki/GXemul
-	Send mail to package maintainers (if they are not subscribed
-		to the mailing list(s))
-	If new arch:
-		Linux-MIPS wiki page
-		https://secure.wikimedia.org/wikipedia/en/wiki/Comparison_of_platform_virtual_machines
-		Ohloh description page
-		gavare.se main page
-
--------------------------------------------------------------------------------
 </pre>
+
+
+
+
+<p><br><h4><a name="release">Release checklist</a></h4>
+
+<p><ul>
+	<li>Build on as many platforms as possible, including inside guest
+		OSes in GXemul itself.
+	<li>If there is time: Install as many as possible of the guest OSes in the documentation;
+		the documentation may need to be updated if there are
+		regressions.
+	<li>If there is even more time: see what the status is for the "unsupported"
+		guest OSes as well.
+	<li>Update the <tt>README</tt> and <tt>RELEASE</tt> notes.
+	<li>TODO updates (i.e. set goals for the <i>next</i> release, if possible).
+	<li>HISTORY (mention the release).
+	<li>SVN branch/tag.
+	<li>Tarball creation (make_release.sh)
+	<li>Home page <i>Download page</i> update: version number and date.
+	<li>Home page <i>News page</i> update: new Release.
+	<li>Sync the homepage to the web server.
+	<li>Mention release on #GXemul on FreeNode (IRC), set version number in topic if possible.
+	<li>Sourceforge File Release (upload the tarball).
+	<li>gxemul-users mail, content similar to the RELEASE notes.
+</ul>
+
 </body>
 </html>
 

@@ -673,3 +673,4 @@ int decstation_prom_emul(struct cpu *cpu)
 
 	return 1;
 }
+

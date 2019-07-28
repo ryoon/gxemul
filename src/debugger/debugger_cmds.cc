@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -201,7 +201,7 @@ static void debugger_cmd_device(struct machine *m, char *cmd_line)
 			printf("No memory-mapped devices in this machine.\n");
 
 		for (i=0; i<mem->n_mmapped_devices; i++) {
-			printf("%2i: %25s @ 0x%011" PRIx64 ", len = 0x%" PRIx64,
+			printf("%2i: %25s @ 0x%011" PRIx64", len = 0x%" PRIx64,
 			    i, mem->devices[i].name,
 			    (uint64_t) mem->devices[i].baseaddr,
 			    (uint64_t) mem->devices[i].length);
@@ -313,9 +313,9 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 		    MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 
 		if (c->is_32bit)
-			printf("0x%08" PRIx32 "  ", (uint32_t) addr);
+			printf("0x%08" PRIx32"  ", (uint32_t) addr);
 		else
-			printf("0x%016" PRIx64 "  ", (uint64_t) addr);
+			printf("0x%016" PRIx64"  ", (uint64_t) addr);
 
 		if (r == MEMORY_ACCESS_FAILED)
 			printf("(memory access failed)\n");
@@ -491,9 +491,9 @@ static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
 		}
 		printf("%s = 0x", cmd_line);
 		if (m->cpus[0]->is_32bit)
-			printf("%08" PRIx32 "\n", (uint32_t) newaddr);
+			printf("%08" PRIx32"\n", (uint32_t) newaddr);
 		else
-			printf("%016" PRIx64 "\n", (uint64_t) newaddr);
+			printf("%016" PRIx64"\n", (uint64_t) newaddr);
 		return;
 	}
 
@@ -636,16 +636,16 @@ static void debugger_cmd_print(struct machine *m, char *cmd_line)
 		printf("Multiple matches. Try prefixing with %%, $, or @.\n");
 		break;
 	case PARSE_SETTINGS:
-		printf("%s = 0x%" PRIx64 "\n", cmd_line, (uint64_t)tmp);
+		printf("%s = 0x%" PRIx64"\n", cmd_line, (uint64_t)tmp);
 		break;
 	case PARSE_SYMBOL:
 		if (m->cpus[0]->is_32bit)
-			printf("%s = 0x%08" PRIx32 "\n", cmd_line, (uint32_t)tmp);
+			printf("%s = 0x%08" PRIx32"\n", cmd_line, (uint32_t)tmp);
 		else
-			printf("%s = 0x%016" PRIx64 "\n", cmd_line,(uint64_t)tmp);
+			printf("%s = 0x%016" PRIx64"\n", cmd_line,(uint64_t)tmp);
 		break;
 	case PARSE_NUMBER:
-		printf("0x%" PRIx64 "\n", (uint64_t) tmp);
+		printf("0x%" PRIx64"\n", (uint64_t) tmp);
 		break;
 	}
 }
@@ -759,7 +759,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 			printf("0x%016" PRIx64, (uint64_t) addr);
 		printf(": %02x", a_byte);
 		if (data > 255)
-			printf(" (NOTE: truncating %0" PRIx64 ")",
+			printf(" (NOTE: truncating %0" PRIx64")",
 			    (uint64_t) data);
 		res = m->cpus[0]->memory_rw(m->cpus[0], m->cpus[0]->mem, addr,
 		    &a_byte, 1, MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
@@ -776,7 +776,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 			printf("0x%016" PRIx64, (uint64_t) addr);
 		printf(": %04x", (int)data);
 		if (data > 0xffff)
-			printf(" (NOTE: truncating %0" PRIx64 ")",
+			printf(" (NOTE: truncating %0" PRIx64")",
 			    (uint64_t) data);
 		res = store_16bit_word(m->cpus[0], addr, data);
 		if (!res)
@@ -795,7 +795,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 
 		if (data > 0xffffffff && (data >> 32) != 0
 		    && (data >> 32) != 0xffffffff)
-			printf(" (NOTE: truncating %0" PRIx64 ")",
+			printf(" (NOTE: truncating %0" PRIx64")",
 			    (uint64_t) data);
 
 		res = store_32bit_word(m->cpus[0], addr, data);
@@ -1105,10 +1105,6 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	if (addr_start == MAGIC_UNTOUCHED)
 		addr_start = c->pc;
 
-	// Hack for ARM (THUMB):
-	if (m->arch == ARCH_ARM)
-		addr_start &= ~1;
-
 	addr_end = addr_start + 1000;
 
 	/*  endaddr:  */
@@ -1135,7 +1131,13 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		memset(buf, 0, sizeof(buf));
 
 		for (i=0; i<sizeof(buf); i++) {
-			if (c->memory_rw(c, mem, addr+i, buf+i, 1, MEM_READ,
+			uint64_t actualaddr = addr;
+
+			// Hack for ARM (THUMB): (Lowest bit = 1 means 16-bit encoding)
+			if (m->arch == ARCH_ARM)
+				actualaddr &= ~1;
+
+			if (c->memory_rw(c, mem, actualaddr+i, buf+i, 1, MEM_READ,
 			    CACHE_NONE | NO_EXCEPTIONS) == MEMORY_ACCESS_FAILED)
 				failed ++;
 		}
@@ -1212,13 +1214,13 @@ static struct cmd cmds[] = {
 		"dump memory contents in hex and ASCII" },
 
 	{ "emul", "", 0, debugger_cmd_emul,
-		"print a summary of the current emulation" },
+		"Print a summary of the current emulation" },
 
 	{ "focus", "x[,y[,z]]", 0, debugger_cmd_focus,
 		"changes focus to cpu x, machine x, emul z" },
 
 	{ "help", "", 0, debugger_cmd_help,
-		"print this help message" },
+		"Print this help message" },
 
 	{ "itrace", "", 0, debugger_cmd_itrace,
 		"toggle instruction_trace on or off" },
@@ -1227,7 +1229,7 @@ static struct cmd cmds[] = {
 		"lookup a symbol by name or address" },
 
 	{ "machine", "", 0, debugger_cmd_machine,
-		"print a summary of the current machine" },
+		"Print a summary of the current machine" },
 
 	{ "ninstrs", "[on|off]", 0, debugger_cmd_ninstrs,
 		"toggle (set or unset) show_nr_of_instructions" },
@@ -1265,11 +1267,14 @@ static struct cmd cmds[] = {
 	{ "trace", "[on|off]", 0, debugger_cmd_trace,
 		"toggle show_trace_tree on or off" },
 
+	/*  NOTE: Try to keep 'u' down to only one command. Having 'unassemble'
+	    available as a one-letter command is very convenient.  */
+
 	{ "unassemble", "[addr [endaddr]]", 0, debugger_cmd_unassemble,
 		"dump memory contents as instructions" },
 
 	{ "version", "", 0, debugger_cmd_version,
-		"print version information" },
+		"Print version information" },
 
 	/*  Note: NULL handler.  */
 	{ "x = expr", "", 0, NULL, "generic assignment" },
@@ -1381,3 +1386,4 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 	    " registers, '@'\nfor symbols, and '$' for numeric values. Use"
 	    " 0x for hexadecimal values.\n");
 }
+

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -241,7 +241,7 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 	fatal("<");
 	symbol = get_symbol_name_and_n_args(&cpu->machine->symbol_context,
 	    f, &offset, &n_args);
-	if (symbol != NULL && show_symbolic_function_name)
+	if (symbol != NULL && show_symbolic_function_name && offset == 0)
 		fatal("%s", symbol);
 	else {
 		if (cpu->is_32bit)
@@ -258,7 +258,7 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 
 #ifdef PRINT_MEMORY_CHECKSUM
 	/*  Temporary hack for finding bugs:  */
-	fatal("call chksum=%016" PRIx64 "\n", memory_checksum(cpu->mem));
+	fatal("call chksum=%016" PRIx64"\n", memory_checksum(cpu->mem));
 #endif
 }
 
@@ -425,7 +425,7 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	if (!machine->show_nr_of_instructions && !forced)
 		goto do_return;
 
-	printf("[ %" PRIi64 " instrs", (int64_t) cpu->ninstrs);
+	printf("[ %" PRIi64" instrs", (int64_t) cpu->ninstrs);
 
 	/*  Instructions per second, and average so far:  */
 	is = 1000 * (ninstrs-ninstrs_last) / (mseconds-mseconds_last);
@@ -439,7 +439,7 @@ void cpu_show_cycles(struct machine *machine, int forced)
 		printf("; idling");
 		cpu->has_been_idling = 0;
 	} else
-		printf("; i/s=%" PRIi64 " avg=%" PRIi64, is, avg);
+		printf("; i/s=%" PRIi64" avg=%" PRIi64, is, avg);
 
 	symbol = get_symbol_name(&machine->symbol_context, pc, &offset);
 
@@ -568,3 +568,4 @@ void cpu_init(void)
 {
 	ADD_ALL_CPU_FAMILIES;
 }
+

@@ -172,23 +172,27 @@ DEVICE_ACCESS(gt)
 		break;
 
 	case GT_PCI0_CFG_ADDR:
-#if 0
 		if (cpu->byte_order != EMUL_LITTLE_ENDIAN) {
-			fatal("[ gt: TODO: big endian PCI access ]\n");
-			exit(1);
+			// Hack:
+			if (len == sizeof(uint32_t))
+			{
+				idata = data[0] + (data[1] << 8)
+					+ (data[2] << 16) + (data[3] << 24);
+			}
 		}
-#endif
 		bus_pci_decompose_1(idata, &bus, &dev, &func, &reg);
 		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
 		break;
 
 	case GT_PCI0_CFG_DATA:
-#if 0
 		if (cpu->byte_order != EMUL_LITTLE_ENDIAN) {
-			fatal("[ gt: TODO: big endian PCI access ]\n");
-			exit(1);
+			// Hack:
+			if (len == sizeof(uint32_t))
+			{
+				idata = data[0] + (data[1] << 8)
+					+ (data[2] << 16) + (data[3] << 24);
+			}
 		}
-#endif
 		bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
 		    &odata : &idata, len, writeflag);
 		break;

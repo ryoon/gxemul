@@ -503,3 +503,4 @@ int settings_access(struct settings *settings, const char *fullname,
 
 	return SETTINGS_NAME_NOT_FOUND;
 }
+

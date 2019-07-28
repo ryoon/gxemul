@@ -2,7 +2,7 @@
 #define	ARCBIOS_H
 
 /*
- *  Copyright (C) 2004-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -30,8 +30,8 @@
  *
  *  Headerfile for src/arcbios.c.
  *
- *  (Note: There are also files called arcbios_other.h and sgi_arcbios.h,
- *  which are copied from NetBSD.)
+ *  (Note: There are also files in the thirdparty directory called
+ *  arcbios_other.h and sgi_arcbios.h, which are from NetBSD.)
  */
 
 #include "misc.h"
@@ -95,6 +95,8 @@ struct emul_arc_child64 {
 #define ARC_FIRMWARE_ENTRIES    0xffffffffbfc88000ULL
 #define ARC_ARGV_START          0xffffffffbfc90000ULL
 #define ARC_ENV_STRINGS         0xffffffffbfc98000ULL
+#define ARC_ENV_SGI             0xffffffffbfc04000ULL
+#define ARC_ENV_STRINGS_SGI     0xffffffffbfc04040ULL
 #define ARC_ENV_POINTERS        0xffffffffbfc9d000ULL
 #define SGI_SYSID_ADDR          0xffffffffbfca1800ULL
 #define ARC_DSPSTAT_ADDR        0xffffffffbfca1c00ULL

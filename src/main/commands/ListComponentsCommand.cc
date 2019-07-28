@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2008-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2008-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -53,13 +53,15 @@ bool ListComponentsCommand::Execute(GXemul& gxemul, const vector<string>& argume
 			maxLen = allComponents[i].length();
 
 	for (i=0; i<allComponents.size(); i++) {
+		stringstream msg;
 		const string& name = allComponents[i];
 		refcount_ptr<Component> creatable =
 		    ComponentFactory::CreateComponent(name);
-		if (creatable.IsNULL())
+		if (creatable.IsNULL()) {
+			// msg << "  (un-creatable)";
 			continue;
+		}
 
-		stringstream msg;
 		msg << "  " + name;
 		for (size_t j = 0; j < 3 + maxLen - name.length(); j++)
 			msg << " ";

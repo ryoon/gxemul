@@ -2,7 +2,7 @@
 #define	FLOAT_EMUL_H
 
 /*
- *  Copyright (C) 2005-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -45,8 +45,7 @@ struct ieee_float_value {
 #define	IEEE_FMT_W		3	/*  word, 32-bit integer  */
 #define	IEEE_FMT_L		4	/*  long, 64-bit integer  */
 
-void ieee_interpret_float_value(uint64_t x, struct ieee_float_value *fvp,
-	int fmt);
-uint64_t ieee_store_float_value(double nf, int fmt, int nan);
+void ieee_interpret_float_value(uint64_t x, struct ieee_float_value *fvp, int fmt);
+uint64_t ieee_store_float_value(double nf, int fmt);
 
 #endif	/*  FLOAT_EMUL_H  */

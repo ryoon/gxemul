@@ -2,7 +2,7 @@
 #define	ARM_CPU_TYPES_H
 
 /*
- *  Copyright (C) 2005-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@
  */
 
 /*  See cpu_arm.h for struct arm_cpu_type_def.  */
-/*  See armreg.h for CPU_ID_xxx defines.  */
+/*  See arm_cputypes.h for CPU_ID_xxx defines.  */
 
 /*  TODO: Refactor these flags  */
 
@@ -41,7 +41,7 @@
 #define	ARM_DUAL_ENDIAN		2
 #define	ARM_XSCALE		4
 
-#include "thirdparty/armreg.h"
+#include "thirdparty/arm_cputypes.h"
 
 /*
  *  NOTE: Most of these are bogus!
@@ -98,6 +98,8 @@
 	{ "IXP425_255",	CPU_ID_IXP425_266,ARM_XSCALE,	15, 1, 15, 1 }, \
 	{ "IXP425_400",	CPU_ID_IXP425_400,ARM_XSCALE,	15, 1, 15, 1 }, \
 	{ "IXP425_533",	CPU_ID_IXP425_533,ARM_XSCALE,	15, 1, 15, 1 }, \
+	\
+	{ "CORTEX-A5",	CPU_ID_CORTEXA5R0,0/*TODO*/,	15, 1, 15, 1 }, \
 	\
 	{ "80219_400",	CPU_ID_80219_400,ARM_XSCALE,	15, 1, 15, 1 }, \
 	{ "80219_600",	CPU_ID_80219_600,ARM_XSCALE,	15, 1, 15, 1 }, \

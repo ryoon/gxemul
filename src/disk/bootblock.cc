@@ -198,7 +198,7 @@ int load_bootblock(struct machine *m, struct cpu *cpu,
 		bootblock_pc |= 0xffffffffa0000000ULL;
 		cpu->pc = bootblock_pc;
 
-		debug("DEC boot: loadaddr=0x%08" PRIx32 ", pc=0x%08" PRIx32,
+		debug("DEC boot: loadaddr=0x%08" PRIx32", pc=0x%08" PRIx32,
 		    (uint32_t) bootblock_loadaddr, (uint32_t) bootblock_pc);
 
 		readofs = 0x18;
@@ -311,3 +311,5 @@ ret_ok:
 	free(bootblock_buf);
 	return retval;
 }
+
+

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -2348,12 +2348,12 @@ X(float_fpul_frn)
 
 	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
 		/*  Double-precision, using a pair of registers:  */
-		uint64_t ieee = ieee_store_float_value(fpul, IEEE_FMT_D, 0);
+		uint64_t ieee = ieee_store_float_value(fpul, IEEE_FMT_D);
 		reg(ic->arg[0]) = (uint32_t) (ieee >> 32);
 		reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) ieee;
 	} else {
 		/*  Single-precision:  */
-		uint32_t ieee = ieee_store_float_value(fpul, IEEE_FMT_S, 0);
+		uint32_t ieee = ieee_store_float_value(fpul, IEEE_FMT_S);
 		reg(ic->arg[0]) = (uint32_t) ieee;
 	}
 }
@@ -2401,7 +2401,7 @@ X(fcnvsd_fpul_drn)
 	cpu->cd.sh.fpul = (int32_t) op1.f;
 
 	/*  Store double-precision result:  */
-	ieee = ieee_store_float_value(op1.f, IEEE_FMT_D, 0);
+	ieee = ieee_store_float_value(op1.f, IEEE_FMT_D);
 	reg(ic->arg[0]) = (uint32_t) (ieee >> 32);
 	reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) ieee;
 }
@@ -2416,7 +2416,7 @@ X(fcnvds_drm_fpul)
 	    ((uint64_t)reg(ic->arg[0]) << 32);
 	ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
 
-	cpu->cd.sh.fpul = ieee_store_float_value(op1.f, IEEE_FMT_S, 0);
+	cpu->cd.sh.fpul = ieee_store_float_value(op1.f, IEEE_FMT_S);
 }
 
 
@@ -2437,9 +2437,9 @@ X(fsca_fpul_drn)
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
-	reg(ic->arg[0]) = ieee_store_float_value(sin(fpulAngle), IEEE_FMT_S, 0);
+	reg(ic->arg[0]) = ieee_store_float_value(sin(fpulAngle), IEEE_FMT_S);
 	reg(ic->arg[0] + sizeof(uint32_t)) =
-	    ieee_store_float_value(cos(fpulAngle), IEEE_FMT_S, 0);
+	    ieee_store_float_value(cos(fpulAngle), IEEE_FMT_S);
 }
 
 
@@ -2459,20 +2459,20 @@ X(fipr_fvm_fvn)
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
-	ieee_interpret_float_value(reg(ic->arg[0] + 0), &frm0, IEEE_FMT_S);
-	ieee_interpret_float_value(reg(ic->arg[0] + 4), &frm1, IEEE_FMT_S);
-	ieee_interpret_float_value(reg(ic->arg[0] + 8), &frm2, IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[0] +  0), &frm0, IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[0] +  4), &frm1, IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[0] +  8), &frm2, IEEE_FMT_S);
 	ieee_interpret_float_value(reg(ic->arg[0] + 12), &frm3, IEEE_FMT_S);
-	ieee_interpret_float_value(reg(ic->arg[1] + 0), &frn0, IEEE_FMT_S);
-	ieee_interpret_float_value(reg(ic->arg[1] + 4), &frn1, IEEE_FMT_S);
-	ieee_interpret_float_value(reg(ic->arg[1] + 8), &frn2, IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[1] +  0), &frn0, IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[1] +  4), &frn1, IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[1] +  8), &frn2, IEEE_FMT_S);
 	ieee_interpret_float_value(reg(ic->arg[1] + 12), &frn3, IEEE_FMT_S);
 
 	frn3.f =
 	    frm0.f * frn0.f + frm1.f * frn1.f +
 	    frm2.f * frn2.f + frm3.f * frn3.f;
 
-	reg(ic->arg[1] + 12) = ieee_store_float_value(frn3.f, IEEE_FMT_S, 0);
+	reg(ic->arg[1] + 12) = ieee_store_float_value(frn3.f, IEEE_FMT_S);
 }
 
 
@@ -2490,9 +2490,9 @@ X(ftrv_xmtrx_fvn)
 	FLOATING_POINT_AVAILABLE_CHECK;
 	// TODO: FPSCR.EN.V = 1 should cause invalid operation exception?
 
-	ieee_interpret_float_value(reg(ic->arg[0] + 0), &frn[0], IEEE_FMT_S);
-	ieee_interpret_float_value(reg(ic->arg[0] + 4), &frn[1], IEEE_FMT_S);
-	ieee_interpret_float_value(reg(ic->arg[0] + 8), &frn[2], IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[0] +  0), &frn[0], IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[0] +  4), &frn[1], IEEE_FMT_S);
+	ieee_interpret_float_value(reg(ic->arg[0] +  8), &frn[2], IEEE_FMT_S);
 	ieee_interpret_float_value(reg(ic->arg[0] + 12), &frn[3], IEEE_FMT_S);
 
 	for (i=0; i<16; i++)
@@ -2511,10 +2511,10 @@ X(ftrv_xmtrx_fvn)
 	for (i=0; i<4; i++)
 		frnp3 += xmtrx[i*4 + 3].f * frn[i].f;
 
-	reg(ic->arg[0] + 0) = ieee_store_float_value(frnp0, IEEE_FMT_S, 0);
-	reg(ic->arg[0] + 4) = ieee_store_float_value(frnp1, IEEE_FMT_S, 0);
-	reg(ic->arg[0] + 8) = ieee_store_float_value(frnp2, IEEE_FMT_S, 0);
-	reg(ic->arg[0] + 12) = ieee_store_float_value(frnp3, IEEE_FMT_S, 0);
+	reg(ic->arg[0] +  0) = ieee_store_float_value(frnp0, IEEE_FMT_S);
+	reg(ic->arg[0] +  4) = ieee_store_float_value(frnp1, IEEE_FMT_S);
+	reg(ic->arg[0] +  8) = ieee_store_float_value(frnp2, IEEE_FMT_S);
+	reg(ic->arg[0] + 12) = ieee_store_float_value(frnp3, IEEE_FMT_S);
 }
 
 
@@ -2579,14 +2579,14 @@ X(fsqrt_frn)
 		r1 = reg(ic->arg[0] + sizeof(uint32_t)) +
 		    ((uint64_t)reg(ic->arg[0]) << 32);
 		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
-		ieee = ieee_store_float_value(sqrt(op1.f), IEEE_FMT_D, 0);
+		ieee = ieee_store_float_value(sqrt(op1.f), IEEE_FMT_D);
 		reg(ic->arg[0]) = (uint32_t) (ieee >> 32);
 		reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) ieee;
 	} else {
 		/*  Single-precision:  */
 		int32_t ieee, r1 = reg(ic->arg[0]);
 		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
-		ieee = ieee_store_float_value(sqrt(op1.f), IEEE_FMT_S, 0);
+		ieee = ieee_store_float_value(sqrt(op1.f), IEEE_FMT_S);
 		reg(ic->arg[0]) = ieee;
 	}
 }
@@ -2608,8 +2608,7 @@ X(fsrra_frn)
 		/*  Single-precision:  */
 		int32_t ieee, r1 = reg(ic->arg[0]);
 		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
-		ieee = ieee_store_float_value(1.0f / sqrt(op1.f),
-		    IEEE_FMT_S, 0);
+		ieee = ieee_store_float_value(1.0f / sqrt(op1.f), IEEE_FMT_S);
 		reg(ic->arg[0]) = ieee;
 	}
 }
@@ -2646,7 +2645,7 @@ X(fadd_frm_frn)
 		ieee_interpret_float_value(r2, &op2, IEEE_FMT_D);
 
 		result = op2.f + op1.f;
-		ieee = ieee_store_float_value(result, IEEE_FMT_D, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_D);
 		reg(ic->arg[1]) = (uint32_t) (ieee >> 32);
 		reg(ic->arg[1] + sizeof(uint32_t)) = (uint32_t) ieee;
 	} else {
@@ -2660,7 +2659,7 @@ X(fadd_frm_frn)
 		ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
 
 		result = op2.f + op1.f;
-		ieee = ieee_store_float_value(result, IEEE_FMT_S, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_S);
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
 }
@@ -2681,7 +2680,7 @@ X(fsub_frm_frn)
 		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
 		ieee_interpret_float_value(r2, &op2, IEEE_FMT_D);
 		result = op2.f - op1.f;
-		ieee = ieee_store_float_value(result, IEEE_FMT_D, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_D);
 		reg(ic->arg[1]) = (uint32_t) (ieee >> 32);
 		reg(ic->arg[1] + sizeof(uint32_t)) = (uint32_t) ieee;
 	} else {
@@ -2693,7 +2692,7 @@ X(fsub_frm_frn)
 		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
 		ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
 		result = op2.f - op1.f;
-		ieee = ieee_store_float_value(result, IEEE_FMT_S, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_S);
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
 }
@@ -2716,7 +2715,7 @@ X(fmul_frm_frn)
 		ieee_interpret_float_value(r2, &op2, IEEE_FMT_D);
 
 		result = op2.f * op1.f;
-		ieee = ieee_store_float_value(result, IEEE_FMT_D, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_D);
 		reg(ic->arg[1]) = (uint32_t) (ieee >> 32);
 		reg(ic->arg[1] + sizeof(uint32_t)) = (uint32_t) ieee;
 	} else {
@@ -2730,7 +2729,7 @@ X(fmul_frm_frn)
 		ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
 
 		result = op2.f * op1.f;
-		ieee = ieee_store_float_value(result, IEEE_FMT_S, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_S);
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
 }
@@ -2757,7 +2756,7 @@ X(fdiv_frm_frn)
 		else
 			result = 0.0;
 
-		ieee = ieee_store_float_value(result, IEEE_FMT_D, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_D);
 
 		reg(ic->arg[1]) = (uint32_t) (ieee >> 32);
 		reg(ic->arg[1] + sizeof(uint32_t)) = (uint32_t) ieee;
@@ -2776,7 +2775,7 @@ X(fdiv_frm_frn)
 		else
 			result = 0.0;
 
-		ieee = ieee_store_float_value(result, IEEE_FMT_S, 0);
+		ieee = ieee_store_float_value(result, IEEE_FMT_S);
 
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
@@ -2792,7 +2791,7 @@ X(fmac_fr0_frm_frn)
 	ieee_interpret_float_value(fr0, &op0, IEEE_FMT_S);
 	ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
 	ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
-	ieee = ieee_store_float_value(op0.f * op1.f + op2.f, IEEE_FMT_S, 0);
+	ieee = ieee_store_float_value(op0.f * op1.f + op2.f, IEEE_FMT_S);
 	reg(ic->arg[1]) = ieee;
 }
 X(fcmp_eq_frm_frn)

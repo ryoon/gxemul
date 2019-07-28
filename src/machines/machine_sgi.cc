@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -119,8 +119,11 @@ MACHINE_SETUP(sgi)
 		    " (Everest IP19)", MACHINE_NAME_MAXBUF);
 		machine->main_console_handle = (size_t)device_add(machine,
 		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
-		dev_scc_init(machine, mem, 0x10086000, 0,
-		    machine->x11_md.in_use, 0, 8);	/*  serial? irix?  */
+
+		fatal("TODO ip19 interrupt rewrite\n");
+		abort();
+		//dev_scc_init(machine, mem, 0x10086000, 0,
+		//    machine->x11_md.in_use, 0, 8);	/*  serial? irix?  */
 
 		device_add(machine, "sgi_ip19 addr=0x18000000");
 
@@ -305,8 +308,10 @@ j = 0;
 		strlcat(machineName, " (Everest IP25)", MACHINE_NAME_MAXBUF);
 
 		 /*  serial? irix?  */
-		dev_scc_init(machine, mem,
-		    0x400086000ULL, 0, machine->x11_md.in_use, 0, 8);
+		fatal("TODO ip25 interrupt rewrite\n");
+		abort();
+		//dev_scc_init(machine, mem,
+		//    0x400086000ULL, 0, machine->x11_md.in_use, 0, 8);
 
 		/*  NOTE: ip19! (perhaps not really the same  */
 		device_add(machine, "sgi_ip19 addr=0x18000000");
@@ -357,14 +362,10 @@ j = 0;
 		strlcat(machineName, " (Octane)",
 		    MACHINE_NAME_MAXBUF);
 
-fatal("TODO: SGI legacy interrupt system rewrite!\n");
-abort();
-//		machine->md_int.sgi_ip30_data =
-//		    dev_sgi_ip30_init(machine, mem, 0x0ff00000);
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = sgi_ip30_interrupt;
+		// TODO: Interrupts!
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "sgi_ip30 addr=0x0ff00000");
+		device_add(machine, tmpstr);
 
 		dev_ram_init(machine, 0xa0000000ULL, 128 * 1048576,
 		    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES,
@@ -389,13 +390,15 @@ abort();
 		 */
 
 		/*  TODO: irq!  */
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].2 addr="
 		    "0x1f620170 name2=tty0 in_use=%i",
+		    machine->path, machine->bootstrap_cpu,
 		    machine->x11_md.in_use? 0 : 1);
 		machine->main_console_handle = (size_t)device_add(machine,
 		    tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
-		    "0x1f620178 name2=tty1 in_use=0");
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.cpu[%i].2 addr="
+		    "0x1f620178 name2=tty1 in_use=0",
+		    machine->path, machine->bootstrap_cpu);
 		device_add(machine, tmpstr);
 
 		/*  MardiGras graphics:  */
@@ -406,34 +409,52 @@ abort();
 	case 32:
 		strlcat(machineName, " (O2)", MACHINE_NAME_MAXBUF);
 
-		/*  TODO: Find out where the phys ram is actually located.  */
-		dev_ram_init(machine, 0x07ffff00ULL,           256,
-		    DEV_RAM_MIRROR, 0x03ffff00);
-		dev_ram_init(machine, 0x10000000ULL,           256,
-		    DEV_RAM_MIRROR, 0x00000000);
-		dev_ram_init(machine, 0x11ffff00ULL,           256,
-		    DEV_RAM_MIRROR, 0x01ffff00);
-		dev_ram_init(machine, 0x12000000ULL,           256,
-		    DEV_RAM_MIRROR, 0x02000000);
-		dev_ram_init(machine, 0x17ffff00ULL,           256,
-		    DEV_RAM_MIRROR, 0x03ffff00);
-		dev_ram_init(machine, 0x20000000ULL, 128 * 1048576,
-		    DEV_RAM_MIRROR, 0x00000000);
-		dev_ram_init(machine, 0x40000000ULL, 128 * 1048576,
-		    DEV_RAM_MIRROR, 0x10000000);
+		/*
+		 *  The IP32 prom probes "bank 0" with the following
+		 *  TLB entries:
+		 *
+		 *  00: vaddr=0000000000000000 (global):  p0=0x040000000 D p1=0x041000000 D (16MB)
+		 *  01: vaddr=0000000002000000 (global):  p0=0x042000000 D p1=0x043000000 D (16MB)
+		 *  02: vaddr=0000000004000000 (global):  p0=0x044000000 D p1=0x045000000 D (16MB)
+		 *  03: vaddr=0000000006000000 (global):  p0=0x046000000 D p1=0x047000000 D (16MB)
+		 *
+		 *  In other words, it uses real memory at 0x40000000 and up.
+		 *  However, it is _also_ accessible at physical address 0x0.
+		 *
+		 *  Max amount of RAM in an O2 is 1 GB. However, devices start at
+		 *  0x14000000 (or below that), so 256 MB is the most that the legacy GXemul
+		 *  framework can handle. Memory above that must be accessed from 0x40000000 and up.
+ 		 */
+
+		if (machine->physical_ram_in_mb > 256) {
+			fatal("TODO: Legacy framework cannot handle more than 256 MB for the SGI O2.\n");
+			exit(1);
+		}
+
+		/*  In the new framework, this would be the other way around :-), i.e.
+		    actual memory at 0x40000000 and the first 256 MB would be mirrored
+		    at address 0.  */
+		dev_ram_init(machine, 0x40000000ULL, machine->physical_ram_in_mb * 1048576, DEV_RAM_MIRROR, 0);
 
 		/*  Connect CRIME (Interrupt Controller) to MIPS irq 2:  */
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2",
 		    machine->path, machine->bootstrap_cpu);
-		dev_crime_init(machine, mem, 0x14000000, tmpstr,
-		    machine->x11_md.in_use);			/*  crime0  */
-		dev_sgi_mte_init(mem, 0x15000000);		/*  mte ???  */
-		dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  */
+		dev_crime_init(machine, mem, 0x14000000, tmpstr, machine->x11_md.in_use);
+
+		/*  Rendering Engine  */
+		dev_sgi_re_init(machine, mem, 0x15000000);
+
+		/*  Graphics Back End  */
+		dev_sgi_gbe_init(machine, mem, 0x16000000);
 
 		/*
 		 *  A combination of NetBSD and Linux info:
 		 *
+		 *	14000000	crime (interrupt/memory controller?)
+		 *	15000000	drawing engine, memory transfer engine, rendering engine
+		 *	16000000	gbe (graphics), crm framebuffer control
 		 *      17000000	vice (Video Image Compression Engine)
+		 *	18000000	pci (?)
 		 *	1f000000	mace
 		 *	1f080000	macepci
 		 *	1f100000	vin1
@@ -441,10 +462,10 @@ abort();
 		 *	1f200000	vout
 		 *	1f280000	enet (mec0, MAC-110 Ethernet)
 		 *	1f300000	perif:
-		 *	  1f300000	  audio
+		 *	  1f300000	  audio ("a3"?)
 		 *	  1f310000	  isa
-		 *	    1f318000	    (accessed by Irix'
-		 *			     pciio_pio_write64)
+		 *	    1f318000	    (unknown, accessed by Irix' pciio_pio_write64 and by the PROM during bootup)
+		 *	    1f31c000	    (unknown, accessed by the PROM during bootup)
 		 *	  1f320000	  kbdms
 		 *	  1f330000	  i2c
 		 *	  1f340000	  ust
@@ -465,9 +486,9 @@ abort();
 		 *  mcclock0 at mace0 offset 0x3a0000 intrmask 0x0
 		 *  macepci0 at mace0 offset 0x80000 intr 7 intrmask 0x0: rev 1
 		 *
-		 *  intr 4 = MACE_PERIPH_SERIAL
-		 *  intr 5 = MACE_PERIPH_MISC
-		 *  intr 7 = MACE_PCI_BRIDGE
+		 *  intr 4 = CRIME_INT_PERIPH_SERIAL
+		 *  intr 5 = CRIME_INT_PERIPH_MISC
+		 *  intr 7 = CRIME_INT_PCI_BRIDGE
 		 */
 
 		snprintf(eaddr_string, ETHERNET_STRING_MAXLEN,
@@ -476,7 +497,7 @@ abort();
 		    macaddr[3], macaddr[4], macaddr[5]);
 
 		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].2.crime.0x%x",
-		    machine->path, machine->bootstrap_cpu, MACE_ETHERNET);
+		    machine->path, machine->bootstrap_cpu, CRIME_INT_ETHERNET);
 		dev_sgi_mec_init(machine, mem, 0x1f280000,
 		    tmpstr, macaddr);
 
@@ -486,45 +507,46 @@ abort();
 		    "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
 		    "0x1f390000 addr_mult=0x100 in_use=%i name2=tty0",
 		    machine->path, machine->bootstrap_cpu,
-		    MACE_PERIPH_SERIAL, 20, machine->x11_md.in_use? 0 : 1);
+		    CRIME_INT_PERIPH_SERIAL, 20, machine->x11_md.in_use? 0 : 1);
 		j = (size_t)device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "ns16550 irq=%s.cpu[%i].2.crime.0x%x.mace.%i addr="
 		    "0x1f398000 addr_mult=0x100 in_use=%i name2=tty1",
 		    machine->path, machine->bootstrap_cpu,
-		    MACE_PERIPH_SERIAL, 26, 0);
+		    CRIME_INT_PERIPH_SERIAL, 26, 0);
 		device_add(machine, tmpstr);
 
 		machine->main_console_handle = j;
 
-		/*  TODO: Once this works, it should be enabled
-		    always, not just when using X!  */
-#if 0
-fatal("TODO: legacy SGI rewrite\n");
-abort();
-		if (machine->x11_md.in_use) {
+		{
+			/*  keyb+mouse (mace irq numbers)  */
+			char tmpstr1[1000];
+			char tmpstr2[1000];
+			snprintf(tmpstr1, sizeof(tmpstr1),
+			    "%s.cpu[%i].2.crime.0x%x.mace.%i",
+			    machine->path, machine->bootstrap_cpu,
+			    CRIME_INT_PERIPH_MISC, 9);
+
+			snprintf(tmpstr2, sizeof(tmpstr2),
+			    "%s.cpu[%i].2.crime.0x%x.mace.%i",
+			    machine->path, machine->bootstrap_cpu,
+			    CRIME_INT_PERIPH_MISC, 11);
+
 			i = dev_pckbc_init(machine, mem, 0x1f320000,
-			    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-			    0x800 + MACE_PERIPH_MISC, machine->x11_md.in_use,
-				0);
-				/*  keyb+mouse (mace irq numbers)  */
-			machine->main_console_handle = i;
+			    PCKBC_8242, tmpstr1,
+			    tmpstr2, machine->x11_md.in_use,
+			    0);
+
+			if (machine->x11_md.in_use)
+				machine->main_console_handle = i;
 		}
-#endif
 
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "%s.cpu[%i].2.crime.0x%x.mace.%i",
 		    machine->path, machine->bootstrap_cpu,
-		    MACE_PERIPH_MISC, 8);
+		    CRIME_INT_PERIPH_MISC, 8);
 		dev_mc146818_init(machine, mem, 0x1f3a0000, tmpstr,
 		    MC146818_SGI, 0x40);  /*  mcclock0  */
-
-		/*  TODO: _WHERE_ does the z8530 interrupt?  */
-		snprintf(tmpstr, sizeof(tmpstr), "z8530 addr=0x1fbd9830 "
-		    "irq=%s.cpu[%i].2 addr_mult=4",
-		    machine->path, machine->bootstrap_cpu);
-		machine->main_console_handle = (size_t)
-		    device_add(machine, tmpstr);
 
 		/*
 		 *  PCI devices:   (according to NetBSD's GENERIC
@@ -537,13 +559,26 @@ abort();
 
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "%s.cpu[%i].2.crime.0x%x", machine->path,
-		    machine->bootstrap_cpu, MACE_PCI_BRIDGE);
+		    machine->bootstrap_cpu, CRIME_INT_PCI_BRIDGE);
 		pci_data = dev_macepci_init(machine, mem, 0x1f080000,
 		    tmpstr);		/*  macepci0  */
 		/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0,
 		    "ne2000");  TODO  */
 
-		/*  TODO: make this nicer  */
+		/*
+		 *  OpenBSD accesses the SCSI controller at paddr=0x2800010xx.
+		 *  Note that the 2 is above 32-bit range.
+		 *
+		 *  TODO: Investigate what this actually means. Possibly
+		 *  a bug in GXemul's 64-bit instructions? Or perhaps it really
+		 *  is correct.
+		 */
+		dev_ram_init(machine, 0x280000000ULL, 0x01000000, DEV_RAM_MIRROR, 0x18000000);
+
+
+		// ahc0:
+		/*  TODO: Make it possible to add the controller, regardless of
+			the existence of disks!  */
 		if (diskimage_exist(machine, 0, DISKIMAGE_SCSI) ||
 		    diskimage_exist(machine, 1, DISKIMAGE_SCSI) ||
 		    diskimage_exist(machine, 2, DISKIMAGE_SCSI) ||
@@ -554,14 +589,8 @@ abort();
 		    diskimage_exist(machine, 7, DISKIMAGE_SCSI))
 			bus_pci_add(machine, pci_data, mem, 0, 1, 0, "ahc");
 
-		/*  TODO: second ahc  */
-		/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, "ahc");  */
-
-		/*
-		 *  An additional PCI IDE controller, for NetBSD/sgimips
-		 *  experiments:  (Not found in a regular O2.)
-		 */
-		bus_pci_add(machine, pci_data, mem, 0, 3, 0, "symphony_82c105");
+		// ahc1:
+		// bus_pci_add(machine, pci_data, mem, 0, 2, 0, "ahc");
 
 		break;
 
@@ -569,8 +598,11 @@ abort();
 		strlcat(machineName, " (Origin 3000)", MACHINE_NAME_MAXBUF);
 		/*  4 cpus per node  */
 
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
+		// TODO: Correct Interrupt!
+		snprintf(tmpstr, sizeof(tmpstr), "z8530 addr=0x1fbd9830 irq=%s.cpu[%i].2",
+		    machine->path, machine->bootstrap_cpu);
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
+
 		break;
 
 	case 53:
@@ -622,7 +654,11 @@ MACHINE_DEFAULT_CPU(sgi)
 
 MACHINE_DEFAULT_RAM(sgi)
 {
-	machine->physical_ram_in_mb = 64;
+	// Self-compilation fails with OpenBSD/sgi 6.3 with as low as 128 MB
+	// RAM, so 256 would be better. But my O2 has 128 MB, so this is kept
+	// as 128 to simplify comparison between the real machine and the
+	// emulator.
+	machine->physical_ram_in_mb = 128;
 }
 
 

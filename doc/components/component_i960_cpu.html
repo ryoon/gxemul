@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>GXemul: Components: i960_cpu</title>
+  <meta name="robots" content="noarchive,nofollow,noindex">
+</head>
+<body style="font-family : sans-serif;">
+
+<!-- 10 lines header.  -->
+
+<h1>GXemul: Components: <tt>i960_cpu</tt></h1>
+<p>
+
+<a href="../">Back to the index.</a>
+<p><a href="../components.html">Back to the component index.</a>
+
+
+<p><br><h2><tt>i960_cpu</tt> component</h2>
+
+This component represents an
+<a href="https://en.wikipedia.org/wiki/Intel_i960">Intel i960</a>-like 
+<a href="component_cpu.html">CPU component</a>.
+
+<p>Things that have been implemented:
+
+<ul>
+	<li>i960 Cx disassembly.
+</ul>
+
+<p>Things that have <b>not yet</b> been implemented: TODOs in approximate priority order:
+
+<ul>
+	<li>Disassembly of instructions for variants other than i960 CA / CF.
+	<li>Implement register dump functionality better (specifics about
+		SFRs, AC/PC/TC flags etc).
+	<li>b.out file loader: symbol support. (Not in the CPU component but related.)
+	<li>ECOFF file loader. (Not in the CPU component but related.)
+	<li>Start implementing execution of instructions.
+	<li>Implement some kind of "short diff" format for execution,
+		rather than the verbose format of today.
+</ul>
+
+
+<p>
+Source code documentation for this component can be found
+<a href="../doxygen/html/classI960__CPUComponent.html">here</a>.
+
+<p><br><hr>
+</body>
+</html>

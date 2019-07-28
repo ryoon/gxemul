@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -250,7 +250,7 @@ MACHINE_SETUP(pmax)
 		break;
 
 	case MACHINE_DEC_3MIN_5000:		/*  type 3, KN02BA  */
-		machine->machine_name = strdup("DECstation 5000/112 or 145 (3MIN,"
+		machine->machine_name = strdup("DECstation 5000/112, 125, or 145 (3MIN,"
 		    " KN02BA)");
 		if (machine->emulated_hz == 0)
 			machine->emulated_hz = 33000000;
@@ -258,10 +258,10 @@ MACHINE_SETUP(pmax)
 			fprintf(stderr, "WARNING! Real 3MIN machines cannot "
 			    "have more than 128MB RAM. Continuing anyway.\n");
 
-		/*  KMIN interrupts:  */
-fatal("TODO: Legacy rewrite\n");
-abort();
-//		machine->md_interrupt = kmin_interrupt;
+		/*  KN02BA "3min" TurboChannel interrupt controller:  */
+		snprintf(tmpstr, sizeof(tmpstr), "kn02ba irq=%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC3);
+		device_add(machine, tmpstr);
 
 		/*
 		 *  tc0 at mainbus0: 12.5 MHz clock  (0x10000000,slotsize=64MB)
@@ -280,27 +280,32 @@ abort();
 		 *	SCSI ID 7			(0x1c300000) slot 12
 		 *  dma for asc0			(0x1c380000) slot 14
 		 */
-fatal("TODO: dec_ioasic legacy rewrite\n");
-abort();
-//		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
-//		    mem, 0x1c000000, 0);
-fatal("TODO: kmin dev_le_init.\n");
-abort();
+
+////fatal("TODO: kmin dev_le_init.\n");
+////abort();
 //		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
 //		    KMIN_INTR_LANCE + 8, 4 * 65536);
-		dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 + 8,
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i.kn02ba.0x%x",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC3, KMIN_INTR_SCC_0);
+		dev_scc_init(machine, mem, 0x1c100000, tmpstr,
 		    machine->x11_md.in_use, 0, 1);
-		dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 + 8,
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i.kn02ba.0x%x",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC3, KMIN_INTR_SCC_1);
+		dev_scc_init(machine, mem, 0x1c180000, tmpstr,
 		    machine->x11_md.in_use, 1, 1);
-fatal("TODO: mc146818 irq\n");
-abort();
-//		dev_mc146818_init(machine, mem, 0x1c200000, 
-//KMIN_INTR_CLOCK + 8,
-//		    MC146818_DEC, 1);
-fatal("TODO: kmin asc init\n");
-abort();
-//		dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
-//		    NULL, DEV_ASC_DEC, NULL, NULL);
+
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i.kn02ba.0x%x",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC3, KMIN_INTR_CLOCK);
+		dev_mc146818_init(machine, mem,
+		    KMIN_SYS_CLOCK, tmpstr, MC146818_DEC, 1);
+		    
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i.kn02ba.0x%x",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC3, KMIN_INTR_SCSI);
+		dev_asc_init(machine, mem, 0x1c300000, tmpstr,
+		    NULL, DEV_ASC_DEC, NULL, NULL);
 
 		/*
 		 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -309,21 +314,31 @@ abort();
 		 *
 		 *  TODO: irqs 
 		 */
-fatal("TODO: turbochannel init rewrite!\n");
-abort();
-#if 0
-		dev_turbochannel_init(machine, mem, 0, 0x10000000, 0x103fffff,
+
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC0);
+		dev_turbochannel_init(machine, mem, 0,
+		    KMIN_PHYS_TC_0_START, KMIN_PHYS_TC_0_END,
 		    machine->n_gfx_cards >= 1?
-			turbochannel_default_gfx_card : "", KMIN_INT_TC0);
+			turbochannel_default_gfx_card : "",
+		    tmpstr);
 
-		dev_turbochannel_init(machine, mem, 1, 0x14000000, 0x143fffff,
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC1);
+		dev_turbochannel_init(machine, mem, 0,
+		    KMIN_PHYS_TC_1_START, KMIN_PHYS_TC_1_END,
 		    machine->n_gfx_cards >= 2?
-		    turbochannel_default_gfx_card : "", KMIN_INT_TC1);
+			turbochannel_default_gfx_card : "",
+		    tmpstr);
 
-		dev_turbochannel_init(machine, mem, 2, 0x18000000, 0x183fffff,
+		snprintf(tmpstr, sizeof(tmpstr), "%s.cpu[%i].%i",
+		    machine->path, machine->bootstrap_cpu, KMIN_INT_TC2);
+		dev_turbochannel_init(machine, mem, 0,
+		    KMIN_PHYS_TC_2_START, KMIN_PHYS_TC_2_END,
 		    machine->n_gfx_cards >= 3?
-			turbochannel_default_gfx_card : "", KMIN_INT_TC2);
-#endif
+			turbochannel_default_gfx_card : "",
+		    tmpstr);
+
 		/*  (kmin shared irq numbers (IP) are offset by +8 in the
 		    emulator)  */
 		/*  kmin_csr = dev_kmin_init(cpu, mem, KMIN_REG_INTR);  */
@@ -579,8 +594,8 @@ fatal("TODO: xine dev_le_init rewrite\n");
 abort();
 //		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
 //		    XINE_INTR_LANCE +8, 4*65536);
-		dev_scc_init(machine, mem, 0x1c100000,
-		    XINE_INTR_SCC_0 +8, machine->x11_md.in_use, 0, 1);
+//		dev_scc_init(machine, mem, 0x1c100000,
+//		    XINE_INTR_SCC_0 +8, machine->x11_md.in_use, 0, 1);
 fatal("TODO: mc146818 irq\n");
 abort();
 //		dev_mc146818_init(machine, mem, 0x1c200000,
@@ -660,7 +675,7 @@ abort();
 
 		/*  KN230 mainbus / interrupt controller:  */
 		snprintf(tmpstr, sizeof(tmpstr),
-		    "kn230 addr=0x%"PRIx64, (uint64_t) KN230_SYS_ICSR);
+		    "kn230 addr=0x%" PRIx64, (uint64_t) KN230_SYS_ICSR);
 		device_add(machine, tmpstr);
 
 		/*
@@ -789,7 +804,7 @@ abort();
 			strlcpy(bootpath, "rz(0,0,0)", sizeof(bootpath));
 		else
 #endif
-			strlcpy(bootpath, "5/rz0/", sizeof(bootpath));
+			strlcpy(bootpath, "5/rz1/", sizeof(bootpath));
 
 		if (machine->bootdev_id < 0 || machine->force_netboot) {
 			/*  tftp boot:  */
@@ -885,7 +900,7 @@ abort();
 	 */
 	{
 		char tmps[300];
-		snprintf(tmps, sizeof(tmps), "cca=%"PRIx32,
+		snprintf(tmps, sizeof(tmps), "cca=%" PRIx32,
 		    (uint32_t) (DEC_DECCCA_BASEADDR + 0xa0000000ULL));
 		add_environment_string(cpu, tmps, &addr);
 	}
@@ -898,14 +913,14 @@ abort();
 		tmps[sizeof(tmps)-1] = '\0';
 		add_environment_string(cpu, tmps, &addr);
 
-		snprintf(tmps, sizeof(tmps), "bitmap=0x%"PRIx32, (uint32_t)
+		snprintf(tmps, sizeof(tmps), "bitmap=0x%" PRIx32, (uint32_t)
 		    ( (DEC_MEMMAP_ADDR + sizeof(uint32_t) /* skip the
 			page size and point to the memmap */
 		    ) & 0xffffffffULL) );
 		tmps[sizeof(tmps)-1] = '\0';
 		add_environment_string(cpu, tmps, &addr);
 
-		snprintf(tmps, sizeof(tmps), "bitmaplen=0x%"PRIx32, (uint32_t)
+		snprintf(tmps, sizeof(tmps), "bitmaplen=0x%" PRIx32, (uint32_t)
 		    ( machine->physical_ram_in_mb * 1048576 / 4096 / 8) );
 		tmps[sizeof(tmps)-1] = '\0';
 		add_environment_string(cpu, tmps, &addr);

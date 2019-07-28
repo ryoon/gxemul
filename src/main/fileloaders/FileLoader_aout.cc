@@ -265,7 +265,7 @@ bool FileLoader_aout::LoadIntoComponent(refcount_ptr<Component> component, ostre
 
 		off_t oldpos = file.tellg();
 		file.seekg(0, std::ios_base::end);
-		int strings_len = (off_t)file.tellg() - oldpos;
+		size_t strings_len = (off_t)file.tellg() - oldpos;
 		file.seekg(oldpos, std::ios_base::beg);
 
 		messages.flags(std::ios::dec);
@@ -286,7 +286,7 @@ bool FileLoader_aout::LoadIntoComponent(refcount_ptr<Component> component, ostre
 
 		int nsymbols = 0;
 
-		struct aout_symbol* aout_symbol_ptr = (struct aout_symbol *) &symbolData[0];
+		struct aout_symbol* aout_symbol_ptr = (struct aout_symbol *) (void*) &symbolData[0];
 		int n_symbols = symbsize / sizeof(struct aout_symbol);
 		for (int i = 0; i < n_symbols; i++) {
 			uint32_t index = unencode32((unsigned char*)&aout_symbol_ptr[i].strindex, endianness);

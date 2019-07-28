@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,9 +25,22 @@
  *  SUCH DAMAGE.
  *   
  *
- *  COMMENT: SGI "gbe", graphics controller + framebuffer
+ *  COMMENT: SGI "Graphics Back End", graphics controller + framebuffer
  *
- *  Loosely inspired by Linux code.
+ *  Guesswork, based on how Linux, NetBSD, and OpenBSD use the graphics on
+ *  the SGI O2. Using NetBSD terminology (from crmfbreg.h):
+ *
+ *  dev_sgi_re.cc:
+ *	0x15001000	rendering engine (TLBs)
+ *	0x15002000	drawing engine
+ *	0x15003000	memory transfer engine
+ *	0x15004000	status registers for drawing engine
+ *
+ *  dev_sgi_gbe.cc:
+ *	0x16000000	crm (or GBE) framebuffer control / video output
+ *
+ *  According to https://www.linux-mips.org/wiki/GBE, the GBE is also used in
+ *  the SGI Visual Workstation.
  */
 
 #include <stdio.h>
@@ -41,33 +54,94 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "thirdparty/crmfbreg.h"
+
 
 /*  Let's hope nothing is there already...  */
-#define	FAKE_GBE_FB_ADDRESS	0x38000000
+#define	FAKE_GBE_FB_ADDRESS	0x380000000
 
-#define	GBE_DEBUG
-/*  #define debug fatal  */
 
-#define MTE_TEST
+// #define	GBE_DEBUG
+// #define debug fatal
 
-#define	GBE_DEFAULT_XRES		640
-#define	GBE_DEFAULT_YRES		480
+#define	GBE_DEFAULT_XRES		1280
+#define	GBE_DEFAULT_YRES		1024
+#define	GBE_DEFAULT_BITDEPTH		8
 
 
 struct sgi_gbe_data {
-	int		xres, yres;
-
-	uint32_t	control;		/* 0x00000  */
+	// CRM / GBE registers:
+	uint32_t	ctrlstat;		/* 0x00000  */
 	uint32_t	dotclock;		/* 0x00004  */
 	uint32_t	i2c;			/* 0x00008  */
 	uint32_t	i2cfp;			/* 0x00010  */
-	uint32_t	plane0ctrl;		/* 0x30000  */
-	uint32_t	frm_control;		/* 0x3000c  */
-	int		freeze;
 
+	uint32_t	freeze;	/* and xy */	/* 0x10000  */
+	uint32_t	y_intr01;		/* 0x10020  */
+	uint32_t	y_intr23;		/* 0x10024  */
+
+	uint32_t	ovr_tilesize;		/* 0x20000  */
+	uint32_t	ovr_control;		/* 0x2000c  */
+
+	uint32_t	tilesize;		/* 0x30000  */
+	uint32_t	frm_control;		/* 0x3000c  */
+
+	uint32_t	palette[32 * 256];	/* 0x50000  */
+
+	uint32_t	cursor_pos;		/* 0x70000  */
+	uint32_t	cursor_control;		/* 0x70004  */
+	uint32_t	cursor_cmap0;		/* 0x70008  */
+	uint32_t	cursor_cmap1;		/* 0x7000c  */
+	uint32_t	cursor_cmap2;		/* 0x70010  */
+	uint32_t	cursor_bitmap[64];	/* 0x78000  */
+
+	// Emulator's representation:
+	int		xres, yres;
+	int 		width_in_tiles;
+	int		partial_pixels;
+	int 		ovr_width_in_tiles;
+	int		ovr_partial_pixels;
 	int		bitdepth;
+	int		color_mode;
+	int		cmap_select;
+	uint32_t	selected_palette[256];
 	struct vfb_data *fb_data;
 };
+
+
+void get_rgb(struct sgi_gbe_data *d, uint32_t color, uint8_t* r, uint8_t* g, uint8_t* b)
+{
+	// TODO: Don't switch on color_mode. For overlays, this is always 
+	// 8-bit index mode!
+	switch (d->color_mode) {
+	case CRMFB_MODE_TYP_I8:
+		color &= 0xff;
+		*r = d->selected_palette[color] >> 24;
+		*g = d->selected_palette[color] >> 16;
+		*b = d->selected_palette[color] >>  8;
+		break;
+	case CRMFB_MODE_TYP_RG3B2:	// Used by NetBSD console mode
+		*r = 255 * ((color >> 5) & 7) / 7;
+		*g = 255 * ((color >> 2) & 7) / 7;
+		*b = (color & 3) * 85;
+		break;
+	case CRMFB_MODE_TYP_RGB8:	// Used by NetBSD's X11 server
+		*r = color >> 24;
+		*g = color >> 16;
+		*b = color >>  8;
+		break;
+	default:fatal("sgi gbe get_rgb(): unimplemented mode %i\n", d->color_mode);
+		exit(1);
+	}
+}
+
+
+void select_palette(struct sgi_gbe_data *d, int palette_nr)
+{
+	memmove(&d->selected_palette[0],
+		&d->palette[256 * palette_nr],
+		256 * sizeof(uint32_t));
+}
 
 
 /*
@@ -75,131 +149,226 @@ struct sgi_gbe_data {
  *
  *  Every now and then, copy data from the framebuffer in normal ram
  *  to the actual framebuffer (which will then redraw the window).
- *  TODO:  This is utterly slow, even slower than the normal framebuffer
- *  which is really slow as it is.
  *
- *  frm_control (bits 31..9) is a pointer to an array of uint16_t.
- *  These numbers (when << 16 bits) are pointers to the tiles. Tiles are
+ *  NOTE: This is very slow, even slower than the normal emulated framebuffer,
+ *  which is already slow as it is.
+ *
+ *  frm_control contains a pointer to an array of uint16_t. These numbers
+ *  (when shifted 16 bits to the left) are pointers to the tiles. Tiles are
  *  512x128 in 8-bit mode, 256x128 in 16-bit mode, and 128x128 in 32-bit mode.
+ *
+ *  An exception is how Linux/O2 uses the framebuffer, in a "tweaked" mode
+ *  which resembles linear mode. This code attempts to support both.
  */
 DEVICE_TICK(sgi_gbe)
 {
 	struct sgi_gbe_data *d = (struct sgi_gbe_data *) extra;
-	int tile_nr = 0, on_screen = 1, xbase = 0, ybase = 0;
-	unsigned char tileptr_buf[sizeof(uint16_t)];
-	uint64_t tileptr, tiletable;
-	int lines_to_copy, pixels_per_line, y;
+	uint64_t tiletable;
 	unsigned char buf[16384];	/*  must be power of 2, at most 65536 */
-	int copy_len, copy_offset;
-	uint64_t old_fb_offset = 0;
-	int tweaked = 1;
+	int bytes_per_pixel = d->bitdepth / 8;
+	int partial_pixels, width_in_tiles;
 
-#ifdef MTE_TEST
-/*  Actually just a return, but this fools the Compaq compiler...  */
-if (cpu != NULL)
-return;
-#endif
+	if (!cpu->machine->x11_md.in_use)
+		return;
 
-	/*  debug("[ sgi_gbe: dev_sgi_gbe_tick() ]\n");  */
-
-	tiletable = (d->frm_control & 0xfffffe00);
-	if (tiletable == 0)
-		on_screen = 0;
-/*
-tweaked = 0;
-*/
-	while (on_screen) {
-		/*  Get pointer to a tile:  */
-		cpu->memory_rw(cpu, cpu->mem, tiletable +
-		    sizeof(tileptr_buf) * tile_nr,
-		    tileptr_buf, sizeof(tileptr_buf), MEM_READ,
-		    NO_EXCEPTIONS | PHYSICAL);
-		tileptr = 256 * tileptr_buf[0] + tileptr_buf[1];
-		/*  TODO: endianness  */
-		tileptr <<= 16;
-
-		/*  tileptr is now a physical address of a tile.  */
-		debug("[ sgi_gbe:   tile_nr = %2i, tileptr = 0x%08lx, xbase"
-		    " = %4i, ybase = %4i ]\n", tile_nr, tileptr, xbase, ybase);
-
-		if (tweaked) {
-			/*  Tweaked (linear) mode:  */
-
-			/*
-			 *  Copy data from this 64KB physical RAM block to the
-			 *  framebuffer:
-			 *
-			 *  NOTE: Copy it in smaller chunks than 64KB, in case
-			 *        the framebuffer device can optimize away
-			 *        portions that aren't modified that way.
-			 */
-			copy_len = sizeof(buf);
-			copy_offset = 0;
-
-			while (on_screen && copy_offset < 65536) {
-				if (old_fb_offset + copy_len > (uint64_t)
-				    (d->xres * d->yres * d->bitdepth / 8)) {
-					copy_len = d->xres * d->yres *
-					    d->bitdepth / 8 - old_fb_offset;
-					/*  Stop after copying this block...  */
-					on_screen = 0;
-				}
-
-				/*  debug("old_fb_offset = %08x copylen"
-				    "=%i\n", old_fb_offset, copy_len);  */
-
-				cpu->memory_rw(cpu, cpu->mem, tileptr +
-				    copy_offset, buf, copy_len, MEM_READ,
-				    NO_EXCEPTIONS | PHYSICAL);
-				dev_fb_access(cpu, cpu->mem, old_fb_offset,
-				    buf, copy_len, MEM_WRITE, d->fb_data);
-				copy_offset += sizeof(buf);
-				old_fb_offset += sizeof(buf);
-			}
-		} else {
-			/*  This is for non-tweaked (tiled) mode. Not really
-			    tested with correct image data, but might work:  */
-
-			lines_to_copy = 128;
-			if (ybase + lines_to_copy > d->yres)
-				lines_to_copy = d->yres - ybase;
-
-			pixels_per_line = 512 * 8 / d->bitdepth;
-			if (xbase + pixels_per_line > d->xres)
-				pixels_per_line = d->xres - xbase;
-
-			for (y=0; y<lines_to_copy; y++) {
-				cpu->memory_rw(cpu, cpu->mem, tileptr + 512 * y,
-				    buf, pixels_per_line * d->bitdepth / 8,
-				    MEM_READ, NO_EXCEPTIONS | PHYSICAL);
-#if 0
-{
-int i;
-for (i=0; i<pixels_per_line * d->bitdepth / 8; i++)
-	buf[i] ^= (random() & 0x20);
-}
-#endif
-				dev_fb_access(cpu, cpu->mem, ((ybase + y) *
-				    d->xres + xbase) * d->bitdepth / 8,
-				    buf, pixels_per_line * d->bitdepth / 8,
-				    MEM_WRITE, d->fb_data);
-			}
-
-			/*  Go to next tile:  */
-			xbase += (512 * 8 / d->bitdepth);
-			if (xbase >= d->xres) {
-				xbase = 0;
-				ybase += 128;
-				if (ybase >= d->yres)
-					on_screen = 0;
-			}
+	// If not frozen...
+	if (!(d->freeze & 0x80000000)) {
+		// ... check if the guest OS wants interrupts based on Y:
+		if ((d->y_intr01 & CRMFB_INTR_0_MASK) != 0xfff000 ||
+		    (d->y_intr01 & CRMFB_INTR_1_MASK) != 0xfff ||
+		    (d->y_intr23 & CRMFB_INTR_2_MASK) != 0xfff000 ||
+		    (d->y_intr23 & CRMFB_INTR_3_MASK) != 0xfff) {
+			fatal("[ sgi_gbe: WARNING: Y interrupts not yet implemented. ]\n");
 		}
-
-		/*  Go to next tile:  */
-		tile_nr ++;
 	}
 
-	/*  debug("[ sgi_gbe: dev_sgi_gbe_tick() end]\n");  */
+	// printf("d->frm_control = %08x  d->ovr_control = %08x\n", d->frm_control,d->ovr_control);
+
+	// NetBSD's crmfbreg.h documents the tileptr as having a "9 bit shift",
+	// but IRIX seems to put a value ending in 0x......80 there, and the
+	// last part of that address seems to matter.
+	// TODO: Double-check this with the real hardware.
+	
+	if (d->ovr_control & CRMFB_DMA_ENABLE) {
+		tiletable = (d->ovr_control & 0xffffff80);
+		bytes_per_pixel = 1;
+		partial_pixels = d->ovr_partial_pixels;
+		width_in_tiles = d->ovr_width_in_tiles;
+		select_palette(d, 17);	// TODO: is it always palette nr 17 for overlays?
+	} else if (d->frm_control & CRMFB_DMA_ENABLE) {
+		tiletable = (d->frm_control & 0xffffff80);
+		partial_pixels = d->partial_pixels;
+		width_in_tiles = d->width_in_tiles;
+		select_palette(d, d->cmap_select);
+	} else {
+		return;
+	}
+
+#ifdef GBE_DEBUG
+	fatal("[ sgi_gbe: dev_sgi_gbe_tick(): tiletable = 0x%llx, bytes_per_pixel = %i ]\n", (long long)tiletable,
+		bytes_per_pixel);
+#endif
+
+	if (tiletable == 0)
+		return;
+
+	// Nr of tiles horizontally:
+	int w = width_in_tiles + (partial_pixels > 0 ? 1 : 0);
+
+	// Actually, the number of tiles vertically is usually very few,
+	// but this algorithm will render "up to" 256 and abort as soon
+	// as the screen is filled instead. This makes it work for both
+	// Linux' "tweaked linear" mode and all the other guest OSes.
+	const int max_nr_of_tiles = 256;
+	
+	uint32_t tile[max_nr_of_tiles];
+	uint8_t alltileptrs[max_nr_of_tiles * sizeof(uint16_t)];
+	
+	cpu->memory_rw(cpu, cpu->mem, tiletable,
+	    alltileptrs, sizeof(alltileptrs), MEM_READ,
+	    NO_EXCEPTIONS | PHYSICAL);
+
+	for (int i = 0; i < 256; ++i) {
+		tile[i] = (256 * alltileptrs[i*2] + alltileptrs[i*2+1]) << 16;
+#ifdef GBE_DEBUG
+		if (tile[i] != 0)
+			printf("tile[%i] = 0x%08x\n", i, tile[i]);
+#endif
+	}
+
+	int screensize = d->xres * d->yres * 3;
+	int x = 0, y = 0;
+
+	for (int tiley = 0; tiley < max_nr_of_tiles; ++tiley) {
+		for (int line = 0; line < 128; ++line) {
+			for (int tilex = 0; tilex < w; ++tilex) {
+				int tilenr = tilex + tiley * w;
+				
+				if (tilenr >= max_nr_of_tiles)
+					continue;
+				
+				uint32_t base = tile[tilenr];
+				
+				if (base == 0)
+					continue;
+				
+				// Read one line of up to 512 bytes from the tile.
+				int len = tilex < width_in_tiles ? 512 : (partial_pixels * bytes_per_pixel);
+
+				cpu->memory_rw(cpu, cpu->mem, base + 512 * line,
+				    buf, len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+
+				int fb_offset = (x + y * d->xres) * 3;
+				int fb_len = (len / bytes_per_pixel) * 3;
+
+				if (fb_offset + fb_len > screensize) {
+					fb_len = screensize - fb_offset;
+				}
+				
+				if (fb_len <= 0) {
+					tiley = max_nr_of_tiles;  // to break
+					tilex = w;
+					line = 128;
+				}
+
+				uint8_t fb_buf[512 * 3];
+				int fb_i = 0;
+				for (int i = 0; i < 512; i+=bytes_per_pixel) {
+					uint32_t color;
+					if (bytes_per_pixel == 1)
+						color = buf[i];
+					else if (bytes_per_pixel == 2)
+						color = (buf[i]<<8) + buf[i+1];
+					else // if (bytes_per_pixel == 4)
+						color = (buf[i]<<24) + (buf[i+1]<<16)
+							+ (buf[i+2]<<8)+buf[i+3];
+					get_rgb(d, color,
+					    &fb_buf[fb_i],
+					    &fb_buf[fb_i+1],
+					    &fb_buf[fb_i+2]);
+					fb_i += 3;
+				}
+
+				dev_fb_access(cpu, cpu->mem, fb_offset,
+				    fb_buf, fb_len, MEM_WRITE, d->fb_data);
+
+				x += len / bytes_per_pixel;
+				if (x >= d->xres) {
+					x -= d->xres;
+					++y;
+					if (y >= d->yres) {
+						tiley = max_nr_of_tiles; // to break
+						tilex = w;
+						line = 128;
+					}
+				}
+			}
+		}
+	}
+
+	if (d->cursor_control & CRMFB_CURSOR_ON) {
+		int16_t cx = d->cursor_pos & 0xffff;
+		int16_t cy = d->cursor_pos >> 16;
+
+		if (d->cursor_control & CRMFB_CURSOR_CROSSHAIR) {
+			uint8_t pixel[3];
+			pixel[0] = d->cursor_cmap0 >> 24;
+			pixel[1] = d->cursor_cmap0 >> 16;
+			pixel[2] = d->cursor_cmap0 >> 8;
+
+			if (cx >= 0 && cx < d->xres) {
+				for (y = 0; y < d->yres; ++y)
+					dev_fb_access(cpu, cpu->mem, (cx + y * d->xres) * 3,
+					    pixel, 3, MEM_WRITE, d->fb_data);
+			}
+
+			// TODO: Rewrite as a single framebuffer block write?
+			if (cy >= 0 && cy < d->yres) {
+				for (x = 0; x < d->xres; ++x)
+					dev_fb_access(cpu, cpu->mem, (x + cy * d->xres) * 3,
+					    pixel, 3, MEM_WRITE, d->fb_data);
+			}
+		} else {
+			uint8_t pixel[3];
+			int sx, sy;
+
+			for (int dy = 0; dy < 32; ++dy) {
+				for (int dx = 0; dx < 32; ++dx) {
+					sx = cx + dx;
+					sy = cy + dy;
+					
+					if (sx < 0 || sx >= d->xres ||
+					    sy < 0 || sy >= d->yres)
+						continue;
+					
+					int wordindex = dy*2 + (dx>>4);
+					uint32_t word = d->cursor_bitmap[wordindex];
+					
+					int color = (word >> ((15 - (dx&15))*2)) & 3;
+					
+					if (!color)
+						continue;
+
+					if (color == 1) {
+						pixel[0] = d->cursor_cmap0 >> 24;
+						pixel[1] = d->cursor_cmap0 >> 16;
+						pixel[2] = d->cursor_cmap0 >> 8;
+					} else if (color == 2) {
+						pixel[0] = d->cursor_cmap1 >> 24;
+						pixel[1] = d->cursor_cmap1 >> 16;
+						pixel[2] = d->cursor_cmap1 >> 8;
+					} else {
+						pixel[0] = d->cursor_cmap2 >> 24;
+						pixel[1] = d->cursor_cmap2 >> 16;
+						pixel[2] = d->cursor_cmap2 >> 8;
+					}
+
+					dev_fb_access(cpu, cpu->mem, (sx + sy * d->xres) * 3,
+					    pixel, 3, MEM_WRITE, d->fb_data);
+				}
+			}
+		}
+	}
 }
 
 
@@ -208,41 +377,48 @@ DEVICE_ACCESS(sgi_gbe)
 	struct sgi_gbe_data *d = (struct sgi_gbe_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
-	if (writeflag == MEM_WRITE)
+	if (writeflag == MEM_WRITE) {
 		idata = memory_readmax64(cpu, data, len);
 
 #ifdef GBE_DEBUG
-	if (writeflag == MEM_WRITE)
-		debug("[ sgi_gbe: DEBUG: write to address 0x%llx, data"
+		fatal("[ sgi_gbe: DEBUG: write to address 0x%llx, data"
 		    "=0x%llx ]\n", (long long)relative_addr, (long long)idata);
 #endif
+	}
 
 	switch (relative_addr) {
 
-	case 0x0:
-		if (writeflag == MEM_WRITE)
-			d->control = idata;
-		else
-			odata = d->control;
+	case CRMFB_CTRLSTAT:	// 0x0
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_gbe: write to ctrlstat: 0x%08x ]\n", (int)idata);
+			d->ctrlstat = (idata & ~CRMFB_CTRLSTAT_CHIPID_MASK)
+				| (d->ctrlstat & CRMFB_CTRLSTAT_CHIPID_MASK);
+		} else
+			odata = d->ctrlstat;
 		break;
 
-	case 0x4:
+	case CRMFB_DOTCLOCK:	// 0x4
 		if (writeflag == MEM_WRITE)
 			d->dotclock = idata;
 		else
 			odata = d->dotclock;
 		break;
 
-	case 0x8:	/*  i2c?  */
+	case CRMFB_I2C_VGA:	// 0x8
 		/*
 		 *  "CRT I2C control".
 		 *
 		 *  I'm not sure what this does. It isn't really commented
-		 *  in the linux sources.  The IP32 prom writes the values
+		 *  in the Linux sources.  The IP32 PROM writes the values
 		 *  0x03, 0x01, and then 0x00 to this address, and then
 		 *  reads back a value.
 		 */
 		if (writeflag == MEM_WRITE) {
+			//if (!(d->i2c & CRMFB_I2C_SCL) &&
+			//    (idata & CRMFB_I2C_SCL)) {
+			//	fatal("vga i2c data: %i\n", idata & CRMFB_I2C_SDA);
+			//}
+
 			d->i2c = idata;
 		} else {
 			odata = d->i2c;
@@ -250,8 +426,13 @@ DEVICE_ACCESS(sgi_gbe)
 		}
 		break;
 
-	case 0x10:	/*  i2cfp, flat panel control  */
+	case CRMFB_I2C_FP:	// 0x10, i2cfp, flat panel control
 		if (writeflag == MEM_WRITE) {
+			//if (d->i2c & CRMFB_I2C_SCL &&
+			//    !(idata & CRMFB_I2C_SCL)) {
+			//	fatal("fp i2c data: %i\n", idata & CRMFB_I2C_SDA);
+			//}
+
 			d->i2cfp = idata;
 		} else {
 			odata = d->i2cfp;
@@ -259,84 +440,213 @@ DEVICE_ACCESS(sgi_gbe)
 		}
 		break;
 
-	case 0x10000:		/*  vt_xy, according to Linux  */
+	case CRMFB_DEVICE_ID:	// 0x14
+		odata = CRMFB_DEVICE_ID_DEF;
+		break;
+
+	case CRMFB_VT_XY:	// 0x10000
 		if (writeflag == MEM_WRITE)
-			d->freeze = idata & ((uint32_t)1<<31)? 1 : 0;
+			d->freeze = idata & 0x80000000;
 		else {
-			/*  bit 31 = freeze, 23..12 = cury, 11.0 = curx  */
-			odata = ((random() % (d->yres + 10)) << 12)
+			/*
+			 *  vt_xy, according to Linux:
+			 *
+			 * bit 31 = freeze, 23..12 = cury, 11.0 = curx
+			 */
+			/*  odata = ((random() % (d->yres + 10)) << 12)
 			    + (random() % (d->xres + 10)) +
-			    (d->freeze? ((uint32_t)1 << 31) : 0);
-odata = random();	/*  testhack for the ip32 prom  */
+			    d->freeze;  */
+
+			/*
+			 *  Hack for IRIX/IP32. During startup, it waits for
+			 *  the value to be over 0x400 (in "gbeRun").
+			 *
+			 *  Hack for the IP32 PROM: During startup, it waits
+			 *  for the value to be above 0x500 (I think).
+			 */
+			odata = d->freeze | (random() & 1 ? 0x3ff : 0x501);
 		}
 		break;
 
-	case 0x10004:		/*  vt_xymax, according to Linux  */
+	case CRMFB_VT_XYMAX:	// 0x10004, vt_xymax, according to Linux & NetBSD
 		odata = ((d->yres-1) << 12) + d->xres-1;
 		/*  ... 12 bits maxy, 12 bits maxx.  */
 		break;
 
-	case 0x10034:		/*  vt_hpixen, according to Linux  */
+	case CRMFB_VT_VSYNC:	// 0x10008
+	case CRMFB_VT_HSYNC:	// 0x1000c
+	case CRMFB_VT_VBLANK:	// 0x10010
+	case CRMFB_VT_HBLANK:	// 0x10014
+		// TODO
+		break;
+
+	case CRMFB_VT_FLAGS:	// 0x10018
+		// OpenBSD/sgi writes to this register.
+		break;
+
+	case CRMFB_VT_FRAMELOCK:	// 0x1001c
+		// TODO.
+		break;
+
+	case CRMFB_VT_INTR01:	// 0x10020
+		if (writeflag == MEM_WRITE)
+			d->y_intr01 = idata;
+		break;
+
+	case CRMFB_VT_INTR23:	// 0x10024
+		if (writeflag == MEM_WRITE)
+			d->y_intr23 = idata;
+		break;
+
+	case 0x10028:	// 0x10028
+	case 0x1002c:	// 0x1002c
+	case 0x10030:	// 0x10030
+		// TODO: Unknown, written to by the PROM?
+		break;
+
+	case CRMFB_VT_HPIX_EN:	// 0x10034, vt_hpixen, according to Linux
 		odata = (0 << 12) + d->xres-1;
 		/*  ... 12 bits on, 12 bits off.  */
 		break;
 
-	case 0x10038:		/*  vt_vpixen, according to Linux  */
+	case CRMFB_VT_VPIX_EN:	// 0x10038, vt_vpixen, according to Linux
 		odata = (0 << 12) + d->yres-1;
 		/*  ... 12 bits on, 12 bits off.  */
 		break;
 
-	case 0x20004:
-		odata = random();	/*  IP32 prom test hack. TODO  */
-		/*  IRIX wants 0x20, it seems.  */
-		if (random() & 1)
-			odata = 0x20;
-		break;
-
-	case 0x30000:	/*  normal plane ctrl 0  */
-		/*  bit 15 = fifo reset, 14..13 = depth, 
-		    12..5 = tile width, 4..0 = rhs  */
+	case CRMFB_VT_HCMAP:	// 0x1003c
 		if (writeflag == MEM_WRITE) {
-			d->plane0ctrl = idata;
-			d->bitdepth = 8 << ((d->plane0ctrl >> 13) & 3);
-			debug("[ sgi_gbe: setting color depth to %i bits ]\n",
-			    d->bitdepth);
-			if (d->bitdepth != 8)
-				fatal("sgi_gbe: warning: bitdepth %i not "
-				    "really implemented yet\n", d->bitdepth);
+			d->xres = (idata & CRMFB_HCMAP_ON_MASK) >> CRMFB_VT_HCMAP_ON_SHIFT;
+			dev_fb_resize(d->fb_data, d->xres, d->yres);
+		}
+		
+		odata = (d->xres << CRMFB_VT_HCMAP_ON_SHIFT) + d->xres + 100;
+		break;
+
+	case CRMFB_VT_VCMAP:	// 0x10040
+		if (writeflag == MEM_WRITE) {
+			d->yres = (idata & CRMFB_VCMAP_ON_MASK) >> CRMFB_VT_VCMAP_ON_SHIFT;
+			dev_fb_resize(d->fb_data, d->xres, d->yres);
+		}
+
+		odata = (d->yres << CRMFB_VT_VCMAP_ON_SHIFT) + d->yres + 100;
+		break;
+
+	case CRMFB_VT_DID_STARTXY:	// 0x10044
+	case CRMFB_VT_CRS_STARTXY:	// 0x10048
+	case CRMFB_VT_VC_STARTXY:	// 0x1004c
+		// TODO
+		break;
+		
+	case CRMFB_OVR_WIDTH_TILE:	// 0x20000
+		if (writeflag == MEM_WRITE) {
+			d->ovr_tilesize = idata;
+
+			d->ovr_width_in_tiles = (idata >> CRMFB_FRM_TILESIZE_WIDTH_SHIFT) & 0xff;
+			d->ovr_partial_pixels = ((idata >> CRMFB_FRM_TILESIZE_RHS_SHIFT) & 0x1f) * 32;
+
+			debug("[ sgi_gbe: OVR setting width in tiles = %i, partial pixels = %i ]\n",
+			    d->ovr_width_in_tiles, d->ovr_partial_pixels);
 		} else
-			odata = d->plane0ctrl;
+			odata = d->ovr_tilesize;
 		break;
 
-	case 0x30008:	/*  normal plane ctrl 2  */
-		odata = random();	/*  IP32 prom test hack. TODO  */
-		/*  IRIX wants 0x20, it seems.  */
-		if (random() & 1)
-			odata = 0x20;
+	case CRMFB_OVR_TILE_PTR:	// 0x20004
+		odata = d->ovr_control ^ (random() & 1);
 		break;
 
-	case 0x3000c:	/*  normal plane ctrl 3  */
+	case CRMFB_OVR_CONTROL:		// 0x20008
+		if (writeflag == MEM_WRITE)
+			d->ovr_control = idata;
+		else
+			odata = d->ovr_control;
+		break;
+
+	case CRMFB_FRM_TILESIZE:	// 0x30000:
+		if (writeflag == MEM_WRITE) {
+			d->tilesize = idata;
+
+			d->bitdepth = 8 << ((d->tilesize >> CRMFB_FRM_TILESIZE_DEPTH_SHIFT) & 3);
+			d->width_in_tiles = (idata >> CRMFB_FRM_TILESIZE_WIDTH_SHIFT) & 0xff;
+			d->partial_pixels = ((idata >> CRMFB_FRM_TILESIZE_RHS_SHIFT) & 0x1f) * 32 * 8 / d->bitdepth;
+
+			debug("[ sgi_gbe: setting color depth to %i bits, width in tiles = %i, partial pixels = %i ]\n",
+			    d->bitdepth, d->width_in_tiles, d->partial_pixels);
+		} else
+			odata = d->tilesize;
+		break;
+
+	case CRMFB_FRM_PIXSIZE:	// 0x30004
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_gbe: setting PIXSIZE to 0x%08x ]\n", (int)idata);
+		}
+		break;
+		
+	case 0x30008:
+		// TODO: Figure out exactly what the low bits do.
+		// Irix seems to want 0x20 to "sometimes" be on or off here.
+		odata = d->frm_control ^ (random() & 0x20);
+		break;
+
+	case CRMFB_FRM_CONTROL:	// 0x3000c
 		/*
 		 *  Writes to 3000c should be readable back at 30008?
 		 *  At least bit 0 (dma) ctrl 3.
-		 *
-		 *  Bits 31..9 = tile table pointer bits,
-		 *  Bit 1 = linear
-		 *  Bit 0 = dma
 		 */
 		if (writeflag == MEM_WRITE) {
 			d->frm_control = idata;
-			debug("[ sgi_gbe: frm_control = 0x%08x ]\n",
-			    d->frm_control);
+			debug("[ sgi_gbe: frm_control = 0x%08x ]\n", d->frm_control);
 		} else
 			odata = d->frm_control;
 		break;
 
-	case 0x40000:
+	case CRMFB_DID_PTR:	// 0x40000
 		odata = random();	/*  IP32 prom test hack. TODO  */
 		/*  IRIX wants 0x20, it seems.  */
 		if (random() & 1)
 			odata = 0x20;
+		break;
+
+	case CRMFB_DID_CONTROL:	// 0x40004
+		// TODO
+		break;
+
+	case CRMFB_CMAP_FIFO:		// 0x58000
+		break;
+
+	case CRMFB_CURSOR_POS:		// 0x70000
+		if (writeflag == MEM_WRITE)
+			d->cursor_pos = idata;
+		else
+			odata = d->cursor_pos;
+		break;
+		
+	case CRMFB_CURSOR_CONTROL:	// 0x70004
+		if (writeflag == MEM_WRITE)
+			d->cursor_control = idata;
+		else
+			odata = d->cursor_control;
+		break;
+		
+	case CRMFB_CURSOR_CMAP0:	// 0x70008
+		if (writeflag == MEM_WRITE)
+			d->cursor_cmap0 = idata;
+		else
+			odata = d->cursor_cmap0;
+		break;
+		
+	case CRMFB_CURSOR_CMAP1:	// 0x7000c
+		if (writeflag == MEM_WRITE)
+			d->cursor_cmap1 = idata;
+		else
+			odata = d->cursor_cmap1;
+		break;
+		
+	case CRMFB_CURSOR_CMAP2:	// 0x70010
+		if (writeflag == MEM_WRITE)
+			d->cursor_cmap2 = idata;
+		else
+			odata = d->cursor_cmap2;
 		break;
 
 	/*
@@ -344,56 +654,70 @@ odata = random();	/*  testhack for the ip32 prom  */
 	 *  to 0x503xx, and gamma correction data to 0x60000 - 0x603ff, as
 	 *  32-bit values at addresses divisible by 4 (formated as 0xrrggbb00).
 	 *
-	 *  sgio2fb: initializing
-	 *  sgio2fb: I/O at 0xffffffffb6000000
-	 *  sgio2fb: tiles at ffffffffa2ef5000
-	 *  sgio2fb: framebuffer at ffffffffa1000000
-	 *  sgio2fb: 8192kB memory
-	 *  Console: switching to colour frame buffer device 80x30
+	 *  "sgio2fb: initializing
+	 *   sgio2fb: I/O at 0xffffffffb6000000
+	 *   sgio2fb: tiles at ffffffffa2ef5000
+	 *   sgio2fb: framebuffer at ffffffffa1000000
+	 *   sgio2fb: 8192kB memory
+	 *   Console: switching to colour frame buffer device 80x30"
+	 *
+	 *  NetBSD's crmfb_set_palette, however, uses values in reverse, like this:
+	 *	val = (r << 8) | (g << 16) | (b << 24);
 	 */
 
 	default:
-		/*  Gamma correction:  */
-		if (relative_addr >= 0x60000 && relative_addr <= 0x603ff) {
-			/*  ignore gamma correction for now  */
+		/*  WID at 0x48000 .. 0x48000 + 4*31:  */
+		if (relative_addr >= CRMFB_WID && relative_addr <= CRMFB_WID + 4 * 31) {
+			// TODO: Figure out how this really works. Why are
+			// there 32 such registers?
+			if (writeflag == MEM_WRITE) {
+				d->color_mode = (idata >> CRMFB_MODE_TYP_SHIFT) & 7;
+				d->cmap_select = (idata >> CRMFB_MODE_CMAP_SELECT_SHIFT) & 0x1f;
+			}
+
 			break;
 		}
 
-		/*  RGB Palette:  */
-		if (relative_addr >= 0x50000 && relative_addr <= 0x503ff) {
-			int color_nr, r, g, b;
-			int old_r, old_g, old_b;
-
-			color_nr = (relative_addr & 0x3ff) / 4;
-			r = (idata >> 24) & 0xff;
-			g = (idata >> 16) & 0xff;
-			b = (idata >>  8) & 0xff;
-
-			old_r = d->fb_data->rgb_palette[color_nr * 3 + 0];
-			old_g = d->fb_data->rgb_palette[color_nr * 3 + 1];
-			old_b = d->fb_data->rgb_palette[color_nr * 3 + 2];
-
-			d->fb_data->rgb_palette[color_nr * 3 + 0] = r;
-			d->fb_data->rgb_palette[color_nr * 3 + 1] = g;
-			d->fb_data->rgb_palette[color_nr * 3 + 2] = b;
-
-			if (r != old_r || g != old_g || b != old_b) {
-				/*  If the palette has been changed, the entire
-				    image needs to be redrawn...  :-/  */
-				d->fb_data->update_x1 = 0;
-				d->fb_data->update_x2 = d->fb_data->xsize - 1;
-				d->fb_data->update_y1 = 0;
-				d->fb_data->update_y2 = d->fb_data->ysize - 1;
+		/*  RGB Palette at 0x50000 .. 0x57fff:  */
+		if (relative_addr >= CRMFB_CMAP && relative_addr < CRMFB_CMAP + 256 * 32 * sizeof(uint32_t)) {
+			int color_index = (relative_addr - CRMFB_CMAP) >> 2;
+			if (writeflag == MEM_WRITE) {
+				int cmap = color_index >> 8;
+				d->palette[color_index] = idata;
+				if (cmap == d->cmap_select)
+					d->selected_palette[color_index] = idata;
+			} else {
+				odata = d->palette[color_index];
 			}
 			break;
 		}
 
+		/*  Gamma correction at 0x60000 .. 0x603ff:  */
+		if (relative_addr >= CRMFB_GMAP && relative_addr <= CRMFB_GMAP + 0x3ff) {
+			/*  ignore gamma correction for now  */
+			break;
+		}
+
+		/*  Cursor bitmap at 0x78000 ..:  */
+		if (relative_addr >= CRMFB_CURSOR_BITMAP && relative_addr <= CRMFB_CURSOR_BITMAP + 0xff) {
+			if (len != 4) {
+				printf("unimplemented CRMFB_CURSOR_BITMAP len %i\n", (int)len);
+			}
+
+			int index = (relative_addr & 0xff) / 4;
+			if (writeflag == MEM_WRITE)
+				d->cursor_bitmap[index] = idata;
+			else
+				odata = d->cursor_bitmap[index];
+			break;
+		}
+
 		if (writeflag == MEM_WRITE)
-			debug("[ sgi_gbe: unimplemented write to address "
+			fatal("[ sgi_gbe: unimplemented write to address "
 			    "0x%llx, data=0x%llx ]\n",
 			    (long long)relative_addr, (long long)idata);
 		else
-			debug("[ sgi_gbe: unimplemented read from address "
+			fatal("[ sgi_gbe: unimplemented read from address "
 			    "0x%llx ]\n", (long long)relative_addr);
 	}
 
@@ -409,29 +733,41 @@ odata = random();	/*  testhack for the ip32 prom  */
 }
 
 
-void dev_sgi_gbe_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr)
+void dev_sgi_gbe_init(struct machine *machine, struct memory *mem, uint64_t baseaddr)
 {
 	struct sgi_gbe_data *d;
 
 	CHECK_ALLOCATION(d = (struct sgi_gbe_data *) malloc(sizeof(struct sgi_gbe_data)));
 	memset(d, 0, sizeof(struct sgi_gbe_data));
 
-	/*  640x480 for Linux:  */
 	d->xres = GBE_DEFAULT_XRES;
 	d->yres = GBE_DEFAULT_YRES;
-	d->bitdepth = 8;
-	d->control = 0x20aa000;		/*  or 0x00000001?  */
+	d->bitdepth = GBE_DEFAULT_BITDEPTH;
+	
+	// My O2 says 0x300ae001 here (while running).
+	d->ctrlstat = CRMFB_CTRLSTAT_INTERNAL_PCLK |
+			CRMFB_CTRLSTAT_GPIO6_INPUT |
+			CRMFB_CTRLSTAT_GPIO5_INPUT |
+			CRMFB_CTRLSTAT_GPIO4_INPUT |
+			CRMFB_CTRLSTAT_GPIO4_SENSE |
+			CRMFB_CTRLSTAT_GPIO3_INPUT |
+			(CRMFB_CTRLSTAT_CHIPID_MASK & 1);
 
-	/*  1280x1024 for booting the O2's PROM:  */
-	d->xres = 1280; d->yres = 1024;
+	// Set a value in the interrupt register that will "never happen" by default.
+	d->y_intr01 = (0xfff << 12) | 0xfff;
+	d->y_intr23 = (0xfff << 12) | 0xfff;
+
+	// Grayscale palette, most likely overwritten immediately by the
+	// guest operating system.
+	for (int i = 0; i < 256; ++i)
+		d->palette[i] = i * 0x01010100;
 
 	d->fb_data = dev_fb_init(machine, mem, FAKE_GBE_FB_ADDRESS,
-	    VFB_GENERIC, d->xres, d->yres, d->xres, d->yres, 8, "SGI GBE");
-	set_grayscale_palette(d->fb_data, 256);
+	    VFB_GENERIC, d->xres, d->yres, d->xres, d->yres, 24, "SGI GBE");
 
 	memory_device_register(mem, "sgi_gbe", baseaddr, DEV_SGI_GBE_LENGTH,
 	    dev_sgi_gbe_access, d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_sgi_gbe_tick, d, 18);
+	machine_add_tickfunction(machine, dev_sgi_gbe_tick, d, 19);
 }
+
 

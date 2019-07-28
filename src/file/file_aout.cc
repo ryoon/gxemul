@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -194,7 +194,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 			exit(1);
 		}
 
-		aout_symbol_ptr = (struct aout_symbol *) syms;
+		aout_symbol_ptr = (struct aout_symbol *) (void*) syms;
 		n_symbols = symbsize / sizeof(struct aout_symbol);
 		i = 0;
 		while (i < n_symbols) {

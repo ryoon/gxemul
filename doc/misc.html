@@ -532,7 +532,7 @@ and store in a file. Let's call this file DECstation5000_125_promdump.bin.
 
 This binary image can now be used in the emulator:
 <pre>
-	$ <b>gxemul -e 3min -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>
+	$ <b>gxemul -e 3min -Qx -M128 0xbfc00000:DECstation5000_125_promdump.bin</b>
 
 	KN02-BA V5.7e   
 	?TFL:  3/scc/access (1:Ln1 reg-12: actual=0x00 xpctd=0x01) [KN02-BA]
@@ -574,18 +574,18 @@ This binary image can now be used in the emulator:
 	>>
 </pre>
 
-<p><font color="#ff0000">(Note: at the moment, this doesn't work.
-I must have broken something when fixing something else, but this
-is what it looked like at the time.)</font>
-
-<p>During bootup, the PROM complains <i>a lot</i> about hardware failures.
-That's because the emulator doesn't emulate the hardware well enough yet.
+<p><font color="#ff0000">(The goal is to get rid of the test failures
+indicated by the PROM's tests, but it will take quite some time as there
+are other things to work on in the emulator as well. Also, making the
+PROM accept the graphics card and keyboard so that it boots with console
+on framebuffer would be nice.)</font>
 
 <p>The command line options used are: <tt>-e 3min</tt> for
 "DECstation 3min" (5000/1xx), <tt>-Q</tt> to supress the emulator's own PROM
 call emulation, <tt>-M128</tt> for 128MB RAM (because GXemul doesn't correctly
 emulate memory detection well enough for the PROM to accept, so it will
-always believe there is 128MB ram anyway), and <tt>-q</tt> to supress debug messages.
+always believe there is 128MB ram anyway), and <tt>-x</tt> is used to launch
+one xterm per serial port.
 The <tt>0xbfc00000</tt> in front of the filename tells GXemul that it is a raw
 binary file which should be loaded at a specific virtual address.
 

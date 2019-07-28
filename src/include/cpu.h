@@ -2,7 +2,7 @@
 #define	CPU_H
 
 /*
- *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -312,7 +312,7 @@ struct cpu_family {
 
 #define	MAX_DYNTRANS_READAHEAD		128
 
-#define	DEFAULT_DYNTRANS_CACHE_SIZE	(48*1048576)
+#define	DEFAULT_DYNTRANS_CACHE_SIZE	(96*1048576)
 #define	DYNTRANS_CACHE_MARGIN		200000
 
 #define	N_BASE_TABLE_ENTRIES		65536

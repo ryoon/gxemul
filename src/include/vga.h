@@ -1,8 +1,8 @@
-#ifndef	VGA_H
-#define	VGA_H
+#ifndef	GXEMUL_VGA_H
+#define	GXEMUL_VGA_H
 
 /*
- *  Copyright (C) 2005-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -89,4 +89,4 @@
 #define	   VGA_IS1_DISPLAY_VRETRACE	   0x08
 #define	   VGA_IS1_DISPLAY_DISPLAY_DISABLE 0x01
 
-#endif	/*  VGA_H  */
+#endif	/*  GXEMUL_VGA_H  */

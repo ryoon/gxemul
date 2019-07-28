@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2004-2010  Anders Gavare.  All rights reserved.
+Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -62,12 +62,8 @@ This page describes some of the internals of GXemul.
 <a name="speed"></a>
 <h3>Speed and emulation modes</h3>
 
-So, how fast is GXemul? There is no short answer to this. There is 
-especially no answer to the question <b>What is the slowdown factor?</b>, 
-because the host architecture and emulated architecture can usually not be 
-compared just like that.
-
-<p>Performance depends on several factors, including (but not limited to)  
+How fast is GXemul? There is no short answer to this.
+Performance depends on several factors, including (but not limited to)  
 host architecture, target architecture, host clock speed, which compiler
 and compiler flags were used to build the emulator, what the workload is,
 what additional runtime flags are given to the emulator, and so on.
@@ -92,8 +88,6 @@ with the emulator, e.g.:
   <li>"How long does it take to compile XYZ inside NetBSD
 	in the emulator?".
 </ul>
-
-<p>So, how fast is it? :-)&nbsp;&nbsp;&nbsp;Answer: it varies.
 
 
 

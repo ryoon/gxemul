@@ -361,7 +361,7 @@ void ppc_exception(struct cpu *cpu, int exception_nr)
 		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0x87c0ffff);
 
 	if (!quiet_mode)
-		fatal("[ PPC Exception 0x%x; pc=0x%" PRIx64 " ]\n",
+		fatal("[ PPC Exception 0x%x; pc=0x%" PRIx64" ]\n",
 		    exception_nr, cpu->pc);
 
 	/*  Disable External Interrupts, Recoverable Interrupt Mode,
@@ -436,7 +436,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<PPC_NGPRS; i++) {
 				if ((i % 4) == 0)
 					debug("cpu%i:", x);
-				debug(" r%02i = 0x%08" PRIx32 " ", i,
+				debug(" r%02i = 0x%08" PRIx32" ", i,
 				    (uint32_t) cpu->cd.ppc.gpr[i]);
 				if ((i % 4) == 3)
 					debug("\n");
@@ -447,7 +447,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				int r = (i >> 1) + ((i & 1) << 4);
 				if ((i % 2) == 0)
 					debug("cpu%i:", x);
-				debug(" r%02i = 0x%016" PRIx64 " ", r,
+				debug(" r%02i = 0x%016" PRIx64" ", r,
 				    (uint64_t) cpu->cd.ppc.gpr[r]);
 				if ((i % 2) == 1)
 					debug("\n");
@@ -457,12 +457,12 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		/*  Other special registers:  */
 		if (bits32) {
 			debug("cpu%i: srr0 = 0x%08" PRIx32
-			    " srr1 = 0x%08" PRIx32 "\n", x,
+			    " srr1 = 0x%08" PRIx32"\n", x,
 			    (uint32_t) cpu->cd.ppc.spr[SPR_SRR0],
 			    (uint32_t) cpu->cd.ppc.spr[SPR_SRR1]);
 		} else {
 			debug("cpu%i: srr0 = 0x%016" PRIx64
-			    "  srr1 = 0x%016" PRIx64 "\n", x,
+			    "  srr1 = 0x%016" PRIx64"\n", x,
 			    (uint64_t) cpu->cd.ppc.spr[SPR_SRR0],
 			    (uint64_t) cpu->cd.ppc.spr[SPR_SRR1]);
 		}
@@ -474,21 +474,21 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		else
 			debug("0x%016" PRIx64, (uint64_t) tmp);
 
-		debug("  tb  = 0x%08" PRIx32 "%08" PRIx32 "\n",
+		debug("  tb  = 0x%08" PRIx32"%08" PRIx32"\n",
 		    (uint32_t) cpu->cd.ppc.spr[SPR_TBU],
 		    (uint32_t) cpu->cd.ppc.spr[SPR_TBL]);
 
 		debug("cpu%i: dec = 0x%08" PRIx32,
 		    x, (uint32_t) cpu->cd.ppc.spr[SPR_DEC]);
 		if (!bits32)
-			debug("  hdec = 0x%08" PRIx32 "\n",
+			debug("  hdec = 0x%08" PRIx32"\n",
 			    (uint32_t) cpu->cd.ppc.spr[SPR_HDEC]);
 
 		debug("\n");
 	}
 
 	if (coprocs & 1) {
-		debug("cpu%i: fpscr = 0x%08" PRIx32 "\n",
+		debug("cpu%i: fpscr = 0x%08" PRIx32"\n",
 		    x, (uint32_t) cpu->cd.ppc.fpscr);
 
 		/*  TODO: show floating-point values :-)  */
@@ -498,7 +498,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		for (i=0; i<PPC_NFPRS; i++) {
 			if ((i % 2) == 0)
 				debug("cpu%i:", x);
-			debug(" f%02i = 0x%016" PRIx64 " ", i,
+			debug(" f%02i = 0x%016" PRIx64" ", i,
 			    (uint64_t) cpu->cd.ppc.fpr[i]);
 			if ((i % 2) == 1)
 				debug("\n");
@@ -506,7 +506,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	}
 
 	if (coprocs & 2) {
-		debug("cpu%i:  sdr1 = 0x%" PRIx64 "\n", x,
+		debug("cpu%i:  sdr1 = 0x%" PRIx64"\n", x,
 		    (uint64_t) cpu->cd.ppc.spr[SPR_SDR1]);
 		if (cpu->cd.ppc.cpu_type.flags & PPC_601)
 			debug("cpu%i:  PPC601-style, TODO!\n");
@@ -518,7 +518,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				uint32_t len = (((upper & BAT_BL) << 15)
 				    | 0x1ffff) + 1;
 				debug("cpu%i:  %sbat%i: u=0x%08" PRIx32
-				    " l=0x%08" PRIx32 " ",
+				    " l=0x%08" PRIx32" ",
 				    x, i<4? "i" : "d", i&3, upper, lower);
 				if (!(upper & BAT_V)) {
 					debug(" (not valid)\n");
@@ -661,7 +661,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	iword = (instr[0] << 24) + (instr[1] << 16) + (instr[2] << 8)
 	    + instr[3];
 
-	debug(": %08" PRIx32 "\t", iword);
+	debug(": %08" PRIx32"\t", iword);
 
 	/*
 	 *  Decode the instruction:
@@ -1817,7 +1817,7 @@ static void debug_spr_usage(uint64_t pc, int spr)
 			break;
 		} else
 			fatal("[ using UNIMPLEMENTED spr %i (%s), pc = "
-			    "0x%" PRIx64 " ]\n", spr, ppc_spr_names[spr] == NULL?
+			    "0x%" PRIx64" ]\n", spr, ppc_spr_names[spr] == NULL?
 			    "UNKNOWN" : ppc_spr_names[spr], (uint64_t) pc);
 	}
 
@@ -1862,3 +1862,5 @@ void update_cr0(struct cpu *cpu, uint64_t value)
 
 
 #include "tmp_ppc_tail.cc"
+
+

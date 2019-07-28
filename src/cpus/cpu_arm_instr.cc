@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2014  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -194,7 +194,7 @@ uint8_t condition_gt[16] = { 1,0,1,0, 0,0,0,0, 0,1,0,1, 0,0,0,0 };
 		arm_instr_ ## n ## __hi, arm_instr_ ## n ## __ls,	\
 		arm_instr_ ## n ## __ge, arm_instr_ ## n ## __lt,	\
 		arm_instr_ ## n ## __gt, arm_instr_ ## n ## __le,	\
-		arm_instr_ ## n , arm_instr_nop };
+		arm_instr_ ## n , arm_instr_never };
 
 #define cond_instr(n)	( arm_cond_instr_ ## n  [condition_code] )
 
@@ -215,8 +215,26 @@ X(invalid) {
 
 	fatal("FATAL ERROR: An internal error occured in the ARM"
 	    " dyntrans code. Please contact the author with detailed"
-	    " repro steps on how to trigger this bug. pc = 0x%08"PRIx32"\n",
+	    " repro steps on how to trigger this bug. pc = 0x%08" PRIx32"\n",
 	    (uint32_t)cpu->pc);
+
+	cpu->cd.arm.next_ic = &nothing_call;
+}
+
+
+/*
+ *  never:  So far unimplemented "never" instructions end up here.
+ *  (Those are the ones using the "0xf" condition prefix.)
+ */
+X(never) {
+	uint32_t low_pc;
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+
+	fatal("[ ARM: unimplemented 0xf instruction at pc = 0x%08" PRIx32" ]\n", (uint32_t)cpu->pc);
 
 	cpu->cd.arm.next_ic = &nothing_call;
 }
@@ -342,7 +360,7 @@ X(bx)
 		cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
 
 	if (cpu->cd.arm.cpsr != old_cpsr)
-		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+		cpu->cd.arm.next_ic = &nothing_call;
 
 	if (cpu->pc & 2 && ((cpu->pc & 1) == 0)) {
 		fatal("[ ARM pc misaligned? 0x%08x ]\n", (int)cpu->pc);
@@ -373,7 +391,7 @@ X(bx_trace)
 		cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
 
 	if (cpu->cd.arm.cpsr != old_cpsr)
-		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+		cpu->cd.arm.next_ic = &nothing_call;
 
 	if (cpu->pc & 2 && ((cpu->pc & 1) == 0)) {
 		fatal("[ ARM pc misaligned? 0x%08x ]\n", (int)cpu->pc);
@@ -395,6 +413,7 @@ Y(bx_trace)
  *  bl:  Branch and Link (to a different translated page)
  *
  *  arg[0] = relative address
+ *  arg[1] = offset within current page to the instruction
  */
 X(bl)
 {
@@ -411,11 +430,56 @@ Y(bl)
 
 
 /*
- *  blx:  Branch and Link, potentially exchanging Thumb/ARM encoding
+ *  blx_imm:  Branch and Link, always switching to THUMB encoding
+ *
+ *  arg[0] = relative address
+ *  arg[1] = offset within current page to the current instruction
+ */
+X(blx_imm)
+{
+	uint32_t pc = ((uint32_t)cpu->pc & 0xfffff000) + (int32_t)ic->arg[1];
+	uint32_t old_cpsr = cpu->cd.arm.cpsr;
+	cpu->cd.arm.r[ARM_LR] = pc + 4;
+
+	/*  Calculate new PC from this instruction + arg[0]  */
+	cpu->pc = pc + (int32_t)ic->arg[0];
+
+	if (cpu->pc & 1)
+		cpu->cd.arm.cpsr |= ARM_FLAG_T;
+	else {
+		fatal("[ blx_imm internal error. Should have switched to THUMB! 0x%08x ]\n", (int)cpu->pc);
+		cpu->running = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.arm.next_ic = &nothing_call;
+		return;
+	}
+
+	if (cpu->cd.arm.cpsr != old_cpsr)
+		cpu->cd.arm.next_ic = &nothing_call;
+
+	if (cpu->pc & 2 && ((cpu->pc & 1) == 0)) {
+		fatal("[ ARM pc misaligned? 0x%08x ]\n", (int)cpu->pc);
+		cpu->running = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.arm.next_ic = &nothing_call;
+		return;
+	}
+
+	if (cpu->machine->show_trace_tree)
+		cpu_functioncall_trace(cpu, cpu->pc);
+
+	/*  Find the new physical page and update the translation pointers:  */
+	quick_pc_to_pointers_arm(cpu);
+}
+
+
+/*
+ *  blx_reg:  Branch and Link, potentially exchanging Thumb/ARM encoding
  *
  *  arg[0] = ptr to rm
+ *  arg[2] = offset within current page to the instruction to return to
  */
-X(blx)
+X(blx_reg)
 {
 	uint32_t lr = ((uint32_t)cpu->pc & 0xfffff000) + (int32_t)ic->arg[2];
 	cpu->cd.arm.r[ARM_LR] = lr;
@@ -428,7 +492,7 @@ X(blx)
 		cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
 
 	if (cpu->cd.arm.cpsr != old_cpsr)
-		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+		cpu->cd.arm.next_ic = &nothing_call;
 
 	if (cpu->pc & 2 && ((cpu->pc & 1) == 0)) {
 		fatal("[ ARM pc misaligned? 0x%08x ]\n", (int)cpu->pc);
@@ -441,7 +505,7 @@ X(blx)
 	/*  Find the new physical page and update the translation pointers:  */
 	quick_pc_to_pointers_arm(cpu);
 }
-Y(blx)
+Y(blx_reg)
 
 
 /*
@@ -803,7 +867,7 @@ X(msr_imm_spsr)
 			cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
 			cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 			old_pc = cpu->pc;
-			printf("msr_spsr: old pc = 0x%08"PRIx32"\n", old_pc);
+			printf("msr_spsr: old pc = 0x%08" PRIx32"\n", old_pc);
 		}
 		exit(1);
 	}
@@ -1047,35 +1111,15 @@ X(cmps_regshort);
 
 
 /*
- *  bdt_load:  Block Data Transfer, Load
- *
- *  arg[0] = pointer to uint32_t in host memory, pointing to the base register
- *  arg[1] = 32-bit instruction word. Most bits are read from this.
+ *  Shared between regular ARM and the THUMB encoded 'pop'.
  */
-X(bdt_load)
+void arm_pop(struct cpu* cpu, uint32_t* np, int p_bit, int u_bit, int s_bit, int w_bit, uint32_t iw)
 {
+	uint32_t addr = *np;
 	unsigned char data[4];
-	uint32_t *np = (uint32_t *)ic->arg[0];
-	uint32_t addr = *np, low_pc;
 	unsigned char *page;
-	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
-	int p_bit = iw & 0x01000000;
-	int u_bit = iw & 0x00800000;
-	int s_bit = iw & 0x00400000;
-	int w_bit = iw & 0x00200000;
 	int i, return_flag = 0;
 	uint32_t new_values[16];
-
-#ifdef GATHER_BDT_STATISTICS
-	if (!s_bit)
-		update_bdt_statistics(iw);
-#endif
-
-	/*  Synchronize the program counter:  */
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	if (s_bit) {
 		/*  Load to USR registers:  */
@@ -1230,41 +1274,20 @@ X(bdt_load)
 		quick_pc_to_pointers_arm(cpu);
 	}
 }
-Y(bdt_load)
 
 
 /*
- *  bdt_store:  Block Data Transfer, Store
- *
- *  arg[0] = pointer to uint32_t in host memory, pointing to the base register
- *  arg[1] = 32-bit instruction word. Most bits are read from this.
+ *  Shared between regular ARM and the THUMB encoded 'push'.
  */
-X(bdt_store)
+void arm_push(struct cpu* cpu, uint32_t* np, int p_bit, int u_bit, int s_bit, int w_bit, uint16_t regs)
 {
-	unsigned char data[4];
-	uint32_t *np = (uint32_t *)ic->arg[0];
-	uint32_t low_pc, value, addr = *np;
-	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
-	unsigned char *page;
-	int p_bit = iw & 0x01000000;
-	int u_bit = iw & 0x00800000;
-	int s_bit = iw & 0x00400000;
-	int w_bit = iw & 0x00200000;
 	int i;
-
-#ifdef GATHER_BDT_STATISTICS
-	if (!s_bit)
-		update_bdt_statistics(iw);
-#endif
-
-	/*  Synchronize the program counter:  */
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	uint32_t value, addr = *np;
+	unsigned char data[4];
+	unsigned char *page;
 
 	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1)) {
-		if (!((iw >> i) & 1)) {
+		if (!((regs >> i) & 1)) {
 			/*  Skip register i:  */
 			continue;
 		}
@@ -1345,6 +1368,69 @@ X(bdt_store)
 
 	if (w_bit)
 		*np = addr;
+}
+
+
+/*
+ *  bdt_load:  Block Data Transfer, Load
+ *
+ *  arg[0] = pointer to uint32_t in host memory, pointing to the base register
+ *  arg[1] = 32-bit instruction word. Most bits are read from this.
+ */
+X(bdt_load)
+{
+	uint32_t *np = (uint32_t *)ic->arg[0];
+	uint32_t low_pc;
+	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
+	int p_bit = iw & 0x01000000;
+	int u_bit = iw & 0x00800000;
+	int s_bit = iw & 0x00400000;
+	int w_bit = iw & 0x00200000;
+
+#ifdef GATHER_BDT_STATISTICS
+	if (!s_bit)
+		update_bdt_statistics(iw);
+#endif
+
+	/*  Synchronize the program counter:  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+
+	arm_pop(cpu, np, p_bit, u_bit, s_bit, w_bit, (uint16_t)iw);
+}
+Y(bdt_load)
+
+
+/*
+ *  bdt_store:  Block Data Transfer, Store
+ *
+ *  arg[0] = pointer to uint32_t in host memory, pointing to the base register
+ *  arg[1] = 32-bit instruction word. Most bits are read from this.
+ */
+X(bdt_store)
+{
+	uint32_t *np = (uint32_t *)ic->arg[0];
+	uint32_t low_pc;
+	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
+	int p_bit = iw & 0x01000000;
+	int u_bit = iw & 0x00800000;
+	int s_bit = iw & 0x00400000;
+	int w_bit = iw & 0x00200000;
+
+#ifdef GATHER_BDT_STATISTICS
+	if (!s_bit)
+		update_bdt_statistics(iw);
+#endif
+
+	/*  Synchronize the program counter:  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+
+	arm_push(cpu, np, p_bit, u_bit, s_bit, w_bit, (uint16_t)iw);
 }
 Y(bdt_store)
 
@@ -2594,23 +2680,40 @@ X(to_be_translated)
 	// t     = (iword >> 4) & 7;
 	rm    = iword & 15;
 
-	if (condition_code == 0xf) {
-//		if ((iword & 0xfc70f000) == 0xf450f000) {
-			/*  Preload:  TODO.  Treat as NOP for now.  */
-			ic->f = instr(nop);
-			goto okay;
-//		}
-//
-//		if (!cpu->translation_readahead)
-//			fatal("TODO: ARM condition code 0x%x\n",
-//			    condition_code);
-//		goto bad;
-	}
-
-
 	/*
 	 *  Translate the instruction:
 	 */
+
+	if ((iword >> 28) == 0xf) {
+		/*  The "never" condition is nowadays used for special encodings.  */
+		if ((iword & 0xfc70f000) == 0xf450f000) {
+			/*  Preload:  TODO.  Treat as NOP for now.  */
+			ic->f = instr(nop);
+			goto okay;
+		}
+
+		switch (main_opcode) {
+		case 0xa:
+		case 0xb:
+			ic->f = instr(blx_imm);
+
+			/*  arg 1 = offset of current instruction  */
+			ic->arg[1] = addr & 0xffc;
+
+			/*  arg 0 = relative jump distance + 1 (to enable THUMB)  */
+			ic->arg[0] = (iword & 0x00ffffff) << 2;
+			/*  Sign-extend:  */
+			if (ic->arg[0] & 0x02000000)
+				ic->arg[0] |= 0xfc000000;
+			if (main_opcode == 0xb)
+				ic->arg[0] += 2;
+			ic->arg[0] = (int32_t)(ic->arg[0] + 8 + 1);
+			break;
+		default:
+			goto bad;
+		}
+		goto okay;
+	}
 
 	switch (main_opcode) {
 
@@ -2661,7 +2764,7 @@ X(to_be_translated)
 		if ((iword & 0x0ff000d0) == 0x01200010) {
 			/*  bx or blx  */
 			if (iword & 0x20)
-				ic->f = cond_instr(blx);
+				ic->f = cond_instr(blx_reg);
 			else {
 				if (cpu->machine->show_trace_tree &&
 				    rm == ARM_LR)
@@ -2889,7 +2992,7 @@ X(to_be_translated)
 			while (r8-- > 0)
 				imm = (imm >> 2) | ((imm & 3) << 30);
 
-			if (steps != 0 && imm < 256 && imm != 0) {
+			if (steps != 0 && (imm != 0 && imm < 256)) {
 				if (!cpu->translation_readahead)
 					fatal("TODO: see cpu_arm_instr_dpi; non-zero steps but still under 256 is not implemented yet\n");
 				goto bad;

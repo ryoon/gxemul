@@ -59,6 +59,15 @@
  */
 
 
+#ifndef NOTHING
+#define NOTHING
+// Used to break out of dyntrans. TODO: Duplicate of arm_instr_nothing
+// code in tmp_arm_head.cc.
+void abortdyntrans(struct cpu* cpu, struct arm_instr_call* ic) { cpu->cd.arm.next_ic --; }
+static struct arm_instr_call abortdyntrans_call = { abortdyntrans, {0,0,0} };
+#endif	// NOTHING
+
+
 /*
  *  arg[0] = pointer to rn
  *  arg[1] = int32_t immediate value   OR  ptr to a reg_func() function
@@ -217,6 +226,12 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		} else
 #endif
 			quick_pc_to_pointers(cpu);
+
+		if (cpu->pc & 1) {
+			// Switch to THUMB and break out of the dyntrans loop.
+			cpu->cd.arm.cpsr |= ARM_FLAG_T;
+			cpu->cd.arm.next_ic = &abortdyntrans_call;
+		}
 		return;
 	} else
 		reg(ic->arg[2]) = c64;

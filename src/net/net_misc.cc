@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -97,7 +97,8 @@ void net_generate_unique_mac(struct machine *machine, unsigned char *macbuf)
 	x = machine->serial_nr;
 	y = machine->nr_of_nics;
 
-	macbuf[0] = 0x10;
+	// Special case: SGI machines have 0x08 as their first byte?
+	macbuf[0] = machine->machine_type == MACHINE_SGI ? 0x08 : 0x10;
 	macbuf[1] = 0x20;
 	macbuf[2] = 0x30;
 	macbuf[3] = 0;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -61,7 +61,6 @@ static void fbctrl_command(struct cpu *cpu, struct fbctrl_data *d)
 {
 	int cmd = d->port[DEV_FBCTRL_PORT_COMMAND];
 	int x1, y1, i;
-	struct machine *machine;
 
 	switch (cmd) {
 
@@ -80,15 +79,20 @@ static void fbctrl_command(struct cpu *cpu, struct fbctrl_data *d)
 
 		/*  Remember to invalidate all translations for anyone
 		    who might have used the old framebuffer:  */
-		machine = cpu->machine;
-		for (i=0; i<machine->ncpus; i++)
-			machine->cpus[i]->invalidate_translation_caches(
-			    machine->cpus[i], 0, INVALIDATE_ALL);
+		for (i = 0; i < cpu->machine->ncpus; i++)
+			cpu->machine->cpus[i]->invalidate_translation_caches(
+			    cpu->machine->cpus[i], 0, INVALIDATE_ALL);
 		break;
 
 	case DEV_FBCTRL_COMMAND_GET_RESOLUTION:
-		d->port[DEV_FBCTRL_PORT_X1] = d->vfb_data->xsize;
-		d->port[DEV_FBCTRL_PORT_Y1] = d->vfb_data->ysize;
+		if (cpu->machine->x11_md.in_use) {
+			d->port[DEV_FBCTRL_PORT_X1] = d->vfb_data->xsize;
+			d->port[DEV_FBCTRL_PORT_Y1] = d->vfb_data->ysize;
+		} else {
+			// When not using X11 output, return 0x0 size.
+			d->port[DEV_FBCTRL_PORT_X1] = 0;
+			d->port[DEV_FBCTRL_PORT_Y1] = 0;
+		}
 		break;
 
 	/*  TODO: Block copy and fill.  */

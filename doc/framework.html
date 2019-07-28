@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2009-2010  Anders Gavare.  All rights reserved.
+Copyright (C) 2009-2018  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -56,17 +56,15 @@ SUCH DAMAGE.
 <a name="introduction"></a>
 <h3>Introduction:</h3>
 
-<p>GXemul 0.6.x is a complete redesign, compared to the 0.4.x series.
+<p>Starting with GXemul 0.6.x, a completely redesign framework is available
+compared to the 0.4.x series.
 This chapter of the documentation describes the core concepts of the
-new framework. The framework is still being designed and implemented, so
+new framework. The framework is <i>still being designed and implemented</i>, so
 what you are reading can be considered an early draft, or a work-in-progress.
 
-<p>(For various reasons, most of the old emulation modes are still included
-in the source code, and may be run by users, but the intention is to either
-rewrite them to use the new framework, or remove them.)
-
-<p>The new framework is written in C++. Previous versions were
-written in C.
+<p>Almost all of the emulation modes in GXemul are implemented using the
+earlier (pre-0.6) framework, but the intention is that
+new emulation modes should use the new framework, if possible.
 
 
 

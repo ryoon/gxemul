@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -27,13 +27,7 @@
  *
  *  TODO:  Many things...
  *
- *	o)  Big-endian ARM loads/stores.
- *
- *	o)  Alignment checks!
- *
- *	o)  Native load/store if the endianness is the same as the host's
- *	    (only implemented for little endian, so far, and it assumes that
- *	    alignment is correct!)
+ *	o)  Big-endian Double-Word loads/stores are likely INCORRECT.
  *
  *	o)  "Base Updated Abort Model", which updates the base register
  *	    even if the memory access failed.
@@ -121,6 +115,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    ;
 
+	addr &= ~(datalen - 1);
 
 #if defined(A__L) || defined(A__LDRD)
 	/*  Load:  */
@@ -141,20 +136,25 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #ifdef A__SIGNED
 	    (int32_t)(int16_t)
 #endif
-	    (data[0] + (data[1] << 8));
+	    (cpu->byte_order == EMUL_LITTLE_ENDIAN
+	    ? (data[0] + (data[1] << 8))
+	    : (data[1] + (data[0] << 8)));
 #else
 #ifndef A__LDRD
-#ifdef HOST_LITTLE_ENDIAN
-	/*  Nothing.  */
+	reg(ic->arg[2]) =
+		cpu->byte_order == EMUL_LITTLE_ENDIAN
+		? data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
+		: data[3] + (data[2] << 8) + (data[1] << 16) + (data[0] << 24);
 #else
-	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
-	    (data[2] << 16) + (data[3] << 24);
-#endif
-#else
-	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
-	    (data[2] << 16) + (data[3] << 24);
-	reg(((uint32_t *)ic->arg[2]) + 1) = data[4] + (data[5] << 8) +
-	    (data[6] << 16) + (data[7] << 24);
+	// TODO: Double-check if this is correct
+	reg(ic->arg[2]) =
+		cpu->byte_order == EMUL_LITTLE_ENDIAN
+		? data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
+		: data[7] + (data[1] << 6) + (data[5] << 16) + (data[4] << 24);
+	reg(((uint32_t *)ic->arg[2]) + 1) =
+		cpu->byte_order == EMUL_LITTLE_ENDIAN
+		? data[4] + (data[5] << 8) + (data[6] << 16) + (data[7] << 24)
+		: data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
 #endif
 #endif
 #endif
@@ -166,18 +166,27 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	*(uint32_t *)(data + 4) = reg(ic->arg[2] + 4);
 #endif
 #else
-	data[0] = reg(ic->arg[2]);
+	int i = cpu->byte_order == EMUL_LITTLE_ENDIAN ? 0 : datalen - 1;
+	data[i] = reg(ic->arg[2]);
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
 #ifndef A__B
-	data[1] = reg(ic->arg[2]) >> 8;
+	data[i] = reg(ic->arg[2]) >> 8;
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
 #if !defined(A__H) || defined(A__STRD)
-	data[1] = reg(ic->arg[2]) >> 8;
-	data[2] = reg(ic->arg[2]) >> 16;
-	data[3] = reg(ic->arg[2]) >> 24;
+	data[i] = reg(ic->arg[2]) >> 16;
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
+	data[i] = reg(ic->arg[2]) >> 24;
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
 #ifdef A__STRD
-	data[4] = reg(ic->arg[2] + 4);
-	data[5] = reg(ic->arg[2] + 4) >> 8;
-	data[6] = reg(ic->arg[2] + 4) >> 16;
-	data[7] = reg(ic->arg[2] + 4) >> 24;
+	// TODO: Double-check if this is correct
+	data[i] = reg(ic->arg[2] + 4);
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
+	data[i] = reg(ic->arg[2] + 4) >> 8;
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
+	data[i] = reg(ic->arg[2] + 4) >> 16;
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
+	data[i] = reg(ic->arg[2] + 4) >> 24;
+	i += cpu->byte_order == EMUL_LITTLE_ENDIAN ? 1 : -1;
 #endif
 #endif
 #endif
@@ -261,20 +270,26 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		    page[addr & 0xfff];
 #else
 #ifdef A__H
+		addr &= ~1;
 		reg(ic->arg[2]) =
 #ifdef A__SIGNED
 		    (int32_t)(int16_t)
 #endif
-		    (page[addr & 0xfff] + (page[(addr & 0xfff) + 1] << 8));
+		    (cpu->byte_order == EMUL_LITTLE_ENDIAN
+		    ? (page[addr & 0xfff] + (page[(addr & 0xfff) + 1] << 8))
+		    : ((page[addr & 0xfff] << 8) + page[(addr & 0xfff) + 1]));
 #else
-#ifdef HOST_LITTLE_ENDIAN
-		reg(ic->arg[2]) = *(uint32_t *)(page + (addr & 0xffc));
-#else
-		reg(ic->arg[2]) = page[addr & 0xfff] +
-		    (page[(addr & 0xfff) + 1] << 8) +
-		    (page[(addr & 0xfff) + 2] << 16) +
-		    (page[(addr & 0xfff) + 3] << 24);
-#endif
+		addr &= ~3;
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			reg(ic->arg[2]) = page[addr & 0xfff] +
+			    (page[(addr & 0xfff) + 1] << 8) +
+			    (page[(addr & 0xfff) + 2] << 16) +
+			    (page[(addr & 0xfff) + 3] << 24);
+		else
+			reg(ic->arg[2]) = page[(addr & 0xfff) + 3] +
+			    (page[(addr & 0xfff) + 2] << 8) +
+			    (page[(addr & 0xfff) + 1] << 16) +
+			    (page[(addr & 0xfff) + 0] << 24);
 #endif
 #endif
 #else
@@ -282,17 +297,27 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		page[addr & 0xfff] = reg(ic->arg[2]);
 #else
 #ifdef A__H
-		page[addr & 0xfff] = reg(ic->arg[2]);
-		page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
+		addr &= ~1;
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)  {
+			page[addr & 0xfff] = reg(ic->arg[2]);
+			page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
+		} else {
+			page[addr & 0xfff] = reg(ic->arg[2]) >> 8;
+			page[(addr & 0xfff)+1] = reg(ic->arg[2]);
+		}
 #else
-#ifdef HOST_LITTLE_ENDIAN
-		*(uint32_t *)(page + (addr & 0xffc)) = reg(ic->arg[2]);
-#else
-		page[addr & 0xfff] = reg(ic->arg[2]);
-		page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
-		page[(addr & 0xfff)+2] = reg(ic->arg[2]) >> 16;
-		page[(addr & 0xfff)+3] = reg(ic->arg[2]) >> 24;
-#endif
+		addr &= ~3;
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)  {
+			page[addr & 0xfff] = reg(ic->arg[2]);
+			page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
+			page[(addr & 0xfff)+2] = reg(ic->arg[2]) >> 16;
+			page[(addr & 0xfff)+3] = reg(ic->arg[2]) >> 24;
+		} else {
+			page[addr & 0xfff] = reg(ic->arg[2]) >> 24;
+			page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 16;
+			page[(addr & 0xfff)+2] = reg(ic->arg[2]) >> 8;
+			page[(addr & 0xfff)+3] = reg(ic->arg[2]);
+		}
 #endif
 #endif
 #endif

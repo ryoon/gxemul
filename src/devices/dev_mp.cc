@@ -166,7 +166,7 @@ DEVICE_ACCESS(mp)
 		 *  It is actually located at machine->memory_offset_in_mb
 		 *  but that is only used for SGI emulation so far.)
 		 */
-		odata = cpu->machine->physical_ram_in_mb * 1048576;
+		odata = cpu->machine->physical_ram_in_mb * 1048576ULL;
 		break;
 
 	case DEV_MP_IPI_ONE:

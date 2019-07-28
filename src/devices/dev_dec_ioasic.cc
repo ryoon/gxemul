@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  COMMENT: IOASIC device used in the DECstation "3MIN" and "3MAX" machines
+ *  COMMENT: IOASIC device used in some DECstation machines
  *
  *  TODO:  Lots of stuff, such as DMA and all bits in the control registers.
  */
@@ -36,6 +36,7 @@
 
 #include "cpu.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -47,49 +48,136 @@
 /* #define debug fatal */
 
 
+void dec_ioasic_reassert(struct dec_ioasic_data* d)
+{
+	// printf("[ intr = 0x%08x, imsk = 0x%08x ]\n", d->intr, d->imsk);
+
+	if (d->intr & d->imsk && !d->int_asserted) {
+		d->int_asserted = 1;
+		d->irq->interrupt_assert(d->irq);
+	}
+	if (!(d->intr & d->imsk) && d->int_asserted) {
+		d->int_asserted = 0;
+		d->irq->interrupt_deassert(d->irq);
+	}
+}
+
+
 DEVICE_ACCESS(dec_ioasic)
 {
 	struct dec_ioasic_data *d = (struct dec_ioasic_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	uint64_t curptr;
-	uint32_t csr;
-	int dma_len, dma_res, regnr;
+	// uint64_t curptr;
+	// uint32_t csr;
+	// int dma_len, dma_res, regnr;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
-	regnr = (relative_addr - IOASIC_SLOT_1_START) / 0x10;
-	if (relative_addr < 0x80000 && (relative_addr & 0xf) != 0)
-		fatal("[ dec_ioasic: unaligned access? relative_addr = "
-		    "0x%x ]\n", (int)relative_addr);
-
-	if (regnr >= 0 && regnr < N_DEC_IOASIC_REGS) {
-		if (writeflag == MEM_WRITE)
-			d->reg[regnr] = idata;
-		else
-			odata = d->reg[regnr];
-	}
-
-#ifdef IOASIC_DEBUG
-	if (writeflag == MEM_WRITE)
-		debug("[ dec_ioasic: write to address 0x%llx, data=0x"
-		    "%016llx ]\n", (long long)relative_addr, (long long)idata);
-	else
-		debug("[ dec_ioasic: read from address 0x%llx ]\n",
-		    (long long)relative_addr);
-#endif
-
 	switch (relative_addr) {
+	
+	case 0:
+		/*  NetBSD/pmax and OpenBSD/pmax read from this address.  */
+		break;
 
-	/*  Don't print warnings for these:  */
 	case IOASIC_SCSI_DMAPTR:
-	case IOASIC_SCC_T1_DMAPTR:
-	case IOASIC_SCC_T2_DMAPTR:
-	case IOASIC_SCC_R1_DMAPTR:
-	case IOASIC_SCC_R2_DMAPTR:
+		if (writeflag == MEM_WRITE)
+			d->scsi_dmaptr = idata;
+		else
+			odata = d->scsi_dmaptr;
+
+		debug("[ dec_ioasic: %s SCSI_DMAPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_SCSI_NEXTPTR:
+		if (writeflag == MEM_WRITE)
+			d->scsi_nextptr = idata;
+		else
+			odata = d->scsi_nextptr;
+
+		debug("[ dec_ioasic: %s SCSI_NEXTPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_LANCE_DMAPTR:
+		if (writeflag == MEM_WRITE)
+			d->lance_dmaptr = idata;
+		else
+			odata = d->lance_dmaptr;
+
+		debug("[ dec_ioasic: %s LANCE_DMAPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_FLOPPY_DMAPTR:
+		if (writeflag == MEM_WRITE)
+			d->floppy_dmaptr = idata;
+		else
+			odata = d->floppy_dmaptr;
+
+		debug("[ dec_ioasic: %s FLOPPY_DMAPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_ISDN_X_DMAPTR:
+		if (writeflag == MEM_WRITE)
+			d->isdn_x_dmaptr = idata;
+		else
+			odata = d->isdn_x_dmaptr;
+
+		debug("[ dec_ioasic: %s ISDN_X_DMAPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_ISDN_X_NEXTPTR:
+		if (writeflag == MEM_WRITE)
+			d->isdn_x_nextptr = idata;
+		else
+			odata = d->isdn_x_nextptr;
+
+		debug("[ dec_ioasic: %s ISDN_X_NEXTPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_ISDN_R_DMAPTR:
+		if (writeflag == MEM_WRITE)
+			d->isdn_r_dmaptr = idata;
+		else
+			odata = d->isdn_r_dmaptr;
+
+		debug("[ dec_ioasic: %s ISDN_R_DMAPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_ISDN_R_NEXTPTR:
+		if (writeflag == MEM_WRITE)
+			d->isdn_r_nextptr = idata;
+		else
+			odata = d->isdn_r_nextptr;
+
+		debug("[ dec_ioasic: %s ISDN_R_NEXTPTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
 		break;
 
 	case IOASIC_CSR:
+		if (writeflag == MEM_WRITE)
+			d->csr = idata;
+		else
+			odata = d->csr;
+
+		debug("[ dec_ioasic: %s CSR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+#if 0
 		if (writeflag == MEM_WRITE) {
 			csr = d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) / 0x10];
 
@@ -167,69 +255,191 @@ DEVICE_ACCESS(dec_ioasic)
 				}
 			}
 		}
+#endif
 		break;
 
 	case IOASIC_INTR:
-		if (writeflag == MEM_READ) {
-			odata = d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
-			    / 0x10];
-			/*  Note/TODO: How about other models than KN03?  */
-			if (!d->rackmount_flag)
-				odata |= KN03_INTR_PROD_JUMPER;
+		if (writeflag == MEM_WRITE) {
+			/*  Clear bits on write?  */
+			d->intr &= ~idata;
+			dec_ioasic_reassert(d);
 		} else {
-			/*  Clear bits on write.  */
-			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &=
-			    ~idata;
+			odata = d->intr;
 
-			/*  Make sure that the CPU interrupt is deasserted as
-			    well:  */
-fatal("TODO: interrupt rewrite!\n");
-abort();
-//			if (idata != 0)
-//				cpu_interrupt_ack(cpu, 8 + idata);
+			/*  Note/TODO: How about other models than KN03?  */
+			//if (!d->rackmount_flag)
+			//	odata |= KN03_INTR_PROD_JUMPER;
 		}
+
+		debug("[ dec_ioasic: %s INTR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+
 		break;
 
 	case IOASIC_IMSK:
 		if (writeflag == MEM_WRITE) {
-			d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10] =
-			    idata;
-fatal("TODO: interrupt rewrite!\n");
-abort();
-//			cpu_interrupt_ack(cpu, 8 + 0);
-		} else
-			odata = d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) /
-			    0x10];
+			d->imsk = idata;
+			dec_ioasic_reassert(d);
+		} else {
+			odata = d->imsk;
+		}
+
+		debug("[ dec_ioasic: %s IMSK, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
 		break;
 
-	case IOASIC_CTR:
-		if (writeflag == MEM_READ)
-			odata = 0;
+	case IOASIC_ISDN_X_DATA:
+		if (writeflag == MEM_WRITE)
+			d->isdn_x_data = idata;
+		else
+			odata = d->isdn_x_data;
+
+		debug("[ dec_ioasic: %s ISDN_X_DATA, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
 		break;
 
-	case 0x80000:
-	case 0x80004:
-	case 0x80008:
-	case 0x8000c:
-	case 0x80010:
-	case 0x80014:
+	case IOASIC_ISDN_R_DATA:
+		if (writeflag == MEM_WRITE)
+			d->isdn_r_data = idata;
+		else
+			odata = d->isdn_r_data;
+
+		debug("[ dec_ioasic: %s ISDN_R_DATA, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_LANCE_DECODE:
+		if (writeflag == MEM_WRITE)
+			d->lance_decode = idata;
+		else
+			odata = d->lance_decode;
+
+		debug("[ dec_ioasic: %s LANCE_DECODE, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_SCSI_DECODE:
+		if (writeflag == MEM_WRITE)
+			d->scsi_decode = idata;
+		else
+			odata = d->scsi_decode;
+
+		debug("[ dec_ioasic: %s SCSI_DECODE, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_SCC0_DECODE:
+		if (writeflag == MEM_WRITE)
+			d->scc0_decode = idata;
+		else
+			odata = d->scc0_decode;
+
+		debug("[ dec_ioasic: %s SCC0_DECODE, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_SCC1_DECODE:
+		if (writeflag == MEM_WRITE)
+			d->scc1_decode = idata;
+		else
+			odata = d->scc1_decode;
+
+		debug("[ dec_ioasic: %s SCC1_DECODE, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_FLOPPY_DECODE:
+		if (writeflag == MEM_WRITE)
+			d->floppy_decode = idata;
+		else
+			odata = d->floppy_decode;
+
+		debug("[ dec_ioasic: %s FLOPPY_DECODE, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_SCSI_SCR:
+		if (writeflag == MEM_WRITE)
+			d->scsi_scr = idata;
+		else
+			odata = d->scsi_scr;
+
+		debug("[ dec_ioasic: %s SCSI_SCR, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_SCSI_SDR0:
+		if (writeflag == MEM_WRITE)
+			d->scsi_sdr0 = idata;
+		else
+			odata = d->scsi_sdr0;
+
+		debug("[ dec_ioasic: %s SCSI_SDR0, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+	case IOASIC_SCSI_SDR1:
+		if (writeflag == MEM_WRITE)
+			d->scsi_sdr1 = idata;
+		else
+			odata = d->scsi_sdr1;
+
+		debug("[ dec_ioasic: %s SCSI_SDR1, data=0x%08x ]\n",
+			writeflag == MEM_WRITE ? "write to" : "read from",
+			writeflag == MEM_WRITE ? idata : odata);
+		break;
+
+
+	case IOASIC_SYS_ETHER_ADDRESS(0) + 0x00:
+	case IOASIC_SYS_ETHER_ADDRESS(0) + 0x04:
+	case IOASIC_SYS_ETHER_ADDRESS(0) + 0x08:
+	case IOASIC_SYS_ETHER_ADDRESS(0) + 0x0c:
+	case IOASIC_SYS_ETHER_ADDRESS(0) + 0x10:
+	case IOASIC_SYS_ETHER_ADDRESS(0) + 0x14:
 		/*  Station's ethernet address:  */
 		if (writeflag == MEM_WRITE) {
 			fatal("[ dec_ioasic: attempt to write to the station's"
-			    " ethernet address? ]\n");
+			    " ethernet address. ignored for now. ]\n");
 		} else {
-			odata = ((relative_addr - 0x80000) / 4 + 1) * 0x10;
+			odata = ((relative_addr - IOASIC_SYS_ETHER_ADDRESS(0)) / 4 + 1) * 0x10;
 		}
+		break;
+
+	/*  The DECstation 5000/125's PROM uses these for cache testing. TODO.  */
+	case 0x0f004:
+	case 0x1f008:
+	case 0x2f00c:
+	case 0x3f010:
+	case 0x4f014:
+	case 0x5f018:
+	case 0x6f01c:
+	case 0x7f020:
+	case 0x8f024:
+	case 0x9f028:
+	case 0xaf02c:
+	case 0xbf030:
 		break;
 
 	default:
 		if (writeflag == MEM_WRITE)
 			fatal("[ dec_ioasic: unimplemented write to address "
-			    "0x%llx, data=0x%016llx ]\n",
+			    "0x%llx, data=0x%08llx ]\n",
 			    (long long)relative_addr, (long long)idata);
 		else
 			fatal("[ dec_ioasic: unimplemented read from address "
 			    "0x%llx ]\n", (long long)relative_addr);
+		// exit(1);
 	}
 
 	if (writeflag == MEM_READ)
@@ -248,7 +458,7 @@ abort();
  *  type 4.
  */
 struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu,
-	struct memory *mem, uint64_t baseaddr, int rackmount_flag)
+	struct memory *mem, uint64_t baseaddr, int rackmount_flag, struct interrupt* irqp)
 {
 	struct dec_ioasic_data *d;
 
@@ -256,6 +466,7 @@ struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu,
 	memset(d, 0, sizeof(struct dec_ioasic_data));
 
 	d->rackmount_flag = rackmount_flag;
+	d->irq = irqp;
 
 	memory_device_register(mem, "dec_ioasic", baseaddr,
 	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d,

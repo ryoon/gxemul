@@ -331,7 +331,8 @@ uint64_t CPUComponent::Unassemble(int nRows, bool indicatePC, uint64_t vaddr, os
 
 		// TODO: GENERALIZE! Some archs will have longer
 		// instructions, or unaligned, or over page boundaries!
-		const size_t maxLen = sizeof(uint32_t);
+		size_t maxLen = sizeof(uint32_t);
+maxLen += sizeof(uint32_t); // i960 experimentation hack
 		unsigned char instruction[maxLen];
 
 		bool readOk = true;

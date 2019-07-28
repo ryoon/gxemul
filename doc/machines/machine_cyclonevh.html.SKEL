@@ -1,0 +1,65 @@
+
+The <tt>cyclonevh</tt> machine template tries to emulate a
+Cyclone/VH i960 evaluation board.
+
+<p>Its only purpose is to allow experiments with uClinux/i960 binaries.
+
+See <a href="https://web.archive.org/web/20010417034914/http://www.cse.ogi.edu/~kma/uClinux.html">https://web.archive.org/web/20010417034914/http://www.cse.ogi.edu/~kma/uClinux.html</a> for more info.
+
+<p><b>NOTE!</b>
+
+<p>A binary (vmlinux) can be found on this page:
+<br>
+<a href="https://web.archive.org/web/20010417034914/http://www.cse.ogi.edu/~kma/uClinux.html">https://web.archive.org/web/20010417034914/http://www.cse.ogi.edu/~kma/uClinux.html</a>
+
+<p>However, there is also a binary at
+<a href="http://www.uclinux.org/pub/uClinux/ports/i960/">http://www.uclinux.org/pub/uClinux/ports/i960/</a>, which is corrupt;
+it seems to have been uploaded/encoded with the wrong character encoding.
+(At least it is broken as of 2016-04-18.)
+
+<p><b>TODO</b>:
+<br>Everything.
+
+<p>Until there is an ECOFF file loader, the vmlinux binary image may be
+experimented with manually, using the raw file loader.
+
+<pre>
+$ ./gxemul -V -e cyclonevh raw:0xa3c08000:0xb8:0xa3c08020:vmlinux 
+
+GXemul (unknown version)      Copyright (C) 2003-2018  Anders Gavare
+
+  mainbus0
+  |-- cpu0  (25 MHz)
+  \-- ram0  (4 MB at offset 0xa3c00000)
+
+cpu0: raw:0xa3c08000:0xb8:0xa3c08020:/home/debug/emul/i960/vmlinux loaded
+      Raw file: entry point 0xa3c08020
+      loadable chunk at offset 184: vaddr 0xa3c08000, 774924 bytes
+
+GXemul> cp.u 
+0xa3c08020 <- 58a0198c            unimplemented: 88 
+0xa3c08024    64a50294            unimplemented: 100
+0xa3c08028    58a0198d            unimplemented: 88 
+0xa3c0802c    65a50294            unimplemented: 101
+0xa3c08030    09000700            unimplemented: 9  
+0xa3c08034    8c803000            lda               
+0xa3c08038    a3c08000            unimplemented: 163
+0xa3c0803c    090077a4            unimplemented: 9  
+0xa3c08040    08000000            unimplemented: 8  
+0xa3c08044    00000000            unimplemented: 0  
+0xa3c08048    00000000            unimplemented: 0  
+0xa3c0804c    00000000            unimplemented: 0  
+0xa3c08050    8cf03000            lda               
+0xa3c08054    a3c08064            unimplemented: 163
+0xa3c08058    5c80161e            unimplemented: 92 
+0xa3c0805c    5cf01e00            unimplemented: 92 
+0xa3c08060    84041000            unimplemented: 132
+0xa3c08064    0a000000            unimplemented: 10 
+0xa3c08068    74696e69            unimplemented: 116
+0xa3c0806c    00000000            unimplemented: 0  
+GXemul> quit
+</pre>
+
+<p><hr>
+</body>
+</html>

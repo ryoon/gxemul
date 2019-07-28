@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2008-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2008-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -327,7 +327,7 @@ int MIPS_CPUComponent::GetDyntransICshift() const
 }
 
 
-DyntransIC_t MIPS_CPUComponent::GetDyntransToBeTranslated() const
+void (*MIPS_CPUComponent::GetDyntransToBeTranslated())(CPUDyntransComponent*, DyntransIC*)
 {
 	bool mips16 = m_pc & 1? true : false;
 	return mips16? instr_ToBeTranslated_MIPS16 : instr_ToBeTranslated;
@@ -370,7 +370,7 @@ size_t MIPS_CPUComponent::DisassembleInstructionMIPS16(uint64_t vaddr,
 	unsigned char *instruction, vector<string>& result)
 {
 	// Read the instruction word:
-	uint16_t iword = *((uint16_t *) instruction);
+	uint16_t iword = *((uint16_t *)(void*) instruction);
 	if (m_isBigEndian)
 		iword = BE16_TO_HOST(iword);
 	else
@@ -441,7 +441,7 @@ size_t MIPS_CPUComponent::DisassembleInstruction(uint64_t vaddr, size_t maxLen,
 		    instruction, result);
 
 	// Read the instruction word:
-	uint32_t instructionWord = *((uint32_t *) instruction);
+	uint32_t instructionWord = *((uint32_t *)(void*) instruction);
 	if (m_isBigEndian)
 		instructionWord = BE32_TO_HOST(instructionWord);
 	else

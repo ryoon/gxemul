@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2014  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -515,7 +515,7 @@ string GXemul::Version()
 #else
 	    << "(unknown version)"
 #endif
-	    << "      " COPYRIGHT_MSG "\n" SECONDARY_MSG;
+	    << "      " COPYRIGHT_MSG"\n" SECONDARY_MSG;
 
 	return ss.str();
 }
@@ -876,11 +876,11 @@ static void GetComponentsAndFrequencies(refcount_ptr<Component> component,
 	if (freq != NULL && step != NULL &&
 	    (paused == NULL || paused->ToInteger() == 0)) {
 		struct ComponentAndFrequency caf;
-		memset(&caf, 0, sizeof(caf));
 
 		caf.component = component;
 		caf.frequency = freq->ToDouble();
 		caf.step      = step;
+		caf.nextTimeToExecute = 0;
 
 		componentsAndFrequencies.push_back(caf);
 	}
@@ -1164,3 +1164,4 @@ UNITTESTS(GXemul)
 
 
 #endif
+

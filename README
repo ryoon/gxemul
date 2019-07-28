@@ -1,10 +1,11 @@
 
+
           --------------------------------------------------------
-            Gavare's eXperimental Emulator   --   GXemul 0.6.0.1
+             Gavare's eXperimental Emulator   --   GXemul 0.6.1
           --------------------------------------------------------
 
 
-Copyright (C) 2003-2014  Anders Gavare
+                   Copyright (C) 2003-2018  Anders Gavare
 
 
 
@@ -57,33 +58,16 @@ Use your imagination :-)
 
 
 
-Note regarding the new 0.6 framework
-------------------------------------
-
-Only very few emulation modes have been rewritten to use the 0.6 (C++)
-framework; the bulk of GXemul is still made up of legacy emulation modes,
-written in C.
-
-The long-term plan is to rewrite all of the emulation modes to use the
-new framework, but this will take quite some time.
-
-
-
 GXemul's limitations
 --------------------
 
- o)  GXemul is not a cycle-accurate simulator when it comes to simulating
-     modern CPUs, because it does not simulate things smaller than an
-     instruction. Pipe-line stalls, instruction latency effects, out-of-order
-     execution etc. are more or less completely ignored.
+ o)  GXemul does not simulate micro-architectural things such as pipe-line
+     stalls, instruction latency effects, out-of-order execution etc.
 
-     (Note: The new framework could possibly allow cycle-accurate models
-     to be implemented; however, no such component has been written.)
-
- o)  Hardware devices have been implemented in an ad-hoc and as-needed manner,
-     usually only enough to fool certain guest operating systems, e.g. NetBSD,
-     that the hardware devices exist and function well enough for those guest
-     operating systems to use them.
+ o)  CPUs and other hardware devices have been implemented in an ad-hoc and
+     as-needed manner, usually only enough to fool guest operating systems
+     such as NetBSD into believing that the hardware devices exist and
+     function well enough for the guest operating systems to use them.
 
      (A consequence of this is that a machine mode may be implemented well
      enough to run NetBSD for that machine mode, but other guest operating
@@ -114,4 +98,5 @@ Feedback
 
 If you have found GXemul useful in some way, or feel like sending me
 comments or feedback in general, then mail me at gavare@gmail.com.
+
 

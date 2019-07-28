@@ -328,19 +328,10 @@ static int console_stdin_avail(int handle)
 }
 
 
-static int console_room_left_in_fifo(int handle)
-{
-	int roomLeftInFIFO = console_handles[handle].fifo_tail
-	    - console_handles[handle].fifo_head;
-	if (roomLeftInFIFO <= 0)
-		roomLeftInFIFO += CONSOLE_FIFO_LEN;
-	return roomLeftInFIFO;
-}
-
 /*
  *  console_charavail():
  *
- *  Returns the number of chararacters available in the fifo.
+ *  Returns 1 if a char is available in the fifo, 0 otherwise.
  */
 int console_charavail(int handle)
 {
@@ -351,7 +342,9 @@ int console_charavail(int handle)
 
 		// If adding more would lead to a full FIFO, then let's
 		// wait.
-		int roomLeftInFIFO = console_room_left_in_fifo(handle);
+		int roomLeftInFIFO = console_handles[handle].fifo_tail - console_handles[handle].fifo_head;
+		if (roomLeftInFIFO <= 0)
+			roomLeftInFIFO += CONSOLE_FIFO_LEN;
 		if (roomLeftInFIFO < (int)sizeof(ch) + 1)
 			break;
 
@@ -376,7 +369,11 @@ int console_charavail(int handle)
 		}
 	}
 
-	return CONSOLE_FIFO_LEN - console_room_left_in_fifo(handle);
+	if (console_handles[handle].fifo_head ==
+	    console_handles[handle].fifo_tail)
+		return 0;
+
+	return 1;
 }
 
 

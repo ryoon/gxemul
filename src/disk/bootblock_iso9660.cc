@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -245,7 +245,7 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	if (p != NULL) {
 		char *blah = filename_orig;
 
-		fatal("could not find '%s' in /", filename);
+		fatal("could not find '%s' (1) in /", filename);
 
 		/*  Print the first part of the filename:  */
 		while (blah != filename)
@@ -270,6 +270,7 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 			/*  debug("realign dirofs = 0x%llx\n", dirofs);  */
 		}
 
+		// debug("dirofs = %lli\n", (long long)dirofs);
 		res2 = diskimage_access(m, disk_id, disk_type, 0, dirofs,
 		    dirbuf, 256);
 		if (!res2) {
@@ -279,8 +280,10 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 
 		dp = dirbuf;
 		len = dp[0];
-		if (len < 2)
+		if (len < 2) {
+			// debug("dir too short\n");
 			break;
+		}
 
 		/*
 		 *  TODO: Actually parse the directory entry!
@@ -288,7 +291,7 @@ int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		 *  Haha, this must be rewritten.
 		 */
 
-#if 0
+#ifdef ISO_DEBUG
 /*  hahahaha  */
 printf("filename = '%s'\n", filename);
 {
@@ -299,6 +302,7 @@ printf("\n");
 }
 
 // Hahaha. Yes, it's horrible. (Updated 2011-06-09.)
+// Yes it is. (2018-06-18.) :-(
 #endif
 
 		for (i=32; i<len; i++) {
@@ -330,7 +334,7 @@ printf("\n");
 	if (match_entry == NULL) {
 		char *blah = filename_orig;
 
-		fatal("could not find '%s' in /", filename);
+		fatal("could not find '%s' (2) in /", filename);
 
 		/*  Print the first part of the filename:  */
 		while (blah != filename)

@@ -196,7 +196,7 @@ protected:
 	virtual bool FunctionTraceReturnImpl(int64_t& retval);
 
 	virtual int GetDyntransICshift() const;
-	virtual DyntransIC_t GetDyntransToBeTranslated() const;
+	virtual void (*GetDyntransToBeTranslated())(CPUDyntransComponent*, DyntransIC*);
 
 	virtual void ShowRegisters(GXemul* gxemul, const vector<string>& arguments) const;
 

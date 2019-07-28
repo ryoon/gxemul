@@ -5,7 +5,7 @@
 CXXFLAGS=$(CWARNINGS) $(COPTIM) $(DINCLUDE)
 
 OBJS=arcbios.o dec_prom.o dreamcast.o dreamcast_scramble.o \
-	mvmeprom.o of.o ps2_bios.o sh_ipl_g.o yamon.o
+	luna88kprom.o mvmeprom.o of.o ps2_bios.o sh_ipl_g.o yamon.o
 
 all: $(OBJS)
 	../../experiments/make_index.sh

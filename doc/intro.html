@@ -16,7 +16,7 @@
 
 <!--
 
-Copyright (C) 2003-2010  Anders Gavare.  All rights reserved.
+Copyright (C) 2003-2018  Anders Gavare.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -99,7 +99,7 @@ operating system code.
 <p>The emulator contains code which tries to emulate the workings of CPUs
 and surrounding hardware found in real machines, but it does not contain
 any ROM code. You will need some form of program (in binary form) to run
-in the emulator. For some emulation modes, PROM calls are handled by the
+in the emulator. For most emulation modes, PROM calls are handled by the
 emulator itself, so you do not need to use any ROM image at all.
 
 <p>You can use pre-compiled kernels (for example <a href="http://www.netbsd.org/">NetBSD</a>
@@ -134,7 +134,8 @@ been rewritten to use this new framework; almost all emulation modes use the old
 (legacy) framework, which was developed in a more ad-hoc manner. The long-term
 goal is to rewrite everything to use the new framework.
 
-<p>(The documentation still largely refers to how things worked in the old framework.)
+<p>The documentation still largely refers to how things worked in the <i>old</i>
+framework.
 
 <p>The new framework is described <a href="framework.html">here</a>.
 
@@ -300,20 +301,9 @@ operating systems, as long as there is a modern C++ compiler available.
 
 <p>In practice, the ability to reach this goal is limited by the amount of
 spare time available for development.
-Most of the development is done on FreeBSD/amd64 using GNU C++ (various
-versions), but every now and then the code is built on FreeBSD/alpha, Linux,
-and also in NetBSD and OpenBSD inside GXemul itself.
-
-<p>Hopefully there are no GNU-specific parts in the source code. Still,
-the GNU C++ compiler is still the compiler most likely to be useful for
-building GXemul. There is a page on the GXemul homepage,
-<a href="http://gxemul.sourceforge.net/build.html">http://gxemul.sourceforge.net/build.html</a>,
-which lists various platforms, compilers, and which versions of GXemul that
-was built on those platforms.
-
-<p>If it does not build or run on your architecture/platform or with your
-compiler, then it can be considered a bug. Please report it to the development
-mailing list.
+Most of the development is done on FreeBSD/amd64 using clang and/or GNU C++,
+but every now and then the code is built on Linux,
+or NetBSD/OpenBSD inside GXemul itself.
 
 <p>Note 1: The <a href="translation.html">dynamic translation</a> engine 
 does <i>not</i> require backends for native code generation to be written 
@@ -408,13 +398,15 @@ machine in these lists is:
     <li><b>Malta</b> (<a href="guestoses.html#netbsdevbmipsinstall">NetBSD/evbmips</a>, <a href="unsupported.html#linux_malta2">Linux/Malta</a> <font color="#0000e0">(<super>*1</super>)</font>)
     <li><b>Algorithmics P5064</b> (<a href="guestoses.html#netbsdalgorinstall">NetBSD/algor</a>)
     <li><b>SGI O2 (aka IP32)</b> <font color="#0000e0">(<super>*2</super>)</font>
-	(<a href="guestoses.html#netbsdsgimips">NetBSD/sgi</a>)
+	(<a href="guestoses.html#netbsdsgimips">NetBSD/sgimips</a>,
+	<a href="guestoses.html#openbsdsgiinstall">OpenBSD/sgi</a>)
     <li><b>oldtestmips</b> (<a href="experiments.html#expdevices">experimental</a>, <a href="guestoses.html#helenos">HelenOS/mips</a>)
   </ul>
   <p>
   <li><b><u>Motorola 88K</u></b>
   <ul>
     <li><b>Motorola MVME187</b> (<a href="guestoses.html#openbsdmvme88kinstall">OpenBSD/mvme88k</a>)
+    <li><b>Luna 88K</b> (<a href="unsupported.html#openbsdluna88k">OpenBSD/luna88k</a>)
     <li><b>oldtestm88k</b> (<a href="experiments.html#expdevices">experimental</a>)
   </ul>
   <p>
@@ -444,12 +436,6 @@ is much more experimental/unknown than NetBSD, so it is still on the
 <br><small><font color="#0000e0">(<super>*2</super>)</font> =
 The emulation is enough for root-on-nfs, but no disk controller (SCSI nor 
 IDE) is emulated yet for this machine type.</small>
-
-<p>Note that of all of the machines above, none of them is emulated to 
-100%. The most complete emulation mode is probably the DECstation 
-5000/200. Things that will most likely <b>not</b> work include running 
-raw PROM images for most machines, SGI IRIX, MacOS X or Darwin, Windows 
-NT, or Dreamcast games.
 
 <p>There may be code in GXemul for emulation of some other machine types; the
 degree to which these work range from almost being able to run a complete

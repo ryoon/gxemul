@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2008-2010  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2008-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -35,6 +35,7 @@ using std::ifstream;
 #include "Component.h"
 #include "FileLoader.h"
 #include "FileLoader_aout.h"
+#include "FileLoader_bout.h"
 #include "FileLoader_ELF.h"
 #include "FileLoader_raw.h"
 
@@ -43,6 +44,7 @@ FileLoader::FileLoader(const string& filename)
 	: m_filename(filename)
 {
 	m_fileLoaders.push_back(new FileLoader_aout(filename));
+	m_fileLoaders.push_back(new FileLoader_bout(filename));
 	m_fileLoaders.push_back(new FileLoader_ELF(filename));
 	m_fileLoaders.push_back(new FileLoader_raw(filename));
 }
@@ -176,6 +178,14 @@ static void Test_FileLoader_DetectFileFormat_aout_88K()
 	    fileLoader.DetectFileFormat(loaderImpl), "a.out_M88K_fromBeginning");
 }
 
+static void Test_FileLoader_DetectFileFormat_bout_i960()
+{
+	FileLoader fileLoader("test/FileLoader_B.OUT_i960");
+	refcount_ptr<const FileLoaderImpl> loaderImpl;
+	UnitTest::Assert("file format detection failure?",
+	    fileLoader.DetectFileFormat(loaderImpl), "b.out_i960_little");
+}
+
 static refcount_ptr<Component> SetupTestMachineAndLoad(
 	string machineName, string fileName)
 {
@@ -258,6 +268,7 @@ UNITTESTS(FileLoader)
 	UNITTEST(Test_FileLoader_DetectFileFormat_ELF32);
 	UNITTEST(Test_FileLoader_DetectFileFormat_ELF64);
 	UNITTEST(Test_FileLoader_DetectFileFormat_aout_88K);
+	UNITTEST(Test_FileLoader_DetectFileFormat_bout_i960);
 
 	UNITTEST(Test_FileLoader_Load_ELF32);
 	UNITTEST(Test_FileLoader_Load_aout);

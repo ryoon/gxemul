@@ -45,7 +45,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "vga.h"
+#include "../include/vga.h"
 
 #include "thirdparty/igsfbreg.h"
 

@@ -378,13 +378,13 @@ void memory_device_register(struct memory *mem, const char *device_name,
 
 	if (verbose >= 2) {
 		/*  (40 bits of physical address is displayed)  */
-		debug("device at 0x%010" PRIx64 ": %s", (uint64_t) baseaddr,
+		debug("device at 0x%010" PRIx64": %s", (uint64_t) baseaddr,
 		    device_name);
 
 		if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
 		    && (baseaddr & mem->dev_dyntrans_alignment) != 0) {
 			fatal("\nWARNING: Device dyntrans access, but unaligned"
-			    " baseaddr 0x%" PRIx64 ".\n", (uint64_t) baseaddr);
+			    " baseaddr 0x%" PRIx64".\n", (uint64_t) baseaddr);
 		}
 
 		if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
@@ -504,7 +504,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	table = (void **) mem->pagetable;
 	entry = (paddr >> shrcount) & mask;
 
-	/*  printf("memory_paddr_to_hostaddr(): p=%16"PRIx64
+	/*  printf("memory_paddr_to_hostaddr(): p=%16" PRIx64
 	    " w=%i => entry=0x%x\n", (uint64_t) paddr, writeflag, entry);  */
 
 	if (table[entry] == NULL) {
@@ -627,7 +627,7 @@ void memory_warn_about_unimplemented_addr(struct cpu *cpu, struct memory *mem,
 		debug("} ");
 	}
 
-	fatal("paddr=0x%" PRIx64 " >= physical_max; pc=", paddr);
+	fatal("paddr=0x%" PRIx64" >= physical_max; pc=", paddr);
 	if (cpu->is_32bit)
 		fatal("0x%08" PRIx32, (uint32_t) old_pc);
 	else
@@ -998,3 +998,4 @@ void store_16bit_word_in_host(struct cpu *cpu,
 		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
 	}
 }
+

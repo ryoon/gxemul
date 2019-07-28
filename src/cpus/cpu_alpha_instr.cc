@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2011  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2018  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -476,8 +476,7 @@ X(cvttq_c)
  */
 X(cvtqt)
 {
-	reg(ic->arg[0]) = ieee_store_float_value(reg(ic->arg[2]),
-	    IEEE_FMT_D, 0);
+	reg(ic->arg[0]) = ieee_store_float_value(reg(ic->arg[2]), IEEE_FMT_D);
 }
 
 
@@ -507,54 +506,30 @@ X(fneg)
 X(addt)
 {
 	struct ieee_float_value fa, fb;
-	double res;
 	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
 	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
-	if (fa.nan | fb.nan)
-		res = 0.0;
-	else
-		res = fa.f + fb.f;
-	reg(ic->arg[0]) = ieee_store_float_value(res,
-	    IEEE_FMT_D, fa.nan | fb.nan);
+	reg(ic->arg[0]) = ieee_store_float_value(fa.f + fb.f, IEEE_FMT_D);
 }
 X(subt)
 {
 	struct ieee_float_value fa, fb;
-	double res;
 	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
 	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
-	if (fa.nan | fb.nan)
-		res = 0.0;
-	else
-		res = fa.f - fb.f;
-	reg(ic->arg[0]) = ieee_store_float_value(res,
-	    IEEE_FMT_D, fa.nan | fb.nan);
+	reg(ic->arg[0]) = ieee_store_float_value(fa.f - fb.f, IEEE_FMT_D);
 }
 X(mult)
 {
 	struct ieee_float_value fa, fb;
-	double res;
 	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
 	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
-	if (fa.nan | fb.nan)
-		res = 0.0;
-	else
-		res = fa.f * fb.f;
-	reg(ic->arg[0]) = ieee_store_float_value(res,
-	    IEEE_FMT_D, fa.nan | fb.nan);
+	reg(ic->arg[0]) = ieee_store_float_value(fa.f * fb.f, IEEE_FMT_D);
 }
 X(divt)
 {
 	struct ieee_float_value fa, fb;
-	double res;
 	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
 	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
-	if (fa.nan | fb.nan || fb.f == 0)
-		res = 0.0;
-	else
-		res = fa.f / fb.f;
-	reg(ic->arg[0]) = ieee_store_float_value(res,
-	    IEEE_FMT_D, fa.nan | fb.nan || fb.f == 0);
+	reg(ic->arg[0]) = ieee_store_float_value(fa.f / fb.f, IEEE_FMT_D);
 }
 X(cmpteq)
 {
